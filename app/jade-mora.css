@@ -52,17 +52,13 @@
 /* Accessoires: eigene Ebenen */
 .jm__acc { position: absolute; display: block; transform: translate(-50%, -50%) rotate(var(--rot, 0deg)); }
 .jm__acc img { display: block; width: 100%; height: 100%; user-select: none; filter: drop-shadow(0 calc(var(--d) * .02) calc(var(--d) * .035) rgba(0, 0, 0, .38)); }
-.jm__acc[data-part='back'] { clip-path: inset(0 0 50% 0); z-index: 0; }
-.jm__acc[data-part='front'][data-anim='orbit'] { clip-path: inset(50% 0 0 0); }
-.jm__acc[data-anim='orbit'] { animation: jm-ring 9s ease-in-out infinite; }
-.jm__acc[data-acc='smoky-quartz'] { animation: jm-prism 7s ease-in-out infinite; }
-.jm__acc[data-acc='moonstone-pendant'] { transform-origin: 50% 0; transform: translate(-50%, 0) rotate(0); margin-top: calc(var(--d) * -.04); animation: jm-sway 5s ease-in-out infinite; }
-@keyframes jm-ring { 0%, 100% { transform: translate(-50%, -50%) rotate(calc(var(--rot) - 1.5deg)); } 50% { transform: translate(-50%, -50%) rotate(calc(var(--rot) + 1.5deg)); } }
-@keyframes jm-prism { 0%, 100% { transform: translate(-50%, -50%) rotate(calc(var(--rot) - 4deg)) translateY(calc(var(--d) * -.015)); } 50% { transform: translate(-50%, -50%) rotate(calc(var(--rot) + 4deg)) translateY(calc(var(--d) * .02)); } }
-@keyframes jm-sway { 0%, 100% { transform: translate(-50%, 0) rotate(-4deg); } 50% { transform: translate(-50%, 0) rotate(4deg); } }
+.jm__acc[data-anim='sway'] { transform-origin: 50% 0; transform: translate(-50%, 0) rotate(var(--rot, 0deg)); animation: jm-sway 6s ease-in-out infinite; }
+@keyframes jm-sway { 0%, 100% { transform: translate(-50%, 0) rotate(-2.5deg); } 50% { transform: translate(-50%, 0) rotate(2.5deg); } }
+/* Lichtlauf des Blüten-Medaillons: ein leises Glanzband läuft in Abständen über das Gold (maskiert auf die Zeichnung). */
+.jm__acc[data-acc='founder-f1']::after { content: ''; position: absolute; inset: 0; pointer-events: none; -webkit-mask: url(/mora/jade/acc/founder-f1.svg) center / 100% 100% no-repeat; mask: url(/mora/jade/acc/founder-f1.svg) center / 100% 100% no-repeat; background: linear-gradient(105deg, transparent 38%, rgba(255, 248, 215, .7) 50%, transparent 62%) 160% 0 / 260% 100% no-repeat; animation: jm-lichtlauf 7s ease-in-out infinite; }
+@keyframes jm-lichtlauf { 0%, 55% { background-position: 160% 0; } 90%, 100% { background-position: -60% 0; } }
 .jm__chain { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
-.jm__chain path { fill: none; stroke: rgba(190, 198, 206, .92); stroke-width: .006; stroke-linecap: round; }
-/* Perle läuft auf dem Ring (x und y gleich getaktet, y eine Viertelperiode versetzt): die Hälfte hinten wird per clip-path abgedeckt. */
+.jm__chain path { fill: none; stroke-width: .006; stroke-linecap: round; }
 @media (prefers-reduced-motion: reduce) {
   .jm *, .jm { animation: none !important; transition: none !important; }
 }

@@ -14,7 +14,7 @@ import type { PixelMoraProps } from './PixelMora';
 import { decide, type Intent } from '@/lib/mora/pixelBrain';
 import { jadeMounts, type AccessoryMount } from '@/lib/mora/accessoryAdapter';
 import type { Wardrobe } from '@/lib/mora/traits';
-import { useWardrobe } from '@/lib/mora/useWardrobe';
+import { useFounder, useWardrobe } from '@/lib/mora/useWardrobe';
 
 /** Körper (Stein) relativ zur Zeichenfläche. */
 export const JADE_BODY = 0.88;
@@ -26,22 +26,24 @@ export type JadeState = 'idle' | 'curious' | 'attentive' | 'thinking' | 'speakin
 const px = (n: number) => `${n}px`;
 
 function Mount({ m, part }: { m: AccessoryMount; part: 'back' | 'front' }) {
-  const ring = m.layer === 'ring';
-  if (ring ? false : (m.layer === 'back') !== (part === 'back')) return null;
+  if ((m.layer === 'back') !== (part === 'back')) return null;
   const x = m.anchor.x + (m.offset?.x ?? 0); const y = m.anchor.y + (m.offset?.y ?? 0);
   const style = { left: `${50 + x * 100}%`, top: `${50 + y * 100}%`, width: `${m.scale * 100}%`, aspectRatio: String(m.aspect), ['--rot' as string]: `${m.rotate ?? 0}deg` } as React.CSSProperties;
   const img = <img src={m.asset} alt="" draggable={false} loading="eager" decoding="async" />;
   return (
-    <span className="jm__acc" data-acc={m.id} data-anim={m.animation} data-part={ring ? part : undefined} style={style}>
+    <span className="jm__acc" data-acc={m.id} data-anim={m.animation} style={style}>
       {img}
     </span>
   );
 }
 
 /** Zeichnet Stein, Augen und Ebenen. Verhalten (Blick, Blinzeln) steuern Elternkomponenten über CSS-Variablen und data-Attribute. */
-function Figure({ size, wardrobe, bare, still = false, eyesRef }: { size: number; wardrobe: Wardrobe; bare: boolean; still?: boolean; eyesRef?: React.Ref<HTMLSpanElement> }) {
+function Figure({ size, wardrobe, bare, still = false, eyesRef, preview = false }: { size: number; wardrobe: Wardrobe; bare: boolean; still?: boolean; eyesRef?: React.Ref<HTMLSpanElement>; preview?: boolean }) {
   const d = size * JADE_BODY;
-  const mounts = useMemo(() => (bare ? [] : jadeMounts(wardrobe)), [wardrobe, bare]);
+  const isFounder = useFounder();
+  /** Vorschau (Garderobe): zeigt, was gewählt wurde; die Sperre sitzt dort schon an der Auswahl. */
+  const founder = isFounder || preview;
+  const mounts = useMemo(() => (bare ? [] : jadeMounts(wardrobe, founder)), [wardrobe, bare, founder]);
   const chain = mounts.find((m) => m.chain);
   const gid = `jm-rim-${React.useId().replace(/:/g, '')}`;
   return (
@@ -70,7 +72,7 @@ function Figure({ size, wardrobe, bare, still = false, eyesRef }: { size: number
           </span>
           {chain ? (
             <svg className="jm__chain" viewBox="-0.5 -0.5 1 1" aria-hidden>
-              <path d="M -0.468 0.02 Q -0.3 0.4 0 0.43 Q 0.3 0.4 0.468 0.02" />
+              <path d={`M -0.468 0.02 Q -0.3 ${chain.chain!.dip - 0.03} 0 ${chain.chain!.dip} Q 0.3 ${chain.chain!.dip - 0.03} 0.468 0.02`} stroke={chain.chain!.color} />
             </svg>
           ) : null}
         </span>
@@ -224,7 +226,7 @@ export function JadeMoraStage({ wardrobe, scale = 2, hop = 0, turn = 0, reduced 
     <span ref={root} className="jm jm--stage" data-state="idle" data-reduced={reduced ? 'true' : undefined} data-testid="mora-stage" data-figure="jade" data-hop={hop} data-turn={turn} style={{ width: size, height: size }} aria-hidden>
       <span key={`h${hop}`} className={`jm__bob${hop ? ' jm__bob--hop' : ''}`}>
         <span key={`t${turn}`} className={`jm__turn${turn ? ' jm__turn--go' : ''}`}>
-          <Figure size={size} wardrobe={wardrobe} bare={false} eyesRef={eyes} />
+          <Figure size={size} wardrobe={wardrobe} bare={false} eyesRef={eyes} preview />
         </span>
       </span>
     </span>

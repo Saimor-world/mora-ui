@@ -87,7 +87,7 @@ export function MoraWardrobe() {
   const hoverItem = (itemId: string | null) => {
     if (itemId === null) { setNote(null); return setHover({ slot: slot.id, choice: null }); }
     const it = slot.items.find((i) => i.id === itemId)!;
-    setNote(it.origin === 'standard' && it.figure === 'jade' ? null : it);
+    setNote(it);
     setHover({ slot: slot.id, choice: joinChoice(itemId, cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id)) });
   };
 
@@ -166,12 +166,12 @@ export function MoraWardrobe() {
               const locked = !isUnlocked(i, ctx);
               const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? i.variants[0]);
               return (
-                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} data-legacy={i.figure === 'jade' ? undefined : 'true'} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
+                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} data-legacy={i.figure ? undefined : 'true'} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
                   <span className="os-wd__thumb"><img src={thumbSrc(shown.file)} alt="" draggable={false} /></span>
                   <span className="os-wd__name">{i.name}</span>
                   {i.origin !== 'standard' ? <span className="os-wd__badge-o" data-origin={i.origin} data-testid={`wd-rarity-${i.id}`}><i />{TIER_LABEL[i.origin]}</span> : null}
                   {locked ? <span className="os-wd__seal" data-testid={`wd-lock-${i.id}`} role="img" aria-label="noch gesperrt">{LOCK}</span> : null}
-                  {i.figure !== 'jade' ? <span className="os-wd__badge os-wd__badge--legacy" title="Pixel-Altstück: am Jade-Stein noch nicht gezeichnet">Pixel</span> : null}
+                  {!i.figure ? <span className="os-wd__badge os-wd__badge--legacy" title="Pixel-Altstück: am Jade-Stein noch nicht gezeichnet">Pixel</span> : null}
                   {i.season ? <span className="os-wd__badge os-wd__badge--season" title="Saisonal">Saison</span> : null}
                   {i.variants.length > 1 ? <span className="os-wd__vcount">{i.variants.length} Farben</span> : null}
                 </button>
@@ -179,7 +179,7 @@ export function MoraWardrobe() {
             })}
           </div>
           <p className="os-wd__note" data-testid="wd-note" data-origin={note?.origin} aria-live="polite">
-            {note ? <><strong>{note.name}</strong> · {TIER_LABEL[note.origin] || RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}{note.figure !== 'jade' ? ' Pixel-Altstück: bleibt gespeichert, wird am Jade-Stein aber noch nicht gezeichnet.' : ''}</span></> : null}
+            {note ? <><strong>{note.name}</strong>{[TIER_LABEL[note.origin] || RARITY_LABEL[note.rarity], ORIGIN_LABEL[note.origin]].filter(Boolean).map((t) => ` · ${t}`).join('')}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}{note.fashion ? <span data-testid="wd-fashion">{note.fashion.category} · {note.fashion.collection} · {note.fashion.material}</span> : null}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}{!note.figure ? ' Pixel-Altstück: bleibt gespeichert, wird am Jade-Stein aber noch nicht gezeichnet.' : ''}</span></> : null}
           </p>
           <div className="os-wd__variants">
             {cur ? (

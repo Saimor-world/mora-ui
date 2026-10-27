@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-530 100 1060 620" width="1060" height="620">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d98458"/><stop offset=".45" stop-color="#c0643a"/><stop offset="1" stop-color="#8e421f"/></linearGradient>
+    <linearGradient id="tg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c0643a"/><stop offset=".5" stop-color="#d98458" stop-opacity=".9"/><stop offset="1" stop-color="#8e421f"/></linearGradient>
+    <clipPath id="ball"><circle cx="0" cy="0" r="514"/></clipPath>
+    <clipPath id="band"><path d="M-560,140 Q-300,262 0,258 Q300,262 560,140 L560,350 Q300,392 0,396 Q-300,392 -560,350 Z"/></clipPath>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceAlpha" stdDeviation="9"/><feOffset dy="8"/><feComponentTransfer><feFuncA type="linear" slope=".5"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g clip-path="url(#ball)"><g clip-path="url(#band)">
+    <rect x="-560" y="100" width="1120" height="400" fill="url(#bg)"/>
+    <g transform="translate(0,6)"><path d="M-441,120 L-415,420" stroke="#efe2c8" stroke-width="14" opacity=".95"/><path d="M-294,120 L-276,420" stroke="#efe2c8" stroke-width="22" opacity=".95"/><path d="M-147,120 L-138,420" stroke="#efe2c8" stroke-width="14" opacity=".95"/><path d="M0,120 L0,420" stroke="#efe2c8" stroke-width="22" opacity=".95"/><path d="M147,120 L138,420" stroke="#efe2c8" stroke-width="14" opacity=".95"/><path d="M294,120 L276,420" stroke="#efe2c8" stroke-width="22" opacity=".95"/><path d="M441,120 L415,420" stroke="#efe2c8" stroke-width="14" opacity=".95"/></g>
+    <path d="M-560,140 Q-300,262 0,258 Q300,262 560,140" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="10"/>
+    <path d="M-560,350 Q-300,392 0,396 Q300,392 560,350" fill="none" stroke="#000" stroke-opacity=".30" stroke-width="22"/>
+  </g></g>
+  <g filter="url(#sh)" transform="translate(0,-52)">
+    <path d="M168,350 Q178,346 190,348 L318,372 L330,590 L170,600 Z" fill="url(#tg)"/>
+    <g clip-path="url(#tc)"><rect x="168" y="372" width="150" height="14" fill="#efe2c8" opacity=".95"/><rect x="168" y="440" width="150" height="14" fill="#efe2c8" opacity=".95"/><rect x="168" y="508" width="150" height="14" fill="#efe2c8" opacity=".95"/></g>
+    <path d="M168,350 L190,348 L318,372 L330,590 L170,600 Z" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="3"/>
+    <rect x="170" y="598" width="160" height="6" fill="#8e421f"/>
+    <path d="M176,610 q3,14 2,30" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M196,610 q-3,18 -2,36" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M216,610 q3,22 2,30" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M236,610 q-3,14 -2,36" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M256,610 q3,18 2,30" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M276,610 q-3,22 -2,36" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M296,610 q3,14 2,30" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M316,610 q-3,18 -2,36" stroke="#d6a07c" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+  <clipPath id="tc"><path d="M168,350 L318,372 L330,590 L170,600 Z"/></clipPath>
+</svg>

@@ -7,7 +7,9 @@ import doc from './mora-traits.json';
 import { isUnlocked, NO_UNLOCKS, type UnlockContext } from './unlock';
 
 /** `back`: gleiche Datei mit Endung `--back.png` liegt hinter dem Körper (Schalenden, Brillenbügel, Kette). `anim`: Bildanzahl des Streifens `--anim.png`. */
-export type TraitVariant = { id: string; name: string; swatch: string; file: string; back?: boolean; anim?: number };
+export type TraitVariant = { id: string; name: string; swatch: string; file: string; back?: boolean; anim?: number; /** Vorschau für den Jade-Stein, wenn `file` das Pixel-Sprite ist (figure 'both'). */ thumb?: string };
+/** Mode-Attribute eines Teils (gehen unverändert in die NFT-Attribute des Adapters). */
+export type TraitFashion = { category: string; collection: string; material: string };
 /** Herkunft entscheidet über Seltenheit, nie Farbe oder Kategorie (siehe "rules" in mora-traits.json). */
 export type TraitOrigin = 'standard' | 'moment' | 'earned' | 'alive' | 'founder';
 export type TraitRarity = 'common' | 'rare' | 'legendary';
@@ -17,8 +19,10 @@ export type TraitItem = {
   id: string; name: string; variants: TraitVariant[];
   origin: TraitOrigin; rarity: TraitRarity; unlock: TraitUnlock;
   default?: boolean; season?: string; hides?: string[];
-  /** 'jade': nur für den Jade-Stein gezeichnet (siehe accessoryAdapter.ts), kein Pixel-Sprite. Ohne Eintrag: Pixel-Stück (Legacy). */
-  figure?: 'jade';
+  /** 'jade': nur für den Jade-Stein gezeichnet (siehe accessoryAdapter.ts), kein Pixel-Sprite. 'both': Pixel-Sprite und Jade-Zeichnung. Ohne Eintrag: Pixel-Stück (Legacy). */
+  figure?: 'jade' | 'both';
+  /** Kategorie, Kollektion, Material: die Herkunft steht in `origin`. */
+  fashion?: TraitFashion;
   /** Auflage (moment) und Jahr. */
   edition?: number; year?: number; window?: { from: string; to: string };
   /** abo: Monate; earned: Meilenstein. */

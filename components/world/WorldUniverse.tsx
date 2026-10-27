@@ -22,6 +22,8 @@ const VIEW_KEY = 'mora.universe.view';
 /** MÔRA besucht einen Planeten, ohne sich dahinter zu verstecken: sie bleibt am Rand stehen (Planetenradius + ihr Radius + Luft). */
 /** MÔRA im Universe: 18 % kleiner als die Layout-Fläche (schwebt frei, die Fläche für Kollisionen bleibt gleich). */
 const MORA_FREE = 0.82;
+/** Glas-Ansicht: MÔRA steht über der Quellenreihe im freien Raum unter den Planeten, nicht auf ihr. */
+const MORA_LIFT = 40; const MORA_LIFT_PHONE = 24;
 
 function stopShort(layout: { cx: number; cy: number; mora: number }, pp: { x: number; y: number }, size: number): { x: number; y: number } {
   const dx = pp.x - layout.cx; const dy = pp.y - layout.cy; const d = Math.hypot(dx, dy);
@@ -250,14 +252,14 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           className="wd-mora"
           data-state={moraState}
           data-spirit={spiritMood}
-          style={{ left: glass ? Math.round(layout.cx / 2) * 2 : layout.cx, top: glass ? Math.round(layout.cy / 2) * 2 : layout.cy, width: layout.mora, height: layout.mora, '--m': `${layout.mora}px`, zIndex: 10 + Math.round(layout.cy) } as React.CSSProperties}
+          style={{ left: glass ? Math.round(layout.cx / 2) * 2 : layout.cx, top: glass ? Math.round(layout.cy / 2) * 2 - (phone ? MORA_LIFT_PHONE : MORA_LIFT) : layout.cy, width: layout.mora, height: layout.mora, '--m': `${layout.mora}px`, zIndex: 10 + Math.round(layout.cy) } as React.CSSProperties}
           onClick={onMora}
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure bare={glass} size={glass ? Math.round(layout.mora * MORA_FREE) : phone ? 80 : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={glass || phone ? [] : roam} fresh={pulseIds?.[0] ?? null} />
+            <SpiritFigure bare={glass && SpiritFigure !== JadeMora} size={glass ? Math.round(layout.mora * MORA_FREE) : phone ? 80 : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={glass || phone ? [] : roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}

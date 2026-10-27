@@ -12,22 +12,6 @@
       "name": "Leuchten",
       "items": [
         {
-          "id": "pearl-ring",
-          "name": "Perlenring",
-          "origin": "standard",
-          "rarity": "common",
-          "unlock": "standard",
-          "figure": "jade",
-          "variants": [
-            {
-              "id": "standard",
-              "name": "Perlenring",
-              "swatch": "#e3dcd0",
-              "file": "/mora/jade/thumbs/pearl-ring.png"
-            }
-          ]
-        },
-        {
           "id": "warm",
           "name": "Warmes Leuchten",
           "origin": "standard",
@@ -119,18 +103,44 @@
       "name": "Hals",
       "items": [
         {
-          "id": "moonstone-pendant",
-          "name": "Mondstein",
+          "id": "jade-scarf",
+          "name": "Strickstreifen",
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
           "figure": "jade",
+          "fashion": {
+            "category": "Schal",
+            "collection": "Basis",
+            "material": "Wolle (Terrakotta, Creme-Streifen)"
+          },
           "variants": [
             {
               "id": "standard",
-              "name": "Mondstein",
-              "swatch": "#a9b8c8",
-              "file": "/mora/jade/thumbs/moonstone-pendant.png"
+              "name": "Strickstreifen",
+              "swatch": "#c0643a",
+              "file": "/mora/jade/thumbs/jade-scarf.png"
+            }
+          ]
+        },
+        {
+          "id": "pearl-necklace",
+          "name": "Perlenkette",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "fashion": {
+            "category": "Kette",
+            "collection": "Basis",
+            "material": "Süßwasserperle, Silberfaden"
+          },
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Perlenkette",
+              "swatch": "#ebe3d6",
+              "file": "/mora/jade/thumbs/pearl-necklace.png"
             }
           ]
         },
@@ -218,9 +228,16 @@
               "name": "Navy",
               "swatch": "#1c2850",
               "file": "neck-founder-scarf--navy.png",
-              "back": true
+              "back": true,
+              "thumb": "/mora/jade/thumbs/founder-scarf.png"
             }
-          ]
+          ],
+          "figure": "both",
+          "fashion": {
+            "category": "Schal",
+            "collection": "Gründer",
+            "material": "Wolle (Navy, Môra-Gold)"
+          }
         },
         {
           "id": "moon-pendant",
@@ -275,9 +292,16 @@
               "swatch": "#d4a03e",
               "file": "pendant-founder-f1--bluten-medaillon.png",
               "back": true,
-              "anim": 16
+              "anim": 16,
+              "thumb": "/mora/jade/thumbs/founder-f1.png"
             }
-          ]
+          ],
+          "figure": "both",
+          "fashion": {
+            "category": "Anhänger",
+            "collection": "Gründer",
+            "material": "Gold, Navy-Emaille, Jade-Cabochon"
+          }
         }
       ]
     },
@@ -285,22 +309,6 @@
       "id": "held",
       "name": "In der Hand",
       "items": [
-        {
-          "id": "smoky-quartz",
-          "name": "Rauchquarz",
-          "origin": "standard",
-          "rarity": "common",
-          "unlock": "standard",
-          "figure": "jade",
-          "variants": [
-            {
-              "id": "standard",
-              "name": "Rauchquarz",
-              "swatch": "#6e5d52",
-              "file": "/mora/jade/thumbs/smoky-quartz.png"
-            }
-          ]
-        },
         {
           "id": "book",
           "name": "Kleines Buch",
@@ -373,6 +381,27 @@
       "id": "face",
       "name": "Gesicht",
       "items": [
+        {
+          "id": "jade-sunglasses",
+          "name": "Silber-Sonnenbrille",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "fashion": {
+            "category": "Brille",
+            "collection": "Basis",
+            "material": "Silber, getönte Gläser"
+          },
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Silber-Sonnenbrille",
+              "swatch": "#9aa3ab",
+              "file": "/mora/jade/thumbs/jade-sunglasses.png"
+            }
+          ]
+        },
         {
           "id": "glasses",
           "name": "Runde Brille",
@@ -500,6 +529,27 @@
       "id": "head",
       "name": "Kopf",
       "items": [
+        {
+          "id": "jade-beanie",
+          "name": "Strickmütze",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "fashion": {
+            "category": "Mütze",
+            "collection": "Basis",
+            "material": "Wolle (Pflaume, Creme-Bommel)"
+          },
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Strickmütze",
+              "swatch": "#6b2d5c",
+              "file": "/mora/jade/thumbs/jade-beanie.png"
+            }
+          ]
+        },
         {
           "id": "beret",
           "name": "Barett",
