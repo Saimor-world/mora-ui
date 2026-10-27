@@ -1,6 +1,7 @@
 'use client';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
+import { useNavPos } from '@/lib/mora/navPos';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { FOCUS_RESERVE, HORIZON_RESERVE, WorldUniverse } from '@/components/world/WorldUniverse';
@@ -157,6 +158,12 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, order, selectedId, openPlanet]);
+  // Positionskarte im Cockpit: wo man gerade ist, und der Rückweg „abheben“.
+  const posPlanet = open ?? selected;
+  useEffect(() => {
+    useNavPos.getState().set({ planet: posPlanet ? { id: posPlanet.id, name: posPlanet.name } : null, open: Boolean(open), ...(open ? {} : { moon: null, toPlanet: undefined }), toUniverse: () => { close(); setSelectedId(null); } });
+  }, [posPlanet?.id, posPlanet?.name, open, close]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => useNavPos.getState().set({ planet: null, open: false, moon: null, toUniverse: undefined, toPlanet: undefined }), []);
 
   // MÔRAs Tages-Sätze ausführen – über dieselben Aktionen wie „Heute“, immer mit Rückgängig.
   const runCommand = useCallback(async (cmd: DayCommand): Promise<MoraReply> => {

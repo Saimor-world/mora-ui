@@ -4,6 +4,8 @@ import React from 'react';
 import { Bell, LayoutGrid, MoreHorizontal, Search, Shirt, Sparkles } from 'lucide-react';
 import { useDockVariant } from '@/lib/mora/dockVariant';
 import { useOsUnread } from '@/components/os-shell/NotificationTray';
+import { useWorld } from '@/lib/lea/useWorld';
+import { navStage, useNavPos } from '@/lib/mora/navPos';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
 import { JadeMoraMark } from '@/components/world/JadeMora';
 import { PixelMora, PixelMoraMark } from '@/components/world/PixelMora';
@@ -40,6 +42,51 @@ export interface OsDockProps {
   onMore: () => void;
 }
 
+/** „heute“, „gestern“ oder TT.MM. – nur aus echtem Zeitstempel. */
+function relDay(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return null;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(new Date()) - day(d)) / 864e5);
+  return diff <= 0 ? 'heute' : diff === 1 ? 'gestern' : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
+
+const STAGE: Record<string, string> = { universe: 'Im All', approach: 'Anflug', orbit: 'Im Orbit', landed: 'Gelandet' };
+
+/** Cockpit-Instrumente (Variante C): nur echte Zahlen aus CORE bzw. den Mitteilungen. */
+function Instruments({ side, led = 0 }: { side: 'l' | 'map' | 'last'; led?: number }) {
+  const world = useWorld();
+  const pos = useNavPos();
+  const planets = world.planets ?? [];
+  const active = planets.filter((p) => (p.traits?.activity ?? 0) > 0).length;
+  const last = planets.filter((p) => p.traits?.lastAt).sort((a, b) => String(b.traits!.lastAt).localeCompare(String(a.traits!.lastAt)))[0];
+  const stage = navStage(pos);
+  if (side === 'l') {
+    return (
+      <div className="os-dock__inst" data-testid="dock-instruments">
+        <div className="os-dock__gauge"><b>{planets.length ? `${active}/${planets.length}` : '–'}</b><span>Bereiche aktiv · 7 T.</span></div>
+        <div className="os-dock__gauge" data-warn={led > 0 ? 'true' : undefined}><b>{led}</b><span>braucht dich</span></div>
+      </div>
+    );
+  }
+  if (side === 'last') return <div className="os-dock__gauge os-dock__gauge--last"><b>{relDay(last?.traits?.lastAt) ?? '–'}</b><span>{last ? `zuletzt · ${last.name}` : 'zuletzt aktiv'}</span></div>;
+  return (
+      <div className="os-dock__map" aria-label="Positionskarte" data-testid="dock-position">
+        <span className="os-dock__radar" aria-hidden>
+          {planets.slice(0, 12).map((p, i, a) => { const t = (i / Math.max(1, a.length)) * Math.PI * 2 - Math.PI / 2; const r = 38 * (0.55 + 0.4 * ((i % 3) / 2)); return <i key={p.id} data-here={pos.planet?.id === p.id ? 'true' : undefined} style={{ left: `${50 + Math.cos(t) * r}%`, top: `${50 + Math.sin(t) * r}%` }} />; })}
+        </span>
+        <span className="os-dock__crumbs">
+          <small>{STAGE[stage]}</small>
+          <span>
+            {stage === 'universe' ? <em>Universe</em> : <button type="button" onClick={() => pos.toUniverse?.()} title="Abheben – zurück ins Universe" data-testid="dock-liftoff">Universe</button>}
+            {pos.planet ? <>{' › '}{stage === 'landed' ? <button type="button" onClick={() => pos.toPlanet?.()} title={`Abheben – zurück zu ${pos.planet.name}`}>{pos.planet.name}</button> : <em>{pos.planet.name}</em>}</> : null}
+            {pos.moon ? <>{' › '}<em>{pos.moon.name}</em></> : null}
+          </span>
+        </span>
+      </div>
+  );
+}
+
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const mood = useHubMood();
   const variant = useDockVariant();
@@ -64,12 +111,14 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
+          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} /> : null}
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}><CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={big ? undefined : unread} onClick={onNotifications} /></span>
           {big ? <span className="os-dock__mod" data-led={activeId === 'settings' ? 'on' : undefined}><CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} /></span> : null}
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
+          {variant === 'c' && !phoneW ? <><Instruments side="map" /><Instruments side="last" /></> : null}
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood}>
             {big ? <span className="os-dock__cone" aria-hidden /> : null}
             {PIXEL ? <span data-testid="mora-mark" className="os-dock__px"><PixelMora size={big ? (phoneW ? 96 : 160) : 48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} /></span> : <MoraMark size={40} active={moraOpen} />}

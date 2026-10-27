@@ -1,4 +1,5 @@
 'use client';
+import { useNavPos } from '@/lib/mora/navPos';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
@@ -107,6 +108,9 @@ export function FinderVerse(p: FinderVerseProps) {
     const st = swipe.current; swipe.current = null;
     if (st && e.clientY - st.y > 80 && Math.abs(e.clientX - st.x) < 60) goUp();
   };
+  useEffect(() => {
+    useNavPos.getState().set({ moon: moon ? { id: moon.id, name: moon.name } : null, toPlanet: () => { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } });
+  }, [moon?.id, moon?.name]); // eslint-disable-line react-hooks/exhaustive-deps
   const goUp = () => { if (moonId) { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } else p.onClose(); };
 
   useEffect(() => {

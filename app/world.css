@@ -1546,3 +1546,119 @@ html[data-dock='b'] { --os-dock-space: max(190px, 22vh); }
   .os-dock[data-variant='a'] .os-dock__group--apps { flex-wrap: nowrap; max-width: none; gap: 4px; padding: 10px 12px; margin-left: 14px; }
   .os-dock[data-variant='a'] .os-dock__group--tools { margin-right: 14px; }
 }
+
+/* ── Variante C „Schiffsbrücke“: Blick durch die Frontscheibe, unten nur die Konsolenkante aus dunklem getöntem Glas. ── */
+html[data-dock='c'] { --os-dock-space: max(176px, 20vh); }
+.os-dock[data-variant='c'] { --amber: #e0a85c; --jade: #6fc7a4; --glass: rgba(14, 12, 18, .58); --edge: rgba(224, 168, 92, .55); --ink: #e9dcc6; --mute: rgba(233, 220, 198, .58); }
+/* Scheibenkante + Rahmenstreben am Bildrand (nur Linien, kein Fläche). */
+html[data-dock='c'] .os-shell::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 40;
+  background:
+    linear-gradient(100deg, rgba(8,7,10,.55) 0, rgba(8,7,10,0) 2.2%),
+    linear-gradient(-100deg, rgba(8,7,10,.55) 0, rgba(8,7,10,0) 2.2%),
+    linear-gradient(180deg, rgba(8,7,10,.35) 0, rgba(8,7,10,0) 6%);
+  box-shadow: inset 0 0 0 1px rgba(224,168,92,.10), inset 0 0 120px rgba(0,0,0,.35); }
+html[data-dock='c'] .os-shell::before { content: ''; position: fixed; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 41;
+  background:
+    linear-gradient(74deg, transparent calc(4% - 1px), rgba(224,168,92,.22) 4%, transparent calc(4% + 1px)),
+    linear-gradient(-74deg, transparent calc(4% - 1px), rgba(224,168,92,.22) 4%, transparent calc(4% + 1px));
+  -webkit-mask: linear-gradient(180deg, transparent 0, #000 30%, #000 100%); mask: linear-gradient(180deg, transparent 0, #000 30%, #000 100%); }
+
+.os-dock[data-variant='c'] .os-dock__capsule { position: relative; overflow: visible; color: var(--ink);
+  background: linear-gradient(180deg, rgba(30,24,22,.42) 0%, var(--glass) 38%, rgba(10,9,13,.82) 100%) !important;
+  border: 0 !important; border-top: 1px solid var(--edge) !important; border-radius: 50% 50% 0 0 / 34px 34px 0 0 !important;
+  box-shadow: 0 -1px 0 rgba(255,214,150,.18), 0 -18px 40px rgba(224,168,92,.10), inset 0 14px 22px -14px rgba(224,168,92,.35) !important;
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); }
+/* feine Instrumentenlinien */
+.os-dock[data-variant='c'] .os-dock__capsule::before { content: ''; position: absolute; left: 6%; right: 6%; top: 14px; height: 1px; pointer-events: none; border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(111,199,164,.45) 20%, rgba(224,168,92,.6) 50%, rgba(111,199,164,.45) 80%, transparent); }
+.os-dock[data-variant='c'] .os-dock__capsule::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 100%; pointer-events: none; border-radius: inherit;
+  background: repeating-linear-gradient(90deg, rgba(224,168,92,.05) 0 1px, transparent 1px 64px); -webkit-mask: linear-gradient(180deg, transparent, #000 60%); mask: linear-gradient(180deg, transparent, #000 60%); }
+.os-dock[data-variant='c'] .os-dock__divider, .os-dock[data-variant='c'] .os-dock__dot { display: none; }
+
+/* Dunkle Glas-Tasten mit LED */
+.os-dock[data-variant='c'] :is(.os-dock__item, .os-dock__mod) { position: relative; }
+.os-dock[data-variant='c'] .os-dock__group button, .os-dock[data-variant='c'] .os-dock__legacy {
+  width: 46px !important; height: 46px !important; border-radius: 12px !important; display: grid; place-items: center;
+  background: linear-gradient(180deg, rgba(60,50,44,.75), rgba(22,19,22,.9)) !important; border: 1px solid rgba(224,168,92,.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255,220,170,.16), inset 0 -2px 4px rgba(0,0,0,.5), 0 3px 8px rgba(0,0,0,.45) !important; transition: transform .12s, box-shadow .12s; }
+.os-dock[data-variant='c'] .os-dock__group button:active { transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0,0,0,.6) !important; }
+.os-dock[data-variant='c'] .os-dock__group button svg, .os-dock[data-variant='c'] .os-dock__legacy svg { color: rgba(240,214,170,.85) !important; }
+.os-dock[data-variant='c'] .os-dock__item[data-active='true'] button { border-color: rgba(111,199,164,.55) !important; box-shadow: inset 0 0 12px rgba(111,199,164,.25), 0 0 14px rgba(111,199,164,.18) !important; }
+.os-dock[data-variant='c'] .os-dock__item[data-active='true'] button svg { color: #bfeedd !important; }
+.os-dock[data-variant='c'] :is(.os-dock__item, .os-dock__mod)::after { content: ''; position: absolute; top: 5px; right: 5px; width: 4px; height: 4px; border-radius: 50%; background: rgba(240,214,170,.14); pointer-events: none; }
+.os-dock[data-variant='c'] .os-dock__item[data-active='true']::after, .os-dock[data-variant='c'] .os-dock__mod[data-led='on']::after { background: var(--jade); box-shadow: 0 0 6px var(--jade); }
+.os-dock[data-variant='c'] .os-dock__mod:first-of-type[data-led='on']::after { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.os-dock[data-variant='c'] .os-dock__label { color: var(--mute) !important; font-size: 10px; letter-spacing: .02em; }
+.os-dock[data-variant='c'] .os-dock__item[data-active='true'] .os-dock__label { color: #bfeedd !important; }
+
+/* MÔRA als Navigatorin im Projektor */
+.os-dock[data-variant='c'] .os-dock__stone { position: relative; width: 200px; height: 186px; border-radius: 0; background: none !important; overflow: visible; display: flex; align-items: flex-end; justify-content: center; }
+.os-dock[data-variant='c'] .os-dock__stone[aria-pressed='true'] { background: none !important; }
+.os-dock[data-variant='c'] .os-dock__stone::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 150px; height: 22px; transform: translateX(-50%); border-radius: 50%; z-index: 0;
+  background: radial-gradient(closest-side, rgba(111,199,164,.55), rgba(111,199,164,.12) 60%, transparent), radial-gradient(closest-side, rgba(20,16,18,.9), rgba(20,16,18,.6));
+  box-shadow: 0 0 0 1px rgba(224,168,92,.45), 0 0 18px rgba(111,199,164,.25); }
+.os-dock[data-variant='c'] .os-dock__cone { position: absolute; left: 50%; bottom: 12px; width: 170px; height: 170px; transform: translateX(-50%); z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 80% at 50% 100%, rgba(111,199,164,.26), transparent 70%); clip-path: polygon(30% 100%, 70% 100%, 100% 0, 0 0); }
+.os-dock[data-variant='c'] .os-dock__px { position: relative; z-index: 1; margin-bottom: 12px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(111,199,164,.25)); }
+.os-dock[data-variant='c'] .os-dock__stone[data-mood='listening'] .os-dock__cone { background: radial-gradient(60% 80% at 50% 100%, rgba(111,199,164,.42), transparent 72%); }
+.os-dock[data-variant='c'] .os-dock__stone[data-mood='thinking'] .os-dock__cone { background: radial-gradient(60% 80% at 50% 100%, rgba(224,168,92,.42), transparent 72%); }
+.os-dock[data-variant='c'] .os-dock__stone[data-mood='speaking'] .os-dock__cone { background: radial-gradient(60% 80% at 50% 100%, rgba(240,200,140,.5), transparent 72%); }
+@media (prefers-reduced-motion: no-preference) { .os-dock[data-variant='c'] .os-dock__stone[data-mood='thinking'] .os-dock__cone { animation: dockc-pulse 1.6s ease-in-out infinite; } }
+@keyframes dockc-pulse { 50% { opacity: .55; } }
+
+/* Eingabe: dunkles Glas, „wohin soll's gehen“ */
+.os-dock[data-variant='c'] .os-dock__askbtn, .os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] form { background: rgba(8,7,10,.62) !important; border: 1px solid rgba(224,168,92,.35) !important; color: var(--mute); box-shadow: inset 0 1px 6px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.3) !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] form:focus-within { border-color: rgba(111,199,164,.7) !important; box-shadow: 0 0 0 3px rgba(111,199,164,.16), inset 0 1px 6px rgba(0,0,0,.5) !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] input { color: var(--ink) !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] input::placeholder { color: rgba(233,220,198,.5) !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] button { background: rgba(224,168,92,.14) !important; color: #f0d6aa !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] .wd-ask__list { background: rgba(18,15,18,.96) !important; }
+.os-dock[data-variant='c'] .os-dock__ask .wd-ask[data-docked='true'] .wd-ask__list button { color: var(--ink) !important; }
+
+/* Instrumente */
+.os-dock[data-variant='c'] .os-dock__inst { display: flex; gap: 8px; margin-right: 10px; }
+.os-dock[data-variant='c'] .os-dock__gauge { display: flex; flex-direction: column; justify-content: center; min-width: 84px; height: 46px; padding: 0 10px; border-radius: 10px; font-variant-numeric: tabular-nums;
+  background: rgba(6,6,9,.55); border: 1px solid rgba(111,199,164,.22); box-shadow: inset 0 0 14px rgba(111,199,164,.08); }
+.os-dock[data-variant='c'] .os-dock__gauge b { font: 600 17px/1.1 ui-monospace, 'SF Mono', Menlo, monospace; color: #bfeedd; text-shadow: 0 0 8px rgba(111,199,164,.45); }
+.os-dock[data-variant='c'] .os-dock__gauge span { font-size: 10px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.os-dock[data-variant='c'] .os-dock__gauge[data-warn='true'] { border-color: rgba(224,168,92,.4); }
+.os-dock[data-variant='c'] .os-dock__gauge[data-warn='true'] b { color: #f3c98a; text-shadow: 0 0 8px rgba(224,168,92,.5); }
+.os-dock[data-variant='c'] .os-dock__map { position: absolute; left: 0; top: 118px; display: flex; align-items: center; gap: 8px; max-width: 150px; z-index: 2; }
+.os-dock[data-variant='c'] .os-dock__gauge--last { position: absolute; right: 0; top: 118px; z-index: 2; max-width: 150px; }
+.os-dock[data-variant='c'] .os-dock__radar { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle, rgba(111,199,164,.10), rgba(6,6,9,.6) 70%); border: 1px solid rgba(111,199,164,.3);
+  box-shadow: inset 0 0 0 11px rgba(6,6,9,.0), inset 0 0 0 12px rgba(111,199,164,.12); }
+.os-dock[data-variant='c'] .os-dock__radar i { position: absolute; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(240,214,170,.55); }
+.os-dock[data-variant='c'] .os-dock__radar i[data-here='true'] { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--jade); box-shadow: 0 0 6px var(--jade); }
+.os-dock[data-variant='c'] .os-dock__crumbs { display: flex; flex-direction: column; min-width: 0; font-size: 11px; color: var(--ink); line-height: 1.25; }
+.os-dock[data-variant='c'] .os-dock__crumbs small { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
+.os-dock[data-variant='c'] .os-dock__crumbs em { font-style: normal; }
+.os-dock[data-variant='c'] .os-dock__crumbs > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.os-dock[data-variant='c'] .os-dock__crumbs button { all: unset; cursor: pointer; color: #bfeedd; text-decoration: underline dotted rgba(191,238,221,.5); text-underline-offset: 2px; }
+.os-dock[data-variant='c'] .os-dock__crumbs button:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+
+@media (min-width: 900px) {
+  .os-dock[data-variant='c'] .os-dock__capsule { display: grid !important; grid-template-columns: 1fr minmax(440px, 500px) 1fr; align-items: end; min-height: var(--os-dock-space) !important; padding: 0 3.2vw 16px !important; column-gap: 18px; }
+  .os-dock[data-variant='c'] .os-dock__group--tools { justify-self: end; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
+  .os-dock[data-variant='c'] .os-dock__group--apps { justify-self: start; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
+  .os-dock[data-variant='c'] .os-dock__item--mobile { display: none !important; }
+  .os-dock[data-variant='c'] .os-dock__label { display: none; }
+  .os-dock[data-variant='c'] .os-dock__hub { position: relative; flex-direction: column; align-items: center; gap: 6px; max-width: none; margin-top: -120px; }
+  .os-dock[data-variant='c'] .os-dock__ask { width: 100%; }
+}
+@media (max-width: 899px) {
+  html[data-dock='c'] { --os-dock-space: 200px; }
+  .os-dock[data-variant='c'] .os-dock__capsule { border-radius: 50% 50% 0 0 / 22px 22px 0 0 !important; padding-top: 8px !important; }
+  .os-dock[data-variant='c'] .os-dock__hub { flex-direction: row; align-items: flex-end; }
+  .os-dock[data-variant='c'] .os-dock__stone { width: 104px; height: 116px; margin-top: -54px; }
+  .os-dock[data-variant='c'] .os-dock__stone::after { width: 92px; height: 14px; }
+  .os-dock[data-variant='c'] .os-dock__cone { width: 104px; height: 110px; }
+  .os-dock[data-variant='c'] .os-dock__px { margin-bottom: 6px; }
+  .os-dock[data-variant='c'] .os-dock__item--desktop, .os-dock[data-variant='c'] .os-dock__group--tools, .os-dock[data-variant='c'] .os-dock__legacy { display: none !important; }
+  .os-dock[data-variant='c'] .os-dock__group--apps { justify-content: space-around; }
+  .os-dock[data-variant='c'] .os-dock__group button { width: 48px !important; height: 44px !important; }
+  html[data-dock='c'] .os-shell::before { display: none; }
+}
+/* C: MÔRA ragt über die Konsole – Inhalte außerhalb des Universe bekommen so viel Luft, dass nichts verdeckt bleibt. */
+html[data-dock='c'] .os-shell:not([data-place='universe']) .os-shell__content { padding-bottom: calc(var(--os-dock-space) + 150px) !important; }
+@media (max-width: 899px) { html[data-dock='c'] .os-shell:not([data-place='universe']) .os-shell__content { padding-bottom: calc(var(--os-dock-space) + 80px) !important; } }
+.os-dock[data-variant='c'] .os-dock__gauge span { font-size: 10.5px; }
