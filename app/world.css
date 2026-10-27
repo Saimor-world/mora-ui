@@ -1033,8 +1033,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
    Alle Pixelbilder sind kleine Canvas-Bitmaps, ganzzahlig vergrößert (image-rendering: pixelated).
    Text, Panels und Dock bleiben normale, scharfe UI. „Gesamtansicht“ schaltet data-view auf full. */
 .wd-px { position: absolute; left: 0; top: 0; display: block; image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: none; }
-.wd-sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: #05060d; pointer-events: none; }
-body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !important; filter: none !important; }
+.wd-sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .wd-view small { font-size: var(--os-type-meta-size); opacity: .6; margin-left: -2px; }
 .wd-sky__twinkle { animation: wd-twinkle-px 10s steps(2, jump-none) infinite; }
 @keyframes wd-twinkle-px { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
@@ -1045,7 +1044,8 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 .wd-planet[data-depth='back'] .wd-pxmoons .wd-px { transform: scaleY(-1); }
 .wd-universe[data-view='pixel'] .wd-planet .wd-sphere,
 .wd-universe[data-view='pixel'] .wd-planet[data-active='true'] .wd-sphere,
-.wd-universe[data-view='pixel'] .wd-planet[data-depth] .wd-sphere { background: none; box-shadow: none; filter: none; border: 0; }
+.wd-universe[data-view='pixel'] .wd-planet[data-depth] .wd-sphere { background: none; box-shadow: none; filter: none; border: 0; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.wd-universe[data-view='pixel'] .wd-planet .wd-sphere, .wd-universe[data-view='pixel'] .wd-planet[data-depth] .wd-sphere.planet--glass, .wd-universe[data-view='pixel'] .wd-planet .wd-sphere.planet--tone { background: none !important; box-shadow: none !important; filter: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; } /* Glas-Unschärfe würde die Pixelplaneten darunter weichzeichnen */
 .wd-universe[data-view='pixel'] .wd-sphere::before, .wd-universe[data-view='pixel'] .wd-sphere::after { display: none; }
 .wd-universe[data-view='pixel'] .wd-planet:active .wd-sphere { transform: none; }
 .wd-universe[data-view='pixel'] .wd-planet { border-radius: 0; will-change: auto; }
@@ -1060,8 +1060,7 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 }
 .wd-universe[data-view='pixel'] .wd-planet[data-active='true']:not([data-selected='true'])::after { opacity: .55; }
 .wd-universe[data-view='pixel'] .wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%); }
-.wd-universe[data-view='pixel']:not([data-large='true']) .wd-meta { max-width: 124px; font-size: 11px; }
-.wd-universe[data-view='pixel'] .wd-label { padding: 4px 6px 5px; background: rgba(6, 8, 18, .9); border: 2px solid rgba(132, 150, 214, .26); box-shadow: 3px 3px 0 rgba(0, 0, 0, .65); }
+.wd-universe[data-view='pixel'] .wd-label { padding: 4px 5px 5px; background: rgba(6, 8, 18, .72); border: 1px solid rgba(150, 168, 224, .24); box-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-name { text-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-moonlabel { padding: 1px 6px; background: rgba(6, 8, 18, .88); border: 2px solid rgba(132, 150, 214, .2); text-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-badge { border-radius: 0; background: #0a0c18; border: 2px solid rgba(160, 180, 240, .5); box-shadow: 2px 2px 0 #000; }

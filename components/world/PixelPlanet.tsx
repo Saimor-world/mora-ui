@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { type Bitmap, type PlanetKind, makeStars, paintMoon, paintNebula, paintPlanet, paintStars, planetCanvasSize, planetGeometry } from '@/lib/universe/pixelArt';
+import { type Bitmap, type PlanetKind, makeStars, paintMoon, paintPlanet, paintStars, planetCanvasSize, planetGeometry } from '@/lib/universe/pixelArt';
 
 /** Bildschirmpixel je Kunstpixel – immer ganzzahlig, nie skaliert, nie geglättet. */
 export const PX = 2;
@@ -20,7 +20,7 @@ export interface PixelPlanetProps {
   folders?: number; activity?: number; overdue?: number; open?: number; reduced?: boolean;
 }
 
-/** Handgesetzter Pixelplanet je Abteilung: Oberfläche dreht sich in Stufen, Ring/Atmosphäre/Polarlicht/Funkeln kommen aus echten Daten. */
+/** Handgesetzter Pixelplanet je Abteilung: flach, 2–3 Töne; ein dünner Ring nur bei vielen Ordnern. */
 export function PixelPlanet({ kind, size, seed, light, folders, activity, overdue, open, reduced }: PixelPlanetProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const d = Math.max(14, Math.round(size / PX));
@@ -28,12 +28,8 @@ export function PixelPlanet({ kind, size, seed, light, folders, activity, overdu
   const geo = useMemo(() => planetGeometry(spec), [spec]);
   const S = planetCanvasSize(spec);
   useEffect(() => {
-    draw(ref.current, paintPlanet(spec, geo, 0));
-    if (reduced) return;
-    let f = 0;
-    const id = window.setInterval(() => { if (document.hidden) return; f += 1; draw(ref.current, paintPlanet(spec, geo, f)); }, 1200);
-    return () => window.clearInterval(id);
-  }, [spec, geo, reduced]);
+    draw(ref.current, paintPlanet(spec, geo, 0)); // flach und statisch: kein Takt nötig
+  }, [spec, geo]);
   const off = Math.round((size - S * PX) / 2);
   return <canvas ref={ref} className="wd-px wd-px--planet" aria-hidden data-testid="world-pixel-planet" data-kind={kind} style={{ width: S * PX, height: S * PX, left: off, top: off }} />;
 }
@@ -47,9 +43,8 @@ export function PixelMoon({ kind, d, seed, light, tasks, x, y }: { kind: PlanetK
   return <canvas ref={ref} className="wd-px wd-px--moon" aria-hidden data-testid="world-pixel-moon" style={{ width: px, height: px, left: Math.round(x - px / 2), top: Math.round(y - px / 2) }} />;
 }
 
-/** Pixel-Himmel über den ganzen Bildschirm: Nebel (gedithert) + Sterne, 3 Bildschirmpixel je Kunstpixel; Twinkel-Ebene mit steps(). */
+/** Pixel-Sterne über Marius' Nebel-Foto (deep-space-warm.jpg bleibt der Hintergrund), 3 Bildschirmpixel je Kunstpixel; Twinkel-Ebene mit steps(). */
 export function PixelSky({ reduced }: { reduced?: boolean }) {
-  const neb = useRef<HTMLCanvasElement>(null);
   const st = useRef<HTMLCanvasElement>(null);
   const tw = useRef<HTMLCanvasElement>(null);
   const [vp, setVp] = useState({ w: 0, h: 0 });
@@ -64,7 +59,6 @@ export function PixelSky({ reduced }: { reduced?: boolean }) {
   const w = Math.max(8, Math.ceil(vp.w / SKY_PX)), h = Math.max(8, Math.ceil(vp.h / SKY_PX));
   useEffect(() => {
     if (!vp.w || !vp.h) return;
-    draw(neb.current, paintNebula(w, h));
     const stars = makeStars(w, h);
     draw(st.current, paintStars(w, h, stars, false));
     draw(tw.current, paintStars(w, h, stars, true));
@@ -72,7 +66,6 @@ export function PixelSky({ reduced }: { reduced?: boolean }) {
   const style = { width: w * SKY_PX, height: h * SKY_PX };
   return (
     <div className="wd-sky" aria-hidden data-testid="world-pixel-sky" data-reduced={reduced ? 'true' : undefined}>
-      <canvas ref={neb} className="wd-px" style={style} />
       <canvas ref={st} className="wd-px" style={style} />
       <canvas ref={tw} className="wd-px wd-sky__twinkle" style={style} />
     </div>
