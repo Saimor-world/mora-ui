@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "grid": 40,
  "base": [
   "light",
@@ -17,6 +17,9 @@
     {
      "id": "warm",
      "name": "Warmes Leuchten",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -47,6 +50,9 @@
     {
      "id": "moon",
      "name": "Mondlicht",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "silber",
@@ -71,6 +77,9 @@
     {
      "id": "sparkles",
      "name": "Funkeln",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -101,6 +110,9 @@
     {
      "id": "fireflies",
      "name": "Glühwürmchen",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "lime",
@@ -120,8 +132,26 @@
        "swatch": "#ec78a0",
        "file": "aura-fireflies--rosa.png"
       }
-     ],
-     "signature": true
+     ]
+    },
+    {
+     "id": "firefly-swarm",
+     "name": "Glühwürmchen-Schwarm",
+     "origin": "alive",
+     "rarity": "rare",
+     "unlock": "abo",
+     "months": 6,
+     "behavior": "swarm-follows",
+     "hint": "Ein kleiner Schwarm, der MÔRA folgt. Frei nach 6 Monaten Abo.",
+     "placeholder": true,
+     "variants": [
+      {
+       "id": "lime",
+       "name": "Lime",
+       "swatch": "#96c832",
+       "file": "aura-fireflies.png"
+      }
+     ]
     }
    ]
   },
@@ -132,6 +162,9 @@
     {
      "id": "scarf",
      "name": "Schal",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "marine",
@@ -175,6 +208,9 @@
     {
      "id": "bowtie",
      "name": "Fliege",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -205,6 +241,9 @@
     {
      "id": "medallion",
      "name": "SAIMÔR-Medaillon",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -224,8 +263,47 @@
        "swatch": "#d89682",
        "file": "neck-medallion--rose.png"
       }
-     ],
-     "signature": true
+     ]
+    },
+    {
+     "id": "genesis-scarf",
+     "name": "Genesis-Schal",
+     "origin": "moment",
+     "rarity": "rare",
+     "unlock": "nft",
+     "edition": 111,
+     "year": 2026,
+     "hint": "Nur für die ersten 111 Kunden. Eine einmalige Auflage.",
+     "placeholder": true,
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "neck-scarf--senf.png"
+      }
+     ]
+    },
+    {
+     "id": "one-year-medallion",
+     "name": "Ein-Jahr-Medaillon",
+     "origin": "earned",
+     "rarity": "rare",
+     "unlock": "abo",
+     "earn": {
+      "kind": "tenure",
+      "months": 12
+     },
+     "hint": "Wird nach einem Jahr mit SAIMÔR frei.",
+     "placeholder": true,
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "neck-medallion.png"
+      }
+     ]
     }
    ]
   },
@@ -236,6 +314,9 @@
     {
      "id": "book",
      "name": "Kleines Buch",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rot",
@@ -266,6 +347,9 @@
     {
      "id": "coffee",
      "name": "Kaffeetasse",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "weiss",
@@ -296,6 +380,9 @@
     {
      "id": "lantern",
      "name": "Laterne",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -320,6 +407,9 @@
     {
      "id": "owl",
      "name": "Eulenfreund",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "nacht",
@@ -339,12 +429,14 @@
        "swatch": "#eaedf4",
        "file": "held-owl--schnee.png"
       }
-     ],
-     "signature": true
+     ]
     },
     {
      "id": "wand",
      "name": "Sternenstab",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "holz",
@@ -364,8 +456,7 @@
        "swatch": "#1e7854",
        "file": "held-wand--smaragd.png"
       }
-     ],
-     "signature": true
+     ]
     }
    ]
   },
@@ -376,6 +467,9 @@
     {
      "id": "glasses",
      "name": "Runde Brille",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -406,6 +500,9 @@
     {
      "id": "sunglasses",
      "name": "Sonnenbrille",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "schwarz",
@@ -436,6 +533,9 @@
     {
      "id": "monocle",
      "name": "Monokel",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -460,6 +560,9 @@
     {
      "id": "freckles",
      "name": "Sommersprossen",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "warm",
@@ -479,8 +582,7 @@
        "swatch": "#8cc4f0",
        "file": "face-freckles--stern.png"
       }
-     ],
-     "signature": true
+     ]
     }
    ]
   },
@@ -491,6 +593,9 @@
     {
      "id": "sprout",
      "name": "Zweiblatt-Spross",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gruen",
@@ -522,6 +627,9 @@
     {
      "id": "sprout3",
      "name": "Dreiblatt-Spross",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gruen",
@@ -552,6 +660,9 @@
     {
      "id": "flower",
      "name": "Blüten-Spross",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rosa",
@@ -582,6 +693,9 @@
     {
      "id": "beret",
      "name": "Barett",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rot",
@@ -621,6 +735,9 @@
     {
      "id": "headphones",
      "name": "Kopfhörer",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "schwarz",
@@ -651,6 +768,9 @@
     {
      "id": "captain",
      "name": "Nordsee-Kapitänsmütze",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "weiss",
@@ -678,6 +798,9 @@
     {
      "id": "wizard",
      "name": "Sternenhut",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "violett",
@@ -700,12 +823,14 @@
      ],
      "hides": [
       "clip"
-     ],
-     "signature": true
+     ]
     },
     {
      "id": "crown",
      "name": "Mondkrone",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -728,12 +853,14 @@
      ],
      "hides": [
       "clip"
-     ],
-     "signature": true
+     ]
     },
     {
      "id": "halo",
      "name": "Aureole",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -753,8 +880,28 @@
        "swatch": "#d89682",
        "file": "head-halo--rose.png"
       }
+     ]
+    },
+    {
+     "id": "founder-crown",
+     "name": "Gründer-Krone",
+     "origin": "founder",
+     "rarity": "legendary",
+     "unlock": "founder",
+     "tradable": false,
+     "hint": "Ein Gründerstück von Marius. Nicht verkäuflich.",
+     "hides": [
+      "clip"
      ],
-     "signature": true
+     "placeholder": true,
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "head-crown.png"
+      }
+     ]
     }
    ]
   },
@@ -765,6 +912,9 @@
     {
      "id": "moon",
      "name": "Mondspange",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -790,6 +940,9 @@
     {
      "id": "star",
      "name": "Sternspange",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "gold",
@@ -814,6 +967,9 @@
     {
      "id": "heart",
      "name": "Herzspange",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rot",
@@ -844,6 +1000,9 @@
     {
      "id": "xmas",
      "name": "Weihnachtsmütze",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rot",
@@ -873,6 +1032,9 @@
     {
      "id": "snowflake",
      "name": "Schneeflocke",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "eis",
@@ -898,6 +1060,9 @@
     {
      "id": "pumpkin",
      "name": "Kürbis",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "orange",
@@ -923,6 +1088,9 @@
     {
      "id": "blossom",
      "name": "Kirschblüte",
+     "origin": "standard",
+     "rarity": "common",
+     "unlock": "standard",
      "variants": [
       {
        "id": "rosa",
@@ -944,8 +1112,50 @@
       }
      ],
      "season": "3-5"
+    },
+    {
+     "id": "xmas-2026",
+     "name": "Weihnachtsmütze 2026",
+     "origin": "moment",
+     "rarity": "rare",
+     "unlock": "nft",
+     "year": 2026,
+     "window": {
+      "from": "2026-12-01",
+      "to": "2026-12-31"
+     },
+     "hint": "Nur im Dezember 2026. Danach nie wieder.",
+     "hides": [
+      "head",
+      "clip"
+     ],
+     "placeholder": true,
+     "variants": [
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "seasonal-xmas.png"
+      }
+     ]
     }
    ]
   }
- ]
+ ],
+ "rules": {
+  "origin": {
+   "standard": "Alltagsstücke in allen Farben. Frei für alle Nutzer, in jedem Produkt ab Tag eins, nie ein Wallet nötig.",
+   "moment": "Zeitgebunden: begrenzte Auflage oder ein datiertes Fenster, danach nie wieder.",
+   "earned": "Verdient: ein Meilenstein, z. B. ein Jahr mit SAIMÔR oder der erste eigene Kunde.",
+   "alive": "Lebendig: animiert oder verändert MÔRAs Verhalten (Schwarm folgt ihr, Laterne zündet sich nachts).",
+   "founder": "Gründerstücke von Marius. Nicht verkäuflich, nicht übertragbar."
+  },
+  "rarity": "Nie nach Farbe oder Kategorie. common = standard; rare = moment/earned/alive; legendary = founder oder Auflage ≤ 33.",
+  "unlock": {
+   "standard": "frei, kein Wallet",
+   "abo": "frei nach mindestens N Monaten Abo (months)",
+   "nft": "gehört auf der XRP Ledger (nur lesende account_nfts-Prüfung, später)",
+   "founder": "nur Gründer"
+  }
+ }
 }

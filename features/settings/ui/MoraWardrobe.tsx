@@ -2,11 +2,14 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { PixelMoraMark, PixelMoraStage } from '@/components/world/PixelMora';
-import { DEFAULT_WARDROBE, joinChoice, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
+import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
+import { DEFAULT_WARDROBE, joinChoice, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
 import { useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 
 const TAB_ORDER = ['head', 'face', 'neck', 'clip', 'held', 'aura', 'seasonal'];
 const HISTORY = 60;
+const RARITY_LABEL = { common: '', rare: 'Selten', legendary: 'Legendär' } as const;
+const ORIGIN_LABEL = { standard: 'Alltag', moment: 'Zeitgebunden', earned: 'Verdient', alive: 'Lebendig', founder: 'Gründerstück' } as const;
 
 /** Schlanke Linien-Icons pro Kategorie (20×20, currentColor). */
 const ICONS: Record<string, React.ReactNode> = {
@@ -46,6 +49,8 @@ export function MoraWardrobe() {
   const [past, setPast] = useState<Wardrobe[]>([]);
   const [future, setFuture] = useState<Wardrobe[]>([]);
   const lastVariant = useRef<Record<string, string>>({});
+  const [ctx] = useState(loadUnlockContext);
+  const [note, setNote] = useState<TraitItem | null>(null);
 
   const slots = useMemo(() => TAB_ORDER.map((id) => TRAITS.slots.find((s) => s.id === id)).filter(Boolean) as TraitSlot[], []);
   const slot = slots.find((s) => s.id === tab) ?? slots[0];
@@ -61,6 +66,7 @@ export function MoraWardrobe() {
   const cur = resolve(slot, w[slot.id]);
   const pickItem = (itemId: string) => {
     const it = slot.items.find((i) => i.id === itemId)!;
+    if (!isUnlocked(it, ctx)) { setNote(it); return; }
     const keep = cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id);
     commit({ ...w, [slot.id]: joinChoice(itemId, keep) });
   };
@@ -69,8 +75,9 @@ export function MoraWardrobe() {
     commit({ ...w, [slot.id]: joinChoice(cur.item.id, variantId) });
   };
   const hoverItem = (itemId: string | null) => {
-    if (itemId === null) return setHover({ slot: slot.id, choice: null });
+    if (itemId === null) { setNote(null); return setHover({ slot: slot.id, choice: null }); }
     const it = slot.items.find((i) => i.id === itemId)!;
+    setNote(it.origin === 'standard' ? null : it);
     setHover({ slot: slot.id, choice: joinChoice(itemId, cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id)) });
   };
 
@@ -99,7 +106,7 @@ export function MoraWardrobe() {
             </div>
           </div>
           <div className="os-wd__bar" role="toolbar" aria-label="Aktionen">
-            <button type="button" onClick={() => commit(randomWardrobe())} data-testid="wd-random" className="is-primary">{ICO.dice}Zufall</button>
+            <button type="button" onClick={() => commit(randomWardrobe(Math.random, ctx))} data-testid="wd-random" className="is-primary">{ICO.dice}Zufall</button>
             <button type="button" onClick={undo} disabled={!past.length} data-testid="wd-undo" aria-label="Rückgängig" title="Rückgängig">{ICO.undo}</button>
             <button type="button" onClick={redo} disabled={!future.length} data-testid="wd-redo" aria-label="Wiederholen" title="Wiederholen">{ICO.redo}</button>
             <button type="button" onClick={() => setTurn((t) => t + 1)} data-testid="wd-turn" title="Drehen">{ICO.turn}Drehen</button>
@@ -142,18 +149,22 @@ export function MoraWardrobe() {
             </button>
             {slot.items.map((i) => {
               const on = cur?.item.id === i.id;
+              const locked = !isUnlocked(i, ctx);
               const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? i.variants[0]);
               return (
-                <button key={i.id} type="button" className="os-wd__card" aria-pressed={on} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
+                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}${i.rarity !== 'common' ? ` is-${i.rarity}` : ''}`} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
                   <span className="os-wd__thumb"><img src={TRAITS.thumbBase + shown.file} alt="" draggable={false} /></span>
                   <span className="os-wd__name">{i.name}</span>
-                  {i.signature ? <span className="os-wd__badge" title="Signatur-Stück">★</span> : null}
+                  {i.rarity !== 'common' ? <span className={`os-wd__rarity os-wd__rarity--${i.rarity}`} data-testid={`wd-rarity-${i.id}`}>{RARITY_LABEL[i.rarity]}{locked ? <i className="os-wd__lock" aria-label="noch gesperrt" /> : null}</span> : null}
                   {i.season ? <span className="os-wd__badge os-wd__badge--season" title="Saisonal">Saison</span> : null}
                   {i.variants.length > 1 ? <span className="os-wd__vcount">{i.variants.length} Farben</span> : null}
                 </button>
               );
             })}
           </div>
+          <p className="os-wd__note" data-testid="wd-note" aria-live="polite">
+            {note ? <><strong>{note.name}</strong> · {RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}</span></> : null}
+          </p>
           <div className="os-wd__variants">
             {cur ? (
               <>
