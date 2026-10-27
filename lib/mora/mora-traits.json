@@ -12,8 +12,8 @@
       "name": "Leuchten",
       "items": [
         {
-          "id": "gold-orbit",
-          "name": "Goldorbit",
+          "id": "pearl-ring",
+          "name": "Perlenring",
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
@@ -21,9 +21,9 @@
           "variants": [
             {
               "id": "standard",
-              "name": "Goldorbit",
-              "swatch": "#c4a15a",
-              "file": "/mora/jade/thumbs/gold-orbit.png"
+              "name": "Perlenring",
+              "swatch": "#e3dcd0",
+              "file": "/mora/jade/thumbs/pearl-ring.png"
             }
           ]
         },
@@ -119,8 +119,8 @@
       "name": "Hals",
       "items": [
         {
-          "id": "celestial-charm",
-          "name": "Himmelsanhänger",
+          "id": "moonstone-pendant",
+          "name": "Mondstein",
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
@@ -128,9 +128,9 @@
           "variants": [
             {
               "id": "standard",
-              "name": "Himmelsanhänger",
-              "swatch": "#c4a15a",
-              "file": "/mora/jade/thumbs/celestial-charm.png"
+              "name": "Mondstein",
+              "swatch": "#a9b8c8",
+              "file": "/mora/jade/thumbs/moonstone-pendant.png"
             }
           ]
         },
@@ -286,8 +286,8 @@
       "name": "In der Hand",
       "items": [
         {
-          "id": "prism-shard",
-          "name": "Kristall-Prisma",
+          "id": "smoky-quartz",
+          "name": "Rauchquarz",
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
@@ -295,9 +295,9 @@
           "variants": [
             {
               "id": "standard",
-              "name": "Kristall-Prisma",
-              "swatch": "#b9c9d8",
-              "file": "/mora/jade/thumbs/prism-shard.png"
+              "name": "Rauchquarz",
+              "swatch": "#6e5d52",
+              "file": "/mora/jade/thumbs/smoky-quartz.png"
             }
           ]
         },

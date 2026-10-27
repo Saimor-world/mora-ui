@@ -160,7 +160,7 @@
 .wd-universe[data-hidden='true'] .wd-mora-line { display: none; }
 
 /* Finder = Universe (components/finderverse). Gleiche Farben wie das Universe, große ruhige Flächen. */
-.fv { position: fixed; inset: 0; z-index: 75; display: flex; flex-direction: column; color: var(--wd-text-base); background: linear-gradient(rgba(6, 8, 10, .42), rgba(6, 8, 10, .55)), url('/universe/deep-space-warm.jpg') center / cover; }
+.fv { position: fixed; inset: 0; z-index: 75; display: flex; flex-direction: column; color: var(--wd-text-base); background: linear-gradient(rgba(6, 8, 10, .26), rgba(6, 8, 10, .4)), url('/universe/deep-space-warm.jpg') center / cover; }
 .fv-top { display: flex; align-items: center; gap: 16px; padding: 18px 28px; }
 .fv-back, .fv-toggle button, .fv-btn, .fv-action, .fv-crumbs button { min-height: 44px; border-radius: var(--os-radius-pill); border: 1px solid var(--wd-line-strong); background: rgba(20, 22, 20, .62); color: inherit; cursor: pointer; font-size: var(--os-type-body-size); }
 .fv-back { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px 0 12px; }
@@ -848,7 +848,7 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 /* bg-full 26.10. (Marius: "das Bild muss komplett hinten sein"): EIN Nebelbild über den ganzen Bildschirm,
    hinter Kopfzeile, Leisten und Dock. Shell-Flächen im Universe transparent, keine Kante mehr. */
 /* bg-fix: Nebel sitzt auf der fixen OS-Atmosphäre (vollflächig, ganz hinten); deren Farbschichten im Universe aus. */
-body:has(.wd-universe) .os-atmo { background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.64) saturate(.52) sepia(.1) contrast(1.02); }
+body:has(.wd-universe) .os-atmo { background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.8) saturate(.62) sepia(.08) contrast(1.04); }
 body:has(.wd-universe) .os-atmo > * { display: none !important; }
 body:has(.wd-universe) .os-root, body:has(.wd-universe) .os-shell, body:has(.wd-universe) .os-atmo__plate { background: transparent !important; }
 .wd-universe { background: transparent !important; }
@@ -912,7 +912,7 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 .os-root { position: fixed !important; inset: 0; }
 .os-shell { position: absolute !important; inset: 0; width: 100% !important; height: 100%; }
 .os-atmo { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.55) saturate(.75) sepia(.12) contrast(1.02); }
-body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1) contrast(1.02); }
+body:has(.wd-universe) .os-atmo { filter: brightness(.8) saturate(.62) sepia(.08) contrast(1.04); }
 .os-atmo > * { display: none !important; }
 .os-root, .os-shell, .os-atmo__plate, .os-root[data-look='kosmos'] .os-shell__content, .os-shell__content { background: transparent !important; }
 .os-shell__topbar { background: transparent !important; box-shadow: none !important; }
@@ -1247,3 +1247,10 @@ body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative
 .glass-orb__ring--rnd { --ring-a: #d9b46a; --ring-b: #ffe9b0; --ring-glow: rgba(255, 214, 140, .7); }
 .glass-orb__ring--roadmap { --ring-a: #9db8e8; --ring-b: #eaf1ff; --ring-glow: rgba(170, 200, 255, .65); }
 .glass-orb__ring--research { --ring-a: #8fd8c0; --ring-b: #e6fff4; --ring-glow: rgba(150, 240, 205, .6); }
+
+/* Hochformat (Handy): das Bild ist 16:9, 'cover' schneidet sonst nur die dunkle Mitte aus (Handy-Shots fast schwarz).
+   Der helle Nebel links bleibt sichtbar; die fixe OS-Atmosphäre trägt das Bild (siehe bg-fix oben), .fv das des geöffneten Planeten. */
+@media (max-width: 899px) and (max-aspect-ratio: 1/1) {
+  body:has(.wd-universe) .os-atmo { background-size: auto 118% !important; background-position: 3% 70% !important; filter: brightness(.9) saturate(.7) sepia(.08) contrast(1.04); }
+}
+.fv[data-phone='true'] { background: linear-gradient(rgba(6, 8, 10, .18), rgba(6, 8, 10, .34)), url('/universe/deep-space-warm.jpg') 3% 70% / auto 118% no-repeat #07090c; }

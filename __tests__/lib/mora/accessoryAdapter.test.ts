@@ -7,7 +7,7 @@ const pub = (p: string) => path.join(process.cwd(), 'public', p);
 
 describe('accessoryAdapter (Jade)', () => {
   it('hat drei Demonstratoren, jeder mit Datei, Slot und Trait-Eintrag', () => {
-    expect(Object.keys(JADE_MOUNTS).sort()).toEqual(['celestial-charm', 'gold-orbit', 'prism-shard']);
+    expect(Object.keys(JADE_MOUNTS).sort()).toEqual(['moonstone-pendant', 'pearl-ring', 'smoky-quartz']);
     for (const m of Object.values(JADE_MOUNTS)) {
       expect(fs.existsSync(pub(m.asset))).toBe(true);
       const slot = TRAITS.slots.find((s) => s.id === m.slot)!;
@@ -19,23 +19,23 @@ describe('accessoryAdapter (Jade)', () => {
   });
   it('erfindet keine NFT-Daten', () => {
     for (const m of Object.values(JADE_MOUNTS)) expect(m.nftMetadata).toBeUndefined();
-    expect(mountAttributes(JADE_MOUNTS['gold-orbit'])).toEqual([{ trait_type: 'Leuchten', value: 'Goldorbit' }]);
+    expect(mountAttributes(JADE_MOUNTS['pearl-ring'])).toEqual([{ trait_type: 'Leuchten', value: 'Perlenring' }]);
   });
   it('zeichnet gewählte Teile als Ebenen und lässt Pixel-Altstücke aus', () => {
-    const w = normalizeWardrobe({ aura: 'gold-orbit', neck: 'celestial-charm', head: 'beanie' });
-    expect(jadeMounts(w).map((m) => m.id)).toEqual(['gold-orbit', 'celestial-charm']);
+    const w = normalizeWardrobe({ aura: 'pearl-ring', neck: 'moonstone-pendant', head: 'beanie' });
+    expect(jadeMounts(w).map((m) => m.id)).toEqual(['pearl-ring', 'moonstone-pendant']);
     expect(jadeMounts(DEFAULT_WARDROBE)).toEqual([]);
   });
   it('trägt höchstens ein Halsstück', () => {
-    const w = normalizeWardrobe({ neck: 'celestial-charm' });
+    const w = normalizeWardrobe({ neck: 'moonstone-pendant' });
     expect(jadeMounts(w).filter((m) => m.slot === 'neck')).toHaveLength(1);
     const swapped = { ...w, neck: 'scarf' };
     expect(jadeMounts(swapped).filter((m) => m.slot === 'neck')).toHaveLength(0);
     expect(legacyWorn(swapped)).toContain('neck/scarf');
   });
   it('Jade-Teile haben kein Pixel-Sprite und zählen weiter zur Accessoire-Grenze', () => {
-    const w = normalizeWardrobe({ aura: 'gold-orbit', held: 'prism-shard', neck: 'celestial-charm' });
-    expect(wardrobeLayers(w).map((l: { src: string }) => l.src).join()).not.toMatch(/gold-orbit|prism-shard|celestial-charm/);
+    const w = normalizeWardrobe({ aura: 'pearl-ring', held: 'smoky-quartz', neck: 'moonstone-pendant' });
+    expect(wardrobeLayers(w).map((l: { src: string }) => l.src).join()).not.toMatch(/pearl-ring|smoky-quartz|moonstone-pendant/);
     const kept = limitAccessories(w, ['neck', 'held', 'aura']);
     expect(visibleAccessories(kept).length).toBeLessThanOrEqual(2);
   });

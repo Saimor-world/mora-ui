@@ -34,7 +34,6 @@ function Mount({ m, part }: { m: AccessoryMount; part: 'back' | 'front' }) {
   return (
     <span className="jm__acc" data-acc={m.id} data-anim={m.animation} data-part={ring ? part : undefined} style={style}>
       {img}
-      {m.id === 'gold-orbit' ? <><i className="jm__bead jm__bead--x"><i className="jm__bead jm__bead--y" /></i></> : null}
     </span>
   );
 }

@@ -23,10 +23,10 @@ export type MountLayer = 'front' | 'back' | 'ring';
 export type MountAnimation = 'orbit' | 'float' | 'sway' | 'none';
 
 export type AccessoryMount = {
-  /** Trait-ID im Slot (mora-traits.json), z. B. 'gold-orbit'. */
+  /** Trait-ID im Slot (mora-traits.json), z. B. 'pearl-ring'. */
   id: string;
   slot: string;
-  /** Bilddatei (PNG mit Alpha, später auch NFT-Bild). */
+  /** Bilddatei (SVG oder PNG mit Alpha, später auch NFT-Bild). */
   asset: string;
   /** Seitenverhältnis Breite / Höhe der Datei. */
   aspect: number;
@@ -45,19 +45,22 @@ export type AccessoryMount = {
   nftMetadata?: NftMetadata;
 };
 
-/** Drei Demonstratoren (frei, keine echten NFTs). Weitere Teile kommen als Eintrag hinzu. */
+/**
+ * Drei Demonstratoren (frei, keine echten NFTs), je mit eigenem Material: Perle/Elfenbein, Rauchquarz, Mondstein in oxidiertem Silber.
+ * Die Teile sind gezeichnete SVG-Ebenen (scharf bei jeder Größe). Weitere Teile kommen als Eintrag hinzu.
+ */
 export const JADE_MOUNTS: Record<string, AccessoryMount> = {
-  'gold-orbit': {
-    id: 'gold-orbit', slot: 'aura', asset: '/mora/jade/acc/gold-orbit.png', aspect: 960 / 260,
-    anchor: { x: 0, y: 0.1 }, scale: 1.62, rotate: -9, layer: 'ring', animation: 'orbit',
+  'pearl-ring': {
+    id: 'pearl-ring', slot: 'aura', asset: '/mora/jade/acc/pearl-ring.svg', aspect: 960 / 260,
+    anchor: { x: 0, y: 0.1 }, scale: 1.5, rotate: -9, layer: 'ring', animation: 'orbit',
   },
-  'prism-shard': {
-    id: 'prism-shard', slot: 'held', asset: '/mora/jade/acc/prism-shard.png', aspect: 300 / 752,
-    anchor: { x: 0.8, y: -0.1 }, scale: 0.2, rotate: 14, layer: 'front', animation: 'float',
+  'smoky-quartz': {
+    id: 'smoky-quartz', slot: 'held', asset: '/mora/jade/acc/smoky-quartz.svg', aspect: 300 / 752,
+    anchor: { x: 0.62, y: 0.4 }, scale: 0.15, rotate: 18, layer: 'front', animation: 'float',
   },
-  'celestial-charm': {
-    id: 'celestial-charm', slot: 'neck', asset: '/mora/jade/acc/celestial-charm.png', aspect: 260 / 594,
-    anchor: { x: 0, y: 0.5 }, scale: 0.15, layer: 'front', animation: 'sway', chain: true,
+  'moonstone-pendant': {
+    id: 'moonstone-pendant', slot: 'neck', asset: '/mora/jade/acc/moonstone-pendant.svg', aspect: 200 / 288,
+    anchor: { x: 0, y: 0.5 }, scale: 0.13, layer: 'front', animation: 'sway', chain: true,
   },
 };
 
