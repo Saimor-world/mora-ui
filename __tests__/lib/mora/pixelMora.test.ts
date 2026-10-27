@@ -24,7 +24,7 @@ describe('traits', () => {
     expect(DEFAULT_WARDROBE.head).toBeNull(); expect(DEFAULT_WARDROBE.neck).toBe('scarf');
   });
   it('jede Variante hat Ebene und Vorschaubild auf der Platte', () => {
-    for (const i of items) for (const v of i.variants) {
+    for (const i of items.filter((x) => x.figure !== 'jade')) for (const v of i.variants) {
       for (const t of TIERS) {
         const dir = path.join('public/mora/pixel', `t${t}`, 'traits');
         expect(fs.existsSync(path.join(dir, v.anim ? stemOf(v.file, '--anim') : v.file))).toBe(true);

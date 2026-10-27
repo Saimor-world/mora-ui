@@ -9,6 +9,7 @@ describe('MoraWardrobe (Editor)', () => {
 
   it('wählt Teil und Farbe, Rückgängig und Wiederholen', () => {
     render(<MoraWardrobe />);
+    fireEvent.click(screen.getByTestId('wd-tab-head'));
     fireEvent.click(screen.getByTestId('wd-head-beret'));
     expect(head()).toBe('beret:rot');
     fireEvent.click(screen.getByTestId('wd-var-marine'));
@@ -21,6 +22,7 @@ describe('MoraWardrobe (Editor)', () => {
 
   it('zeigt beim Überfahren nur eine Vorschau und speichert nichts', () => {
     render(<MoraWardrobe />);
+    fireEvent.click(screen.getByTestId('wd-tab-head'));
     fireEvent.pointerEnter(screen.getByTestId('wd-head-halo'));
     expect(screen.getByRole('status').textContent).toMatch(/Vorschau · Aureole/);
     expect(window.localStorage.getItem('mora.wardrobe.v1:me')).toBeNull();
@@ -39,6 +41,7 @@ describe('MoraWardrobe (Editor)', () => {
 
   it('speichert und lädt Outfit-Plätze, Zurücksetzen holt den Standard', () => {
     render(<MoraWardrobe />);
+    fireEvent.click(screen.getByTestId('wd-tab-head'));
     fireEvent.click(screen.getByTestId('wd-head-wizard'));
     fireEvent.click(screen.getByTestId('wd-outfit-1'));
     expect(JSON.parse(window.localStorage.getItem('mora.outfits.v1:me')!)[0].head).toBe('wizard:violett');

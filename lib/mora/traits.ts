@@ -17,6 +17,8 @@ export type TraitItem = {
   id: string; name: string; variants: TraitVariant[];
   origin: TraitOrigin; rarity: TraitRarity; unlock: TraitUnlock;
   default?: boolean; season?: string; hides?: string[];
+  /** 'jade': nur für den Jade-Stein gezeichnet (siehe accessoryAdapter.ts), kein Pixel-Sprite. Ohne Eintrag: Pixel-Stück (Legacy). */
+  figure?: 'jade';
   /** Auflage (moment) und Jahr. */
   edition?: number; year?: number; window?: { from: string; to: string };
   /** abo: Monate; earned: Meilenstein. */
@@ -90,11 +92,14 @@ export type Tier = (typeof TIERS)[number];
 export const stemOf = (file: string, suffix: string) => file.replace(/\.png$/, `${suffix}.png`);
 export type WardrobeLayer = { slot: string; src: string; /** Ebene hinter dem Körper. */ back?: string; /** Bildanzahl, wenn `src` ein Animationsstreifen ist. */ frames?: number };
 
+/** Vorschaubild eines Teils: absolute Pfade (Jade-Teile) bleiben, Pixel-Teile liegen unter thumbBase. */
+export const thumbSrc = (file: string) => (file.startsWith('/') ? file : TRAITS.thumbBase + file);
+
 /** Gültige, sortierte Ebenen (Dateipfade) für eine Auswahl und Bildstufe. Unbekannte IDs fallen weg; "hides" blendet Slots aus;
  *  Gründerstücke erscheinen nur bei `founder`. */
 export function wardrobeLayers(w: Wardrobe, opts: { founder?: boolean; tier?: Tier } = {}): WardrobeLayer[] {
   const dir = `${TRAITS.assetBase}t${opts.tier ?? 80}/traits/`;
-  const picked = TRAITS.slots.map((s) => ({ s, r: resolve(s, w[s.id]) })).map((p) => (p.r && p.r.item.unlock === 'founder' && !opts.founder ? { ...p, r: null } : p));
+  const picked = TRAITS.slots.map((s) => ({ s, r: resolve(s, w[s.id]) })).map((p) => (p.r?.item.figure === 'jade' ? { ...p, r: null } : p)).map((p) => (p.r && p.r.item.unlock === 'founder' && !opts.founder ? { ...p, r: null } : p));
   const hidden = new Set(picked.flatMap((p) => p.r?.item.hides ?? []));
   return picked.flatMap(({ s, r }) => {
     if (!r || hidden.has(s.id)) return [];

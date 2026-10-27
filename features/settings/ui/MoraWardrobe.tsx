@@ -1,9 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
-import { PixelMoraMark, PixelMoraStage } from '@/components/world/PixelMora';
+import { JadeMoraMark, JadeMoraStage } from '@/components/world/JadeMora';
 import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
-import { ACCESSORY_MAX, defaultWardrobe, joinChoice, limitAccessories, visibleAccessories, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
+import { ACCESSORY_MAX, defaultWardrobe, joinChoice, limitAccessories, visibleAccessories, randomWardrobe, resolve, sameWardrobe, thumbSrc, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
 import { useFounder, useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 
 const TAB_ORDER = ['head', 'face', 'neck', 'clip', 'held', 'aura', 'seasonal'];
@@ -46,7 +46,7 @@ type Hover = { slot: string; choice: string | null } | null;
 export function MoraWardrobe() {
   const [w, save] = useWardrobe();
   const [outfits, setOutfit] = useOutfits();
-  const [tab, setTab] = useState('head');
+  const [tab, setTab] = useState('aura');
   const [hover, setHover] = useState<Hover>(null);
   const [hop, setHop] = useState(0);
   const [turn, setTurn] = useState(0);
@@ -87,7 +87,7 @@ export function MoraWardrobe() {
   const hoverItem = (itemId: string | null) => {
     if (itemId === null) { setNote(null); return setHover({ slot: slot.id, choice: null }); }
     const it = slot.items.find((i) => i.id === itemId)!;
-    setNote(it.origin === 'standard' ? null : it);
+    setNote(it.origin === 'standard' && it.figure === 'jade' ? null : it);
     setHover({ slot: slot.id, choice: joinChoice(itemId, cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id)) });
   };
 
@@ -113,9 +113,8 @@ export function MoraWardrobe() {
         <section className="os-wd__left" aria-label="Vorschau">
           <div className="os-wd__stage" data-origin={stageTier} data-testid="wd-stage" onPointerLeave={() => setHover(null)}>
             <span className="os-wd__glow" aria-hidden />
-            <span className="os-wd__spark os-wd__spark--1" aria-hidden /><span className="os-wd__spark os-wd__spark--2" aria-hidden /><span className="os-wd__spark os-wd__spark--3" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
-            <PixelMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} />
+            <JadeMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} />
             <div className="os-wd__chip" data-origin={stageTier} data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
               {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}{pv && TIER_LABEL[pv.item.origin] ? <b>{TIER_LABEL[pv.item.origin]}</b> : null}</> : 'Aktuelles Outfit'}
             </div>
@@ -135,7 +134,7 @@ export function MoraWardrobe() {
                   <button type="button" className="os-wd__outfit-main" data-testid={`wd-outfit-${i + 1}`}
                     onClick={() => (o ? commit(o) : setOutfit(i, w))} aria-label={o ? `Outfit ${i + 1} anziehen` : `Aktuelles Outfit auf Platz ${i + 1} speichern`}
                     title={o ? `Outfit ${i + 1} anziehen` : 'Aktuelles Outfit hier speichern'}>
-                    {o ? <PixelMoraMark size={32} wardrobe={o} /> : <span className="os-wd__plus">+</span>}
+                    {o ? <JadeMoraMark size={40} wardrobe={o} /> : <span className="os-wd__plus">+</span>}
                     <span className="os-wd__num">{i + 1}</span>
                   </button>
                   {o ? (
@@ -167,11 +166,12 @@ export function MoraWardrobe() {
               const locked = !isUnlocked(i, ctx);
               const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? i.variants[0]);
               return (
-                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
-                  <span className="os-wd__thumb"><img src={TRAITS.thumbBase + shown.file} alt="" draggable={false} /></span>
+                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} data-legacy={i.figure === 'jade' ? undefined : 'true'} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
+                  <span className="os-wd__thumb"><img src={thumbSrc(shown.file)} alt="" draggable={false} /></span>
                   <span className="os-wd__name">{i.name}</span>
                   {i.origin !== 'standard' ? <span className="os-wd__badge-o" data-origin={i.origin} data-testid={`wd-rarity-${i.id}`}><i />{TIER_LABEL[i.origin]}</span> : null}
                   {locked ? <span className="os-wd__seal" data-testid={`wd-lock-${i.id}`} role="img" aria-label="noch gesperrt">{LOCK}</span> : null}
+                  {i.figure !== 'jade' ? <span className="os-wd__badge os-wd__badge--legacy" title="Pixel-Altstück: am Jade-Stein noch nicht gezeichnet">Pixel</span> : null}
                   {i.season ? <span className="os-wd__badge os-wd__badge--season" title="Saisonal">Saison</span> : null}
                   {i.variants.length > 1 ? <span className="os-wd__vcount">{i.variants.length} Farben</span> : null}
                 </button>
@@ -179,7 +179,7 @@ export function MoraWardrobe() {
             })}
           </div>
           <p className="os-wd__note" data-testid="wd-note" data-origin={note?.origin} aria-live="polite">
-            {note ? <><strong>{note.name}</strong> · {TIER_LABEL[note.origin] || RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}</span></> : null}
+            {note ? <><strong>{note.name}</strong> · {TIER_LABEL[note.origin] || RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}{note.figure !== 'jade' ? ' Pixel-Altstück: bleibt gespeichert, wird am Jade-Stein aber noch nicht gezeichnet.' : ''}</span></> : null}
           </p>
           <div className="os-wd__variants">
             {cur ? (

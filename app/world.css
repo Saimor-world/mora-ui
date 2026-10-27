@@ -969,8 +969,6 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 .os-wd__stage .px-mora--stage { z-index: 2; margin-top: -26px; }
 .os-wd__glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(226,184,100,.10), transparent 66%); top: 18px; z-index: 0; animation: wd-glow 4.2s ease-in-out infinite; }
 .os-wd__shadow { position: absolute; bottom: 60px; width: 150px; height: 20px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 70%); z-index: 1; }
-.os-wd__spark { position: absolute; width: 3px; height: 3px; background: #f6d98a; box-shadow: 0 0 8px 1px rgba(246,190,80,.7); z-index: 1; animation: wd-twinkle 3.2s steps(4) infinite; }
-.os-wd__spark--1 { left: 16%; top: 24%; } .os-wd__spark--2 { right: 14%; top: 36%; animation-delay: -1.1s; } .os-wd__spark--3 { left: 24%; bottom: 26%; animation-delay: -2s; }
 .os-wd__chip { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 3; padding: 4px 12px; border-radius: 999px; font-size: 11.5px; letter-spacing: .02em; white-space: nowrap; color: rgba(255,255,255,.62); background: rgba(8,12,22,.7); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(6px); }
 .os-wd__bar { display: flex; flex-wrap: wrap; gap: 8px; }
 .os-wd__bar button, .os-wd__outfit-act button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; font-size: 12.5px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: inherit; transition: background .15s, border-color .15s, transform .1s; }
@@ -1082,7 +1080,6 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 .os-wd__stage[data-origin='alive'] { --tg: .1; }
 .os-wd__glow { background: radial-gradient(circle, rgba(var(--tc), calc(.03 + var(--tg) * .5)), transparent 66%); transition: background .4s; }
 .os-wd__stage[data-origin='alive'] .os-wd__glow { animation-duration: 3s; }
-.os-wd__spark { background: rgb(var(--tc)); box-shadow: 0 0 6px 1px rgba(var(--tc), .4); }
 .os-wd__stage[data-origin='standard'] .os-wd__spark { opacity: 0 !important; animation: none; }
 .os-wd__stage[data-origin='founder']::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 3; background: conic-gradient(from var(--wd-a), transparent 0 70%, rgba(240,214,160,.55) 84%, transparent 96%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: wd-run 12s linear infinite; }
 .os-wd__chip { border-color: rgba(var(--tc), .28); }
@@ -1234,4 +1231,19 @@ body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative
 /* Ordner-Ebene: Meta-Zeile nicht umbrechen, leerer Zustand rutscht nicht in die Beschriftung. */
 .fv-center { width: max-content; max-width: 92vw; }
 .fv-center__meta { white-space: nowrap; }
-.fv[data-phone='true'] .fv-empty { bottom: 22%; }
+.fv[data-phone='true'] .fv-empty { bottom: auto; top: calc(50% + 104px); }
+
+/* Glas-Ansicht: Quellen-Marken tragen ihren Namen leise mit, damit sie nicht wie lose Punkte wirken. */
+.wd-source--glass { opacity: .72; }
+.wd-source--glass span { opacity: .85; font-size: 11px; }
+.wd-source--glass small { opacity: 0; }
+.wd-source--glass:hover small, .wd-source--glass:focus-visible small { opacity: 1; }
+.wd-source--glass[data-state='empty'] { opacity: .5; }
+
+/* Glasplaneten mit eigenem Material: Lichtring (R&D warmgold auf Eisblau, Roadmap kühles Silberblau, Research Mint). */
+.glass-orb__ring { position: absolute; left: 50%; top: 50%; width: 170%; height: 102%; transform: translate(-50%, -50%); overflow: visible; pointer-events: none; }
+.glass-orb__ring--back { z-index: 0; } .glass-orb > img { z-index: 1; } .glass-orb__ring--front { z-index: 2; filter: drop-shadow(0 0 4px var(--ring-glow)); }
+.glass-orb .wd-badge { z-index: 3; }
+.glass-orb__ring--rnd { --ring-a: #d9b46a; --ring-b: #ffe9b0; --ring-glow: rgba(255, 214, 140, .7); }
+.glass-orb__ring--roadmap { --ring-a: #9db8e8; --ring-b: #eaf1ff; --ring-glow: rgba(170, 200, 255, .65); }
+.glass-orb__ring--research { --ring-a: #8fd8c0; --ring-b: #e6fff4; --ring-glow: rgba(150, 240, 205, .6); }

@@ -13,6 +13,7 @@ import "react-resizable/css/styles.css";
 import './os-brightness.css';
 import './universe-materials.css';
 import './world.css';
+import './jade-mora.css';
 import { useNavStore } from "@/lib/store/navStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";

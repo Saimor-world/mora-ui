@@ -2,7 +2,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { type SpiritMood } from './MoraSpirit';
-import { PixelMora, type PixelMoraProps } from './PixelMora';
+import { JadeMora } from './JadeMora';
+import type { PixelMoraProps } from './PixelMora';
 
 /** Adapter: Rollback auf die alte Figur = Default unten wieder auf MoraSpirit setzen. */
 export type SpiritFigureProps = PixelMoraProps;
@@ -10,7 +11,7 @@ import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { glassLayout } from '@/lib/universe/glassLayout';
-import { GlassOrb, glassVariantFor } from './GlassOrb';
+import { GlassOrb, glassMaterialFor, glassVariantFor } from './GlassOrb';
 import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 import { PixelMoon, PX } from './PixelPlanet';
@@ -50,7 +51,7 @@ export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = PixelMora }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = JadeMora }: {
   spiritMood?: SpiritMood;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
@@ -230,7 +231,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         return sources.map((src, i) => {
         const { x, y } = pts[i];
         return (
-          <button key={src.key} type="button" className="wd-source" data-state={src.state} style={{ left: x, top: y }} onClick={() => onOpenSource?.(src.key)}
+          <button key={src.key} type="button" className={glass ? 'wd-source wd-source--glass' : 'wd-source'} data-state={src.state} style={{ left: x, top: y }} onClick={() => onOpenSource?.(src.key)}
             title={src.state === 'connected' ? `${src.label}: ${src.sources.join(', ')}` : `${src.label}: noch keine Quelle verbunden`} data-testid={`world-source-${src.key.replace('system:', '')}`}>
             <i aria-hidden />
             <span>{src.label}</span>
@@ -293,7 +294,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
           >
             {glass ? (
-              <GlassOrb size={slot?.size ?? 80} variant={glassVariantFor(planet.name)}>
+              <GlassOrb size={slot?.size ?? 80} variant={glassVariantFor(planet.name)} material={glassMaterialFor(planet.name)}>
                 {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
                 {pulseIds?.includes(planet.id) ? <span className="wd-glass-pulse" data-testid={`world-pulse-${planet.id}`} aria-hidden /> : null}
               </GlassOrb>

@@ -6,11 +6,9 @@ import { decide, type Intent, type RoamPoint } from '@/lib/mora/pixelBrain';
 import { wardrobeLayers, type Tier, type Wardrobe } from '@/lib/mora/traits';
 import { useFounder, useWardrobe } from '@/lib/mora/useWardrobe';
 
-const SRC = '/mora/jade/';
+const SRC = '/mora/pixel/';
 type Eyes = 'eyes' | 'eyes_closed' | 'eyes_l' | 'eyes_r';
-const EYE_FILE: Record<Eyes, string> = { eyes: 'open', eyes_closed: 'closed', eyes_l: 'l', eyes_r: 'r' };
-/** Garderobe/Accessoires sind noch nicht freigegeben (Marius will sie erst besprechen): nur der Jade-Körper wird gezeigt. Auf true setzen, um sie wieder zu rendern. */
-const ACCESSORIES_ENABLED = false;
+const EYE_FILE: Record<Eyes, string> = { eyes: '', eyes_closed: '_closed', eyes_l: '_l', eyes_r: '_r' };
 /** Welche Bildstufe zu einer Anzeigegröße (px) passt: 48 Dock, 80 Universum, 96 großes Universum, 140 Bühne. */
 export function tierFor(px: number): Tier { return px <= 56 ? 48 : px <= 88 ? 80 : px <= 112 ? 96 : 140; }
 /** Geräte-Pixelverhältnis (Retina): erst nach dem Mount gesetzt, damit Server und Client gleich rendern. Höchstens 2, weil die größte Stufe 140 px = 280 Gerätepixel schon reicht. */
@@ -21,18 +19,19 @@ export function useDpr(): number {
 }
 /** Bildstufe für Anzeigegröße in CSS-px auf diesem Bildschirm (Retina: doppelt so viele Gerätepixel). */
 export function tierForDpr(px: number, dpr: number): Tier { return tierFor(Math.round(px * dpr)); }
-/** Kugel (Körper) relativ zur Bildfläche: gerenderter Jade-Stein (512 px, vier Augenzustände), Radius ≈ 0,44. */
-export const MORA_R = 0.44;
-/** Grundkörper: gerenderter Jade-Stein je Augenzustand (Gründer-Konto: feiner goldener Schein); Accessoires aus lib/mora/mora-traits.json.
+/** Kugel (Körper) relativ zur Bildfläche: Radius ≈ 36 % der Kante (aus dem Sprite gemessen). */
+export const MORA_R = 0.3625;
+/** Grundkörper (ein Bild je Augenzustand, glattes Final-Set; Gründer-Konto mit echter Blüte); Accessoires aus lib/mora/mora-traits.json.
  *  Reihenfolge: Aura, Ebenen hinter dem Körper (Schalenden, Bügel, Kette), Körper, Ebenen davor. */
 function Layers({ eyes = 'eyes', wardrobe, tier, bare = false }: { eyes?: Eyes; wardrobe: Wardrobe; tier: Tier; bare?: boolean }) {
   const founder = useFounder();
-  const t = bare || !ACCESSORIES_ENABLED ? [] : wardrobeLayers(wardrobe, { founder, tier });
+  const t = bare ? [] : wardrobeLayers(wardrobe, { founder, tier });
   const aura = t.filter((l) => l.slot === 'aura'); const rest = t.filter((l) => l.slot !== 'aura');
-    return (<>
+  const base = founder ? 'founder' : 'sprite';
+  return (<>
     {aura.map((l) => <img key={l.src} src={l.src} alt="" className="px-mora__l px-mora__aura" draggable={false} />)}
     {rest.filter((l) => l.back).map((l) => <img key={l.back} src={l.back} alt="" className={`px-mora__l px-mora__back px-mora__t-${l.slot}`} draggable={false} />)}
-    {(Object.keys(EYE_FILE) as Eyes[]).map((e) => <img key={e} src={`${SRC}${EYE_FILE[e]}.png`} alt="" className="px-mora__l px-mora__base" data-founder={founder ? 'true' : undefined} data-eyes={e} data-on={e === eyes ? 'true' : 'false'} draggable={false} />)}
+    {(Object.keys(EYE_FILE) as Eyes[]).map((e) => <img key={e} src={`${SRC}t${tier}/${base}${EYE_FILE[e]}.png`} alt="" className="px-mora__l px-mora__base" data-eyes={e} data-on={e === eyes ? 'true' : 'false'} draggable={false} />)}
     {rest.map((l) => l.frames
       ? <span key={l.src} className={`px-mora__l px-mora__anim px-mora__t-${l.slot}`} data-frames={l.frames} style={{ backgroundImage: `url(${l.src})`, backgroundSize: `${l.frames * 100}% 100%` }} />
       : <img key={l.src} src={l.src} alt="" className={`px-mora__l px-mora__t-${l.slot}`} draggable={false} />)}
@@ -47,10 +46,11 @@ export type PixelMoraProps = {
   fresh?: string | null;
   /** Vorschau (Garderobe): überschreibt die gespeicherte Auswahl. */
   wardrobe?: Wardrobe;
-  /** Nur der Körper, ohne Garderobe (Glas-Ansicht: ein fester Sprite wie im Konzept). */
+  /** Nur der Körper, ohne Garderobe. */
   bare?: boolean;
 };
 
+/** Legacy-Stil: Pixel-MÔRA. Standard ist JadeMora (components/world/JadeMora.tsx). */
 /** Statisches Pixel-MÔRA-Zeichen (Dock, Einstiege). */
 export function PixelMoraMark({ size = 32, active = false, wardrobe }: { size?: number; active?: boolean; wardrobe?: Wardrobe }) {
   const [mine] = useWardrobe();
@@ -163,7 +163,7 @@ export function PixelMoraStage({ wardrobe, scale = 2, hop = 0, turn = 0, reduced
     const blink = () => { setEyes('eyes_closed'); setTimeout(() => setEyes('eyes'), 140); t = setTimeout(blink, 2400 + Math.random() * 3000); };
     t = setTimeout(blink, 1600); return () => clearTimeout(t);
   }, [reduced]);
-  const px = Math.round((140 * scale) / 32) * 32; // ganzzahlige Vergrößerung des 32-Pixel-Sprites (280 → 288)
+  const px = 140 * scale;
   return (
     <span className="px-mora px-mora--stage" data-testid="mora-stage" data-hop={hop} data-turn={turn} style={{ width: px, height: px }} aria-hidden>
       <span key={`h${hop}`} className={`px-mora__bob${hop ? ' px-mora__bob--hop' : ''}`}>

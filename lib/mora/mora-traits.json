@@ -12,6 +12,22 @@
       "name": "Leuchten",
       "items": [
         {
+          "id": "gold-orbit",
+          "name": "Goldorbit",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Goldorbit",
+              "swatch": "#c4a15a",
+              "file": "/mora/jade/thumbs/gold-orbit.png"
+            }
+          ]
+        },
+        {
           "id": "warm",
           "name": "Warmes Leuchten",
           "origin": "standard",
@@ -102,6 +118,22 @@
       "id": "neck",
       "name": "Hals",
       "items": [
+        {
+          "id": "celestial-charm",
+          "name": "Himmelsanhänger",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Himmelsanhänger",
+              "swatch": "#c4a15a",
+              "file": "/mora/jade/thumbs/celestial-charm.png"
+            }
+          ]
+        },
         {
           "id": "scarf",
           "name": "Strickschal",
@@ -253,6 +285,22 @@
       "id": "held",
       "name": "In der Hand",
       "items": [
+        {
+          "id": "prism-shard",
+          "name": "Kristall-Prisma",
+          "origin": "standard",
+          "rarity": "common",
+          "unlock": "standard",
+          "figure": "jade",
+          "variants": [
+            {
+              "id": "standard",
+              "name": "Kristall-Prisma",
+              "swatch": "#b9c9d8",
+              "file": "/mora/jade/thumbs/prism-shard.png"
+            }
+          ]
+        },
         {
           "id": "book",
           "name": "Kleines Buch",
