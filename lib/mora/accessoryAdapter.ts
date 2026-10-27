@@ -62,16 +62,16 @@ export const JADE_MOUNTS: Record<string, AccessoryMount> = {
     anchor: { x: 0, y: -0.435 }, scale: 0.94, layer: 'front', animation: 'none',
   },
   'jade-scarf': {
-    id: 'jade-scarf', slot: 'neck', asset: '/mora/jade/acc/jade-scarf.svg', backAsset: '/mora/jade/acc/jade-scarf-back.svg', aspect: 1060 / 620,
-    anchor: { x: 0, y: 0.41 }, scale: 1.06, layer: 'front', animation: 'none',
+    id: 'jade-scarf', slot: 'neck', asset: '/mora/jade/acc/jade-scarf.svg', backAsset: '/mora/jade/acc/jade-scarf-back.svg', aspect: 1160 / 800,
+    anchor: { x: 0, y: 0.48 }, scale: 1.16, layer: 'front', animation: 'none',
   },
   'pearl-necklace': {
-    id: 'pearl-necklace', slot: 'neck', asset: '/mora/jade/acc/pearl-necklace.svg', aspect: 1000 / 600,
-    anchor: { x: 0, y: 0.26 }, scale: 1, layer: 'front', animation: 'none',
+    id: 'pearl-necklace', slot: 'neck', asset: '/mora/jade/acc/pearl-necklace.svg', backAsset: '/mora/jade/acc/pearl-necklace-back.svg', aspect: 1120 / 820,
+    anchor: { x: 0, y: 0.41 }, scale: 1.12, layer: 'front', animation: 'none',
   },
   'founder-scarf': {
-    id: 'founder-scarf', slot: 'neck', asset: '/mora/jade/acc/founder-scarf.svg', backAsset: '/mora/jade/acc/founder-scarf-back.svg', aspect: 1060 / 620,
-    anchor: { x: 0, y: 0.41 }, scale: 1.06, layer: 'front', animation: 'none',
+    id: 'founder-scarf', slot: 'neck', asset: '/mora/jade/acc/founder-scarf.svg', backAsset: '/mora/jade/acc/founder-scarf-back.svg', aspect: 1160 / 800,
+    anchor: { x: 0, y: 0.48 }, scale: 1.16, layer: 'front', animation: 'none',
   },
   'founder-f1': {
     id: 'founder-f1', slot: 'neck', asset: '/mora/jade/acc/founder-f1.svg', aspect: 224 / 240,
