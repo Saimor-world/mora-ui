@@ -10,6 +10,7 @@ export type SpiritFigureProps = PixelMoraProps;
 import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
+import { COLLECT_PLANET } from '@/lib/lea/finder';
 import { glassLayout } from '@/lib/universe/glassLayout';
 import { GlassOrb, glassVariantFor } from './GlassOrb';
 import { floatOffset, labelWidth, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
@@ -157,8 +158,10 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       const height = Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP + (size.width < 1000 ? 40 : 0)));
       const labels = planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 }));
       const weights = planets.map((p) => p.weight);
+      const focusIndex = planets.reduce((best, p, i) => p.id === COLLECT_PLANET ? best
+        : best < 0 || p.weight > planets[best].weight ? i : best, -1);
       return glass
-        ? glassLayout({ width: size.width, insetLeft, insetRight, height, weights, phone, labels, reserveMora: moraInScene })
+        ? glassLayout({ width: size.width, insetLeft, insetRight, height, weights, phone, labels, reserveMora: moraInScene, focusIndex })
         : layoutOrbits({ width: size.width, insetLeft, insetRight, height, weights, phone, labels });
     },
     [size.width, size.height, planets, phone, insetLeft, insetRight, glass, moraInScene],
@@ -314,6 +317,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             className="wd-planet"
             data-active={planet.id === activeId ? 'true' : undefined}
             data-selected={planet.id === selectedId ? 'true' : undefined}
+            data-collect={planet.id === COLLECT_PLANET ? 'true' : undefined}
             aria-pressed={planet.id === selectedId}
             onDoubleClick={onZoomPlanet ? () => onZoomPlanet(planet.id) : undefined}
             style={slot ? undefined : { visibility: 'hidden' }}

@@ -22,6 +22,13 @@ describe('glass composition with MÔRA in the dock', () => {
     const l = glassLayout(options);
     expect(l.slots[0].pos).toEqual({ x: l.cx, y: l.cy });
   });
+  it('keeps a real department central even when the unassigned collection is larger', () => {
+    const options = { width: 1440, height: 610, phone: false,
+      weights: [5, 20, 1000], reserveMora: false, focusIndex: 1 };
+    const l = glassLayout(options);
+    expect(l.slots[1].pos).toEqual({ x: l.cx, y: l.cy });
+    expect(l.slots[2].size).toBeGreaterThanOrEqual(l.slots[1].size);
+  });
   it('still reserves the original central character position when she is in the scene', () => {
     const l = glassLayout({ width: 1440, height: 610, phone: false, weights, labels });
     expect(l.slots.every(s => Math.hypot(s.pos!.x - l.cx, s.pos!.y - l.cy) > l.mora / 2)).toBe(true);

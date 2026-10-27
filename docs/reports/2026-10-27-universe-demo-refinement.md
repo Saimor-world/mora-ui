@@ -32,8 +32,8 @@ or NFTs. No minting, wallet action, ownership or server-key implementation.
 
 ## Verification and product truth
 
-Local targeted checks: 16 layout/material/accessory adapter tests passed; targeted
-lint passed. TypeScript is rerun after fixing the Playwright reduced-motion option.
+Local targeted checks: 17 layout/material/accessory adapter tests passed; targeted
+lint passed. TypeScript and targeted lint pass.
 Remote full CI and actual browser captures provide final build/visual evidence.
 
 The browser suite loads the actual `/os#universe`, selects R&D, opens Roadmap and
@@ -52,3 +52,15 @@ Risk A: reversible presentation and QA-only changes. Rollback this refinement
 commit to restore the exact supplied bundle. Visual acceptance by Marius remains
 required; no physical iPhone FPS, authenticated CORE or final garment fidelity
 is claimed. Status: PREPARED until current CI/captures are reviewed.
+
+## Follow-up from first actual captures
+
+Initial full CI passed 2,064 unit tests and all three browser journeys. The actual
+captures exposed a hard bottom edge of the supplied half-planet raster; a static
+alpha mask now dissolves it into the background. A large unassigned collection
+keeps its true size but cannot displace a real department from the focal position;
+it has a quiet dashed collection outline. The wardrobe now passes its actual
+reduced-motion preference to the existing JadeMoraStage, preventing its JS blink
+loop from running in still mode. Two added browser journeys capture the existing
+base/sunglasses/scarf/pearls and verify single-neck-slot, undo/redo and persistence.
+No additional wardrobe, state engine or outfit store is introduced.

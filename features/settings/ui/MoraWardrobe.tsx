@@ -1,4 +1,5 @@
 'use client';
+import { useReducedMotion } from 'framer-motion';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { JadeMoraMark, JadeMoraStage } from '@/components/world/JadeMora';
@@ -44,6 +45,7 @@ type Hover = { slot: string; choice: string | null } | null;
 
 /** Garderobe: Create-a-MÔRA-Editor. Große Bühne, Kategorien, Raster, Farbvarianten, Zufall, Outfit-Plätze, Rückgängig. Lokal pro Nutzer gespeichert. */
 export function MoraWardrobe() {
+  const reduced = !!useReducedMotion();
   const [w, save] = useWardrobe();
   const [outfits, setOutfit] = useOutfits();
   const [tab, setTab] = useState('aura');
@@ -114,7 +116,7 @@ export function MoraWardrobe() {
           <div className="os-wd__stage" data-origin={stageTier} data-testid="wd-stage" onPointerLeave={() => setHover(null)}>
             <span className="os-wd__glow" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
-            <JadeMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} />
+            <JadeMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} reduced={reduced} />
             <div className="os-wd__chip" data-origin={stageTier} data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
               {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}{pv && TIER_LABEL[pv.item.origin] ? <b>{TIER_LABEL[pv.item.origin]}</b> : null}</> : 'Aktuelles Outfit'}
             </div>

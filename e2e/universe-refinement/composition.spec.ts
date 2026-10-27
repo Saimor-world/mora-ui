@@ -84,3 +84,41 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
     expect(errors).toEqual([]);
   });
 }
+
+for (const width of [1440, 390]) {
+  test(`existing wardrobe preserves material layers, neck exclusivity and undo ${width}`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await page.goto('/os#settings');
+    const wardrobe = page.getByTestId('mora-wardrobe');
+    await expect(wardrobe).toBeVisible();
+    await expect(page.getByTestId('mora-stage')).toHaveAttribute('data-reduced', 'true');
+    await page.getByTestId('wd-tab-neck').click();
+    await page.getByTestId('wd-neck-none').click();
+    const stage = page.getByTestId('wd-stage');
+    await expect.poll(() => stage.locator('.jm__img').evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    await page.mouse.move(0, 0);
+    await stage.screenshot({ path: info.outputPath(`jade-base-${width}.png`) });
+    await page.getByTestId('wd-tab-face').click();
+    await page.getByTestId('wd-face-jade-sunglasses').click();
+    await expect(stage.locator('[data-acc="jade-sunglasses"]')).toHaveCount(1);
+    await page.mouse.move(0, 0);
+    await stage.screenshot({ path: info.outputPath(`jade-sunglasses-${width}.png`) });
+    await page.getByTestId('wd-face-none').click();
+    await page.getByTestId('wd-tab-neck').click();
+    await page.getByTestId('wd-neck-jade-scarf').click();
+    await expect(stage.locator('[data-acc="jade-scarf"]')).toHaveCount(1);
+    await page.mouse.move(0, 0);
+    await stage.screenshot({ path: info.outputPath(`jade-scarf-${width}.png`) });
+    await page.getByTestId('wd-neck-pearl-necklace').click();
+    await expect(stage.locator('[data-acc="jade-scarf"]')).toHaveCount(0);
+    await expect(stage.locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
+    await page.mouse.move(0, 0);
+    await stage.screenshot({ path: info.outputPath(`jade-pearls-${width}.png`) });
+    await page.getByTestId('wd-undo').click();
+    await expect(stage.locator('[data-acc="jade-scarf"]')).toHaveCount(1);
+    await page.getByTestId('wd-redo').click();
+    await expect(stage.locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
+    await page.reload();
+    await expect(page.getByTestId('wd-stage').locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
+  });
+}

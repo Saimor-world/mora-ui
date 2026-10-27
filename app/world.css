@@ -1305,3 +1305,21 @@ body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative
 .os-dock__stone .jm--mark svg { shape-rendering: geometricPrecision; }
 @keyframes dock-mora-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 @media (prefers-reduced-motion: reduce) { .os-dock__stone .jm--mark { animation: none; } }
+
+/* The collection orbit is an inbox, not an additional department or activity claim. */
+.wd-universe[data-view='glass'] .wd-planet[data-collect='true'] .glass-orb > img {
+  opacity: .68;
+}
+.wd-universe[data-view='glass'] .wd-planet[data-collect='true'] .glass-orb::after {
+  content: '';position: absolute;inset: -4px;border: 1px dashed rgba(226,221,204,.28);
+  border-radius: 50%;pointer-events: none;
+}
+.wd-universe[data-view='glass'] .wd-planet:not(:hover):not(:focus-visible):not([data-selected='true']) .wd-meta {
+  opacity: .9;
+}
+
+/* Dissolve the supplied half-planet image into the scene instead of exposing its raster edge. */
+.fv-dome__planet {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+}

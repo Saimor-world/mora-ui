@@ -5,6 +5,7 @@ on:
       - 'components/world/**'
       - 'lib/universe/**'
       - 'app/world.css'
+      - 'features/settings/ui/MoraWardrobe.tsx'
       - 'app/jade-mora.css'
       - 'public/mora/jade/**'
       - 'e2e/universe-refinement/**'

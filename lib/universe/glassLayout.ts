@@ -30,7 +30,7 @@ function spreadStep(n: number): number {
   return step;
 }
 
-export function glassLayout(opts: OrbitOptions & { reserveMora?: boolean }): OrbitLayout {
+export function glassLayout(opts: OrbitOptions & { reserveMora?: boolean; focusIndex?: number }): OrbitLayout {
   const { width, height, phone, weights } = opts;
   const insetLeft = opts.insetLeft ?? 0;
   const insetRight = opts.insetRight ?? 0;
@@ -46,7 +46,10 @@ export function glassLayout(opts: OrbitOptions & { reserveMora?: boolean }): Orb
   const bottomEdge = height - 4;
   const regionW = x1 - x0;
   const maxW = Math.max(1e-6, ...weights);
-  const focus = !reserveMora && n !== 2 ? weights.indexOf(Math.max(...weights)) : -1;
+  const preferred = opts.focusIndex;
+  const focalIndex = preferred !== undefined && preferred >= 0 && preferred < n
+    ? preferred : weights.indexOf(Math.max(...weights));
+  const focus = !reserveMora && n !== 2 ? focalIndex : -1;
 
   const base = Math.max(phone ? 64 : 92, Math.min(phone ? 100 : 190, Math.min(regionW / (phone ? 3.6 : 6.4), (bottomEdge - top) / (phone ? 4.2 : 3.2))));
   const sizeAt = (i: number, k: number) => glassPlanetSize(weights[i], maxW, Math.round(base * k));
@@ -61,7 +64,8 @@ export function glassLayout(opts: OrbitOptions & { reserveMora?: boolean }): Orb
     const ry = Math.max(40, (yMax - yMin) / 2);
     const rx = Math.max(60, regionW / 2 - Math.max(maxS, phone ? 70 : 150) / 2);
     const step = spreadStep(n);
-    const rank = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w || a.i - b.i);
+    const rank = weights.map((w, i) => ({ w, i })).sort((a, b) => (!reserveMora ? Number(b.i === focalIndex) - Number(a.i === focalIndex) : 0)
+      || b.w - a.w || a.i - b.i);
     const slotOf: number[] = [];
     rank.forEach((r, j) => { slotOf[r.i] = (j * step) % Math.max(1, n); });
     const boxes: Box[] = weights.map((_, i) => {
