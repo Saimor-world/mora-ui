@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
 import React from 'react';
-import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
+import { Bell, LayoutGrid, MoreHorizontal, Search, Shirt, Sparkles } from 'lucide-react';
+import { useDockVariant } from '@/lib/mora/dockVariant';
+import { useOsUnread } from '@/components/os-shell/NotificationTray';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
 import { JadeMoraMark } from '@/components/world/JadeMora';
 import { PixelMora, PixelMoraMark } from '@/components/world/PixelMora';
@@ -40,7 +42,13 @@ export interface OsDockProps {
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const mood = useHubMood();
+  const variant = useDockVariant();
+  const big = variant !== 'strip';
+  const realUnread = useOsUnread();
+  const led = unread ?? realUnread;
   const reduced = useReducedMotion();
+  const [phoneW, setPhoneW] = React.useState(false);
+  React.useEffect(() => { if (typeof window.matchMedia !== 'function') return undefined; const q = window.matchMedia('(max-width: 899px)'); const f = () => setPhoneW(q.matches); f(); q.addEventListener('change', f); return () => q.removeEventListener('change', f); }, []);
   const onMobile = new Set(mobileItems.map((m) => m.id));
   const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
@@ -51,18 +59,20 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
     </span>
   );
   return (
-    <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock">
+    <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
       <div className="os-dock__capsule" data-testid="dock">
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
-          <CapsuleDockIcon icon={Bell} label="Mitteilungen" description="Was hereingekommen ist" isStandardMode={false} badge={unread} onClick={onNotifications} />
+          <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}><CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={big ? undefined : unread} onClick={onNotifications} /></span>
+          {big ? <span className="os-dock__mod" data-led={activeId === 'settings' ? 'on' : undefined}><CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} /></span> : null}
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood}>
-            {PIXEL ? <span data-testid="mora-mark" className="os-dock__px"><PixelMora size={48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} /></span> : <MoraMark size={40} active={moraOpen} />}
+            {big ? <span className="os-dock__cone" aria-hidden /> : null}
+            {PIXEL ? <span data-testid="mora-mark" className="os-dock__px"><PixelMora size={big ? (phoneW ? 96 : 160) : 48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} /></span> : <MoraMark size={40} active={moraOpen} />}
           </button>
           <div id={DOCK_ASK_SLOT} className="os-dock__ask">
             <button type="button" className="os-dock__askbtn" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button>

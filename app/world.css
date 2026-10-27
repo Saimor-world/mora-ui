@@ -1442,3 +1442,101 @@ body:has(.wd-universe) .os-atmo, .os-atmo {
 .os-dock .os-dock__capsule button svg, .os-dock .os-dock__item svg { color: #5f5141 !important; }
 .os-dock__ask .wd-ask[data-docked='true'] input:focus, .os-dock__ask .wd-ask[data-docked='true'] input:focus-visible { outline: none !important; box-shadow: none !important; }
 .os-dock__px { display: inline-flex; }
+
+/* ══ Dock-Varianten A „Brücke“ / B „Homebase“ (?dock=a|b): MÔRA groß, Hardware-Anmutung, hell und warm ══ */
+html[data-dock='a'] { --os-dock-space: max(200px, 23vh); }
+html[data-dock='b'] { --os-dock-space: max(190px, 22vh); }
+.os-dock[data-variant='a'], .os-dock[data-variant='b'] { --metal: linear-gradient(180deg, #f7efe2 0%, #eadcc6 46%, #dccab0 100%); --brush: repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1px, rgba(120,90,50,.03) 1px 3px); --ink: #4a3d2f; --led: #7fbf8e; }
+.os-dock[data-variant] .os-dock__label { font-size: 11px; letter-spacing: .02em; }
+/* Tasten/Module: haptische Keycaps mit LED */
+.os-dock[data-variant='a'] .os-dock__item, .os-dock[data-variant='a'] .os-dock__mod,
+.os-dock[data-variant='b'] .os-dock__item, .os-dock[data-variant='b'] .os-dock__mod { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.os-dock[data-variant='a'] :is(.os-dock__item, .os-dock__mod) > button, .os-dock[data-variant='b'] :is(.os-dock__item, .os-dock__mod) > button,
+.os-dock[data-variant='a'] :is(.os-dock__item, .os-dock__mod) > span > button, .os-dock[data-variant='b'] :is(.os-dock__item, .os-dock__mod) > span > button {
+  width: 54px !important; height: 50px !important; border-radius: 14px !important; background: var(--brush), linear-gradient(180deg, #fffaf2, #efe3d1) !important;
+  border: 1px solid rgba(150, 118, 80, .28) !important; box-shadow: 0 1px 0 rgba(255,255,255,.95) inset, 0 -2px 0 rgba(150,118,80,.14) inset, 0 3px 6px rgba(90,64,34,.16), 0 1px 1px rgba(90,64,34,.12) !important;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.os-dock[data-variant] :is(.os-dock__item, .os-dock__mod) button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(90,64,34,.2) inset !important; }
+.os-dock[data-variant='a'] :is(.os-dock__item, .os-dock__mod)::after, .os-dock[data-variant='b'] :is(.os-dock__item, .os-dock__mod)::after {
+  content: ''; position: absolute; top: 6px; right: 7px; width: 5px; height: 5px; border-radius: 50%; background: rgba(120, 100, 80, .25); box-shadow: 0 0 0 1px rgba(255,255,255,.6); pointer-events: none; z-index: 2;
+}
+.os-dock[data-variant] .os-dock__item[data-active='true']::after, .os-dock[data-variant] .os-dock__mod[data-led='on']::after { background: var(--led); box-shadow: 0 0 6px rgba(127, 191, 142, .9), 0 0 0 1px rgba(255,255,255,.7); }
+.os-dock[data-variant] .os-dock__mod[data-led='on']:first-child::after { background: #e0a65a; box-shadow: 0 0 6px rgba(224, 166, 90, .9), 0 0 0 1px rgba(255,255,255,.7); }
+.os-dock[data-variant='a'] .os-dock__dot, .os-dock[data-variant='b'] .os-dock__dot { display: none; }
+.os-dock[data-variant] .os-dock__group { gap: 10px; }
+/* MÔRA groß auf Sockel mit Lichtkegel */
+.os-dock[data-variant='a'] .os-dock__stone, .os-dock[data-variant='b'] .os-dock__stone { position: relative; width: 200px; height: 190px; border-radius: 0; background: none !important; overflow: visible; align-items: flex-end; }
+.os-dock[data-variant] .os-dock__cone { position: absolute; left: 50%; bottom: 8px; width: 210px; height: 200px; transform: translateX(-50%); pointer-events: none; background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(255, 236, 196, .55), rgba(255, 236, 196, 0) 70%); }
+.os-dock[data-variant] .os-dock__stone::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 150px; height: 26px; transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 35%, #fffaf0, #e5d3b8 60%, #cdb595); box-shadow: 0 6px 14px rgba(90, 64, 34, .25), 0 1px 0 rgba(255,255,255,.9) inset; z-index: 0; }
+.os-dock[data-variant] .os-dock__px { position: relative; z-index: 1; margin-bottom: 10px; }
+.os-dock[data-variant] .os-dock__stone[data-mood='listening']::after { box-shadow: 0 6px 14px rgba(90,64,34,.25), 0 0 18px rgba(127, 191, 142, .55); }
+.os-dock[data-variant] .os-dock__stone[data-mood='thinking'] .os-dock__cone, .os-dock[data-variant] .os-dock__stone[data-mood='speaking'] .os-dock__cone { background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(200, 236, 210, .6), rgba(200, 236, 210, 0) 70%); }
+/* Eingabe vor MÔRA */
+.os-dock[data-variant] .os-dock__ask .wd-ask[data-docked='true'] form, .os-dock[data-variant] .os-dock__askbtn { min-height: 50px; background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(250,244,234,.9)); border: 1px solid rgba(150,118,80,.3); box-shadow: 0 2px 5px rgba(90,64,34,.12) inset, 0 1px 0 rgba(255,255,255,.9); }
+
+/* ── A: gewölbte Kommandokonsole ── */
+@media (min-width: 900px) {
+  .os-dock[data-variant='a'] .os-dock__capsule { display: grid !important; grid-template-columns: 1fr minmax(420px, 560px) 1fr; align-items: end; min-height: var(--os-dock-space) !important; padding: 0 3vw 18px !important;
+    border-radius: 50% 50% 0 0 / 46px 46px 0 0 !important; background: radial-gradient(ellipse 30% 70% at 50% 100%, rgba(255, 240, 210, .55), transparent 70%), var(--brush), var(--metal) !important;
+    border-top: 1px solid rgba(255,255,255,.9) !important; box-shadow: 0 -1px 0 rgba(150,118,80,.25), 0 -18px 40px rgba(90,64,34,.18), inset 0 14px 18px -10px rgba(255,255,255,.9), inset 0 -20px 30px rgba(140,104,62,.16) !important; }
+  .os-dock[data-variant='a'] .os-dock__capsule::before { content: ''; position: absolute; left: 8%; right: 8%; top: 10px; height: 34%; border-radius: 50% 50% 0 0 / 30px 30px 0 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); }
+  .os-dock[data-variant='a'] .os-dock__divider { display: none; }
+  .os-dock[data-variant='a'] .os-dock__group--tools { justify-self: end; padding: 12px 16px; border-radius: 20px; background: rgba(120, 90, 50, .07); box-shadow: inset 0 2px 5px rgba(90,64,34,.14), 0 1px 0 rgba(255,255,255,.8); transform: perspective(600px) rotateY(10deg); margin-right: 28px; }
+  .os-dock[data-variant='a'] .os-dock__group--apps { justify-self: start; padding: 12px 16px; border-radius: 20px; background: rgba(120, 90, 50, .07); box-shadow: inset 0 2px 5px rgba(90,64,34,.14), 0 1px 0 rgba(255,255,255,.8); transform: perspective(600px) rotateY(-10deg); margin-left: 28px; flex-wrap: wrap; max-width: 520px; }
+  .os-dock[data-variant='a'] .os-dock__hub { flex-direction: column; align-items: center; gap: 6px; max-width: none; margin-top: -120px; }
+  .os-dock[data-variant='a'] .os-dock__ask { width: 100%; }
+}
+/* ── B: Homebase-Station ── */
+@media (min-width: 900px) {
+  .os-dock[data-variant='b'] .os-dock__capsule { display: flex !important; justify-content: center; align-items: flex-end; gap: 22px !important; min-height: var(--os-dock-space) !important; padding: 0 3vw 16px !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .os-dock[data-variant='b'] .os-dock__divider { display: none; }
+  .os-dock[data-variant='b'] .os-dock__hub { position: relative; flex: 0 0 600px; max-width: none; height: var(--os-dock-space); flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; padding-bottom: 6px; }
+  .os-dock[data-variant='b'] .os-dock__hub::before { content: ''; position: absolute; left: 0; right: 0; bottom: -16px; height: 150px; border-radius: 300px 300px 0 0 / 150px 150px 0 0; z-index: -1;
+    background: radial-gradient(ellipse 40% 55% at 50% 30%, rgba(255, 240, 210, .6), transparent 70%), var(--brush), linear-gradient(180deg, rgba(255,250,241,.9), rgba(234,220,198,.94));
+    border-top: 1px solid rgba(255,255,255,.95); box-shadow: 0 -16px 40px rgba(90,64,34,.2), inset 0 12px 16px -8px rgba(255,255,255,.9), inset 0 -16px 24px rgba(140,104,62,.14); backdrop-filter: blur(16px); }
+  .os-dock[data-variant='b'] .os-dock__stone { height: 200px; margin-bottom: -6px; }
+  .os-dock[data-variant='b'] .os-dock__px { animation: dock-hover 5.6s ease-in-out infinite; margin-bottom: 26px; }
+  .os-dock[data-variant='b'] .os-dock__stone::after { bottom: 4px; width: 120px; height: 16px; background: radial-gradient(ellipse, rgba(90,64,34,.28), rgba(90,64,34,0) 70%); box-shadow: none; }
+  .os-dock[data-variant='b'] .os-dock__ask { width: 420px; flex: none; }
+  .os-dock[data-variant='b'] .os-dock__group { padding: 10px 14px; border-radius: 22px; background: var(--brush), linear-gradient(180deg, rgba(255,250,241,.88), rgba(236,224,204,.9)); border: 1px solid rgba(255,255,255,.8); box-shadow: 0 8px 22px rgba(90,64,34,.18), inset 0 -3px 6px rgba(140,104,62,.12); backdrop-filter: blur(14px); margin-bottom: 4px; }
+  .os-dock[data-variant='b'] .os-dock__group--tools { order: -1; border-radius: 22px 22px 40px 22px; }
+  .os-dock[data-variant='b'] .os-dock__group--apps { border-radius: 22px 22px 22px 40px; }
+  .os-dock[data-variant='b'] .os-dock__group > :nth-child(odd) { transform: translateY(-3px); }
+}
+@keyframes dock-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* ── Handy: kompakt, MÔRA größer unten ── */
+@media (max-width: 899px) {
+  html[data-dock='a'], html[data-dock='b'] { --os-dock-space: 196px; }
+  .os-dock[data-variant='a'] .os-dock__capsule, .os-dock[data-variant='b'] .os-dock__capsule { border-radius: 26px 26px 0 0 !important; padding-top: 10px !important; background: var(--brush), var(--metal) !important; box-shadow: 0 -10px 30px rgba(90,64,34,.18), inset 0 10px 14px -8px rgba(255,255,255,.9) !important; overflow: visible; }
+  .os-dock[data-variant] .os-dock__hub { align-items: flex-end; }
+  .os-dock[data-variant='a'] .os-dock__stone, .os-dock[data-variant='b'] .os-dock__stone { width: 104px; height: 116px; margin-top: -54px; }
+  .os-dock[data-variant] .os-dock__cone { width: 120px; height: 120px; }
+  .os-dock[data-variant] .os-dock__stone::after { width: 92px; height: 18px; }
+  .os-dock[data-variant] .os-dock__px { margin-bottom: 8px; }
+  .os-dock[data-variant] .os-dock__ask { margin-bottom: 14px; }
+  .os-dock[data-variant] .os-dock__group--apps { padding-top: 6px; }
+  .os-dock[data-variant='b'] .os-dock__capsule { border-radius: 50% 50% 0 0 / 34px 34px 0 0 !important; }
+  .os-dock[data-variant='b'] .os-dock__px { animation: dock-hover 5.6s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) { .os-dock[data-variant] .os-dock__px { animation: none !important; } .os-dock[data-variant] button { transition: none !important; } }
+@media (min-width: 900px) {
+  .os-dock[data-variant='b'] .os-dock__group--tools, .os-dock[data-variant='b'] .os-dock__group--apps { flex: 0 1 auto; min-width: 0; }
+  .os-dock[data-variant='b'] .os-dock__capsule { justify-content: center; }
+  .os-dock[data-variant='b'] .os-dock__hub { flex: 0 0 min(600px, 42vw); }
+}
+@media (min-width: 900px) { .os-dock[data-variant] .os-dock__item--mobile { display: none !important; } .os-dock[data-variant='b'] .os-dock__hub { flex-basis: min(560px, 38vw); } .os-dock[data-variant='b'] .os-dock__group { gap: 6px; } }
+.os-dock[data-variant='a'] .os-dock__group > button, .os-dock[data-variant='b'] .os-dock__group > button, .os-dock[data-variant='a'] .os-dock__group > span:not(.os-dock__item):not(.os-dock__mod) > button, .os-dock[data-variant='b'] .os-dock__group > span:not(.os-dock__item):not(.os-dock__mod) > button {
+  width: 54px !important; height: 50px !important; border-radius: 14px !important; background: var(--brush), linear-gradient(180deg, #fffaf2, #efe3d1) !important; border: 1px solid rgba(150,118,80,.28) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.95) inset, 0 -2px 0 rgba(150,118,80,.14) inset, 0 3px 6px rgba(90,64,34,.16) !important; }
+@media (min-width: 900px) { .os-dock[data-variant='a'] .os-dock__group--tools, .os-dock[data-variant='a'] .os-dock__group--apps { align-self: center; margin-top: 30px; } }
+@media (max-width: 899px) {
+  .os-dock[data-variant] .os-dock__item--desktop, .os-dock[data-variant] .os-dock__legacy { display: none !important; }
+  .os-dock[data-variant] .os-dock__group--apps { justify-content: space-evenly; }
+  html[data-dock='b'] { --os-dock-space: 236px; }
+  .os-dock[data-variant='b'] .os-dock__hub { flex-direction: column; align-items: center; gap: 2px; }
+  .os-dock[data-variant='b'] .os-dock__stone { margin-top: -70px; }
+  .os-dock[data-variant='b'] .os-dock__ask { width: 100%; margin-bottom: 8px; }
+}

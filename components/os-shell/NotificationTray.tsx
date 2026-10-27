@@ -16,8 +16,13 @@ export function dayNotices(day: LiveDay): { id: string; title: string; body?: st
   return out;
 }
 
+/** Ungelesene Hinweise + dringende Tages-Hinweise (echte Daten), auch für die LED im Dock. */
+export function useOsUnread(): number {
+  return useOsNotifications((s) => s.items.filter((i) => !i.read).length) + dayNotices(useWorld().day).filter((n) => n.urgent).length;
+}
+
 export function NotificationButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const unread = useOsNotifications((s) => s.items.filter((i) => !i.read).length) + dayNotices(useWorld().day).filter((n) => n.urgent).length;
+  const unread = useOsUnread();
   return (
     <Button variant="ghost" iconOnly aria-expanded={open} aria-label={unread ? `Hinweise (${unread} neu)` : 'Hinweise'} icon={<span className="relative"><Bell size={16} />{unread ? <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full" style={{ background: 'var(--os-accent)' }} /> : null}</span>} onClick={onToggle} />
   );
