@@ -65,13 +65,14 @@ loop from running in still mode. Two added browser journeys capture the existing
 base/sunglasses/scarf/pearls and verify single-neck-slot, undo/redo and persistence.
 No additional wardrobe, state engine or outfit store is introduced.
 
-The first wardrobe browser run exposed an incomplete test session: without
-`last_activity`, the existing stale-session rule removed its synthetic cookie;
-reload correctly returned to the access screen. The fixture now supplies a fresh
-activity timestamp and waits for the intended user before editing. The persistence
-assertion is retained and strengthened with an explicit per-user storage check.
-No production auth behavior is changed. A touch-enabled 390px journey and a
-reduced-motion image-stability check beyond the first blink are also included.
+The first wardrobe browser runs exposed an incomplete test session: its synthetic
+cookie lacked the existing opaque-session `sess_` format and was intentionally
+removed by the HTTP client. Reload correctly returned to the access screen.
+The fixture now uses the same opaque-session shape as the existing CORE logic QA,
+provides a fresh activity timestamp, waits for the intended user before editing,
+and checks both per-user storage and cookie survival before reload. No production
+auth behavior is changed. A touch-enabled 390px journey and reduced-motion image
+stability beyond the first blink are also included.
 
 Actual accessory captures also showed that the scarf still read as a flat band.
 Its existing SVG now has a more curved cowl around the stone and a softly curved

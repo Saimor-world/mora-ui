@@ -19,7 +19,7 @@ const nodes = Array.from({ length: 6 }, (_, i) => ({ id: `qa-${i}`,
   title: `UI-Testdokument ${i + 1}`, type: 'document', folder_id: i < 4 ? 'roadmap' : 'research' }));
 
 test.beforeEach(async ({ page, context, baseURL }) => {
-  await context.addCookies([{ name: 'mora_session', value: 'ui_fixture_not_a_credential', url: baseURL! }]);
+  await context.addCookies([{ name: 'mora_session', value: 'sess_ui_fixture_not_a_credential', url: baseURL! }]);
   await page.addInitScript(() => {
     localStorage.setItem('saimor_product_tour_dismissed', '1');
     localStorage.setItem('last_activity', new Date().toISOString());
@@ -126,6 +126,8 @@ for (const width of [1440, 390]) {
     await expect(stage.locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
     expect(await page.evaluate(() => JSON.parse(
       localStorage.getItem('mora.wardrobe.v1:ui-user') || '{}').neck)).toMatch(/^pearl-necklace/);
+    expect((await page.context().cookies()).find(c => c.name === 'mora_session')?.value)
+      .toBe('sess_ui_fixture_not_a_credential');
     await page.reload();
     await expect(page.getByTestId('wd-stage').locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
   });
