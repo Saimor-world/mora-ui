@@ -1,10 +1,14 @@
 'use client';
+import { useNavPos } from '@/lib/mora/navPos';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
 import { useReducedMotion } from 'framer-motion';
 import { GLASS_SHARED, GlassOrb, glassTintFor, glassVariantFor } from '@/components/world/GlassOrb';
 import { JadeMora } from '@/components/world/JadeMora';
+import { PixelMora } from '@/components/world/PixelMora';
+import { MORA_FIGURE } from '@/lib/mora/figure';
+const FvMora = MORA_FIGURE === 'jade' ? JadeMora : PixelMora;
 import { focusTiles, formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
 import type { LiveDay } from '@/lib/lea/live';
 
@@ -104,6 +108,9 @@ export function FinderVerse(p: FinderVerseProps) {
     const st = swipe.current; swipe.current = null;
     if (st && e.clientY - st.y > 80 && Math.abs(e.clientX - st.x) < 60) goUp();
   };
+  useEffect(() => {
+    useNavPos.getState().set({ moon: moon ? { id: moon.id, name: moon.name } : null, toPlanet: () => { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } });
+  }, [moon?.id, moon?.name]); // eslint-disable-line react-hooks/exhaustive-deps
   const goUp = () => { if (moonId) { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } else p.onClose(); };
 
   useEffect(() => {
@@ -303,7 +310,7 @@ export function FinderVerse(p: FinderVerseProps) {
               ))}
               {p.moraInScene !== false ? (
                 <span className="fv-dome__mora" data-testid="fv-mora" aria-hidden>
-                  <JadeMora bare size={phone ? 52 : 78} mood="idle" reduced={reduced} />
+                  <FvMora bare size={phone ? 48 : 80} mood="idle" reduced={reduced} />
                 </span>
               ) : null}
               {stars.length ? (

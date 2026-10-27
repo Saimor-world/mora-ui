@@ -28,8 +28,8 @@ describe('accessoryAdapter (Jade)', () => {
       expect(a.every((t) => t.value.length > 0)).toBe(true);
     }
     expect(mountAttributes(JADE_MOUNTS['jade-sunglasses'])).toEqual([
-      { trait_type: 'Gesicht', value: 'Silber-Sonnenbrille' }, { trait_type: 'Kategorie', value: 'Brille' },
-      { trait_type: 'Kollektion', value: 'Basis' }, { trait_type: 'Material', value: 'Silber, getönte Gläser' }, { trait_type: 'Herkunft', value: 'standard' },
+      { trait_type: 'Gesicht', value: 'Sonnenbrille' }, { trait_type: 'Kategorie', value: 'Brille' },
+      { trait_type: 'Kollektion', value: 'Basis' }, { trait_type: 'Material', value: 'Rauchglas, Metallrahmen' }, { trait_type: 'Herkunft', value: 'standard' },
     ]);
     expect(mountAttributes(JADE_MOUNTS['founder-f1']).slice(1)).toEqual([
       { trait_type: 'Kategorie', value: 'Anhänger' }, { trait_type: 'Kollektion', value: 'Gründer' },

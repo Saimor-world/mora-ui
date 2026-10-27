@@ -7,7 +7,7 @@ import doc from './mora-traits.json';
 import { isUnlocked, NO_UNLOCKS, type UnlockContext } from './unlock';
 
 /** `back`: gleiche Datei mit Endung `--back.png` liegt hinter dem Körper (Schalenden, Brillenbügel, Kette). `anim`: Bildanzahl des Streifens `--anim.png`. */
-export type TraitVariant = { id: string; name: string; swatch: string; file: string; back?: boolean; anim?: number; /** Vorschau für den Jade-Stein, wenn `file` das Pixel-Sprite ist (figure 'both'). */ thumb?: string };
+export type TraitVariant = { id: string; name: string; swatch: string; file: string; back?: boolean; anim?: number; /** Vorschau für den Jade-Stein, wenn `file` das Pixel-Sprite ist (figure 'both'). */ thumb?: string; /** Glitzer/Sterne: in der Garderobe ausgeblendet, bleibt aber gültig. */ hidden?: boolean };
 /** Mode-Attribute eines Teils (gehen unverändert in die NFT-Attribute des Adapters). */
 export type TraitFashion = { category: string; collection: string; material: string };
 /** Herkunft entscheidet über Seltenheit, nie Farbe oder Kategorie (siehe "rules" in mora-traits.json). */
@@ -31,7 +31,12 @@ export type TraitItem = {
   behavior?: string; tradable?: boolean; hint?: string;
   /** Bild ist noch ein Platzhalter (bestehende Ebene wiederverwendet). */
   placeholder?: boolean;
+  /** Glitzer/Sterne: in der Garderobe ausgeblendet (Marius: keine Glitzer-/Plus-Sterne), gespeicherte Auswahl bleibt gültig. */
+  hidden?: boolean;
 };
+/** In der Garderobe angebotene Teile und Farben (ohne ausgeblendete). */
+export const shownItems = (s: TraitSlot) => s.items.filter((i) => !i.hidden && i.variants.some((v) => !v.hidden));
+export const shownVariants = (i: TraitItem) => i.variants.filter((v) => !v.hidden);
 export type TraitSlot = { id: string; name: string; items: TraitItem[] };
 export type Wardrobe = Record<string, string | null>;
 
@@ -143,8 +148,8 @@ export function randomWardrobe(rng: () => number = Math.random, ctx: UnlockConte
   const w: Wardrobe = {};
   for (const s of TRAITS.slots) {
     if (rng() > (SLOT_ODDS[s.id] ?? 0.5)) { w[s.id] = null; continue; }
-    const free = s.items.filter((i) => isUnlocked(i, ctx)); if (!free.length) { w[s.id] = null; continue; }
-    const it = pick(free); w[s.id] = joinChoice(it.id, pick(it.variants).id);
+    const free = shownItems(s).filter((i) => isUnlocked(i, ctx)); if (!free.length) { w[s.id] = null; continue; }
+    const it = pick(free); w[s.id] = joinChoice(it.id, pick(shownVariants(it)).id);
   }
   // Welche zwei bleiben, entscheidet der Zufall.
   const order = [...ACCESSORY_SLOTS].map((id) => ({ id, r: rng() })).sort((a, b) => a.r - b.r).map((x) => x.id);

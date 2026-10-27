@@ -19,6 +19,16 @@ export function useDpr(): number {
 }
 /** Bildstufe für Anzeigegröße in CSS-px auf diesem Bildschirm (Retina: doppelt so viele Gerätepixel). */
 export function tierForDpr(px: number, dpr: number): Tier { return tierFor(Math.round(px * dpr)); }
+/** Pixelgenau: Anzeigegröße (CSS-px) und Bildstufe so wählen, dass jedes Sprite-Pixel ganzzahlig viele Gerätepixel belegt
+ *  (Stufe × k / dpr, k ganzzahlig). Nimmt die Kombination, die der Wunschgröße am nächsten liegt. */
+export function snapPixel(px: number, dpr: number): { size: number; tier: Tier } {
+  let best = { size: 140 / dpr, tier: 140 as Tier }; let err = Infinity;
+  for (const t of [48, 80, 96, 140] as Tier[]) for (let k = 1; k <= 6; k++) {
+    const size = (t * k) / dpr; const e = Math.abs(size - px) + (k > 1 ? 0.5 : 0);
+    if (e < err) { err = e; best = { size, tier: t }; }
+  }
+  return best;
+}
 /** Kugel (Körper) relativ zur Bildfläche: Radius ≈ 36 % der Kante (aus dem Sprite gemessen). */
 export const MORA_R = 0.3625;
 /** Grundkörper (ein Bild je Augenzustand, glattes Final-Set; Gründer-Konto mit echter Blüte); Accessoires aus lib/mora/mora-traits.json.
@@ -50,23 +60,22 @@ export type PixelMoraProps = {
   bare?: boolean;
 };
 
-/** Legacy-Stil: Pixel-MÔRA. Standard ist JadeMora (components/world/JadeMora.tsx). */
 /** Statisches Pixel-MÔRA-Zeichen (Dock, Einstiege). */
 export function PixelMoraMark({ size = 32, active = false, wardrobe }: { size?: number; active?: boolean; wardrobe?: Wardrobe }) {
   const [mine] = useWardrobe();
   const dpr = useDpr();
+  const snap = snapPixel(size, dpr);
   return (
-    <span className="px-mora px-mora--mark" data-testid="mora-mark" data-active={active ? 'true' : undefined} style={{ width: size, height: size }} aria-hidden>
-      <Layers wardrobe={wardrobe ?? mine} tier={tierForDpr(size, dpr)} />
+    <span className="px-mora px-mora--mark" data-testid="mora-mark" data-figure="pixel" data-active={active ? 'true' : undefined} style={{ width: snap.size, height: snap.size }} aria-hidden>
+      <Layers wardrobe={wardrobe ?? mine} tier={snap.tier} />
     </span>
   );
 }
 
 export function PixelMora({ size, mood, target, phone = false, reduced = false, roam = [], fresh = null, wardrobe, bare = false }: PixelMoraProps) {
   const [mine] = useWardrobe();
-  const px = Math.round(size); // Zeichenfläche in px, Bildstufe passend dazu
   const dpr = useDpr();
-  const tier = tierForDpr(px, dpr);
+  const { size: px, tier } = snapPixel(Math.round(size), dpr); // pixelgenau: ganzzahliger Faktor je Sprite-Pixel
   const night = mood === 'night' || (mood === 'idle' && isNight());
   const busy = mood === 'thinking' || mood === 'speaking' || mood === 'listening' || mood === 'waiting';
   const flying = !!target;
@@ -165,7 +174,7 @@ export function PixelMoraStage({ wardrobe, scale = 2, hop = 0, turn = 0, reduced
   }, [reduced]);
   const px = 140 * scale;
   return (
-    <span className="px-mora px-mora--stage" data-testid="mora-stage" data-hop={hop} data-turn={turn} style={{ width: px, height: px }} aria-hidden>
+    <span className="px-mora px-mora--stage" data-testid="mora-stage" data-figure="pixel" data-hop={hop} data-turn={turn} style={{ width: px, height: px }} aria-hidden>
       <span key={`h${hop}`} className={`px-mora__bob${hop ? ' px-mora__bob--hop' : ''}`}>
         <span key={`t${turn}`} className={`px-mora__turn${turn ? ' px-mora__turn--go' : ''}`}>
           <Layers eyes={eyes} wardrobe={wardrobe} tier={140} />
