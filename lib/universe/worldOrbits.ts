@@ -7,7 +7,7 @@
  */
 
 export interface OrbitRing { rx: number; ry: number; period: number }
-export interface OrbitSlot { ring: number; angle: number; size: number }
+export interface OrbitSlot { ring: number; angle: number; size: number; /** Freie Position (Glas-Ansicht ohne Bahnen): gewinnt gegen ring/angle. */ pos?: { x: number; y: number } }
 export interface OrbitLayout {
   /** Größenfaktor der Fläche (1 bis 1,35): Full HD ist der Hauptfall, dort wächst alles mit. */
   scale: number;
@@ -398,6 +398,7 @@ export interface PlacedPlanet { x: number; y: number; front: boolean; z: number 
 
 /** Position zum Zeitpunkt t (Sekunden). Vorne = unterer Halbbogen. */
 export function placeOnOrbit(layout: OrbitLayout, slot: OrbitSlot, t = 0): PlacedPlanet {
+  if (slot.pos) return { x: slot.pos.x, y: slot.pos.y, front: true, z: 10 + Math.round(slot.pos.y) };
   const ring = layout.rings[slot.ring];
   const a = slot.angle + (2 * Math.PI * t) / ring.period;
   const x = layout.cx + ring.rx * Math.cos(a);

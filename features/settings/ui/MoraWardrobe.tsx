@@ -135,7 +135,7 @@ export function MoraWardrobe() {
                   <button type="button" className="os-wd__outfit-main" data-testid={`wd-outfit-${i + 1}`}
                     onClick={() => (o ? commit(o) : setOutfit(i, w))} aria-label={o ? `Outfit ${i + 1} anziehen` : `Aktuelles Outfit auf Platz ${i + 1} speichern`}
                     title={o ? `Outfit ${i + 1} anziehen` : 'Aktuelles Outfit hier speichern'}>
-                    {o ? <PixelMoraMark size={44} wardrobe={o} /> : <span className="os-wd__plus">+</span>}
+                    {o ? <PixelMoraMark size={32} wardrobe={o} /> : <span className="os-wd__plus">+</span>}
                     <span className="os-wd__num">{i + 1}</span>
                   </button>
                   {o ? (

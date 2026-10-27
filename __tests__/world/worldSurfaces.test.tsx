@@ -115,7 +115,7 @@ describe('WorldUniverse', () => {
     expect(within(screen.getByTestId('world-mora')).getByTestId('mora-spirit')).toBeInTheDocument();
     expect(screen.getByTestId('mora-status')).toHaveTextContent('MÔRA ist da und ruhig.');
     const termine = screen.getByTestId('world-planet-d1');
-    expect(termine.querySelector('.planet--tone')).not.toBeNull(); // eine Saimôr-Palette für alle (24.10.2026)
+    expect(termine.querySelector('.glass-orb')).not.toBeNull(); // Glas-Planeten sind der Standard (27.10.2026)
     expect(termine).toHaveTextContent('Termine');
     fireEvent.click(termine);
     expect(open).toHaveBeenCalledWith('d1');

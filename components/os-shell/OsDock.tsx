@@ -61,7 +61,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <div className="os-dock__group os-dock__group--right">
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
-            <PixelMoraMark size={34} active={moraOpen} />
+            <PixelMoraMark size={32} active={moraOpen} />
           </button>
         </div>
       </div>

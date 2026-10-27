@@ -934,6 +934,8 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 /* Pixel-MÔRA (Marius t759u/t773u): Ebenen, ruhig belebt. Glattes Final-Set in Stufen 48/80/96/140, weiche Bewegung. */
 .px-mora { position: relative; display: inline-block; transform-origin: 50% 60%; transition: transform 240ms ease-out; pointer-events: none; }
 .px-mora__base[data-on='false'] { visibility: hidden; }
+.px-mora__base { image-rendering: auto; filter: drop-shadow(0 6px 10px rgba(4, 6, 14, .4)); }
+.px-mora__base[data-founder='true'] { filter: drop-shadow(0 0 5px rgba(228, 198, 120, .55)) drop-shadow(0 6px 10px rgba(4, 6, 14, .4)); }
 .px-mora__bob, .px-mora__l { position: absolute; inset: 0; width: 100%; height: 100%; }
 .px-mora__anim { background-repeat: no-repeat; background-position: 0 0; animation: pxm-strip 1.44s steps(16, jump-none) infinite; }
 @keyframes pxm-strip { to { background-position: 100% 0; } }
@@ -947,7 +949,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 .px-mora__z { position: absolute; right: -4px; top: 0; font: 600 11px/1 ui-monospace, monospace; color: rgba(244, 204, 110, .8); animation: pxm-z 3s ease-out infinite; }
 .px-mora--mark { position: relative; display: inline-block; }
 .px-mora--mark .px-mora__l { animation: none; }
-@keyframes pxm-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, .97); } }
+@keyframes pxm-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 @keyframes pxm-light { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
 @keyframes pxm-lift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5%); } }
 @keyframes pxm-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
@@ -956,7 +958,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 @media (prefers-reduced-motion: reduce) { .px-mora, .px-mora * { animation: none !important; transition: none !important; } }
 .wd-mora:has(.px-mora) { overflow: visible; background: none !important; box-shadow: none !important; }
 .wd-mora:has(.px-mora)::before, .wd-mora:has(.px-mora)::after { display: none !important; }
-.os-dock__stone .px-mora--mark { width: 34px; height: 34px; }
+.os-dock__stone .px-mora--mark { width: 32px; height: 32px; }
 /* Garderobe */
 .os-wd__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .os-wd__count { font-size: 12px; opacity: .55; }
@@ -1099,20 +1101,20 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
 .wd-view small { font-size: var(--os-type-meta-size); opacity: .6; margin-left: -2px; }
 .wd-sky__twinkle { animation: wd-twinkle-px 10s steps(2, jump-none) infinite; }
 @keyframes wd-twinkle-px { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
-.wd-universe[data-view='pixel'] .wd-sky[data-reduced='true'] .wd-sky__twinkle { animation: none; }
-.wd-universe[data-view='pixel'] .wd-px--planet { z-index: 0; }
+.wd-universe[data-view='glass'] .wd-sky[data-reduced='true'] .wd-sky__twinkle { animation: none; }
+.wd-universe[data-view='glass'] .wd-px--planet { z-index: 0; }
 .wd-pxmoons { position: absolute; left: 0; top: 0; }
 .wd-planet[data-depth='back'] .wd-pxmoons { transform: scaleY(-1); }
 .wd-planet[data-depth='back'] .wd-pxmoons .wd-px { transform: scaleY(-1); }
-.wd-universe[data-view='pixel'] .wd-planet .wd-sphere,
-.wd-universe[data-view='pixel'] .wd-planet[data-active='true'] .wd-sphere,
-.wd-universe[data-view='pixel'] .wd-planet[data-depth] .wd-sphere { background: none; box-shadow: none; filter: none; border: 0; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-.wd-universe[data-view='pixel'] .wd-planet .wd-sphere, .wd-universe[data-view='pixel'] .wd-planet[data-depth] .wd-sphere.planet--glass, .wd-universe[data-view='pixel'] .wd-planet .wd-sphere.planet--tone { background: none !important; box-shadow: none !important; filter: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; } /* Glas-Unschärfe würde die Pixelplaneten darunter weichzeichnen */
-.wd-universe[data-view='pixel'] .wd-sphere::before, .wd-universe[data-view='pixel'] .wd-sphere::after { display: none; }
-.wd-universe[data-view='pixel'] .wd-planet:active .wd-sphere { transform: none; }
-.wd-universe[data-view='pixel'] .wd-planet { border-radius: 0; will-change: auto; }
-.wd-universe[data-view='pixel'] .wd-planet[data-selected='true'] { outline: none; }
-.wd-universe[data-view='pixel'] .wd-planet[data-selected='true']::after, .wd-universe[data-view='pixel'] .wd-planet[data-active='true']::after {
+.wd-universe[data-view='glass'] .wd-planet .wd-sphere,
+.wd-universe[data-view='glass'] .wd-planet[data-active='true'] .wd-sphere,
+.wd-universe[data-view='glass'] .wd-planet[data-depth] .wd-sphere { background: none; box-shadow: none; filter: none; border: 0; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.wd-universe[data-view='glass'] .wd-planet .wd-sphere, .wd-universe[data-view='glass'] .wd-planet[data-depth] .wd-sphere.planet--glass, .wd-universe[data-view='glass'] .wd-planet .wd-sphere.planet--tone { background: none !important; box-shadow: none !important; filter: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; } /* Glas-Unschärfe würde die Pixelplaneten darunter weichzeichnen */
+.wd-universe[data-view='glass'] .wd-sphere::before, .wd-universe[data-view='glass'] .wd-sphere::after { display: none; }
+.wd-universe[data-view='glass'] .wd-planet:active .wd-sphere { transform: none; }
+.wd-universe[data-view='glass'] .wd-planet { border-radius: 0; will-change: auto; }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true'] { outline: none; }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true']::after, .wd-universe[data-view='glass'] .wd-planet[data-active='true']::after {
   content: ''; position: absolute; inset: -14px; pointer-events: none; z-index: 2; --c: #e8d6a0;
   background:
     linear-gradient(var(--c), var(--c)) 0 0 / 12px 2px no-repeat, linear-gradient(var(--c), var(--c)) 0 0 / 2px 12px no-repeat,
@@ -1120,32 +1122,32 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1
     linear-gradient(var(--c), var(--c)) 0 100% / 12px 2px no-repeat, linear-gradient(var(--c), var(--c)) 0 100% / 2px 12px no-repeat,
     linear-gradient(var(--c), var(--c)) 100% 100% / 12px 2px no-repeat, linear-gradient(var(--c), var(--c)) 100% 100% / 2px 12px no-repeat;
 }
-.wd-universe[data-view='pixel'] .wd-planet[data-active='true']:not([data-selected='true'])::after { opacity: .55; }
-.wd-universe[data-view='pixel'] .wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%); }
-.wd-universe[data-view='pixel'] .wd-label { padding: 5px 9px 6px; border-radius: 10px; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); }
-.wd-universe[data-view='pixel'] .wd-name { text-shadow: none; }
-.wd-universe[data-view='pixel'] .wd-moonlabel { padding: 2px 8px; border-radius: 8px; background: rgba(10, 14, 28, .78); border: 1px solid rgba(255, 255, 255, .1); text-shadow: none; }
-.wd-universe[data-view='pixel'] .wd-badge { border-radius: 8px; background: rgba(10, 14, 28, .82); border: 1px solid rgba(255, 255, 255, .22); box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
-.wd-universe[data-view='pixel'] .wd-orbits ellipse { stroke: rgba(150, 170, 230, .24); stroke-width: 2; stroke-dasharray: 2 10; }
-.wd-universe[data-view='pixel'] .wd-link { stroke: rgba(170, 190, 240, .3); stroke-width: 2; stroke-dasharray: 2 6; filter: none; }
-.wd-universe[data-view='pixel'] .wd-link--active { stroke: rgba(226, 212, 170, .6); stroke-width: 2; stroke-dasharray: 6 4; filter: none; }
-.wd-universe[data-view='pixel'] .wd-link-pulse { filter: none; stroke-linecap: butt; stroke-width: 4; }
-.wd-universe[data-view='pixel'] .wd-sublink { stroke: rgba(170, 190, 240, .32); stroke-width: 2; stroke-dasharray: 2 4; filter: none; }
-.wd-universe[data-view='pixel'] .wd-stardot { filter: none; }
-.wd-universe[data-view='pixel'] .wd-mora:hover { transform: translate(-50%, -50%); }
-.wd-universe[data-view='pixel'] .wd-mora { transition: none; }
-.wd-universe[data-view='pixel'] .wd-comet { display: none; }
-.wd-universe[data-view='pixel'] .wd-mora-line, .wd-universe[data-view='pixel'] .wd-mora-step { border-radius: 12px; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); text-shadow: none; }
+.wd-universe[data-view='glass'] .wd-planet[data-active='true']:not([data-selected='true'])::after { opacity: .55; }
+.wd-universe[data-view='glass'] .wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%); }
+.wd-universe[data-view='glass'] .wd-label { padding: 5px 9px 6px; border-radius: 10px; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.wd-universe[data-view='glass'] .wd-name { text-shadow: none; }
+.wd-universe[data-view='glass'] .wd-moonlabel { padding: 2px 8px; border-radius: 8px; background: rgba(10, 14, 28, .78); border: 1px solid rgba(255, 255, 255, .1); text-shadow: none; }
+.wd-universe[data-view='glass'] .wd-badge { border-radius: 8px; background: rgba(10, 14, 28, .82); border: 1px solid rgba(255, 255, 255, .22); box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
+.wd-universe[data-view='glass'] .wd-orbits ellipse { stroke: rgba(150, 170, 230, .24); stroke-width: 2; stroke-dasharray: 2 10; }
+.wd-universe[data-view='glass'] .wd-link { stroke: rgba(170, 190, 240, .3); stroke-width: 2; stroke-dasharray: 2 6; filter: none; }
+.wd-universe[data-view='glass'] .wd-link--active { stroke: rgba(226, 212, 170, .6); stroke-width: 2; stroke-dasharray: 6 4; filter: none; }
+.wd-universe[data-view='glass'] .wd-link-pulse { filter: none; stroke-linecap: butt; stroke-width: 4; }
+.wd-universe[data-view='glass'] .wd-sublink { stroke: rgba(170, 190, 240, .32); stroke-width: 2; stroke-dasharray: 2 4; filter: none; }
+.wd-universe[data-view='glass'] .wd-stardot { filter: none; }
+.wd-universe[data-view='glass'] .wd-mora:hover { transform: translate(-50%, -50%); }
+.wd-universe[data-view='glass'] .wd-mora { transition: none; }
+.wd-universe[data-view='glass'] .wd-comet { display: none; }
+.wd-universe[data-view='glass'] .wd-mora-line, .wd-universe[data-view='glass'] .wd-mora-step { border-radius: 12px; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); text-shadow: none; }
 .wd-view { position: absolute; left: 20px; bottom: 274px; z-index: 900; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 11px; border-radius: 999px; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); color: var(--wd-text-base); font-size: var(--os-type-small-size); cursor: pointer; transition: border-color .2s, background .2s; }
 .wd-view i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; opacity: .85; }
 .wd-view[aria-pressed='true'] i { background: none; box-shadow: inset 0 0 0 1.5px currentColor; }
 .wd-view:hover { border-color: rgba(255, 255, 255, .3); background: rgba(16, 22, 42, .72); }
 .wd-view:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 2px; }
-.wd-universe[data-view='pixel'] .wd-zoom button, .wd-universe[data-view='pixel'] .wd-legend summary { border-radius: 50%; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); }
-.wd-universe[data-view='pixel'] .wd-counter { border-radius: 8px; background: none; border: 0; }
+.wd-universe[data-view='glass'] .wd-zoom button, .wd-universe[data-view='glass'] .wd-legend summary { border-radius: 50%; background: rgba(10, 14, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, .13); box-shadow: 0 6px 22px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.wd-universe[data-view='glass'] .wd-counter { border-radius: 8px; background: none; border: 0; }
 @media (prefers-reduced-motion: reduce) { .wd-sky__twinkle { animation: none; } }
 /* Phase 2: opaque pixel sky is a fixed layer inside the universe's stacking context; keep the shell top bar above it */
-body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative; z-index: 30; }
+body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative; z-index: 30; }
 
 /* Politur 27.10.: MÔRAs Satz bricht um statt mit „…“ abzuschneiden; Abstand zur Eingabe. */
 .wd-mora-line { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; max-width: min(460px, calc(100% - 440px)); line-height: 20px; }
@@ -1157,10 +1159,10 @@ body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative
 .wd-universe[data-compact='true'] .wd-planet:hover .wd-meta, .wd-universe[data-compact='true'] .wd-planet:focus-visible .wd-meta { opacity: 1; }
 
 /* Handy-Nachbesserung (27.10.): Pixel-Ansicht ruhiger – keine Mond-Deko, MÔRA fest in der Mitte, alles innerhalb des Bildes. */
-.wd-universe[data-view='pixel'] .wd-pxmoons, .wd-universe[data-view='pixel'] .wd-moonlabel, .wd-universe[data-view='pixel'] .wd-moremoons { display: none; }
+.wd-universe[data-view='glass'] .wd-pxmoons, .wd-universe[data-view='glass'] .wd-moonlabel, .wd-universe[data-view='glass'] .wd-moremoons { display: none; }
 .wd-ask { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 24px); }
 @media (max-width: 1100px) {
-  .wd-universe[data-view='pixel'] .wd-mora-line { max-width: calc(100% - 32px); }
+  .wd-universe[data-view='glass'] .wd-mora-line { max-width: calc(100% - 32px); }
 }
 @media (max-width: 1000px) { .wd-universe ~ * .wd-counter, .wd-counter { display: none; } }
 /* Handy: nur Name und Zahl am Planeten – Details stehen im Planeten selbst. */
@@ -1170,3 +1172,66 @@ body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative
 .wd-mora { display: flex; align-items: center; justify-content: center; }
 .wd-mora-glide { display: flex; flex: none; align-items: center; justify-content: center; }
 @media (max-width: 1000px) { .wd-ask { width: min(560px, calc(100% - 340px)); } }
+
+/* ── Glas-Ansicht (konzept2 Übersicht, konzept4 geöffneter Planet; Marius 27.10.) ───────────────────
+ * Keine Bahnen, keine Linien, keine Rahmen. Glasplaneten als transparente PNGs, MÔRA klein und scharf. */
+.wd-universe[data-view='glass'] .wd-mora { width: var(--m) !important; height: var(--m) !important; }
+.wd-universe[data-view='glass'] .wd-planet { border-radius: 0; }
+.glass-orb { position: relative; display: block; flex: none; transition: transform .35s cubic-bezier(.2, .8, .2, 1), filter .35s ease; }
+.glass-orb > img { position: absolute; max-width: none; pointer-events: none; user-select: none; filter: drop-shadow(0 14px 22px rgba(4, 6, 14, .42)); }
+.glass-orb .wd-badge { right: 2%; top: 2%; }
+.wd-universe[data-view='glass'] .wd-planet:hover .glass-orb,
+.wd-universe[data-view='glass'] .wd-planet:focus-visible .glass-orb { transform: scale(1.05); }
+.wd-universe[data-view='glass'] .wd-planet:focus-visible { outline: none; }
+.wd-universe[data-view='glass'] .wd-planet:focus-visible .glass-orb > img { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 14px rgba(236, 226, 200, .75)); }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true']::after,
+.wd-universe[data-view='glass'] .wd-planet[data-active='true']::after { display: none; }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true'] .glass-orb > img,
+.wd-universe[data-view='glass'] .wd-planet[data-active='true'] .glass-orb > img { filter: drop-shadow(0 0 22px rgba(236, 224, 192, .5)) drop-shadow(0 14px 22px rgba(4, 6, 14, .42)); }
+.wd-universe[data-view='glass'] .wd-planet[data-depth='back'] .wd-label { top: calc(100% + 8px); bottom: auto; }
+.wd-universe[data-view='glass'] .wd-label { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wd-universe[data-view='glass'] .wd-name { text-shadow: 0 1px 12px rgba(4, 6, 14, .85); }
+.wd-universe[data-view='glass'] .wd-badge { min-width: 22px; height: 22px; border-radius: 50%; background: rgba(20, 24, 36, .62); border: 1px solid rgba(255, 255, 255, .22); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.wd-universe[data-view='glass'] .wd-zoom { display: none; }
+.wd-glass-pulse { position: absolute; inset: -8%; border-radius: 50%; border: 1px solid rgba(236, 224, 192, .55); pointer-events: none; animation: wd-glass-pulse 1.8s ease-out 1; }
+@keyframes wd-glass-pulse { from { opacity: .9; transform: scale(.92); } to { opacity: 0; transform: scale(1.22); } }
+.wd-universe[data-view='glass'] .wd-mora:focus-visible { outline: 2px solid rgba(236, 224, 192, .8); outline-offset: 6px; border-radius: 50%; }
+
+/* Kamerafahrt in den Planeten: ruhiger und kürzer als vorher, endet in der Halbkugel. */
+.wd-zoomwrap { transition: transform .52s cubic-bezier(.65, 0, .35, 1), opacity .52s ease, filter .52s ease; }
+
+/* Geöffneter Planet (konzept4): große Halbkugel unten, Ordner als Glasmonde im Bogen darüber, MÔRA über dem Rand. */
+.fv-dome { container-type: size; animation: none; --w: max(105cqw, 130cqh); --rise: calc(var(--w) * .276); }
+.fv-dome__planet { position: absolute; left: 50%; bottom: 0; width: var(--w); max-width: none; transform: translateX(-50%); pointer-events: none; user-select: none; animation: fv-dome-rise .75s cubic-bezier(.2, .7, .2, 1) both; }
+.fv-dome__title { position: absolute; left: 50%; bottom: calc(var(--rise) * .26); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; pointer-events: none; animation: fv-dome-fade .6s ease .25s both; }
+.fv-dome__title .fv-center__name { margin: 0; font-size: 28px; line-height: 34px; letter-spacing: -.01em; }
+.fv-dome__title .fv-center__meta { font-size: var(--os-type-body-size); color: rgba(235, 231, 222, .78); }
+.fv-dome__mora { position: absolute; left: 50%; bottom: calc(var(--rise) + 6px); transform: translateX(-50%); pointer-events: none; z-index: 3; animation: fv-dome-fade .6s ease .3s both; }
+.fv-moon--glass { z-index: 4; animation: fv-moon-in .65s cubic-bezier(.2, .8, .2, 1) calc(.18s + var(--i, 0) * .07s) both; }
+.fv-moon--glass:hover { transform: translate(-50%, -50%); }
+.fv-moon--glass:hover .glass-orb { transform: scale(1.06); }
+.fv-moon--glass .glass-orb > img { filter: drop-shadow(0 10px 16px rgba(4, 6, 14, .45)); }
+.fv-moon--glass .wd-badge { right: 2%; top: 2%; border-radius: 50%; min-width: 20px; height: 20px; font-size: 12px; background: rgba(20, 24, 36, .62); border: 1px solid rgba(255, 255, 255, .22); }
+.fv-dome__stars { position: absolute; left: 50%; bottom: calc(var(--rise) * .62); transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: min(640px, 90cqw); z-index: 4; }
+.fv-chip { display: inline-flex; align-items: baseline; gap: 8px; min-height: 36px; padding: 6px 14px; border-radius: var(--os-radius-pill); border: 1px solid var(--wd-line-strong); background: rgba(14, 18, 30, .55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--wd-text); font-size: var(--os-type-small-size); cursor: pointer; }
+.fv-chip small { color: var(--wd-muted); }
+.fv-chip[data-done='true'] { opacity: .5; text-decoration: line-through; }
+.fv-chip[data-overdue='true'] { border-color: rgba(217, 164, 140, .6); }
+.fv-chip[data-selected='true'] { border-color: rgba(236, 224, 192, .7); }
+.fv-chip:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 3px; }
+@keyframes fv-dome-rise { from { opacity: 0; transform: translateX(-50%) translateY(14%) scale(1.06); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes fv-dome-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fv-moon-in { from { opacity: 0; transform: translate(-50%, -50%) translateY(26px) scale(.8); } to { opacity: 1; transform: translate(-50%, -50%); } }
+.fv-dome__title, .fv-dome__mora { }
+.fv[data-phone='true'] .fv-dome { --w: max(130cqw, 120cqh); }
+.fv[data-phone='true'] .fv-dome__title .fv-center__name { font-size: 22px; line-height: 28px; }
+@media (prefers-reduced-motion: reduce) {
+  .wd-zoomwrap { transition: none; }
+  .fv-dome__planet, .fv-dome__title, .fv-dome__mora, .fv-moon--glass, .wd-glass-pulse { animation: none !important; }
+  .glass-orb { transition: none; }
+}
+
+/* Ordner-Ebene: Meta-Zeile nicht umbrechen, leerer Zustand rutscht nicht in die Beschriftung. */
+.fv-center { width: max-content; max-width: 92vw; }
+.fv-center__meta { white-space: nowrap; }
+.fv[data-phone='true'] .fv-empty { bottom: 22%; }
