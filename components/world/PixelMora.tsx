@@ -4,17 +4,21 @@ import type { SpiritMood } from './MoraSpirit';
 import { isNight, SPIRIT_LABEL } from './MoraSpirit';
 import { decide, type Intent, type RoamPoint } from '@/lib/mora/pixelBrain';
 import { wardrobeLayers, type Wardrobe } from '@/lib/mora/traits';
-import { useWardrobe } from '@/lib/mora/useWardrobe';
+import { useFounder, useWardrobe } from '@/lib/mora/useWardrobe';
 
-const GRID = 40;
+const GRID = 80;
 const SRC = '/mora/pixel/';
-/** Grundkörper; Accessoires kommen aus der gemeinsamen Trait-Datei (lib/mora/mora-traits.json). */
-function Layers({ eyes = 'eyes', wardrobe }: { eyes?: string; wardrobe: Wardrobe }) {
+type Eyes = 'eyes' | 'eyes_closed' | 'eyes_l' | 'eyes_r';
+const EYE_FILE: Record<Eyes, string> = { eyes: '', eyes_closed: '_closed', eyes_l: '_l', eyes_r: '_r' };
+/** Grundkörper (ein Bild, 80er Raster; Gründer-Konto mit Blüte); Accessoires kommen aus der gemeinsamen Trait-Datei (lib/mora/mora-traits.json). */
+function Layers({ eyes = 'eyes', wardrobe }: { eyes?: Eyes; wardrobe: Wardrobe }) {
+  const founder = useFounder();
   const t = wardrobeLayers(wardrobe);
   const aura = t.filter((l) => l.slot === 'aura'); const rest = t.filter((l) => l.slot !== 'aura');
+  const base = founder ? 'founder' : 'sprite';
   return (<>
     {aura.map((l) => <img key={l.src} src={l.src} alt="" className="px-mora__l px-mora__aura" draggable={false} />)}
-    {['body', 'light', 'face', eyes].map((b, i) => <img key={i} src={`${SRC}${b}.png`} alt="" className={`px-mora__l px-mora__${i === 3 ? 'eyes' : b}`} draggable={false} />)}
+    {(Object.keys(EYE_FILE) as Eyes[]).map((e) => <img key={e} src={`${SRC}${base}${EYE_FILE[e]}.png`} alt="" className="px-mora__l px-mora__base" data-eyes={e} data-on={e === eyes ? 'true' : 'false'} draggable={false} />)}
     {rest.map((l) => <img key={l.src} src={l.src} alt="" className={`px-mora__l px-mora__t-${l.slot}`} draggable={false} />)}
   </>);
 }
@@ -41,20 +45,21 @@ export function PixelMoraMark({ size = 32, active = false, wardrobe }: { size?: 
 
 export function PixelMora({ size, mood, target, phone = false, reduced = false, roam = [], fresh = null, wardrobe }: PixelMoraProps) {
   const [mine] = useWardrobe();
-  const scale = Math.max(1, Math.round((size * 1.6) / GRID));
+  const scale = Math.max(1, Math.round(size / GRID)); // size = Zeichenfläche in px; ganze Kunstpixel
   const px = GRID * scale;
   const night = mood === 'night' || (mood === 'idle' && isNight());
   const busy = mood === 'thinking' || mood === 'speaking' || mood === 'listening' || mood === 'waiting';
   const flying = !!target;
-  const [eyes, setEyes] = useState<'eyes' | 'eyes_closed' | 'eyes_l' | 'eyes_r'>('eyes');
+  const [eyes, setEyes] = useState<Eyes>('eyes');
   const [happy, setHappy] = useState(false);
   const [pose, setPose] = useState({ x: 0, y: 0, tilt: 0 });
   const box = useRef<HTMLSpanElement>(null);
   const goal = useRef({ x: 0, y: 0 });
   const cur = useRef({ x: 0, y: 0 });
   const look = useRef<0 | -1 | 1>(0);
-  const live = useRef({ roam, fresh, night, busy, flying });
-  live.current = { roam, fresh, night, busy, flying };
+  const moraR = 29 * scale;
+  const live = useRef({ roam, fresh, night, busy, flying, moraR });
+  live.current = { roam, fresh, night, busy, flying, moraR };
 
   // Entscheidungen: eigener Takt, aus echtem Zustand.
   useEffect(() => {
@@ -63,7 +68,7 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
     const step = () => {
       const s = live.current;
       if (s.flying) { goal.current = { x: 0, y: 0 }; t = setTimeout(step, 1500); return; }
-      const i = decide({ points: s.roam, fresh: s.fresh, night: s.night, busy: s.busy }, Math.random, last);
+      const i = decide({ points: s.roam, fresh: s.fresh, night: s.night, busy: s.busy, moraR: s.moraR }, Math.random, last);
       if (i.kind === 'look' && last?.id === i.id) { last = { ...i, kind: 'visit' }; } else last = i;
       goal.current = { x: i.x, y: i.y };
       t = setTimeout(step, Math.round(i.ms * 1.6));
@@ -130,8 +135,8 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
  * Bühnen-Figur der Garderobe: kein Umherfliegen, nur Atmen, Blinzeln, Drehen und ein Freudensprung bei jeder Änderung.
  * `hop` zählt hoch → Sprung; `turn` zählt hoch → einmal herumdrehen.
  */
-export function PixelMoraStage({ wardrobe, scale = 6, hop = 0, turn = 0, reduced = false }: { wardrobe: Wardrobe; scale?: number; hop?: number; turn?: number; reduced?: boolean }) {
-  const [eyes, setEyes] = useState<'eyes' | 'eyes_closed'>('eyes');
+export function PixelMoraStage({ wardrobe, scale = 3, hop = 0, turn = 0, reduced = false }: { wardrobe: Wardrobe; scale?: number; hop?: number; turn?: number; reduced?: boolean }) {
+  const [eyes, setEyes] = useState<Eyes>('eyes');
   useEffect(() => {
     if (reduced) return;
     let t: ReturnType<typeof setTimeout>;

@@ -93,7 +93,7 @@ export function MoraWardrobe() {
             <span className="os-wd__ring" aria-hidden /><span className="os-wd__ring os-wd__ring--b" aria-hidden />
             <span className="os-wd__spark os-wd__spark--1" aria-hidden /><span className="os-wd__spark os-wd__spark--2" aria-hidden /><span className="os-wd__spark os-wd__spark--3" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
-            <PixelMoraStage wardrobe={preview} scale={7} hop={hop} turn={turn} />
+            <PixelMoraStage wardrobe={preview} scale={3} hop={hop} turn={turn} />
             <div className="os-wd__chip" data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
               {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}</> : 'Aktuelles Outfit'}
             </div>

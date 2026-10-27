@@ -1,11 +1,8 @@
 {
- "version": 2,
- "grid": 40,
+ "version": 3,
+ "grid": 80,
  "base": [
-  "light",
-  "body",
-  "face",
-  "eyes"
+  "sprite"
  ],
  "assetBase": "/mora/pixel/traits/",
  "thumbBase": "/mora/pixel/thumbs/",
@@ -134,6 +131,12 @@
      "name": "Schal",
      "variants": [
       {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "neck-scarf--smaragd.png"
+      },
+      {
        "id": "marine",
        "name": "Marine",
        "swatch": "#202a60",
@@ -144,12 +147,6 @@
        "name": "Rot",
        "swatch": "#be343c",
        "file": "neck-scarf--rot.png"
-      },
-      {
-       "id": "smaragd",
-       "name": "Smaragd",
-       "swatch": "#1e7854",
-       "file": "neck-scarf--smaragd.png"
       },
       {
        "id": "creme",
@@ -489,67 +486,6 @@
    "name": "Kopf",
    "items": [
     {
-     "id": "sprout",
-     "name": "Zweiblatt-Spross",
-     "variants": [
-      {
-       "id": "gruen",
-       "name": "Grün",
-       "swatch": "#52aa46",
-       "file": "head-sprout.png"
-      },
-      {
-       "id": "herbst",
-       "name": "Herbst",
-       "swatch": "#de6e1e",
-       "file": "head-sprout--herbst.png"
-      },
-      {
-       "id": "frost",
-       "name": "Frost",
-       "swatch": "#8cc4f0",
-       "file": "head-sprout--frost.png"
-      },
-      {
-       "id": "gold",
-       "name": "Gold",
-       "swatch": "#d4a03e",
-       "file": "head-sprout--gold.png"
-      }
-     ],
-     "default": true
-    },
-    {
-     "id": "sprout3",
-     "name": "Dreiblatt-Spross",
-     "variants": [
-      {
-       "id": "gruen",
-       "name": "Grün",
-       "swatch": "#52aa46",
-       "file": "head-sprout3.png"
-      },
-      {
-       "id": "herbst",
-       "name": "Herbst",
-       "swatch": "#de6e1e",
-       "file": "head-sprout3--herbst.png"
-      },
-      {
-       "id": "frost",
-       "name": "Frost",
-       "swatch": "#8cc4f0",
-       "file": "head-sprout3--frost.png"
-      },
-      {
-       "id": "gold",
-       "name": "Gold",
-       "swatch": "#d4a03e",
-       "file": "head-sprout3--gold.png"
-      }
-     ]
-    },
-    {
      "id": "flower",
      "name": "Blüten-Spross",
      "variants": [
@@ -784,8 +720,7 @@
        "swatch": "#d89682",
        "file": "clip-moon--rose.png"
       }
-     ],
-     "default": true
+     ]
     },
     {
      "id": "star",

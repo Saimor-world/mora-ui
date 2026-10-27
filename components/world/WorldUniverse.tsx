@@ -117,7 +117,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? (planets.length >= 8 ? 120 : 150) : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 84 : undefined, planetMul: pixel ? 1.2 : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
     [size.width, size.height, planets, phone, insetLeft, insetRight, pixel],
   );
 
@@ -178,11 +178,12 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     if (!layout || !spiritTarget) return null;
     if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
     const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
-    return pp && sl ? stopShort(layout, pp, sl.size) : null;
+    return pp && sl ? stopShort(layout, pp, sl.size + (planets[k].orbit?.moons.length ? 40 : 0)) : null;
   })();
   // MÔRAs Ziele: Planeten relativ zur Mitte, gewichtet nach echter Aktivität / offenen Punkten.
   const roam = layout ? planets.flatMap((p, k) => { const sl = layout.slots[k]; const pp = sl ? placeOnOrbit(layout, sl) : null; const t = p.traits;
-    return pp && sl ? [{ id: p.id, ...stopShort(layout, pp, sl.size), weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
+    const rs = sl ? sl.size + (p.orbit?.moons.length ? 40 : 0) : 0;
+    return pp && sl ? [{ id: p.id, r: rs / 2, px: pp.x - layout.cx, py: pp.y - layout.cy, ...stopShort(layout, pp, rs), weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
   const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
@@ -247,7 +248,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure size={phone ? 24 : pixel ? Math.round(layout.mora * 0.64) : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
+            <SpiritFigure size={phone ? 80 : pixel ? layout.mora : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}

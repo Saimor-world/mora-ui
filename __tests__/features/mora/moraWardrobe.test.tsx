@@ -43,7 +43,7 @@ describe('MoraWardrobe (Editor)', () => {
     fireEvent.click(screen.getByTestId('wd-outfit-1'));
     expect(JSON.parse(window.localStorage.getItem('mora.outfits.v1:me')!)[0].head).toBe('wizard:violett');
     fireEvent.click(screen.getByTestId('wd-reset'));
-    expect(head()).toBe('sprout');
+    expect(head()).toBeNull();
     fireEvent.click(screen.getByTestId('wd-outfit-1'));
     expect(head()).toBe('wizard:violett');
     fireEvent.click(screen.getByTestId('wd-outfit-1-clear'));
@@ -51,13 +51,13 @@ describe('MoraWardrobe (Editor)', () => {
   });
 
   it('Zufall ändert das Outfit und lässt sich zurücknehmen', () => {
-    const before = JSON.stringify({ head: 'sprout', clip: 'moon', neck: 'scarf' });
+    const before = JSON.stringify({ head: null, clip: null, neck: 'scarf' });
     render(<MoraWardrobe />);
     let n = 0; const spy = jest.spyOn(Math, 'random').mockImplementation(() => [0.05, 0.4, 0.9, 0.2, 0.7, 0.1, 0.6, 0.3][n++ % 8]);
     fireEvent.click(screen.getByTestId('wd-random')); spy.mockRestore();
     expect(window.localStorage.getItem('mora.wardrobe.v1:me')).not.toBeNull();
     fireEvent.click(screen.getByTestId('wd-undo'));
     const w = JSON.parse(window.localStorage.getItem('mora.wardrobe.v1:me')!);
-    expect(w.head).toBe('sprout'); expect(JSON.stringify({ head: w.head, clip: w.clip, neck: w.neck })).toBe(before);
+    expect(w.head).toBeNull(); expect(JSON.stringify({ head: w.head, clip: w.clip, neck: w.neck })).toBe(before);
   });
 });

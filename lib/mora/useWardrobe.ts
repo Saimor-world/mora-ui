@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { isSaimorInternal } from '@/lib/auth/organization';
 import { DEFAULT_WARDROBE, loadOutfits, loadWardrobe, normalizeOutfits, saveOutfits, saveWardrobe, WARDROBE_EVENT, type Outfits, type Wardrobe } from './traits';
 
 function useMoraUser(): string {
@@ -27,4 +28,17 @@ export function useOutfits(): [Outfits, (i: number, w: Wardrobe | null) => void]
     setO((prev) => { const n = prev.slice(); n[i] = w; saveOutfits(n, user); return n; });
   }, [user]);
   return [o, set];
+}
+
+/** Pure Regel: Gründer-Konto = Inhaber (system_owner oder owner im SAIMÔR-HQ). Nichts Geheimes, nur eine Rolle. */
+export function isFounderUser(user: { role?: string | null; tenant_id?: string | null } | null | undefined): boolean {
+  return !!user && isSaimorInternal(user) && (user.role === 'owner' || user.role === 'system_owner');
+}
+
+/** Gründer-MÔRA (mit Blüte): Inhaber-Konto oder lokale Markierung `mora.founder=1` (zum Ansehen/Testen). */
+export function useFounder(): boolean {
+  const byRole = useSessionStore((s) => isFounderUser(s.user as { role?: string | null; tenant_id?: string | null } | null));
+  const [flag, setFlag] = useState(false);
+  useEffect(() => { try { setFlag(window.localStorage.getItem('mora.founder') === '1'); } catch { /* egal */ } }, []);
+  return byRole || flag;
 }

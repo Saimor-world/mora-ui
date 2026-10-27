@@ -125,6 +125,7 @@ const craters = (seed: number, n: number) => Array.from({ length: n }, (_, i) =>
 });
 
 const LIGHTS = hex('#e6c98a');
+const EDGE_GOLD = hex('#e8c878');
 
 /**
  * Flache Planeten (Marius t782u): je Planet 2–3 Töne, kein Glanz, keine Oberflächen-Details.
@@ -169,6 +170,12 @@ export function paintPlanet(spec: PlanetSpec, geo: Geometry, _frame = 0): Bitmap
       const lv = lam[i];
       let col = lv < 0.36 ? fl.shadow : lv > 0.82 ? fl.light : fl.mid;
       if (stripe(ny[i])) col = lv < 0.36 ? mix(fl.shadow, fl.band, 0.4) : fl.band;
+      // Feine Kante im Stil von MÔRAs Goldring: ein Pixel Gold am Rand, kräftiger zur Lichtseite hin.
+      const edge = x === 0 || y === 0 || x === S - 1 || y === S - 1 || !mask[i - 1] || !mask[i + 1] || !mask[i - S] || !mask[i + S];
+      if (edge && !(rg && rg.front)) {
+        const toLight = ((x + 0.5 - c) * geo.L.x + (y + 0.5 - c) * geo.L.y) / R;
+        col = mix(col, EDGE_GOLD, toLight > 0.05 ? 0.62 : 0.28);
+      }
       put(bm, x, y, col);
     } else if (rg) {
       const dark = (x + 0.5 - c) * geo.L.x + (y + 0.5 - c) * geo.L.y < -R * 0.55 && !rg.front;

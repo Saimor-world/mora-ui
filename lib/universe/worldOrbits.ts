@@ -61,7 +61,7 @@ export function orbitScale(height: number, phone: boolean, width = Infinity): nu
   return Math.round(Math.max(1, Math.min(1.35, height / SCALE_HEIGHT, width / SCALE_WIDTH)) * 100) / 100;
 }
 
-/** MÔRA ist immer der größte Körper. */
+/** MÔRA: Mitte und Blickpunkt, klein und besonders (Fläche für Kollisionen; die Figur selbst ist kleiner). */
 export function moraSize(phone: boolean, scale = 1, base = 120): number {
   return Math.round((phone ? 88 : base) * scale);
 }

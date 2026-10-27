@@ -20,7 +20,7 @@ describe('traits', () => {
     expect(items.length).toBeGreaterThanOrEqual(30);
     expect(items.filter((i) => i.signature).length).toBeGreaterThanOrEqual(8);
     expect(items.every((i) => i.variants.length >= 3)).toBe(true);
-    expect(DEFAULT_WARDROBE.head).toBe('sprout');
+    expect(DEFAULT_WARDROBE.head).toBeNull(); expect(DEFAULT_WARDROBE.neck).toBe('scarf');
   });
   it('jede Variante hat Ebene und Vorschaubild auf der Platte', () => {
     for (const i of items) for (const v of i.variants) {
@@ -30,7 +30,7 @@ describe('traits', () => {
   });
   it('verwirft unbekannte IDs und erlaubt leer', () => {
     const w = normalizeWardrobe({ head: 'nope', neck: null, face: 'glasses' });
-    expect(w.head).toBe('sprout'); expect(w.neck).toBeNull(); expect(w.face).toBe('glasses:gold');
+    expect(w.head).toBeNull(); expect(w.neck).toBeNull(); expect(w.face).toBe('glasses:gold');
     expect(wardrobeLayers(w).map((l) => l.slot)).not.toContain('neck');
   });
   it('liest Varianten und alte IDs', () => {
@@ -38,14 +38,14 @@ describe('traits', () => {
     expect(joinChoice('beret', 'rot')).toBe('beret:rot');
     expect(normalizeWardrobe({ neck: 'scarf-red' }).neck).toBe('scarf:rot');
     expect(normalizeWardrobe({ head: 'sailor' }).head).toBe('captain:weiss');
-    expect(normalizeWardrobe({ head: 'beret:gibtsnicht' }).head).toBe('sprout');
+    expect(normalizeWardrobe({ head: 'beret:gibtsnicht' }).head).toBeNull();
     const head = TRAITS.slots.find((s) => s.id === 'head')!;
     expect(resolve(head, 'crown')?.variant.id).toBe('gold');
   });
   it('Hut verdeckt die Spange, Weihnachtsmütze auch den Kopf', () => {
     const base = { ...DEFAULT_WARDROBE, head: 'wizard:violett', clip: 'moon:gold' };
     expect(wardrobeLayers(base).map((l) => l.slot)).not.toContain('clip');
-    expect(wardrobeLayers({ ...base, head: 'sprout', clip: 'moon:gold' }).map((l) => l.slot)).toContain('clip');
+    expect(wardrobeLayers({ ...base, head: null, clip: 'moon:gold' }).map((l) => l.slot)).toContain('clip');
     const x = wardrobeLayers({ ...DEFAULT_WARDROBE, seasonal: 'xmas:rot', head: 'crown:gold' }).map((l) => l.slot);
     expect(x).not.toContain('head'); expect(x).toContain('seasonal');
   });
@@ -64,5 +64,25 @@ describe('traits', () => {
     const a = toNftAttributes({ ...DEFAULT_WARDROBE, head: 'beret:rot' });
     expect(a.find((x) => x.trait_type === 'Kopf')?.value).toBe('Barett (Rot)');
     expect(a.find((x) => x.trait_type === 'Gesicht')?.value).toBe('Keins');
+  });
+});
+
+describe('MÔRA Ziele und Gründer', () => {
+  it('landet nie auf einem Planeten', () => {
+    const pts = [
+      { id: 'a', x: 120, y: 0, weight: 3, r: 50, px: 200, py: 0 },
+      { id: 'b', x: 60, y: -10, weight: 3, r: 60, px: 100, py: -20 },
+    ];
+    for (let k = 0; k < 300; k++) {
+      const i = decide({ points: pts, fresh: null, night: false, busy: false, moraR: 29 }, Math.random, undefined);
+      for (const q of pts) expect(Math.hypot(i.x - q.px, i.y - q.py)).toBeGreaterThanOrEqual(q.r + 29);
+    }
+  });
+  it('Gründer-Regel: Inhaber im HQ oder System-Owner, sonst nicht', () => {
+    const { isFounderUser } = jest.requireActual('@/lib/mora/useWardrobe');
+    expect(isFounderUser({ role: 'owner', tenant_id: 'tenant-saimor-hq' })).toBe(true);
+    expect(isFounderUser({ role: 'owner', tenant_id: 'tenant-kunde' })).toBe(false);
+    expect(isFounderUser({ role: 'member', tenant_id: 'tenant-saimor-hq' })).toBe(false);
+    expect(isFounderUser(null)).toBe(false);
   });
 });
