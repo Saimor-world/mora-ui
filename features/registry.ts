@@ -1,4 +1,5 @@
 import type { FeatureManifest, FeatureVisibilityContext } from './types';
+import { homeManifest } from './home/manifest';
 import { todayManifest } from './today/manifest';
 import { moraManifest } from './mora/manifest';
 import { financeManifest } from './finance/manifest';
@@ -13,6 +14,7 @@ import { universeManifest } from './universe/manifest';
  * adding a folder with a manifest and listing it here; the shell never changes.
  */
 export const FEATURE_MANIFESTS: FeatureManifest[] = [
+  homeManifest,
   todayManifest,
   moraManifest,
   financeManifest,
@@ -23,7 +25,7 @@ export const FEATURE_MANIFESTS: FeatureManifest[] = [
   labsManifest,
 ];
 
-export const DEFAULT_FEATURE_ID = 'today';
+export const DEFAULT_FEATURE_ID = 'home';
 
 export function isFeatureVisible(manifest: FeatureManifest, ctx: FeatureVisibilityContext): boolean {
   if (manifest.flag && !ctx.flags.has(manifest.flag)) return false;

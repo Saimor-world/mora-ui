@@ -92,7 +92,8 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
   const mood = useHubMood();
   const variant = useDockVariant();
   usePalette();
-  const big = variant !== 'strip';
+  // Auf Home bleibt MÔRA klein (Pixel-Präsenz im Inhalt), kein großes Maskottchen über der Arbeitsfläche.
+  const big = variant !== 'strip' && activeId !== 'home';
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;
   const reduced = useReducedMotion();
