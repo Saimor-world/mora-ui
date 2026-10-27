@@ -29,6 +29,9 @@ export interface OrbitOptions {
   /** Belegte Spalten links/rechts (Karten, Horizont, Fokus): dort liegt kein Planet und kein Name. */
   insetLeft?: number;
   insetRight?: number;
+  /** Pixel-Ansicht: größere MÔRA (Basis in px statt 120) und größere Planetenkörper. */
+  moraBase?: number;
+  planetMul?: number;
 }
 
 export interface PlanetLabel { name: string; meta?: string; moons?: number; stars?: number }
@@ -59,8 +62,8 @@ export function orbitScale(height: number, phone: boolean, width = Infinity): nu
 }
 
 /** MÔRA ist immer der größte Körper. */
-export function moraSize(phone: boolean, scale = 1): number {
-  return Math.round((phone ? 88 : 120) * scale);
+export function moraSize(phone: boolean, scale = 1, base = 120): number {
+  return Math.round((phone ? 88 : base) * scale);
 }
 
 /** Planetengröße aus dem Gewicht: matt und ruhig, nie größer als MÔRA. */
@@ -97,9 +100,9 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
 function layoutInFrame(opts: OrbitOptions): OrbitLayout {
   const { width, height, weights, phone } = opts;
   const scale = orbitScale(height, phone, width);
-  const mora = moraSize(phone, scale);
+  const mora = moraSize(phone, scale, opts.moraBase);
   const maxWeight = Math.max(0, ...weights);
-  const sizes = weights.map((w) => planetSize(w, maxWeight, phone, scale));
+  const sizes = weights.map((w) => Math.round(planetSize(w, maxWeight, phone, scale) * (opts.planetMul ?? 1)));
   const biggest = Math.max(0, ...sizes);
   // Größere Schrift auf großen Flächen braucht mehr Platz für die Namen.
   const labelSpace = LABEL_SPACE * scale;
