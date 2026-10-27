@@ -1169,4 +1169,4 @@ body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative
 /* MÔRA sitzt exakt in der Mitte der Bahnen: die Figur ist breiter als ihr Knopf und wurde bisher links angesetzt (≈ 0,2 × Größe nach rechts versetzt). */
 .wd-mora { display: flex; align-items: center; justify-content: center; }
 .wd-mora-glide { display: flex; flex: none; align-items: center; justify-content: center; }
-@media (max-width: 1000px) { .wd-ask { width: min(560px, calc(100% - 270px)); } }
+@media (max-width: 1000px) { .wd-ask { width: min(560px, calc(100% - 340px)); } }
