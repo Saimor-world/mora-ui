@@ -11,8 +11,8 @@ import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { glassLayout } from '@/lib/universe/glassLayout';
-import { GlassOrb, glassMaterialFor, glassVariantFor } from './GlassOrb';
-import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
+import { GLASS_SHARED, GlassOrb, glassTintFor } from './GlassOrb';
+import { floatOffset, labelWidth, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 import { PixelMoon, PX } from './PixelPlanet';
 import { seedOf, type PlanetKind } from '@/lib/universe/pixelArt';
@@ -23,7 +23,30 @@ const VIEW_KEY = 'mora.universe.view';
 /** MÔRA im Universe: 18 % kleiner als die Layout-Fläche (schwebt frei, die Fläche für Kollisionen bleibt gleich). */
 const MORA_FREE = 0.82;
 /** Glas-Ansicht: MÔRA steht über der Quellenreihe im freien Raum unter den Planeten, nicht auf ihr. */
-const MORA_LIFT = 40; const MORA_LIFT_PHONE = 24;
+const MORA_LIFT = 0; const MORA_LIFT_PHONE = 0;
+
+/**
+ * Glas-Ansicht, Überblick: die Quellenmarken stehen in einer Reihe unter MÔRA, von der Mitte nach außen,
+ * und weichen Planeten samt Beschriftung aus (kein Überlappen).
+ */
+function glassSourcePoints(layout: OrbitLayout, count: number, names: string[]): { x: number; y: number; angle: number }[] {
+  const y = layout.cy + layout.mora / 2 + 44;
+  const boxes = layout.slots.map((sl, i) => { const w = Math.max(sl.size, labelWidth(names[i] ?? '', false, layout.scale)) + 24; const px = sl.pos?.x ?? layout.cx; const py = sl.pos?.y ?? layout.cy; return { l: px - w / 2, r: px + w / 2, t: py - sl.size / 2 - 14, b: py + sl.size / 2 + 90 }; });
+  const placed: number[] = [];
+  const out: { x: number; y: number; angle: number }[] = [];
+  const W = 112; // Breite einer Marke samt Luft
+  for (let i = 0; i < count; i++) {
+    let x = layout.cx + (i % 2 ? 1 : -1) * (layout.mora / 2 + 70 + Math.floor(i / 2) * W);
+    for (let k = 0; k < 40; k++) {
+      const hit = boxes.some((b) => x + W / 2 > b.l && x - W / 2 < b.r && y + 26 > b.t && y - 26 < b.b) || placed.some((q) => Math.abs(q - x) < W);
+      if (!hit) break;
+      x += (i % 2 ? 1 : -1) * 16;
+    }
+    placed.push(x);
+    out.push({ x, y, angle: 0 });
+  }
+  return out;
+}
 
 function stopShort(layout: { cx: number; cy: number; mora: number }, pp: { x: number; y: number }, size: number): { x: number; y: number } {
   const dx = pp.x - layout.cx; const dy = pp.y - layout.cy; const d = Math.hypot(dx, dy);
@@ -56,8 +79,11 @@ export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = JadeMora }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', details = true, moraInScene = true, onToggleDetails, zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = JadeMora }: {
   spiritMood?: SpiritMood;
+  /** Ruhe-Ansicht: false blendet Zähler, Quellenmarken, Karten und Zoom aus; true zeigt sie (auf Wunsch). */
+  details?: boolean;
+  onToggleDetails?: () => void;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
   /** Live step of MÔRA (small, calm text next to her). */
@@ -80,6 +106,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   sources?: HorizonSource[] | null;
   onOpenSource?: (key: string) => void;
   moraLine?: string;
+  /** false: MÔRA lebt nur im Dock; in der Szene gibt es keine Figur, keine Sprechblase, keine Schritt-Zeile. */
+  moraInScene?: boolean;
   /** Zuletzt geöffneter Planet: leuchtet und trägt „Aktiver Bereich“. */
   activeId?: string | null;
   /** Echte Zähler: Knoten (MÔRA, Planeten, Monde, Sterne) und Verbindungen. */
@@ -120,7 +148,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     return () => ro.disconnect();
   }, []);
 
-  const showPulse = !phone && size.wide && hasPulse(planets);
+  const showPulse = details && !phone && size.wide && hasPulse(planets);
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
@@ -227,11 +255,11 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
-      {layout && sources?.length ? (() => {
+      {layout && details && sources?.length ? (() => {
         const rects = layout.slots.flatMap((sl, i) => planetFootprint(layout, sl, planets[i] ? { name: planets[i].name, meta: planets[i].meta, moons: planets[i].orbit?.moons.length ?? 0, stars: planets[i].orbit?.stars.length ?? 0 } : undefined, phone));
         // Glas-Ansicht: die Quellen sitzen als kleine Marken links und rechts neben MÔRA, ohne Ring.
         const pts = glass
-          ? sources.map((_, i) => ({ x: layout.cx + (i % 2 ? 1 : -1) * (layout.mora / 2 + 96 + Math.floor(i / 2) * 120), y: layout.cy + 52, angle: 0 }))
+          ? glassSourcePoints(layout, sources.length, planets.map((p) => p.name))
           : sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)), 130, rects);
         return sources.map((src, i) => {
         const { x, y } = pts[i];
@@ -246,7 +274,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       });
       })() : null}
 
-      {layout ? (
+      {layout && moraInScene ? (
         <button
           type="button"
           className="wd-mora"
@@ -263,13 +291,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           </span>
         </button>
       ) : null}
-      {layout && spiritCaption ? (
+      {layout && moraInScene && spiritCaption ? (
         <div className="wd-mora-step" role="status" aria-live="polite" data-testid="world-mora-step"
           style={{ left: layout.cx + (spiritPoint?.x ?? 0), top: layout.cy + (spiritPoint?.y ?? 0) - (phone ? 30 : 46), zIndex: 400 }}>
           <span className="wd-mora-step__who">MÔRA</span>{spiritCaption}
         </div>
       ) : null}
-      {layout && moraLine ? (
+      {layout && moraInScene && moraLine ? (
         // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
         <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 112 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
@@ -299,7 +327,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
           >
             {glass ? (
-              <GlassOrb size={slot?.size ?? 80} variant={glassVariantFor(planet.name)} material={glassMaterialFor(planet.name)}>
+              <GlassOrb size={slot?.size ?? 80} variant={GLASS_SHARED} material="rnd" tint={glassTintFor(planet.name)}>
                 {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
                 {pulseIds?.includes(planet.id) ? <span className="wd-glass-pulse" data-testid={`world-pulse-${planet.id}`} aria-hidden /> : null}
               </GlassOrb>
@@ -329,7 +357,12 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       })}
       </div>
       {layout && showPulse ? <WorldPulse planets={planets} onOpen={onOpenPlanet} /> : null}
-      {layout && !phone ? (
+      {layout && onToggleDetails ? (
+        <button type="button" className="wd-details" aria-pressed={details} onClick={onToggleDetails} data-testid="world-details-toggle" title={details ? 'Überblick ausblenden' : 'Überblick, Zähler und Quellen einblenden'}>
+          <i aria-hidden />{details ? 'Ruhig' : 'Überblick'}
+        </button>
+      ) : null}
+      {layout && !phone && details ? (
         <>
           {counts ? (
             <div className="wd-counters" aria-label="Zähler">

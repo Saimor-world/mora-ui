@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
 import { useReducedMotion } from 'framer-motion';
-import { GlassOrb, glassMaterialFor, glassVariantFor } from '@/components/world/GlassOrb';
+import { GLASS_SHARED, GlassOrb, glassTintFor, glassVariantFor } from '@/components/world/GlassOrb';
 import { JadeMora } from '@/components/world/JadeMora';
 import { focusTiles, formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
 import type { LiveDay } from '@/lib/lea/live';
@@ -22,6 +22,8 @@ export interface FinderVerseProps {
   initialStarId?: string | null;
   planet: FPlanet;
   phone: boolean;
+  /** false: keine MÔRA-Figur in der Szene (sie lebt nur im Dock). */
+  moraInScene?: boolean;
   day: LiveDay;
   role?: RolePreview;
   onClose: () => void;
@@ -292,9 +294,11 @@ export function FinderVerse(p: FinderVerseProps) {
                   <span className="fv-moon__name">{m.name}</span>
                 </button>
               ))}
-              <span className="fv-dome__mora" data-testid="fv-mora" aria-hidden>
-                <JadeMora bare size={phone ? 52 : 78} mood="idle" reduced={reduced} />
-              </span>
+              {p.moraInScene !== false ? (
+                <span className="fv-dome__mora" data-testid="fv-mora" aria-hidden>
+                  <JadeMora bare size={phone ? 52 : 78} mood="idle" reduced={reduced} />
+                </span>
+              ) : null}
               {stars.length ? (
                 <div className="fv-dome__stars" data-testid="fv-dome-stars">
                   {stars.slice(0, 24).map((st) => (
@@ -333,7 +337,7 @@ export function FinderVerse(p: FinderVerseProps) {
                 ) : null}
               </svg>
               <div className="fv-center">
-                <GlassOrb variant={glassVariantFor(centerName)} material={moon ? null : glassMaterialFor(centerName)} size={phone ? 104 : 150} />
+                <GlassOrb variant={moon ? glassVariantFor(centerName) : GLASS_SHARED} material={moon ? null : 'rnd'} tint={moon ? undefined : glassTintFor(centerName)} size={phone ? 104 : 150} />
                 <span className="fv-center__name">{centerName}</span>
                 <span className="fv-center__meta">{moon ? `${entries(moon.count)}${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
               </div>

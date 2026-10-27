@@ -1,16 +1,34 @@
 /**
- * Glas-Ansicht (konzept2): keine Bahnen, keine Linien. Die Planeten liegen ruhig und
- * ungleich verstreut im freien Feld, MÔRA sitzt klein unten in der Mitte. Dieselbe
- * Vertragsform wie layoutOrbits (OrbitLayout, slot.pos), damit Kamera, Fokus und Tests gleich bleiben.
+ * Glas-Ansicht: ruhige Konstellation. MÔRA schwebt als Mitte des Feldes, die Abteilungen liegen
+ * locker und ausgewogen auf einem weiten Bogen um sie (ganze Fensterbreite, viel Leerraum).
+ * Die Größe kommt allein aus der echten Zahl (Ordner + Einträge), begrenzt auf einen engen Bereich.
+ * Dieselbe Vertragsform wie layoutOrbits (OrbitLayout, slot.pos), damit Kamera, Fokus und Tests gleich bleiben.
  * Die Verteilung ist deterministisch: gleiche Abteilungen ergeben immer dasselbe Bild.
  */
 import { labelWidth, type OrbitLayout, type OrbitOptions } from './worldOrbits';
 
-/** Unterschiedliche Größen, damit das Feld nicht wie ein Raster wirkt (wird mit dem echten Gewicht gemischt). */
-const SIZE_PATTERN = [1, 0.7, 0.86, 0.58, 0.78, 0.92, 0.64, 0.74];
-const GAP = 22;
+/** Kleinster Planet = 62 % des größten: genug Unterschied, nie ein Winzling neben einem Riesen. */
+const MIN_RATIO = 0.62;
+const GAP = 26;
+/** Winkel- und Radiusversatz je Platz: locker, aber nie zufällig. */
+const JITTER_DEG = [0, 11, -8, 7, -12, 9, -6, 10];
+const RADIUS_MUL = [1, 0.84, 0.97, 0.8, 0.93, 0.88, 0.99, 0.82];
 
 interface Box { x: number; y: number; w: number; h: number; s: number }
+
+/** Planetengröße aus dem echten Gewicht: Wurzel (flächentreu), begrenzt auf [MIN_RATIO·max, max]. */
+export function glassPlanetSize(weight: number, maxWeight: number, maxSize: number): number {
+  const t = maxWeight > 0 ? Math.max(0, Math.min(1, weight / maxWeight)) : 0;
+  return Math.round(maxSize * (MIN_RATIO + (1 - MIN_RATIO) * Math.sqrt(t)));
+}
+
+/** Schritt, der n Plätze so durchläuft, dass aufeinanderfolgende Ränge weit auseinander liegen (teilerfremd zu n). */
+function spreadStep(n: number): number {
+  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+  let step = Math.max(1, Math.round(n * 0.4));
+  while (n > 1 && gcd(step, n) !== 1) step++;
+  return step;
+}
 
 export function glassLayout(opts: OrbitOptions): OrbitLayout {
   const { width, height, phone, weights } = opts;
@@ -19,36 +37,41 @@ export function glassLayout(opts: OrbitOptions): OrbitLayout {
   const n = weights.length;
   const scale = phone ? 1 : width - insetLeft - insetRight >= 1100 ? 1.2 : 1;
   const mora = phone ? 64 : 96;
-  const x0 = insetLeft + (phone ? 12 : 40);
-  const x1 = width - insetRight - (phone ? 12 : 40);
-  const cx = (x0 + x1) / 2 - (phone ? 0 : 0);
-  const cy = height - mora / 2 - 6;
-  const top = phone ? 30 : 56;
+  const x0 = insetLeft + (phone ? 10 : 48);
+  const x1 = width - insetRight - (phone ? 10 : 48);
+  const cx = (x0 + x1) / 2;
+  const top = phone ? 26 : 44;
   const labelH = phone ? 40 : 50 * (scale >= 1.2 ? 1.15 : 1);
-  const bottom = cy - mora / 2 - 28; // unter dieser Linie (über MÔRA) endet das Planetenfeld
+  const bottomEdge = height - 4;
   const regionW = x1 - x0;
-  const regionH = Math.max(120, bottom - top);
-
   const maxW = Math.max(1e-6, ...weights);
-  const base = Math.max(phone ? 64 : 92, Math.min(phone ? 104 : 176, Math.min(regionW / (phone ? 3.3 : 5), regionH / (phone ? 3.4 : 2.5))));
-  const sizeAt = (i: number, k: number) => Math.round(base * k * SIZE_PATTERN[i % SIZE_PATTERN.length] * (0.88 + 0.12 * (weights[i] / maxW)));
 
-  const place = (k: number): Box[] => {
+  const base = Math.max(phone ? 64 : 92, Math.min(phone ? 100 : 190, Math.min(regionW / (phone ? 3.6 : 6.4), (bottomEdge - top) / (phone ? 4.2 : 3.2))));
+  const sizeAt = (i: number, k: number) => glassPlanetSize(weights[i], maxW, Math.round(base * k));
+
+  const place = (k: number): { boxes: Box[]; cy: number } => {
+    const sizes = weights.map((_, i) => sizeAt(i, k));
+    const maxS = Math.max(0, ...sizes);
+    // Mitte des Feldes: die Planetenmitten liegen so, dass oben der größte Planet und unten sein Label noch hineinpassen.
+    const yMin = top + maxS / 2;
+    const yMax = bottomEdge - labelH - 8 - maxS / 2;
+    const cy = (yMin + yMax) / 2;
+    const ry = Math.max(40, (yMax - yMin) / 2);
+    const rx = Math.max(60, regionW / 2 - Math.max(maxS, phone ? 70 : 150) / 2);
+    const step = spreadStep(n);
+    const rank = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w || a.i - b.i);
+    const slotOf: number[] = [];
+    rank.forEach((r, j) => { slotOf[r.i] = (j * step) % Math.max(1, n); });
     const boxes: Box[] = weights.map((_, i) => {
-      const s = sizeAt(i, k);
+      const s = sizes[i];
       const w = Math.max(s, labelWidth(opts.labels?.[i]?.name ?? '', phone, scale));
-      return { x: 0, y: 0, w, h: s + 8 + labelH, s };
+      const slot = slotOf[i];
+      const a = (-90 + 360 * (slot + 0.5) / n + (phone ? 0 : -14) + JITTER_DEG[slot % JITTER_DEG.length] * (n > 4 ? 1 : 0.5)) * Math.PI / 180;
+      const rm = RADIUS_MUL[slot % RADIUS_MUL.length];
+      return { x: cx + Math.cos(a) * rx * rm, y: cy + Math.sin(a) * ry * rm, w, h: s + 8 + labelH, s };
     });
-    // Start: Goldener Winkel in der Ellipse des Feldes – ungleich, aber nie zufällig.
-    boxes.forEach((b, i) => {
-      const t = (i + 0.6) / (n + 0.2);
-      const r = Math.sqrt(t);
-      const a = i * 2.39996 + 0.5;
-      b.x = x0 + regionW / 2 + Math.cos(a) * r * (regionW / 2 - b.w / 2);
-      b.y = top + regionH / 2 + Math.sin(a) * r * (regionH / 2 - b.h / 2) - b.h / 2 + b.s / 2 + b.h / 2 - b.s / 2;
-    });
-    const moraBox = { x: cx, y: cy, w: mora + 120, h: mora + 70 };
     const rect = (b: Box) => ({ l: b.x - b.w / 2, r: b.x + b.w / 2, t: b.y - b.s / 2, b: b.y - b.s / 2 + b.h });
+    const clearR = mora / 2 + (phone ? 34 : 64); // freie Luft um MÔRA
     for (let it = 0; it < 260; it++) {
       for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) {
@@ -60,16 +83,20 @@ export function glassLayout(opts: OrbitOptions): OrbitLayout {
             else { const d = (oy / 2) * (boxes[i].y < boxes[j].y ? -1 : 1); boxes[i].y += d; boxes[j].y -= d; }
           }
         }
-        const a = rect(boxes[i]);
-        const mx = Math.min(a.r, moraBox.x + moraBox.w / 2) - Math.max(a.l, moraBox.x - moraBox.w / 2) + GAP;
-        const my = Math.min(a.b, moraBox.y + moraBox.h / 2) - Math.max(a.t, moraBox.y - moraBox.h / 2) + GAP;
-        if (mx > 0 && my > 0) boxes[i].y -= my; // immer nach oben aus MÔRAs Feld
         const b = boxes[i];
+        // MÔRAs Luft: der Planet (samt Label) bleibt außerhalb eines Kreises um sie, radial nach außen.
+        const near = rect(b);
+        const px = Math.max(near.l, Math.min(cx, near.r)); const py = Math.max(near.t, Math.min(cy, near.b));
+        const dd = Math.hypot(px - cx, py - cy);
+        if (dd < clearR) {
+          const ux = b.x - cx; const uy = b.y - cy; const u = Math.hypot(ux, uy) || 1;
+          b.x += (ux / u) * (clearR - dd); b.y += (uy / u) * (clearR - dd);
+        }
         b.x = Math.max(x0 + b.w / 2, Math.min(x1 - b.w / 2, b.x));
-        b.y = Math.max(top + b.s / 2, Math.min(bottom - b.h + b.s / 2, b.y));
+        b.y = Math.max(top + b.s / 2, Math.min(bottomEdge - b.h + b.s / 2, b.y));
       }
     }
-    return boxes;
+    return { boxes, cy };
   };
   const overlaps = (boxes: Box[]) => boxes.some((a, i) => boxes.some((c, j) => {
     if (j <= i) return false;
@@ -78,8 +105,8 @@ export function glassLayout(opts: OrbitOptions): OrbitLayout {
     return Math.min(ra.r, rc.r) > Math.max(ra.l, rc.l) && Math.min(ra.b, rc.b) > Math.max(ra.t, rc.t);
   }));
   let k = 1;
-  let boxes = place(k);
-  for (let tries = 0; tries < 10 && overlaps(boxes); tries++) { k *= 0.92; boxes = place(k); }
+  let { boxes, cy } = place(k);
+  for (let tries = 0; tries < 10 && overlaps(boxes); tries++) { k *= 0.92; ({ boxes, cy } = place(k)); }
 
   return {
     scale, cx, cy, mora, rings: [],

@@ -24,13 +24,22 @@ export function glassVariantFor(key: string): GlassVariant {
   return GLASS_VARIANTS[h % GLASS_VARIANTS.length];
 }
 
+/** Universe-Übersicht: ein gemeinsames Glasmaterial für alle Planeten. */
+export const GLASS_SHARED: GlassVariant = 'bluegrey';
+/** Dezenter Farbstich je Planet (Grad im Farbkreis, ±30°): stabil nach Name, nie ein eigenes Material. */
+export function glassTintFor(key: string): number {
+  let h = 7;
+  for (let i = 0; i < key.length; i++) h = (h * 33 + key.charCodeAt(i)) >>> 0;
+  return ((h % 7) - 3) * 10;
+}
+
 /** Die Scheibe füllt 78 % der Bilddatei, der Rest ist Glanz und Schatten: so groß wie `size` ist die sichtbare Kugel. */
 const DISC = 0.78;
 
-export function GlassOrb({ size, variant, material, className, children }: { size: number; variant: GlassVariant; material?: GlassMaterial | null; className?: string; children?: React.ReactNode }) {
+export function GlassOrb({ size, variant, material, tint, className, children }: { size: number; variant: GlassVariant; material?: GlassMaterial | null; tint?: number; className?: string; children?: React.ReactNode }) {
   const full = Math.round(size / DISC);
   return (
-    <span className={`glass-orb${className ? ` ${className}` : ''}`} style={{ width: size, height: size }} aria-hidden>
+    <span className={`glass-orb${className ? ` ${className}` : ''}`} style={tint === undefined ? { width: size, height: size } : ({ width: size, height: size, '--tint': `${tint}deg` } as React.CSSProperties)} aria-hidden>
       {material ? <Ring material={material} half="back" /> : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/universe/glass/${variant}.png`} alt="" width={full} height={full} draggable={false} style={{ width: full, height: full, left: (size - full) / 2, top: (size - full) / 2 }} />

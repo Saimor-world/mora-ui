@@ -82,13 +82,22 @@ function renderWorld() {
 
 describe('LiveWorld – Aufgaben', () => {
   it('öffnet „Aufgaben zuordnen“ über den Horizont-Knopf; das Datum steht als „TT.MM.“', () => {
+    // Ruhige Übersicht: Horizont erst auf Wunsch (gespeicherte Wahl „Überblick“).
+    localStorage.setItem('mora.universe.details', '1');
     renderWorld();
     fireEvent.click(screen.getByTestId('horizon-tasks'));
+    localStorage.removeItem('mora.universe.details');
     const sheet = screen.getByTestId('taskhome-sheet');
     expect(sheet).toHaveTextContent('Aufgaben zuordnen');
     const [, m, d] = day(-2).split('-');
     expect(within(sheet).getByText(new RegExp(`${d}\\.${m}\\.`))).toBeInTheDocument();
     expect(sheet.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+  });
+
+  it('zeigt MÔRA nicht in der Szene (nur im Dock), solange die Einstellung nicht gesetzt ist', () => {
+    renderWorld();
+    expect(screen.queryByTestId('world-mora')).toBeNull();
+    expect(screen.queryByTestId('world-horizon')).toBeNull();
   });
 
   it('öffnet das Blatt auch, wenn ein anderer Ort zum alten Aufgaben-Planeten springt', () => {

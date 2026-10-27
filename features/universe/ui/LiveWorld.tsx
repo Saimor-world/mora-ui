@@ -111,6 +111,13 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const setPhase = useDayStore((st) => st.setPhase);
   const phasePending = useDayStore(st => st.pending);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
+  // Ruhige Übersicht: Karten, Zähler, Quellenmarken und Horizont erscheinen erst auf Wunsch (Wahl bleibt im Browser).
+  // MÔRA nur im Dock (Standard). Zurück in die Szene: localStorage 'mora.universe.moraInScene' = '1'.
+  const [moraInScene, setMoraInScene] = useState(false);
+  useEffect(() => { try { if (localStorage.getItem('mora.universe.moraInScene') === '1') setMoraInScene(true); } catch { /* Standard: nur Dock */ } }, []);
+  const [details, setDetails] = useState(false);
+  useEffect(() => { try { if (localStorage.getItem('mora.universe.details') === '1') setDetails(true); } catch { /* ohne Speicher: ruhig */ } }, []);
+  const toggleDetails = useCallback(() => setDetails((d) => { const n = !d; try { localStorage.setItem('mora.universe.details', n ? '1' : '0'); } catch { /* egal */ } return n; }), []);
   const calendarPlanetId = useMemo(() => world.finder.find((p) => p.moons.some((m) => m.stars.some((x) => x.kind === 'event')))?.id ?? null, [world.finder]);
   const taskSig = world.tasks.map((t) => `${t.id}:${t.status}`).join('|');
   const phaseSig = JSON.stringify(phases);
@@ -250,12 +257,15 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         spiritTarget={livePlanet ?? flyTo}
         spiritCaption={liveCaption}
         zoomTo={zoomTo}
-        reserveRight={phone || open ? 0 : selected ? FOCUS_RESERVE : HORIZON_RESERVE}
+        details={details}
+        moraInScene={moraInScene}
+        onToggleDetails={phone ? undefined : toggleDetails}
+        reserveRight={phone || open ? 0 : selected ? FOCUS_RESERVE : details ? HORIZON_RESERVE : 0}
         activeId={activeId}
         counts={counts}
         comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
+        moraLine={moraState === 'idle' && !world.calendarUnavailable && !isStatusLine(world.day.sentence) ? shortLine(world.day.sentence) : undefined}
       />
       {calendarNotice ? <p role="status">{calendarNotice}</p> : null}
       {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
@@ -274,7 +284,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           onFinish={() => { const ev = world.day.running ?? world.day.stale; if (ev) void runCommand({ kind: 'finish', event: ev }).then(r => setCalendarNotice(r.text)); }}
         />
       ) : null}
-      {!phone && !open && !selected ? (
+      {!phone && !open && !selected && details ? (
         <aside className="wd-horizon" aria-label="Dein Horizont" data-testid="world-horizon">
           <p className="fv-eyebrow">Dein Horizont</p>
           <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-calendar">
@@ -320,6 +330,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           initialMoonId={initial?.moonId}
           initialStarId={initial?.starId}
           phone={phone}
+          moraInScene={moraInScene}
           day={world.day}
           role={role}
           onClose={close}
@@ -335,6 +346,11 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   );
 }
 
+
+/** Fehler- und Statussätze (nicht lesbar, fehlgeschlagen …) gehören nach „Heute“ und „Post“, nicht ins ruhige Universum. */
+export function isStatusLine(s: string): boolean {
+  return /nicht\s+(vollständig\s+)?(lesen|lesbar|erreich|verfügbar|geladen)|fehlgeschlagen|fehler|unterbrochen|konnte\s+nicht|gescheitert|abgelehnt/i.test(s || '');
+}
 
 /** Im Universum nur MÔRAs erster Satz, höchstens ~56 Zeichen – der Rest steht in „Heute“. */
 export function shortLine(s: string): string {

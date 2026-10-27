@@ -1254,3 +1254,54 @@ body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative
   body:has(.wd-universe) .os-atmo { background-size: auto 118% !important; background-position: 3% 70% !important; filter: brightness(.9) saturate(.7) sepia(.08) contrast(1.04); }
 }
 .fv[data-phone='true'] { background: linear-gradient(rgba(6, 8, 10, .18), rgba(6, 8, 10, .34)), url('/universe/deep-space-warm.jpg') 3% 70% / auto 118% no-repeat #07090c; }
+
+/* ── Universe-Übersicht, ruhig (27.10.2026) ─────────────────────────────────────────────
+   Standard: MÔRA in der Mitte, Planeten als lockere Konstellation, sonst nichts. Zähler, Quellen,
+   Karten und Zoom erscheinen erst über „Überblick“. Ein gemeinsames Glasmaterial, nur ein dezenter
+   Farbstich je Planet; der goldene Ring gehört allein dem Planeten unter dem Zeiger oder in der Auswahl. */
+.wd-details { position: absolute; left: 24px; bottom: 28px; z-index: 900; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(8, 9, 12, .38); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: rgba(242, 238, 229, .72); font-size: 12.5px; letter-spacing: .04em; cursor: pointer; transition: color .25s ease, border-color .25s ease, background .25s ease; }
+.wd-details ~ .wd-zoom { bottom: 76px; }
+.wd-details i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; }
+.wd-details[aria-pressed='true'] i { background: currentColor; }
+.wd-details:hover, .wd-details:focus-visible { color: #f2eee5; border-color: rgba(232, 214, 160, .45); }
+.wd-details:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 2px; }
+.wd-horizon, .wd-pulse, .wd-counters, .wd-zoom, .wd-view { animation: wd-reveal .38s var(--os-motion-ease, ease) both; }
+@keyframes wd-reveal { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .wd-horizon, .wd-pulse, .wd-counters, .wd-zoom, .wd-view { animation: none; } }
+
+/* Gemeinsames Material + dezenter Stich */
+.glass-orb > img { filter: hue-rotate(var(--tint, 0deg)) saturate(.92) drop-shadow(0 14px 22px rgba(4, 6, 14, .42)); }
+.wd-universe[data-view='glass'] .wd-planet:focus-visible .glass-orb > img { filter: hue-rotate(var(--tint, 0deg)) saturate(.92) drop-shadow(0 14px 22px rgba(4, 6, 14, .42)); }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true'] .glass-orb > img,
+.wd-universe[data-view='glass'] .wd-planet[data-active='true'] .glass-orb > img { filter: hue-rotate(var(--tint, 0deg)) saturate(.92) drop-shadow(0 14px 22px rgba(4, 6, 14, .42)); }
+/* Goldener Ring nur bei Zeiger, Fokus, Auswahl */
+.wd-universe[data-view='glass'] .glass-orb__ring { opacity: 0; transition: opacity .3s ease; }
+.wd-universe[data-view='glass'] .wd-planet:hover .glass-orb__ring,
+.wd-universe[data-view='glass'] .wd-planet:focus-visible .glass-orb__ring,
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true'] .glass-orb__ring { opacity: 1; }
+.wd-universe[data-view='glass'] .wd-planet[data-active='true'] .glass-orb__ring { opacity: .55; }
+.wd-universe[data-view='glass'] .wd-planet[data-selected='true'] { outline: none; }
+.wd-universe[data-view='glass'] .wd-planet:not(:hover):not(:focus-visible):not([data-selected='true']) .wd-meta { opacity: .72; }
+.wd-universe[data-view='glass'] .wd-planet { transition: filter .3s ease; }
+
+/* Hintergrund: dasselbe Bild, größer und tiefer gesetzt, damit weicher Nebel hinter dem Planetenbogen liegt
+   und die Mitte nicht tot schwarz ist (sanfter warmer Schein um MÔRA, kühler Hauch darunter). */
+.wd-universe[data-view='glass']::before {
+  background:
+    radial-gradient(ellipse 42% 38% at 50% 44%, rgba(184, 152, 108, .26), transparent 74%),
+    radial-gradient(ellipse 60% 44% at 50% 66%, rgba(64, 104, 112, .13), transparent 76%),
+    url('/universe/deep-space-warm.jpg') 46% 64% / 138% auto no-repeat;
+  filter: brightness(.82) saturate(.7) sepia(.08) contrast(1.04);
+}
+.wd-universe[data-view='glass'][data-phone='true']::before {
+  background:
+    radial-gradient(ellipse 70% 30% at 50% 44%, rgba(176, 148, 108, .14), transparent 72%),
+    url('/universe/deep-space-warm.jpg') 38% 62% / auto 118% no-repeat;
+}
+
+/* MÔRA lebt im Dock: etwas gegenwärtiger, scharf, mit leisem Atmen (nur die Figur, nicht der Knopf). */
+.os-dock__stone { width: 48px; height: 48px; box-shadow: 0 0 0 1px rgba(217,185,138,.22), 0 0 14px rgba(94,170,140,.20); }
+.os-dock__stone .jm--mark { display: block; shape-rendering: geometricPrecision; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.45)); transform-origin: 50% 60%; animation: dock-mora-breathe 5.2s ease-in-out infinite; }
+.os-dock__stone .jm--mark svg { shape-rendering: geometricPrecision; }
+@keyframes dock-mora-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@media (prefers-reduced-motion: reduce) { .os-dock__stone .jm--mark { animation: none; } }
