@@ -1343,3 +1343,60 @@ body:has(.wd-universe[data-view='glass']) .os-shell__topbar { position: relative
 .fv-focus { opacity: .92; }
 .fv[data-phone='true'] .fv-orbit { touch-action: none; }
 @media (prefers-reduced-motion: reduce) { .fv { animation: none; } }
+
+/* ── Hell & einladend (Marius 27.10.: „Ist alles zu dunkel … einladender“) ──────────────────────────
+   Warmer Dämmerungs-Himmel statt schwarzem All: dasselbe Bild, heller und wärmer, sanfte Lichtquelle
+   oben links, kein dunkles Overlay mehr. Glas, Panels und Dock heller, Text bleibt AA-lesbar. */
+:root { --hell-glass: rgba(74, 58, 50, .62); --hell-glass-strong: rgba(80, 63, 54, .74); --hell-line: rgba(255, 228, 196, .22); --hell-text: #fff7ec; --hell-muted: rgba(255, 244, 230, .82); }
+.wd-universe { background: transparent !important; }
+/* Der sichtbare Himmel ist .os-atmo (fest hinter dem OS); .wd-universe::before ist seit #159 aus. */
+body:has(.wd-universe) .os-atmo, .os-atmo {
+  background:
+    radial-gradient(ellipse 60% 50% at 16% 10%, rgba(255, 206, 150, .40), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 46%, rgba(255, 222, 186, .20), transparent 74%),
+    linear-gradient(180deg, rgba(120, 92, 120, .26) 0%, rgba(214, 150, 110, .20) 62%, rgba(246, 196, 150, .28) 100%),
+    url('/universe/deep-space-warm.jpg') center / cover no-repeat #4a3a34 !important;
+  filter: brightness(1.28) saturate(.95) sepia(.2) contrast(.94) !important;
+}
+.wd-universe::after { opacity: .3; }
+
+/* Planeten: mehr Licht im Glas, weiter ruhig. */
+.wd-universe[data-view='glass'] .glass-orb { filter: brightness(1.16) saturate(1.06) drop-shadow(0 0 18px rgba(255, 226, 190, .32)); }
+.wd-planet .wd-name, .wd-planet strong { color: var(--hell-text); text-shadow: 0 1px 6px rgba(40, 24, 16, .55); }
+
+/* Geöffneter Planet: heller Himmel statt Schwarz. */
+.fv, .fv[data-phone='true'], .wd-interior {
+  background:
+    radial-gradient(ellipse 60% 50% at 18% 10%, rgba(255, 206, 150, .38), transparent 70%),
+    linear-gradient(180deg, rgba(120, 92, 120, .22), rgba(240, 186, 140, .26)),
+    url('/universe/deep-space-warm.jpg') center / cover no-repeat #4a3a34 !important;
+  background-blend-mode: normal, soft-light, normal;
+}
+.fv::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: rgba(255, 220, 180, .2); }
+.fv { isolation: isolate; color: var(--hell-text); }
+
+/* Panels, Fokus-Spalte, Dock: helleres warmes Glas, klare Kanten, gut lesbarer Text. */
+.fv-focus, .wd-focus, .fv-back, .fv-toggle { background: var(--hell-glass-strong) !important; border-color: var(--hell-line) !important; color: var(--hell-text); backdrop-filter: blur(18px) saturate(1.1); }
+.fv-tile, .fv-action, .fv-hints li { background: rgba(255, 240, 222, .10) !important; border-color: var(--hell-line) !important; color: var(--hell-text) !important; }
+.fv-eyebrow, .fv-tile span, .fv-action span, .fv-hints li { color: var(--hell-muted) !important; }
+.wd-focus__primary { background: rgba(150, 196, 160, .30) !important; border-color: rgba(190, 230, 200, .6) !important; }
+.os-dock__capsule { background: var(--hell-glass-strong) !important; border-color: var(--hell-line) !important; }
+.os-dock__label { color: var(--hell-muted) !important; }
+
+/* Garderobe: heller Bühnenhimmel. */
+.os-wd__stage { background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 226, 190, .55), transparent 72%), linear-gradient(180deg, #8a6e66, #5a4640) !important; }
+
+/* Garderobe: helles warmes Glas statt dunkler Fläche. */
+.os-wd { background: var(--hell-glass) !important; border-color: var(--hell-line) !important; color: var(--hell-text); }
+.os-wd button[data-origin] { background-color: rgba(255, 240, 222, .08); }
+
+/* Handy: Fokus als kompakte Ein-Zeilen-Karte unten (Name · Hineinzoomen · Schließen), Planeten bleiben sichtbar. */
+.wd-focus[data-phone='true'] { top: auto !important; bottom: 150px !important; max-height: none !important; padding: 8px 8px 8px 16px !important; display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px !important; align-items: center; }
+.wd-focus[data-phone='true'] > * { margin: 0 !important; }
+.wd-focus[data-phone='true'] .wd-focus__head { grid-column: 3; grid-row: 1; }
+.wd-focus[data-phone='true'] .wd-focus__head .fv-eyebrow, .wd-focus[data-phone='true'] .fv-tiles, .wd-focus[data-phone='true'] .fv-hints, .wd-focus[data-phone='true'] > .fv-eyebrow { display: none !important; }
+.wd-focus[data-phone='true'] .fv-focus__title { grid-column: 1; grid-row: 1; font-size: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wd-focus[data-phone='true'] .fv-actions { grid-column: 2; grid-row: 1; display: flex; }
+.wd-focus[data-phone='true'] .fv-actions .fv-action:not(.wd-focus__primary) { display: none !important; }
+.wd-focus[data-phone='true'] .fv-actions .fv-action { min-height: 44px; padding: 0 14px; }
+.wd-focus[data-phone='true'] small { display: none; }
