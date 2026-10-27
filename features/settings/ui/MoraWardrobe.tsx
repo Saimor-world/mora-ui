@@ -9,6 +9,9 @@ import { useFounder, useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 const TAB_ORDER = ['head', 'face', 'neck', 'pendant', 'clip', 'held', 'aura', 'seasonal'];
 const HISTORY = 60;
 const RARITY_LABEL = { common: '', rare: 'Selten', legendary: 'Legendär' } as const;
+const TIER_LABEL = { standard: '', moment: 'Moment', earned: 'Verdient', alive: 'Lebendig', founder: 'Legendär' } as const;
+const TIER_RANK = ['standard', 'moment', 'earned', 'alive', 'founder'] as const;
+const LOCK = <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="4.5" y="9" width="11" height="8" rx="2.2" /><path d="M7 9V6.6a3 3 0 0 1 6 0V9" /></svg>;
 const ORIGIN_LABEL = { standard: 'Alltag', moment: 'Zeitgebunden', earned: 'Verdient', alive: 'Lebendig', founder: 'Gründerstück' } as const;
 
 /** Schlanke Linien-Icons pro Kategorie (20×20, currentColor). */
@@ -88,6 +91,12 @@ export function MoraWardrobe() {
   const preview: Wardrobe = hover ? { ...w, [hover.slot]: hover.choice } : w;
   const previewing = !!hover && !sameWardrobe(preview, w);
   const pv = hover ? resolve(TRAITS.slots.find((s) => s.id === hover.slot)!, hover.choice) : null;
+  /** Höchste Herkunftsstufe im getragenen Outfit; bei Vorschau die des Vorschau-Teils: sie färbt die Bühne. */
+  const tier = TRAITS.slots.reduce<TraitItem['origin']>((top, sl) => {
+    const o = resolve(sl, preview[sl.id])?.item.origin ?? 'standard';
+    return TIER_RANK.indexOf(o) > TIER_RANK.indexOf(top) ? o : top;
+  }, 'standard');
+  const stageTier = previewing && pv ? pv.item.origin : tier;
   const worn = TRAITS.slots.filter((s) => w[s.id]).length;
   const dirty = !sameWardrobe(w, DEFAULT_WARDROBE);
 
@@ -99,14 +108,13 @@ export function MoraWardrobe() {
       </div>
       <div className="os-wd__body">
         <section className="os-wd__left" aria-label="Vorschau">
-          <div className="os-wd__stage" onPointerLeave={() => setHover(null)}>
+          <div className="os-wd__stage" data-origin={stageTier} data-testid="wd-stage" onPointerLeave={() => setHover(null)}>
             <span className="os-wd__glow" aria-hidden />
-            <span className="os-wd__ring" aria-hidden /><span className="os-wd__ring os-wd__ring--b" aria-hidden />
             <span className="os-wd__spark os-wd__spark--1" aria-hidden /><span className="os-wd__spark os-wd__spark--2" aria-hidden /><span className="os-wd__spark os-wd__spark--3" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
             <PixelMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} />
-            <div className="os-wd__chip" data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
-              {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}</> : 'Aktuelles Outfit'}
+            <div className="os-wd__chip" data-origin={stageTier} data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
+              {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}{pv && TIER_LABEL[pv.item.origin] ? <b>{TIER_LABEL[pv.item.origin]}</b> : null}</> : 'Aktuelles Outfit'}
             </div>
           </div>
           <div className="os-wd__bar" role="toolbar" aria-label="Aktionen">
@@ -156,18 +164,19 @@ export function MoraWardrobe() {
               const locked = !isUnlocked(i, ctx);
               const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? i.variants[0]);
               return (
-                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}${i.rarity !== 'common' ? ` is-${i.rarity}` : ''}`} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
+                <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
                   <span className="os-wd__thumb"><img src={TRAITS.thumbBase + shown.file} alt="" draggable={false} /></span>
                   <span className="os-wd__name">{i.name}</span>
-                  {i.rarity !== 'common' ? <span className={`os-wd__rarity os-wd__rarity--${i.rarity}`} data-testid={`wd-rarity-${i.id}`}>{RARITY_LABEL[i.rarity]}{locked ? <i className="os-wd__lock" aria-label="noch gesperrt" /> : null}</span> : null}
+                  {i.origin !== 'standard' ? <span className="os-wd__badge-o" data-origin={i.origin} data-testid={`wd-rarity-${i.id}`}><i />{TIER_LABEL[i.origin]}</span> : null}
+                  {locked ? <span className="os-wd__seal" data-testid={`wd-lock-${i.id}`} role="img" aria-label="noch gesperrt">{LOCK}</span> : null}
                   {i.season ? <span className="os-wd__badge os-wd__badge--season" title="Saisonal">Saison</span> : null}
                   {i.variants.length > 1 ? <span className="os-wd__vcount">{i.variants.length} Farben</span> : null}
                 </button>
               );
             })}
           </div>
-          <p className="os-wd__note" data-testid="wd-note" aria-live="polite">
-            {note ? <><strong>{note.name}</strong> · {RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}</span></> : null}
+          <p className="os-wd__note" data-testid="wd-note" data-origin={note?.origin} aria-live="polite">
+            {note ? <><strong>{note.name}</strong> · {TIER_LABEL[note.origin] || RARITY_LABEL[note.rarity]} · {ORIGIN_LABEL[note.origin]}{note.edition ? ` · Auflage ${note.edition}` : ''}{note.year ? ` · ${note.year}` : ''}<span>{isUnlocked(note, ctx) ? 'Freigeschaltet. Du kannst es tragen.' : unlockHint(note)}</span></> : null}
           </p>
           <div className="os-wd__variants">
             {cur ? (

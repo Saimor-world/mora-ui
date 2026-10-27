@@ -21,10 +21,10 @@ describe('MoraWardrobe (Editor)', () => {
 
   it('zeigt beim Überfahren nur eine Vorschau und speichert nichts', () => {
     render(<MoraWardrobe />);
-    fireEvent.pointerEnter(screen.getByTestId('wd-head-crown'));
-    expect(screen.getByRole('status').textContent).toMatch(/Vorschau · Mondkrone/);
+    fireEvent.pointerEnter(screen.getByTestId('wd-head-halo'));
+    expect(screen.getByRole('status').textContent).toMatch(/Vorschau · Aureole/);
     expect(window.localStorage.getItem('mora.wardrobe.v1:me')).toBeNull();
-    fireEvent.pointerLeave(screen.getByTestId('wd-head-crown').parentElement!);
+    fireEvent.pointerLeave(screen.getByTestId('wd-head-halo').parentElement!);
     expect(screen.getByRole('status').textContent).toBe('Aktuelles Outfit');
   });
 

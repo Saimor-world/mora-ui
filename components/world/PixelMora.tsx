@@ -11,6 +11,14 @@ type Eyes = 'eyes' | 'eyes_closed' | 'eyes_l' | 'eyes_r';
 const EYE_FILE: Record<Eyes, string> = { eyes: '', eyes_closed: '_closed', eyes_l: '_l', eyes_r: '_r' };
 /** Welche Bildstufe zu einer Anzeigegröße (px) passt: 48 Dock, 80 Universum, 96 großes Universum, 140 Bühne. */
 export function tierFor(px: number): Tier { return px <= 56 ? 48 : px <= 88 ? 80 : px <= 112 ? 96 : 140; }
+/** Geräte-Pixelverhältnis (Retina): erst nach dem Mount gesetzt, damit Server und Client gleich rendern. Höchstens 2, weil die größte Stufe 140 px = 280 Gerätepixel schon reicht. */
+export function useDpr(): number {
+  const [d, setD] = useState(1);
+  useEffect(() => { setD(Math.min(2, Math.max(1, window.devicePixelRatio || 1))); }, []);
+  return d;
+}
+/** Bildstufe für Anzeigegröße in CSS-px auf diesem Bildschirm (Retina: doppelt so viele Gerätepixel). */
+export function tierForDpr(px: number, dpr: number): Tier { return tierFor(Math.round(px * dpr)); }
 /** Kugel (Körper) relativ zur Bildfläche: Radius ≈ 36 % der Kante (aus dem Sprite gemessen). */
 export const MORA_R = 0.3625;
 /** Grundkörper (ein Bild je Augenzustand, glattes Final-Set; Gründer-Konto mit echter Blüte); Accessoires aus lib/mora/mora-traits.json.
@@ -43,9 +51,10 @@ export type PixelMoraProps = {
 /** Statisches Pixel-MÔRA-Zeichen (Dock, Einstiege). */
 export function PixelMoraMark({ size = 32, active = false, wardrobe }: { size?: number; active?: boolean; wardrobe?: Wardrobe }) {
   const [mine] = useWardrobe();
+  const dpr = useDpr();
   return (
     <span className="px-mora px-mora--mark" data-testid="mora-mark" data-active={active ? 'true' : undefined} style={{ width: size, height: size }} aria-hidden>
-      <Layers wardrobe={wardrobe ?? mine} tier={tierFor(size)} />
+      <Layers wardrobe={wardrobe ?? mine} tier={tierForDpr(size, dpr)} />
     </span>
   );
 }
@@ -53,7 +62,8 @@ export function PixelMoraMark({ size = 32, active = false, wardrobe }: { size?: 
 export function PixelMora({ size, mood, target, phone = false, reduced = false, roam = [], fresh = null, wardrobe }: PixelMoraProps) {
   const [mine] = useWardrobe();
   const px = Math.round(size); // Zeichenfläche in px, Bildstufe passend dazu
-  const tier = tierFor(px);
+  const dpr = useDpr();
+  const tier = tierForDpr(px, dpr);
   const night = mood === 'night' || (mood === 'idle' && isNight());
   const busy = mood === 'thinking' || mood === 'speaking' || mood === 'listening' || mood === 'waiting';
   const flying = !!target;

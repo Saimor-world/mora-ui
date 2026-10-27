@@ -19,7 +19,7 @@ describe('pixelBrain', () => {
 describe('traits', () => {
   const items = TRAITS.slots.flatMap((s) => s.items);
   it('hat Defaults und viele Accessoires mit Farbvarianten', () => {
-    expect(items.length).toBeGreaterThanOrEqual(30);
+    expect(items.length).toBeGreaterThanOrEqual(24);
     expect(items.filter((i) => i.origin === 'standard').every((i) => i.variants.length >= 1)).toBe(true);
     expect(DEFAULT_WARDROBE.head).toBeNull(); expect(DEFAULT_WARDROBE.neck).toBe('scarf');
   });
@@ -43,15 +43,15 @@ describe('traits', () => {
     expect(joinChoice('beret', 'rot')).toBe('beret:rot');
     expect(normalizeWardrobe({ neck: 'scarf-red' }).neck).toBe('scarf:terra');
     expect(normalizeWardrobe({ neck: 'scarf:smaragd' }).neck).toBe('scarf:terra');
-    expect(normalizeWardrobe({ head: 'sailor' }).head).toBe('captain:weiss');
+    expect(normalizeWardrobe({ head: 'sailor' }).head).toBe('beret:creme');
     expect(normalizeWardrobe({ head: 'beret:gibtsnicht' }).head).toBeNull();
     const head = TRAITS.slots.find((s) => s.id === 'head')!;
-    expect(resolve(head, 'crown')?.variant.id).toBe('gold');
+    expect(resolve(head, 'halo')?.variant.id).toBe('gold');
   });
   it('Weihnachtsmütze verdeckt den Kopf, der Anstecker bleibt unter dem Hut sichtbar', () => {
     const base = { ...DEFAULT_WARDROBE, head: 'wizard:violett', clip: 'flower-pin:pflaume' };
     expect(wardrobeLayers(base).map((l) => l.slot)).toEqual(expect.arrayContaining(['head', 'clip']));
-    const x = wardrobeLayers({ ...DEFAULT_WARDROBE, seasonal: 'xmas:rot', head: 'crown:gold' }).map((l) => l.slot);
+    const x = wardrobeLayers({ ...DEFAULT_WARDROBE, seasonal: 'xmas:rot', head: 'halo:gold' }).map((l) => l.slot);
     expect(x).not.toContain('head'); expect(x).toContain('seasonal');
   });
   it('Standard-Outfit trägt den neuen Terrakotta-Schal mit Ebene hinter dem Körper', () => {
@@ -77,8 +77,8 @@ describe('traits', () => {
     expect(Object.values(randomWardrobe(() => 0.99)).every((v) => v === null)).toBe(true);
   });
   it('Outfit-Plätze haben feste Größe und verwerfen Müll', () => {
-    const o = normalizeOutfits([{ head: 'crown:silber' }, 5, null]);
-    expect(o).toHaveLength(OUTFIT_SLOTS); expect(o[0]?.head).toBe('crown:silber'); expect(o[1]).toBeNull(); expect(o[5]).toBeNull();
+    const o = normalizeOutfits([{ head: 'halo:rose' }, 5, null]);
+    expect(o).toHaveLength(OUTFIT_SLOTS); expect(o[0]?.head).toBe('halo:rose'); expect(o[1]).toBeNull(); expect(o[5]).toBeNull();
     expect(normalizeOutfits('x').every((x) => x === null)).toBe(true);
   });
   it('liefert NFT-Attribute mit Variante', () => {

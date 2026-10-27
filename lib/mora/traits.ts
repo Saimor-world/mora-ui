@@ -46,7 +46,7 @@ export const defaultWardrobe = (founder: boolean): Wardrobe => (founder ? { ...D
 /** Alte Auswahl-IDs (Version 1) → neue "item:variante". */
 const LEGACY: Record<string, string> = {
   'scarf-navy': 'scarf:marine', 'scarf-red': 'scarf:rot', 'scarf-emerald': 'scarf:smaragd', 'scarf-cream': 'scarf:creme',
-  'beret-red': 'beret:rot', 'beret-navy': 'beret:marine', sailor: 'captain:weiss',
+  'beret-red': 'beret:rot', 'beret-navy': 'beret:marine', sailor: 'beret:creme',
 };
 
 export function splitChoice(c: string): { item: string; variant?: string } {

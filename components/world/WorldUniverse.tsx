@@ -260,7 +260,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       ) : null}
       {layout && moraLine ? (
         // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
-        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 106 }} onClick={onMora} data-testid="world-mora-line">
+        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 112 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
         </button>
       ) : null}

@@ -104,7 +104,8 @@ describe('shortLine', () => {
   it('nimmt den ersten Satz, ohne Lookbehind-Regex', () => {
     expect(shortLine('Um 11:00 kommt Mara Beispiel. Überfällig: Gel bestellen.')).toBe('Um 11:00 kommt Mara Beispiel.');
     expect(shortLine('Heute ist alles erledigt')).toBe('Heute ist alles erledigt');
-    expect(shortLine('Der Termin mit Sophie Beispielhaft-Langname um 09:30 ist noch nicht abgeschlossen.').length).toBeLessThanOrEqual(56);
+    expect(shortLine('Der Termin mit Sophie Beispielhaft-Langname um 09:30 ist noch nicht abgeschlossen.').length).toBeLessThanOrEqual(92);
+    expect(shortLine('x'.repeat(40) + ' ' + 'y'.repeat(70)).endsWith('…')).toBe(true);
     const src = require('fs').readFileSync(require('path').join(__dirname, '../../features/universe/ui/LiveWorld.tsx'), 'utf8');
     expect(src).not.toContain('(?<=');
   });

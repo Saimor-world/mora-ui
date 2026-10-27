@@ -342,5 +342,5 @@ export function shortLine(s: string): string {
   const text = (s || '').trim();
   const end = text.search(/[.!?](\s|$)/);
   const first = end < 0 ? text : text.slice(0, end + 1);
-  return first.length <= 56 ? first : `${first.slice(0, 54).replace(/[\s,·:]+\S*$/, '')} …`;
+  return first.length <= 92 ? first : `${first.slice(0, 90).replace(/[\s,·:]+\S*$/, '')} …`;
 }

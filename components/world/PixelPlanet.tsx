@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { type Bitmap, type PlanetKind, makeStars, paintMoon, paintPlanet, paintStars, planetCanvasSize, planetGeometry } from '@/lib/universe/pixelArt';
 
 /** Bildschirmpixel je Kunstpixel – immer ganzzahlig, nie skaliert, nie geglättet. */
-export const PX = 2;
+export const PX = 1;
 export const SKY_PX = 3;
 
 function draw(canvas: HTMLCanvasElement | null, bm: Bitmap) {
