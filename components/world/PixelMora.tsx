@@ -66,7 +66,7 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
       const i = decide({ points: s.roam, fresh: s.fresh, night: s.night, busy: s.busy }, Math.random, last);
       if (i.kind === 'look' && last?.id === i.id) { last = { ...i, kind: 'visit' }; } else last = i;
       goal.current = { x: i.x, y: i.y };
-      t = setTimeout(step, i.ms);
+      t = setTimeout(step, Math.round(i.ms * 1.6));
     };
     t = setTimeout(step, 1200);
     return () => clearTimeout(t);

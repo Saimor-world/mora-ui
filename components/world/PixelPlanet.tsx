@@ -31,7 +31,7 @@ export function PixelPlanet({ kind, size, seed, light, folders, activity, overdu
     draw(ref.current, paintPlanet(spec, geo, 0));
     if (reduced) return;
     let f = 0;
-    const id = window.setInterval(() => { if (document.hidden) return; f += 1; draw(ref.current, paintPlanet(spec, geo, f)); }, 380);
+    const id = window.setInterval(() => { if (document.hidden) return; f += 1; draw(ref.current, paintPlanet(spec, geo, f)); }, 1200);
     return () => window.clearInterval(id);
   }, [spec, geo, reduced]);
   const off = Math.round((size - S * PX) / 2);

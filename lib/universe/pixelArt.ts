@@ -8,8 +8,11 @@ export type PlanetKind = 'gas' | 'ocean' | 'lava' | 'ice' | 'rock' | 'desert' | 
 export const PLANET_KINDS: PlanetKind[] = ['gas', 'ocean', 'lava', 'ice', 'rock', 'desert', 'jade'];
 
 export type RGB = [number, number, number];
+const mh = (h: string): RGB => mute(hex(h), 0.35);
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const ramp = (...h: string[]): RGB[] => h.map(hex);
+/** Gedämpfte Farben (ruhige Arbeitsatmosphäre): Sättigung etwa 30 % zurück, etwas weicher im Licht. */
+const mute = (c: RGB, k = 0.3): RGB => { const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11; return [c[0] + (l - c[0]) * k, c[1] + (l - c[1]) * k, c[2] + (l - c[2]) * k]; };
+const ramp = (...h: string[]): RGB[] => h.map((x) => mute(hex(x)));
 
 /** Ein Charakter je Abteilung: der Name entscheidet, sonst ein stabiler Platz aus der Tonfamilie. */
 export function planetKind(name: string, slot = 0): PlanetKind {
@@ -27,13 +30,13 @@ export function planetKind(name: string, slot = 0): PlanetKind {
 
 interface Look { base: RGB[]; atmo: RGB | null; ring: RGB[]; moon: RGB[]; glow: RGB; speed: number }
 const LOOK: Record<PlanetKind, Look> = {
-  gas: { base: ramp('#1b1233', '#3a2468', '#6a43a3', '#a47ad0', '#e3c9f2'), atmo: hex('#b48be0'), ring: ramp('#3a2468', '#7a55b0', '#c7a6e6', '#f4e2c0'), moon: ramp('#241a3a', '#43355e', '#675a88', '#9488b0', '#c4bbd8'), glow: hex('#a47ad0'), speed: 0.05 },
-  ocean: { base: ramp('#0a2540', '#12467a', '#1f78b4', '#4eb0d8', '#bfe8f4'), atmo: hex('#7cc8ec'), ring: ramp('#2c4a64', '#58809c', '#9cc0d4', '#d8ecf4'), moon: ramp('#1c2a36', '#34495a', '#5a7284', '#8aa0b0', '#bccbd6'), glow: hex('#4eb0d8'), speed: 0.03 },
-  lava: { base: ramp('#1a0c0c', '#3a1713', '#6b2a1a', '#a24a22', '#d9783a'), atmo: hex('#ff7a3a'), ring: ramp('#3a1713', '#6b2a1a', '#a24a22', '#d9a066'), moon: ramp('#201210', '#3d2620', '#5e4034', '#86604c', '#b08a70'), glow: hex('#ff5a1f'), speed: 0.025 },
-  ice: { base: ramp('#10223a', '#25507a', '#4f8fb8', '#9fd3e8', '#eaf8ff'), atmo: hex('#a8e4f4'), ring: ramp('#3a6a90', '#7cb4d4', '#c4e8f4', '#ffffff'), moon: ramp('#1a2a3c', '#34506c', '#5c7e9c', '#8eb0c8', '#c8dce8'), glow: hex('#9fd3e8'), speed: 0.02 },
-  rock: { base: ramp('#17171c', '#2c2c34', '#4a4a55', '#73737f', '#a6a6b2'), atmo: null, ring: ramp('#34343c', '#5c5c68', '#8a8a96', '#bcbcc8'), moon: ramp('#18181d', '#2e2e36', '#4c4c58', '#767682', '#a8a8b4'), glow: hex('#8a8a96'), speed: 0.018 },
-  desert: { base: ramp('#2b1608', '#5c3112', '#9a5a22', '#d28e3c', '#f0c878'), atmo: hex('#f0b868'), ring: ramp('#5c3112', '#9a5a22', '#d28e3c', '#f4d9a0'), moon: ramp('#241a10', '#44341f', '#6a5434', '#96805a', '#c4b088'), glow: hex('#d28e3c'), speed: 0.03 },
-  jade: { base: ramp('#06201a', '#0f4034', '#1f7358', '#3fae86', '#9ee0bf'), atmo: hex('#6fd0a8'), ring: ramp('#0f4034', '#2a8a68', '#74c8a0', '#d9b24c'), moon: ramp('#0d1f1a', '#1b3a30', '#32604f', '#5a8f7a', '#92c2ae'), glow: hex('#3fae86'), speed: 0.035 },
+  gas: { base: ramp('#1b1233', '#3a2468', '#6a43a3', '#a47ad0', '#e3c9f2'), atmo: mh('#b48be0'), ring: ramp('#3a2468', '#7a55b0', '#c7a6e6', '#f4e2c0'), moon: ramp('#241a3a', '#43355e', '#675a88', '#9488b0', '#c4bbd8'), glow: mh('#a47ad0'), speed: 0.05 },
+  ocean: { base: ramp('#0a2540', '#12467a', '#1f78b4', '#4eb0d8', '#bfe8f4'), atmo: mh('#7cc8ec'), ring: ramp('#2c4a64', '#58809c', '#9cc0d4', '#d8ecf4'), moon: ramp('#1c2a36', '#34495a', '#5a7284', '#8aa0b0', '#bccbd6'), glow: mh('#4eb0d8'), speed: 0.03 },
+  lava: { base: ramp('#1a0c0c', '#3a1713', '#6b2a1a', '#a24a22', '#d9783a'), atmo: mh('#ff7a3a'), ring: ramp('#3a1713', '#6b2a1a', '#a24a22', '#d9a066'), moon: ramp('#201210', '#3d2620', '#5e4034', '#86604c', '#b08a70'), glow: mh('#ff5a1f'), speed: 0.025 },
+  ice: { base: ramp('#10223a', '#25507a', '#4f8fb8', '#9fd3e8', '#eaf8ff'), atmo: mh('#a8e4f4'), ring: ramp('#3a6a90', '#7cb4d4', '#c4e8f4', '#ffffff'), moon: ramp('#1a2a3c', '#34506c', '#5c7e9c', '#8eb0c8', '#c8dce8'), glow: mh('#9fd3e8'), speed: 0.02 },
+  rock: { base: ramp('#17171c', '#2c2c34', '#4a4a55', '#73737f', '#a6a6b2'), atmo: null, ring: ramp('#34343c', '#5c5c68', '#8a8a96', '#bcbcc8'), moon: ramp('#18181d', '#2e2e36', '#4c4c58', '#767682', '#a8a8b4'), glow: mh('#8a8a96'), speed: 0.018 },
+  desert: { base: ramp('#2b1608', '#5c3112', '#9a5a22', '#d28e3c', '#f0c878'), atmo: mh('#f0b868'), ring: ramp('#5c3112', '#9a5a22', '#d28e3c', '#f4d9a0'), moon: ramp('#241a10', '#44341f', '#6a5434', '#96805a', '#c4b088'), glow: mh('#d28e3c'), speed: 0.03 },
+  jade: { base: ramp('#06201a', '#0f4034', '#1f7358', '#3fae86', '#9ee0bf'), atmo: mh('#6fd0a8'), ring: ramp('#0f4034', '#2a8a68', '#74c8a0', '#d9b24c'), moon: ramp('#0d1f1a', '#1b3a30', '#32604f', '#5a8f7a', '#92c2ae'), glow: mh('#3fae86'), speed: 0.035 },
 };
 export const kindLook = (k: PlanetKind): Look => LOOK[k];
 
@@ -270,23 +273,23 @@ export function paintPlanet(spec: PlanetSpec, geo: Geometry, frame = 0): Bitmap 
   }
   // 5) Polarlicht für Überfälliges: rosa-rote Pixel an der Nordkappe.
   if ((spec.overdue ?? 0) > 0) {
-    const aur = [hex('#ff6f91'), hex('#ffb3c1'), hex('#ff4d6d')];
+    const aur = [mh('#d98a9a'), mh('#e8b4bd'), mh('#c0707f')];
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const dxr = (x + 0.5 - c) / R, dyr = (y + 0.5 - c) / R;
       const d = Math.hypot(dxr, dyr) * R - R;
-      if (dyr < -0.35 && d > 0 && d < 2.6 && Math.abs(dxr) < 0.78 && !mask[y * S + x] && bayer(x + 1, y) < 0.5 - d * 0.14) put(bm, x, y, aur[(x + y) % 3]);
+      if (dyr < -0.35 && d > 0 && d < 1.8 && Math.abs(dxr) < 0.55 && !mask[y * S + x] && bayer(x + 1, y) < 0.34 - d * 0.14) put(bm, x, y, aur[(x + y) % 3]);
     }
   }
   // 6) Funkeln für offene Aufgaben: kleine Kreuze, die im Takt wechseln.
-  const sparks = Math.min(spec.open ?? 0, 6);
+  const sparks = Math.min(spec.open ?? 0, 2);
   for (let k = 0; k < sparks; k++) {
     const a = -2.4 + (k * 4.8) / Math.max(1, sparks) + 0.3;
     const rad = R * (ring ? 1.82 : 1.28) + 3 + (k % 2) * 2;
     const sx = Math.round(c + Math.cos(a) * rad), sy = Math.round(c + Math.sin(a) * rad);
-    const on = (frame + k) % 2 === 0;
-    const col = hex('#fff3c4');
+    const on = true; // ruhig: kein Wechsel
+    const col = mh('#f2e6c0');
     put(bm, sx, sy, col);
-    if (on) { put(bm, sx - 1, sy, col, 200); put(bm, sx + 1, sy, col, 200); put(bm, sx, sy - 1, col, 200); put(bm, sx, sy + 1, col, 200); }
+    if (on) { put(bm, sx - 1, sy, col, 110); put(bm, sx + 1, sy, col, 110); put(bm, sx, sy - 1, col, 110); put(bm, sx, sy + 1, col, 110); }
   }
   return bm;
 }
@@ -346,9 +349,9 @@ export function paintNebula(w: number, h: number, seed = 7): Bitmap {
     const centre = clamp(1 - Math.hypot((u - 0.5) * asp * 0.8, (v - 0.55) * 0.9) / 0.5, 0, 1);
     const b = bayer(x, y);
     const body = clamp((n1 - 0.32) * 2.6, 0, 1) * 0.65 + ridge * ridge * 0.55;
-    let iw = clamp(warm * (0.06 + body) * 1.1 * (1 - centre * 0.75), 0, 1);
+    let iw = clamp(warm * (0.05 + body) * 0.5 * (1 - centre * 0.8), 0, 1);
     iw *= 1 - clamp((0.2 - lane) * 3.6, 0, 1) * 0.7; // dunkle Staubbahnen
-    const ic = clamp(cool * (0.06 + body) * 0.62 * (1 - centre * 0.7), 0, 1);
+    const ic = clamp(cool * (0.05 + body) * 0.5 * (1 - centre * 0.75), 0, 1);
     const useWarm = iw + (b - 0.5) * 0.1 >= ic;
     const rr = useWarm ? WARM : (fbm3(px * 0.5, py * 0.5, 9, seed + 12, 2) > 0.5 ? COOL : VIOLET);
     const iv = useWarm ? iw : ic;
@@ -362,13 +365,13 @@ export interface Star { x: number; y: number; kind: 0 | 1 | 2 | 3; col: RGB; twi
 const STAR_COL = ramp('#ffffff', '#cfe3ff', '#ffe9b0', '#ffc89a', '#9fd0ff');
 /** Sterne: überwiegend einzelne Pixel, einige Kreuze, wenige große Funkel – die twinkelnden liegen auf einer eigenen Ebene. */
 export function makeStars(w: number, h: number, seed = 11): Star[] {
-  const n = Math.round((w * h) / 210);
+  const n = Math.round((w * h) / 420);
   const out: Star[] = [];
   for (let i = 0; i < n; i++) {
     const r = h3(i, 1, 1, seed);
-    const kind: Star['kind'] = r > 0.992 ? 3 : r > 0.96 ? 2 : r > 0.8 ? 1 : 0;
+    const kind: Star['kind'] = r > 0.997 ? 3 : r > 0.975 ? 2 : r > 0.8 ? 1 : 0;
     const col = STAR_COL[Math.floor(h3(i, 2, 2, seed) * STAR_COL.length)];
-    out.push({ x: Math.floor(h3(i, 3, 3, seed) * w), y: Math.floor(h3(i, 4, 4, seed) * h), kind, col, twinkle: kind >= 2 || h3(i, 5, 5, seed) > 0.86 });
+    out.push({ x: Math.floor(h3(i, 3, 3, seed) * w), y: Math.floor(h3(i, 4, 4, seed) * h), kind, col, twinkle: kind >= 2 || h3(i, 5, 5, seed) > 0.93 });
   }
   return out;
 }

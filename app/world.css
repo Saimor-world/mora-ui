@@ -1036,8 +1036,8 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .wd-sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: #05060d; pointer-events: none; }
 body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !important; filter: none !important; }
 .wd-view small { font-size: var(--os-type-meta-size); opacity: .6; margin-left: -2px; }
-.wd-sky__twinkle { animation: wd-twinkle-px 3.6s steps(2, jump-none) infinite; }
-@keyframes wd-twinkle-px { 0% { opacity: 1; } 50% { opacity: .15; } 100% { opacity: 1; } }
+.wd-sky__twinkle { animation: wd-twinkle-px 10s steps(2, jump-none) infinite; }
+@keyframes wd-twinkle-px { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
 .wd-universe[data-view='pixel'] .wd-sky[data-reduced='true'] .wd-sky__twinkle { animation: none; }
 .wd-universe[data-view='pixel'] .wd-px--planet { z-index: 0; }
 .wd-pxmoons { position: absolute; left: 0; top: 0; }
@@ -1060,13 +1060,14 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 }
 .wd-universe[data-view='pixel'] .wd-planet[data-active='true']:not([data-selected='true'])::after { opacity: .55; }
 .wd-universe[data-view='pixel'] .wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%); }
-.wd-universe[data-view='pixel'] .wd-label { padding: 4px 10px 5px; background: rgba(6, 8, 18, .9); border: 2px solid rgba(132, 150, 214, .26); box-shadow: 3px 3px 0 rgba(0, 0, 0, .65); }
+.wd-universe[data-view='pixel']:not([data-large='true']) .wd-meta { max-width: 124px; font-size: 11px; }
+.wd-universe[data-view='pixel'] .wd-label { padding: 4px 6px 5px; background: rgba(6, 8, 18, .9); border: 2px solid rgba(132, 150, 214, .26); box-shadow: 3px 3px 0 rgba(0, 0, 0, .65); }
 .wd-universe[data-view='pixel'] .wd-name { text-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-moonlabel { padding: 1px 6px; background: rgba(6, 8, 18, .88); border: 2px solid rgba(132, 150, 214, .2); text-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-badge { border-radius: 0; background: #0a0c18; border: 2px solid rgba(160, 180, 240, .5); box-shadow: 2px 2px 0 #000; }
 .wd-universe[data-view='pixel'] .wd-orbits ellipse { stroke: rgba(150, 170, 230, .24); stroke-width: 2; stroke-dasharray: 2 10; }
 .wd-universe[data-view='pixel'] .wd-link { stroke: rgba(170, 190, 240, .3); stroke-width: 2; stroke-dasharray: 2 6; filter: none; }
-.wd-universe[data-view='pixel'] .wd-link--active { stroke: rgba(240, 220, 160, .9); stroke-width: 2; stroke-dasharray: 6 4; filter: none; }
+.wd-universe[data-view='pixel'] .wd-link--active { stroke: rgba(226, 212, 170, .6); stroke-width: 2; stroke-dasharray: 6 4; filter: none; }
 .wd-universe[data-view='pixel'] .wd-link-pulse { filter: none; stroke-linecap: butt; stroke-width: 4; }
 .wd-universe[data-view='pixel'] .wd-sublink { stroke: rgba(170, 190, 240, .32); stroke-width: 2; stroke-dasharray: 2 4; filter: none; }
 .wd-universe[data-view='pixel'] .wd-stardot { filter: none; }
