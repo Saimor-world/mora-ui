@@ -22,6 +22,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   await context.addCookies([{ name: 'mora_session', value: 'ui_fixture_not_a_credential', url: baseURL! }]);
   await page.addInitScript(() => {
     localStorage.setItem('saimor_product_tour_dismissed', '1');
+    localStorage.setItem('last_activity', new Date().toISOString());
     localStorage.setItem('mora.universe.details', '0');
     localStorage.setItem('mora.universe.moraInScene', '0');
     localStorage.setItem('mora.universe.view', 'glass');
@@ -89,6 +90,8 @@ for (const width of [1440, 390]) {
   test(`existing wardrobe preserves material layers, neck exclusivity and undo ${width}`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await page.goto('/os#settings');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('last_user_name')))
+      .toBe('Visuelle Testdaten');
     const wardrobe = page.getByTestId('mora-wardrobe');
     await expect(wardrobe).toBeVisible();
     await expect(page.getByTestId('mora-stage')).toHaveAttribute('data-reduced', 'true');
@@ -97,7 +100,10 @@ for (const width of [1440, 390]) {
     const stage = page.getByTestId('wd-stage');
     await expect.poll(() => stage.locator('.jm__img').evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
     await page.mouse.move(0, 0);
-    await stage.screenshot({ path: info.outputPath(`jade-base-${width}.png`) });
+    const stillFrame = await stage.screenshot({ path: info.outputPath(`jade-base-${width}.png`) });
+    // Observe beyond the stage's first scheduled blink; reduced motion stays still.
+    await page.waitForTimeout(1800);
+    expect(await stage.screenshot()).toEqual(stillFrame);
     await page.getByTestId('wd-tab-face').click();
     await page.getByTestId('wd-face-jade-sunglasses').click();
     await expect(stage.locator('[data-acc="jade-sunglasses"]')).toHaveCount(1);
@@ -118,7 +124,23 @@ for (const width of [1440, 390]) {
     await expect(stage.locator('[data-acc="jade-scarf"]')).toHaveCount(1);
     await page.getByTestId('wd-redo').click();
     await expect(stage.locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
+    expect(await page.evaluate(() => JSON.parse(
+      localStorage.getItem('mora.wardrobe.v1:ui-user') || '{}').neck)).toMatch(/^pearl-necklace/);
     await page.reload();
     await expect(page.getByTestId('wd-stage').locator('[data-acc="pearl-necklace"]')).toHaveCount(1);
   });
 }
+
+test.describe('touch interaction', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test('phone taps open a department and folder and return to the overview', async ({ page }) => {
+    await page.goto('/os#universe');
+    await page.getByTestId('world-planet-rnd').tap();
+    await page.getByTestId('world-focus-zoom').tap();
+    await page.getByTestId('fv-moon-roadmap').tap();
+    await expect(page.getByTestId('fv-star-qa-0')).toBeVisible();
+    await page.getByTestId('fv-up').tap();
+    await page.getByTestId('world-planet-close').tap();
+    await expect(page.getByTestId('world-planet-rnd')).toBeVisible();
+  });
+});

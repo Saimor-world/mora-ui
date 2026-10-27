@@ -64,3 +64,11 @@ reduced-motion preference to the existing JadeMoraStage, preventing its JS blink
 loop from running in still mode. Two added browser journeys capture the existing
 base/sunglasses/scarf/pearls and verify single-neck-slot, undo/redo and persistence.
 No additional wardrobe, state engine or outfit store is introduced.
+
+The first wardrobe browser run exposed an incomplete test session: without
+`last_activity`, the existing stale-session rule removed its synthetic cookie;
+reload correctly returned to the access screen. The fixture now supplies a fresh
+activity timestamp and waits for the intended user before editing. The persistence
+assertion is retained and strengthened with an explicit per-user storage check.
+No production auth behavior is changed. A touch-enabled 390px journey and a
+reduced-motion image-stability check beyond the first blink are also included.
