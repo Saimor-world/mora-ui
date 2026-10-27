@@ -25,6 +25,14 @@ export type JadeState = 'idle' | 'curious' | 'attentive' | 'thinking' | 'speakin
 
 const px = (n: number) => `${n}px`;
 
+/** A preference change must not freeze a half-blink or a previous pointer pose. */
+function resetMotion(el: HTMLSpanElement, eyes: HTMLSpanElement) {
+  delete el.dataset.blink;
+  el.style.removeProperty('transform');
+  eyes.style.setProperty('--gx', '0');
+  eyes.style.setProperty('--gy', '0');
+}
+
 function Mount({ m, part }: { m: AccessoryMount; part: 'back' | 'front' }) {
   if ((m.layer === 'back') !== (part === 'back')) return null;
   const x = m.anchor.x + (m.offset?.x ?? 0); const y = m.anchor.y + (m.offset?.y ?? 0);
@@ -120,7 +128,7 @@ export function JadeMora({ size, mood, target, reduced = false, roam = [], fresh
   // Entscheidungen: eigener Takt aus echtem Zustand (gleiche Quelle wie PixelMora).
   const goal = useRef({ x: 0, y: 0, look: 0 as number });
   useEffect(() => {
-    if (reduced) { goal.current = { x: 0, y: 0, look: 0 }; loop.current.wake(); return; }
+    if (reduced) { goal.current = { x: 0, y: 0, look: 0 }; setNear(false); return; }
     let last: Intent | undefined; let t: ReturnType<typeof setTimeout>;
     const step = () => {
       const s = live.current;
@@ -138,6 +146,8 @@ export function JadeMora({ size, mood, target, reduced = false, roam = [], fresh
   // Bewegung, Blick, Blinzeln: ein rAF, schläft bei Ruhe.
   useEffect(() => {
     const el = root.current; const ey = eyes.current; if (!el || !ey) return;
+    resetMotion(el, ey);
+    if (reduced) return;
     const cur = { x: 0, y: 0, tilt: 0, gx: 0, gy: 0 };
     const ptr = { x: 0, y: 0, t: 0 };
     let raf = 0; let prev = 0; let nearNow = false;
@@ -180,7 +190,7 @@ export function JadeMora({ size, mood, target, reduced = false, roam = [], fresh
     const blink = () => { el.dataset.blink = 'true'; bo = setTimeout(() => { delete el.dataset.blink; }, 150); bt = setTimeout(blink, 2800 + Math.random() * 4200); };
     if (!live.current.reduced) bt = setTimeout(blink, 1800);
     wake();
-    return () => { cancelAnimationFrame(raf); clearTimeout(bt); clearTimeout(bo); window.removeEventListener('pointermove', onMove); document.removeEventListener('visibilitychange', onVis); loop.current = { wake: () => {}, near: () => {} }; };
+    return () => { cancelAnimationFrame(raf); clearTimeout(bt); clearTimeout(bo); window.removeEventListener('pointermove', onMove); document.removeEventListener('visibilitychange', onVis); loop.current = { wake: () => {}, near: () => {} }; resetMotion(el, ey); };
   }, [reduced]);
 
   return (
@@ -202,7 +212,9 @@ export function JadeMoraStage({ wardrobe, scale = 2, hop = 0, turn = 0, reduced 
   const size = Math.round(112 * scale);
   const root = useRef<HTMLSpanElement>(null); const eyes = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    const el = root.current; const ey = eyes.current; if (!el || !ey || reduced) return;
+    const el = root.current; const ey = eyes.current; if (!el || !ey) return;
+    resetMotion(el, ey);
+    if (reduced) return;
     const g = { x: 0, y: 0, tx: 0, ty: 0 }; let raf = 0; let prev = 0; let last = 0;
     const tick = (now: number) => {
       const dt = Math.min(64, now - (prev || now)); prev = now; const k = 1 - Math.exp(-dt / 110);
@@ -220,7 +232,7 @@ export function JadeMoraStage({ wardrobe, scale = 2, hop = 0, turn = 0, reduced 
     let bt: ReturnType<typeof setTimeout>; let bo: ReturnType<typeof setTimeout>;
     const blink = () => { el.dataset.blink = 'true'; bo = setTimeout(() => { delete el.dataset.blink; }, 150); bt = setTimeout(blink, 2400 + Math.random() * 3200); };
     bt = setTimeout(blink, 1600);
-    return () => { cancelAnimationFrame(raf); clearTimeout(bt); clearTimeout(bo); window.removeEventListener('pointermove', onMove); };
+    return () => { cancelAnimationFrame(raf); clearTimeout(bt); clearTimeout(bo); window.removeEventListener('pointermove', onMove); resetMotion(el, ey); };
   }, [reduced, size]);
   return (
     <span ref={root} className="jm jm--stage" data-state="idle" data-reduced={reduced ? 'true' : undefined} data-testid="mora-stage" data-figure="jade" data-hop={hop} data-turn={turn} style={{ width: size, height: size }} aria-hidden>

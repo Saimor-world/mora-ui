@@ -79,3 +79,19 @@ Its existing SVG now has a more curved cowl around the stone and a softly curved
 hanging end; both standard and founder versions keep the same adapter anchors,
 variants and IDs. This remains a layered illustration material, not a new 3D
 cloth simulation. Final screenshots are checked on the exact resulting commit.
+
+## Live motion preference follow-up
+
+Switching reduced motion on during a blink previously cancelled its reopening
+timer but left `data-blink` and the last pointer gaze on the element. Both the
+scene and existing wardrobe renderer now reset blink/gaze/pose, skip motion
+listeners in still mode, and clean up on preference changes and unmount.
+Universe and wardrobe reuse the existing `usePrefersReducedMotion` subscription;
+the installed Framer hook only snapshots the preference at mount. No new motion
+system or character design is introduced.
+
+Two focused regression tests failed on the old renderer and pass after the fix;
+they cover an interrupted blink, neutral gaze, prolonged stillness, resuming
+motion and timer cleanup. A seventh browser journey switches the real wardrobe
+preference both ways without reloading. Validation for this follow-up is recorded
+on the draft PR; earlier 2,065-test / six-journey evidence belongs to 25aea752.

@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 import { type SpiritMood } from './MoraSpirit';
 import { JadeMora } from './JadeMora';
 import type { PixelMoraProps } from './PixelMora';
@@ -125,7 +125,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const fieldRef = useRef<HTMLDivElement>(null);
   const planetRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [size, setSize] = useState({ width: 0, height: 0, wide: false });
-  const reduced = !!useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const paused = useRef(false);
   const [zoom, setZoom] = useState(1);
   // Pixel-Ansicht (Standard am Rechner) oder „Gesamtansicht“: dieselben Daten ohne Pixel-Look.

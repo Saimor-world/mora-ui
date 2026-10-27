@@ -1,5 +1,5 @@
 'use client';
-import { useReducedMotion } from 'framer-motion';
+import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { JadeMoraMark, JadeMoraStage } from '@/components/world/JadeMora';
@@ -45,7 +45,7 @@ type Hover = { slot: string; choice: string | null } | null;
 
 /** Garderobe: Create-a-MÔRA-Editor. Große Bühne, Kategorien, Raster, Farbvarianten, Zufall, Outfit-Plätze, Rückgängig. Lokal pro Nutzer gespeichert. */
 export function MoraWardrobe() {
-  const reduced = !!useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const [w, save] = useWardrobe();
   const [outfits, setOutfit] = useOutfits();
   const [tab, setTab] = useState('aura');

@@ -133,6 +133,27 @@ for (const width of [1440, 390]) {
   });
 }
 
+test('motion preference changes reset the existing wardrobe without a reload', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/os#settings');
+  const stage = page.getByTestId('mora-stage');
+  await expect(stage).toBeVisible();
+  await expect(stage).not.toHaveAttribute('data-reduced', 'true');
+  await expect(stage).toHaveAttribute('data-blink', 'true');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(stage).toHaveAttribute('data-reduced', 'true');
+  await expect(stage).not.toHaveAttribute('data-blink');
+  await expect(stage.locator('.jm__eyes')).toHaveCSS('--gx', '0');
+  await expect(stage.locator('.jm__eyes')).toHaveCSS('--gy', '0');
+  await page.mouse.move(350, 180);
+  await page.waitForTimeout(1800);
+  await expect(stage).not.toHaveAttribute('data-blink');
+  await expect(stage.locator('.jm__eyes')).toHaveCSS('--gx', '0');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(stage).not.toHaveAttribute('data-reduced', 'true');
+  await expect(stage).toHaveAttribute('data-blink', 'true');
+});
+
 test.describe('touch interaction', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   test('phone taps open a department and folder and return to the overview', async ({ page }) => {
