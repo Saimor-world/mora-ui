@@ -6,7 +6,8 @@
 import doc from './mora-traits.json';
 import { isUnlocked, NO_UNLOCKS, type UnlockContext } from './unlock';
 
-export type TraitVariant = { id: string; name: string; swatch: string; file: string };
+/** `back`: gleiche Datei mit Endung `--back.png` liegt hinter dem Körper (Schalenden, Brillenbügel, Kette). `anim`: Bildanzahl des Streifens `--anim.png`. */
+export type TraitVariant = { id: string; name: string; swatch: string; file: string; back?: boolean; anim?: number };
 /** Herkunft entscheidet über Seltenheit, nie Farbe oder Kategorie (siehe "rules" in mora-traits.json). */
 export type TraitOrigin = 'standard' | 'moment' | 'earned' | 'alive' | 'founder';
 export type TraitRarity = 'common' | 'rare' | 'legendary';
@@ -38,6 +39,9 @@ export function deriveRarity(i: Pick<TraitItem, 'origin' | 'edition'>): TraitRar
 }
 
 export const DEFAULT_WARDROBE: Wardrobe = Object.fromEntries(TRAITS.slots.map((s) => [s.id, s.items.find((i) => i.default)?.id ?? null]));
+/** Gründer-Konten tragen von Anfang an das Blüten-Medaillon F1 (nur solange sie nichts anderes gespeichert haben). */
+export const FOUNDER_PENDANT = 'founder-f1';
+export const defaultWardrobe = (founder: boolean): Wardrobe => (founder ? { ...DEFAULT_WARDROBE, pendant: FOUNDER_PENDANT } : DEFAULT_WARDROBE);
 
 /** Alte Auswahl-IDs (Version 1) → neue "item:variante". */
 const LEGACY: Record<string, string> = {
@@ -54,15 +58,28 @@ export function resolve(slot: TraitSlot, choice: string | null | undefined): { i
   if (!choice) return null;
   const { item: iid, variant } = splitChoice(LEGACY[choice] ?? choice);
   const item = slot.items.find((i) => i.id === iid); if (!item) return null;
-  const v = item.variants.find((x) => x.id === variant) ?? (variant ? undefined : item.variants[0]);
+  // Hat ein Stück nur eine Variante (neue Farben sind weggefallen), gilt auch eine alte Variante weiter.
+  const v = item.variants.find((x) => x.id === variant) ?? (!variant || item.variants.length === 1 ? item.variants[0] : undefined);
   return v ? { item, variant: v } : null;
 }
 
-/** Gültige, sortierte Ebenen (Dateipfade) für eine Auswahl. Unbekannte IDs fallen weg; "hides" blendet Slots aus (Hut verdeckt Spange). */
-export function wardrobeLayers(w: Wardrobe): { slot: string; src: string }[] {
-  const picked = TRAITS.slots.map((s) => ({ s, r: resolve(s, w[s.id]) }));
+/** Bildstufen (Kantenlänge in px). 48 Dock, 80 Universum, 96 großes Universum, 140 Garderobe. */
+export const TIERS = [48, 80, 96, 140] as const;
+export type Tier = (typeof TIERS)[number];
+export const stemOf = (file: string, suffix: string) => file.replace(/\.png$/, `${suffix}.png`);
+export type WardrobeLayer = { slot: string; src: string; /** Ebene hinter dem Körper. */ back?: string; /** Bildanzahl, wenn `src` ein Animationsstreifen ist. */ frames?: number };
+
+/** Gültige, sortierte Ebenen (Dateipfade) für eine Auswahl und Bildstufe. Unbekannte IDs fallen weg; "hides" blendet Slots aus;
+ *  Gründerstücke erscheinen nur bei `founder`. */
+export function wardrobeLayers(w: Wardrobe, opts: { founder?: boolean; tier?: Tier } = {}): WardrobeLayer[] {
+  const dir = `${TRAITS.assetBase}t${opts.tier ?? 80}/traits/`;
+  const picked = TRAITS.slots.map((s) => ({ s, r: resolve(s, w[s.id]) })).map((p) => (p.r && p.r.item.unlock === 'founder' && !opts.founder ? { ...p, r: null } : p));
   const hidden = new Set(picked.flatMap((p) => p.r?.item.hides ?? []));
-  return picked.flatMap(({ s, r }) => (r && !hidden.has(s.id) ? [{ slot: s.id, src: TRAITS.assetBase + r.variant.file }] : []));
+  return picked.flatMap(({ s, r }) => {
+    if (!r || hidden.has(s.id)) return [];
+    const v = r.variant;
+    return [{ slot: s.id, src: dir + (v.anim ? stemOf(v.file, '--anim') : v.file), ...(v.back ? { back: dir + stemOf(v.file, '--back') } : {}), ...(v.anim ? { frames: v.anim } : {}) }];
+  });
 }
 
 export function normalizeWardrobe(raw: unknown): Wardrobe {
@@ -84,7 +101,7 @@ export function toNftAttributes(w: Wardrobe) {
   });
 }
 
-const SLOT_ODDS: Record<string, number> = { head: 0.9, neck: 0.8, clip: 0.6, face: 0.45, held: 0.45, aura: 0.4, seasonal: 0.12 };
+const SLOT_ODDS: Record<string, number> = { head: 0.9, neck: 0.8, clip: 0.6, pendant: 0.5, face: 0.45, held: 0.45, aura: 0.4, seasonal: 0.12 };
 /** Zufälliges, stimmiges Outfit. rng ist austauschbar (Tests). */
 export function randomWardrobe(rng: () => number = Math.random, ctx: UnlockContext = NO_UNLOCKS): Wardrobe {
   const pick = <T,>(a: T[]) => a[Math.min(a.length - 1, Math.floor(rng() * a.length))];
@@ -105,6 +122,10 @@ const EVT = 'mora-wardrobe';
 export function loadWardrobe(user = 'me'): Wardrobe {
   if (typeof window === 'undefined') return DEFAULT_WARDROBE;
   try { return normalizeWardrobe(JSON.parse(window.localStorage.getItem(`${KEY}:${user}`) || 'null')); } catch { return DEFAULT_WARDROBE; }
+}
+export function hasStoredWardrobe(user = 'me'): boolean {
+  if (typeof window === 'undefined') return false;
+  try { return window.localStorage.getItem(`${KEY}:${user}`) != null; } catch { return false; }
 }
 export function saveWardrobe(w: Wardrobe, user = 'me') {
   try { window.localStorage.setItem(`${KEY}:${user}`, JSON.stringify(w)); } catch { /* voll/privat */ }

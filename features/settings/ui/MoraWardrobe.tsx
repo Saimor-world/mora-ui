@@ -3,10 +3,10 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { PixelMoraMark, PixelMoraStage } from '@/components/world/PixelMora';
 import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
-import { DEFAULT_WARDROBE, joinChoice, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
-import { useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
+import { defaultWardrobe, joinChoice, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
+import { useFounder, useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 
-const TAB_ORDER = ['head', 'face', 'neck', 'clip', 'held', 'aura', 'seasonal'];
+const TAB_ORDER = ['head', 'face', 'neck', 'pendant', 'clip', 'held', 'aura', 'seasonal'];
 const HISTORY = 60;
 const RARITY_LABEL = { common: '', rare: 'Selten', legendary: 'Legendär' } as const;
 const ORIGIN_LABEL = { standard: 'Alltag', moment: 'Zeitgebunden', earned: 'Verdient', alive: 'Lebendig', founder: 'Gründerstück' } as const;
@@ -16,7 +16,8 @@ const ICONS: Record<string, React.ReactNode> = {
   head: <path d="M3 14.5h14M5 14.5c0-4 2-7 5-7s5 3 5 7M10 7.5V4.5M8.5 5.5 10 4.5l1.5 1" />,
   face: <><circle cx="6.2" cy="10.5" r="3" /><circle cx="13.8" cy="10.5" r="3" /><path d="M9.2 10h1.6M3.2 10 2 8.8M16.8 10 18 8.8" /></>,
   neck: <path d="M3.5 7.5c2.2 1.6 10.8 1.6 13 0M3.5 7.5v2.3c2.2 1.6 10.8 1.6 13 0V7.5M12.5 11l1 5.5 2-.7-.8-4.6" />,
-  clip: <path d="M13.5 3.8A6.4 6.4 0 1 0 16.2 13 5.2 5.2 0 0 1 13.5 3.8Z" />,
+  pendant: <><path d="M4 4c1 6 3.2 8 6 8s5-2 6-8" /><path d="M10 12v1.6" /><circle cx="10" cy="15.6" r="2" /></>,
+  clip: <><circle cx="10" cy="10" r="1.6" /><circle cx="10" cy="5" r="2.2" /><circle cx="10" cy="15" r="2.2" /><circle cx="5" cy="10" r="2.2" /><circle cx="15" cy="10" r="2.2" /></>,
   held: <path d="M5 4.5h8.5a1.5 1.5 0 0 1 1.5 1.5v9.5H6.5A1.5 1.5 0 0 1 5 14V4.5ZM5 14a1.5 1.5 0 0 1 1.5-1.5H15M8 7.5h4" />,
   aura: <path d="M10 2.5v3M10 14.5v3M2.5 10h3M14.5 10h3M5 5l2 2M13 13l2 2M15 5l-2 2M7 13l-2 2" />,
   seasonal: <path d="M10 2.5v15M3.5 6.2l13 7.6M3.5 13.8l13-7.6M8.3 3.7 10 5.3l1.7-1.6M8.3 16.3 10 14.7l1.7 1.6" />,
@@ -49,7 +50,10 @@ export function MoraWardrobe() {
   const [past, setPast] = useState<Wardrobe[]>([]);
   const [future, setFuture] = useState<Wardrobe[]>([]);
   const lastVariant = useRef<Record<string, string>>({});
-  const [ctx] = useState(loadUnlockContext);
+  const founder = useFounder();
+  const [stub] = useState(loadUnlockContext);
+  const ctx = useMemo(() => ({ ...stub, founder: stub.founder || founder }), [stub, founder]);
+  const DEFAULT_WARDROBE = useMemo(() => defaultWardrobe(founder), [founder]);
   const [note, setNote] = useState<TraitItem | null>(null);
 
   const slots = useMemo(() => TAB_ORDER.map((id) => TRAITS.slots.find((s) => s.id === id)).filter(Boolean) as TraitSlot[], []);
@@ -100,7 +104,7 @@ export function MoraWardrobe() {
             <span className="os-wd__ring" aria-hidden /><span className="os-wd__ring os-wd__ring--b" aria-hidden />
             <span className="os-wd__spark os-wd__spark--1" aria-hidden /><span className="os-wd__spark os-wd__spark--2" aria-hidden /><span className="os-wd__spark os-wd__spark--3" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
-            <PixelMoraStage wardrobe={preview} scale={3} hop={hop} turn={turn} />
+            <PixelMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} />
             <div className="os-wd__chip" data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
               {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}</> : 'Aktuelles Outfit'}
             </div>

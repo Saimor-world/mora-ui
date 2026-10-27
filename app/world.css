@@ -931,19 +931,20 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .wd-counter { font-size: 12px; color: rgba(235, 231, 222, .72); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
 .os-shell__topbar { max-width: none !important; }
 
-/* Pixel-MÔRA (Marius t759u/t773u): Ebenen, ruhig belebt, Pixelraster. */
-.px-mora { position: relative; display: inline-block; image-rendering: pixelated; transform-origin: 50% 60%; transition: transform 240ms steps(3); pointer-events: none; }
+/* Pixel-MÔRA (Marius t759u/t773u): Ebenen, ruhig belebt. Glattes Final-Set in Stufen 48/80/96/140, weiche Bewegung. */
+.px-mora { position: relative; display: inline-block; transform-origin: 50% 60%; transition: transform 240ms ease-out; pointer-events: none; }
 .px-mora__base[data-on='false'] { visibility: hidden; }
-.px-mora--mark .px-mora__l { image-rendering: auto; }
-.px-mora__bob, .px-mora__l { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-.px-mora__bob { animation: pxm-breathe 3.6s steps(4) infinite; transform-origin: 50% 85%; filter: drop-shadow(0 0 7px rgba(246, 190, 80, .16)); }
-.px-mora__t-head, .px-mora__t-clip, .px-mora__t-seasonal { animation: pxm-lift 4.2s steps(1) infinite; }
-.px-mora__t-held { animation: pxm-lift 3.1s steps(1) infinite reverse; }
-.px-mora__aura { animation: pxm-light 3.4s steps(4) infinite; }
-.px-mora[data-state='happy'] .px-mora__bob { animation: pxm-bounce .6s steps(4) 2; }
+.px-mora__bob, .px-mora__l { position: absolute; inset: 0; width: 100%; height: 100%; }
+.px-mora__anim { background-repeat: no-repeat; background-position: 0 0; animation: pxm-strip 1.44s steps(15, jump-none) infinite; }
+@keyframes pxm-strip { to { background-position: 100% 0; } }
+.px-mora__bob { animation: pxm-breathe 3.6s ease-in-out infinite; transform-origin: 50% 85%; filter: drop-shadow(0 0 7px rgba(246, 190, 80, .16)); }
+.px-mora__t-head, .px-mora__t-clip, .px-mora__t-seasonal { animation: pxm-lift 4.2s ease-in-out infinite; }
+.px-mora__t-held { animation: pxm-lift 3.1s ease-in-out infinite reverse; }
+.px-mora__aura { animation: pxm-light 3.4s ease-in-out infinite; }
+.px-mora[data-state='happy'] .px-mora__bob { animation: pxm-bounce .6s ease-out 2; }
 .px-mora[data-state='sleep'] .px-mora__bob { animation-duration: 6s; filter: brightness(.82) drop-shadow(0 0 8px rgba(246, 190, 80, .12)); }
 .px-mora[data-state='fly'] .px-mora__t-head, .px-mora[data-state='fly'] .px-mora__t-held { animation-duration: 1.2s; }
-.px-mora__z { position: absolute; right: -4px; top: 0; font: 600 11px/1 ui-monospace, monospace; color: rgba(244, 204, 110, .8); animation: pxm-z 3s steps(6) infinite; }
+.px-mora__z { position: absolute; right: -4px; top: 0; font: 600 11px/1 ui-monospace, monospace; color: rgba(244, 204, 110, .8); animation: pxm-z 3s ease-out infinite; }
 .px-mora--mark { position: relative; display: inline-block; }
 .px-mora--mark .px-mora__l { animation: none; }
 @keyframes pxm-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, .97); } }
@@ -1003,7 +1004,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .os-wd__card:hover, .os-wd__card:focus-visible { border-color: rgba(214,180,106,.65); transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.35), 0 0 0 1px rgba(214,180,106,.18); }
 .os-wd__card[aria-pressed='true'] { border-color: rgba(214,180,106,.95); background: linear-gradient(180deg, rgba(214,180,106,.2), rgba(214,180,106,.05)); box-shadow: 0 0 22px rgba(246,190,80,.16); }
 .os-wd__thumb { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 12px; background: radial-gradient(circle at 50% 40%, rgba(214,180,106,.12), rgba(8,12,22,.5)); }
-.os-wd__thumb img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.os-wd__thumb img { width: 64px; height: 64px; object-fit: contain; image-rendering: auto; }
 .os-wd__thumb--none { color: rgba(255,255,255,.4); }
 .os-wd__thumb--none svg { width: 26px; height: 26px; }
 .os-wd__name { font-size: 12px; line-height: 1.25; min-height: 30px; display: grid; place-items: center; }
@@ -1027,10 +1028,10 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .os-wd__swatch[aria-pressed='true'] { box-shadow: 0 0 0 2px #d6b46a, 0 0 14px rgba(246,190,80,.45), inset 0 3px 4px rgba(255,255,255,.3); }
 .os-wd__vname { font-size: 12.5px; opacity: .75; }
 .os-wd__hint { font-size: 12.5px; opacity: .55; }
-.px-mora--stage { position: relative; display: inline-block; image-rendering: pixelated; pointer-events: none; }
+.px-mora--stage { position: relative; display: inline-block; pointer-events: none; }
 .px-mora__turn { position: absolute; inset: 0; display: block; }
-.px-mora__bob--hop { animation: pxm-joy .62s steps(8) 1 !important; }
-.px-mora__turn--go { animation: pxm-turn .9s steps(12) 1; }
+.px-mora__bob--hop { animation: pxm-joy .62s ease-in-out 1 !important; }
+.px-mora__turn--go { animation: pxm-turn .9s ease-in-out 1; }
 @keyframes pxm-joy { 0%, 100% { transform: translateY(0) scale(1, 1); } 15% { transform: translateY(1.5%) scale(1.04, .94); } 45% { transform: translateY(-9%) scale(.97, 1.04); } 75% { transform: translateY(-1%) scale(1.02, .98); } }
 @keyframes pxm-turn { 0%, 100% { transform: scaleX(1); } 25% { transform: scaleX(.2); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(.2); } }
 @keyframes wd-ring { from { transform: rotateX(74deg) rotateZ(0deg); } to { transform: rotateX(74deg) rotateZ(360deg); } }

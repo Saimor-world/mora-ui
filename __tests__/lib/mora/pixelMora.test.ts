@@ -1,6 +1,7 @@
 import { decide } from '@/lib/mora/pixelBrain';
 import { isUnlocked, unlockHint, NO_UNLOCKS, ABO_MONTHS } from '@/lib/mora/unlock';
-import { DEFAULT_WARDROBE, deriveRarity, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, resolve, splitChoice, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
+import { tierFor } from '@/components/world/PixelMora';
+import { DEFAULT_WARDROBE, FOUNDER_PENDANT, defaultWardrobe, deriveRarity, stemOf, TIERS, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, resolve, splitChoice, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
 import fs from 'fs';
 import path from 'path';
 
@@ -24,7 +25,11 @@ describe('traits', () => {
   });
   it('jede Variante hat Ebene und Vorschaubild auf der Platte', () => {
     for (const i of items) for (const v of i.variants) {
-      expect(fs.existsSync(path.join('public/mora/pixel/traits', v.file))).toBe(true);
+      for (const t of TIERS) {
+        const dir = path.join('public/mora/pixel', `t${t}`, 'traits');
+        expect(fs.existsSync(path.join(dir, v.anim ? stemOf(v.file, '--anim') : v.file))).toBe(true);
+        if (v.back) expect(fs.existsSync(path.join(dir, stemOf(v.file, '--back')))).toBe(true);
+      }
       expect(fs.existsSync(path.join('public/mora/pixel/thumbs', v.file))).toBe(true);
     }
   });
@@ -36,18 +41,34 @@ describe('traits', () => {
   it('liest Varianten und alte IDs', () => {
     expect(splitChoice('beret:rot')).toEqual({ item: 'beret', variant: 'rot' });
     expect(joinChoice('beret', 'rot')).toBe('beret:rot');
-    expect(normalizeWardrobe({ neck: 'scarf-red' }).neck).toBe('scarf:rot');
+    expect(normalizeWardrobe({ neck: 'scarf-red' }).neck).toBe('scarf:terra');
+    expect(normalizeWardrobe({ neck: 'scarf:smaragd' }).neck).toBe('scarf:terra');
     expect(normalizeWardrobe({ head: 'sailor' }).head).toBe('captain:weiss');
     expect(normalizeWardrobe({ head: 'beret:gibtsnicht' }).head).toBeNull();
     const head = TRAITS.slots.find((s) => s.id === 'head')!;
     expect(resolve(head, 'crown')?.variant.id).toBe('gold');
   });
-  it('Hut verdeckt die Spange, Weihnachtsmütze auch den Kopf', () => {
-    const base = { ...DEFAULT_WARDROBE, head: 'wizard:violett', clip: 'moon:gold' };
-    expect(wardrobeLayers(base).map((l) => l.slot)).not.toContain('clip');
-    expect(wardrobeLayers({ ...base, head: null, clip: 'moon:gold' }).map((l) => l.slot)).toContain('clip');
+  it('Weihnachtsmütze verdeckt den Kopf, der Anstecker bleibt unter dem Hut sichtbar', () => {
+    const base = { ...DEFAULT_WARDROBE, head: 'wizard:violett', clip: 'flower-pin:pflaume' };
+    expect(wardrobeLayers(base).map((l) => l.slot)).toEqual(expect.arrayContaining(['head', 'clip']));
     const x = wardrobeLayers({ ...DEFAULT_WARDROBE, seasonal: 'xmas:rot', head: 'crown:gold' }).map((l) => l.slot);
     expect(x).not.toContain('head'); expect(x).toContain('seasonal');
+  });
+  it('Standard-Outfit trägt den neuen Terrakotta-Schal mit Ebene hinter dem Körper', () => {
+    expect(DEFAULT_WARDROBE.neck).toBe('scarf');
+    const l = wardrobeLayers(DEFAULT_WARDROBE, { tier: 96 }).find((x) => x.slot === 'neck')!;
+    expect(l.src).toBe('/mora/pixel/t96/traits/neck-scarf--terra.png'); expect(l.back).toBe('/mora/pixel/t96/traits/neck-scarf--terra--back.png');
+  });
+  it('Gründerstücke erscheinen nur bei Gründern; F1 ist ein Streifen mit 16 Bildern', () => {
+    const w = { ...DEFAULT_WARDROBE, pendant: FOUNDER_PENDANT, clip: 'founder-bloom', face: 'founder-sunglasses', neck: 'founder-scarf' };
+    expect(wardrobeLayers(w).map((l) => l.slot)).toEqual([]);
+    const f = wardrobeLayers(w, { founder: true, tier: 80 });
+    expect(f.map((l) => l.slot)).toEqual(['neck', 'pendant', 'face', 'clip']);
+    expect(f.find((l) => l.slot === 'pendant')).toMatchObject({ src: '/mora/pixel/t80/traits/pendant-founder-f1--bluten-medaillon--anim.png', frames: 16 });
+    expect(defaultWardrobe(true).pendant).toBe(FOUNDER_PENDANT); expect(defaultWardrobe(false).pendant).toBeNull();
+  });
+  it('wählt die Bildstufe passend zur Größe', () => {
+    expect([34, 44, 56, 80, 88, 96, 112, 130, 280].map(tierFor)).toEqual([48, 48, 48, 80, 80, 96, 96, 140, 140]);
   });
   it('Zufall liefert immer gültige Auswahl', () => {
     for (let k = 0; k < 200; k++) {
@@ -98,10 +119,11 @@ describe('Seltenheit und Freischaltung', () => {
   });
   it('3 bis 5 Beispiele für besondere Stücke, je Herkunft belegt', () => {
     expect(special.length).toBeGreaterThanOrEqual(3);
-    expect(special.length).toBeLessThanOrEqual(5);
+    expect(special.length).toBeLessThanOrEqual(8);
+    expect(special.filter((i) => i.origin === 'founder').map((i) => i.id).sort()).toEqual(['founder-bloom', 'founder-f1', 'founder-scarf', 'founder-sunglasses']);
     expect(new Set(special.map((i) => i.origin))).toEqual(new Set(['moment', 'earned', 'alive', 'founder']));
     expect(special.find((i) => i.id === 'genesis-scarf')).toMatchObject({ origin: 'moment', edition: 111, year: 2026 });
-    expect(special.find((i) => i.id === 'founder-crown')).toMatchObject({ rarity: 'legendary', unlock: 'founder', tradable: false });
+    expect(special.find((i) => i.id === 'founder-f1')).toMatchObject({ rarity: 'legendary', unlock: 'founder', tradable: false });
   });
   it('Alltag ist ohne Wallet, Abo und Gründerstatus frei', () => {
     for (const i of items.filter((x) => x.origin === 'standard')) expect(isUnlocked(i, NO_UNLOCKS)).toBe(true);
@@ -115,7 +137,7 @@ describe('Seltenheit und Freischaltung', () => {
     expect(isUnlocked(med, { ...NO_UNLOCKS, subscriptionMonths: 12 })).toBe(true);
     const gen = items.find((i) => i.id === 'genesis-scarf')!;
     expect(isUnlocked(gen, { ...NO_UNLOCKS, nftIds: ['genesis-scarf'] })).toBe(true);
-    expect(isUnlocked(items.find((i) => i.id === 'founder-crown')!, { ...NO_UNLOCKS, founder: true })).toBe(true);
+    expect(isUnlocked(items.find((i) => i.id === 'founder-f1')!, { ...NO_UNLOCKS, founder: true })).toBe(true);
   });
   it('Hinweise sind ruhig: kein Preis, kein Druck', () => {
     for (const i of special) { const h = unlockHint(i); expect(h.length).toBeGreaterThan(10); expect(h).not.toMatch(/€|\$|kaufen|jetzt|nur noch|schnell/i); }

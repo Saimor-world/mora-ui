@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { isSaimorInternal } from '@/lib/auth/organization';
-import { DEFAULT_WARDROBE, loadOutfits, loadWardrobe, normalizeOutfits, saveOutfits, saveWardrobe, WARDROBE_EVENT, type Outfits, type Wardrobe } from './traits';
+import { DEFAULT_WARDROBE, defaultWardrobe, hasStoredWardrobe, loadOutfits, loadWardrobe, normalizeOutfits, saveOutfits, saveWardrobe, WARDROBE_EVENT, type Outfits, type Wardrobe } from './traits';
 
 function useMoraUser(): string {
   return useSessionStore((s) => (s.user as { user_id?: string; id?: string } | null)?.user_id ?? (s.user as { id?: string } | null)?.id ?? 'me');
@@ -10,12 +10,13 @@ function useMoraUser(): string {
 
 export function useWardrobe(): [Wardrobe, (w: Wardrobe) => void] {
   const user = useMoraUser();
+  const founder = useFounder();
   const [w, setW] = useState<Wardrobe>(DEFAULT_WARDROBE);
   useEffect(() => {
-    const read = () => setW(loadWardrobe(user)); read();
+    const read = () => setW(hasStoredWardrobe(user) ? loadWardrobe(user) : { ...loadWardrobe(user), ...(founder ? defaultWardrobe(true) : {}) }); read();
     window.addEventListener(WARDROBE_EVENT, read); window.addEventListener('storage', read);
     return () => { window.removeEventListener(WARDROBE_EVENT, read); window.removeEventListener('storage', read); };
-  }, [user]);
+  }, [user, founder]);
   return [w, useCallback((n: Wardrobe) => saveWardrobe(n, user), [user])];
 }
 
