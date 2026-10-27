@@ -1540,3 +1540,9 @@ html[data-dock='b'] { --os-dock-space: max(190px, 22vh); }
   .os-dock[data-variant='b'] .os-dock__stone { margin-top: -70px; }
   .os-dock[data-variant='b'] .os-dock__ask { width: 100%; margin-bottom: 8px; }
 }
+/* A: rechte Modulleiste einreihig */
+@media (min-width: 900px) {
+  .os-dock[data-variant='a'] .os-dock__capsule { grid-template-columns: 1fr minmax(380px, 500px) 1fr; padding-left: 2vw !important; padding-right: 2vw !important; }
+  .os-dock[data-variant='a'] .os-dock__group--apps { flex-wrap: nowrap; max-width: none; gap: 4px; padding: 10px 12px; margin-left: 14px; }
+  .os-dock[data-variant='a'] .os-dock__group--tools { margin-right: 14px; }
+}
