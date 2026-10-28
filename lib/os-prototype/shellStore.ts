@@ -89,7 +89,7 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setFocusUntil: (focusUntil) => set({ focusUntil }),
   settingsSection: null,
   setSettingsSection: (settingsSection) => set({ settingsSection }),
-  activeFeatureId: 'today',
+  activeFeatureId: 'home',
   moraOpen: false,
   nightwatchOpen: false,
   setNightwatchOpen: (open) => set({ nightwatchOpen: open }),

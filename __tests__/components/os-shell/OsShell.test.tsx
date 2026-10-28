@@ -39,10 +39,10 @@ describe('OsShell navigation', () => {
   it('renders the six primary surfaces and Labs from manifests', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    for (const label of ['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
+    for (const label of ['Home', 'Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
       expect(within(nav).getByRole('button', { name: label })).toBeInTheDocument();
     }
-    expect(await screen.findByTestId('feature-today')).toBeInTheDocument();
+    expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(screen.getByTestId('legacy-shell-link')).toHaveAttribute('href', '/home?classic=1');
   });
 

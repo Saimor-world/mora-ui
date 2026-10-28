@@ -6,6 +6,8 @@ import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { MoraMark } from '@/components/world/MoraSpirit';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { PhoneCompanion } from '@/features/companion/PhoneCompanion';
+import { readDemoViewer } from '@/features/home/data/useDemoViewer';
+import HomeSurface from '@/features/home';
 import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
@@ -158,6 +160,9 @@ export function OsShell({ preview }: { preview: boolean }) {
   };
 
   // Phone: nur der Begleiter (Eule, Braucht dich, MÔRA), nicht das ganze OS.
+  // Demo-Firma (fiktiv, nur Vorschau/intern): eigene Brücke im Vollbild, ohne Shell-Leisten.
+  const demoViewer = typeof window !== 'undefined' ? readDemoViewer(window.location.search, preview || internal === true) : null;
+  if (demoViewer) return <HomeSurface navigate={navigate} preview={preview} />;
   if (phone && !phoneUniverse) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>

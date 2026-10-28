@@ -20,13 +20,13 @@ describe('feature manifest registry', () => {
 
   it('exposes exactly six calm primary surfaces in order, plus Labs/System as secondary', () => {
     const nav = navigationModel(owner);
-    expect(nav.primary.map((m) => m.title)).toEqual(['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen']);
+    expect(nav.primary.map((m) => m.title)).toEqual(['Home', 'Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen']);
     expect(nav.secondary.map((m) => m.id)).toEqual(['universe', 'labs']);
   });
 
   it('keeps MÔRA in the mobile bar and moves settings/labs into "Mehr"', () => {
     const nav = navigationModel(owner);
-    expect(nav.mobileBar.map((m) => m.id)).toEqual(['today', 'mora', 'finance', 'post', 'knowledge']);
+    expect(nav.mobileBar.map((m) => m.id)).toEqual(['home', 'today', 'mora', 'finance', 'post', 'knowledge']);
     expect(nav.mobileMore.map((m) => m.id)).toEqual(['settings', 'universe', 'labs']);
   });
 
@@ -41,8 +41,8 @@ describe('feature manifest registry', () => {
     const ids = visibleFeatures(customerOwner).map((m) => m.id);
     expect(ids).not.toContain('finance');
     expect(ids).not.toContain('labs');
-    expect(ids).toEqual(expect.arrayContaining(['today', 'post', 'knowledge', 'settings', 'universe']));
-    expect(resolveFeatureId('finance', customerOwner)).toBe('today');
+    expect(ids).toEqual(expect.arrayContaining(['home', 'today', 'post', 'knowledge', 'settings', 'universe']));
+    expect(resolveFeatureId('finance', customerOwner)).toBe('home');
   });
 
   it('local preview shows every surface (reads still fail closed)', () => {
@@ -57,7 +57,7 @@ describe('feature manifest registry', () => {
 
   it('resolves unknown or forbidden deep links to Heute', () => {
     expect(resolveFeatureId('nope', owner)).toBe(DEFAULT_FEATURE_ID);
-    expect(resolveFeatureId('finance', { role: 'member', flags: new Set() })).toBe('today');
+    expect(resolveFeatureId('finance', { role: 'member', flags: new Set() })).toBe('home');
     expect(resolveFeatureId('post', owner)).toBe('post');
   });
 });
