@@ -1,8 +1,8 @@
 'use client';
 import '../cockpit.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Home, Mic, Orbit } from 'lucide-react';
-import { PixelMoraMark } from '@/components/world/PixelMora';
+import { ArrowLeft, Check } from 'lucide-react';
+import { BridgeConsole } from './BridgeConsole';
 import { MORGENROT_SEED } from '@/lib/demo/morgenrot/seed';
 import { MORGENROT_EVENTS, MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/structure';
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../data/homeModel';
@@ -60,7 +60,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
     setSheet(it.kind as SheetKind);
   };
   const openMoon = (id: string) => { const p = planets.find((x) => x.moons.some((m) => m.id === id)); if (!p) return; setView('universe'); setPlanetId(p.id); setHeadOpen(false); setMoonId(id); };
-  const submit = (e: React.FormEvent) => { e.preventDefault(); if (!q.trim()) return; const r = askMora(q, viewer, MORGENROT_SEED, MORGENROT_EVENTS, DATE, day); setReply(r); setQ(''); if (r.openMoon && !r.action) openMoon(r.openMoon); };
+
   const confirm = () => { if (reply?.action) { dispatch(reply.action); setToast(reply.action.type === 'note' ? 'Gesendet' : 'Freigegeben'); } setReply(null); };
 
   const showHome = view === 'home';
@@ -126,16 +126,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       ) : null}
       {toast ? <div className="ck-toast" role="status"><Check size={14} /> {toast}</div> : null}
 
-      <nav className="ck-dock" aria-label="Kommandozentrale">
-        <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => { setView('home'); setHeadOpen(false); }} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
-        <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setHeadOpen(false); setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
-        <div className="ck-captain" data-testid="captain-place"><PixelMoraMark size={phone ? 56 : 72} /><span>Was jetzt wichtig ist</span></div>
-        <form className="ck-ask" onSubmit={submit}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={owner ? 'Frag MÔRA – z. B. „Sag Lena, …“' : 'Frag MÔRA …'} aria-label="Frag MÔRA" data-testid="ck-ask" />
-          <button type="button" className="ck-mic" aria-label="Sprechen (in der Demo: tippen)" onClick={() => setQ(owner ? 'Sag Lena, sie soll heute die Terrasse zumachen' : 'Was muss ich heute machen?')}><Mic size={17} /></button>
-        </form>
-        {model.needsYou.length ? <button type="button" className="ck-dock__need" onClick={() => setView('home')}>{model.needsYou.length} für dich</button> : null}
-      </nav>
+      <BridgeConsole home={showHome} onHome={() => { setView('home'); setHeadOpen(false); }} onCompany={() => { setHeadOpen(false); setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} companyLabel={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} value={q} onChange={setQ} onSubmit={() => { if (!q.trim()) return; const r = askMora(q, viewer, MORGENROT_SEED, MORGENROT_EVENTS, DATE, day); setReply(r); setQ(''); if (r.openMoon && !r.action) openMoon(r.openMoon); }} onMic={() => setQ(owner ? 'Sag Lena, sie soll heute die Terrasse zumachen' : 'Was muss ich heute machen?')} micLabel="Sprechen (in der Demo: tippen)" needs={model.needsYou.length} onNeeds={() => { setView('home'); setHeadOpen(false); }} guidance={model.needsYou.some(i => i.kind === 'oat') && planets.some(p => p.id === 'kueche') ? { text: 'Küche: Bestand prüfen?', onOpen: () => openMoon('k-best') } : undefined}/>
       <div className="ck-reset"><button type="button" onClick={() => { dispatch({ type: 'reset' }); setToast('Demo zurückgesetzt'); }}>Demo zurücksetzen</button></div>
     </div>
   );

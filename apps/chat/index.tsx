@@ -14,6 +14,7 @@
  * - Show relevant memories for context
  */
 
+import { conversationHistory } from '@/lib/mora/conversationHistory';
 import { uv2 } from '@/components/universe/app/AppStage';
 const MN = () => (uv2() ? 'MÔRA' : 'Môra');
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -648,7 +649,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             try {
                 // Use the conversation endpoint directly. Quoted mail must never pass
                 // through navigation, memory-write or agent/tool intent detection.
-                const result = await moraAgentClient.chat({ message: content, history: messages.filter(m => m.id !== 'welcome' && !m.isTyping && !m.failed && m.id !== (mailQuestionId ?? questionId)).slice(-20).map(m => ({ role: m.role, content: m.content })), context: { pane_id: paneId } });
+                const result = await moraAgentClient.chat({ message: content, history: conversationHistory(messages, mailQuestionId ?? questionId), context: { pane_id: paneId } });
                 if (scope !== currentMailDraftScope() || request !== directRequest.current) return;
                 if (!result.response?.trim()) throw new Error('Empty answer');
                 setMoraPresence({ state: 'done', target: paneId });

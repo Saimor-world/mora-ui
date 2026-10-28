@@ -45,6 +45,12 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
       expect(box!.y).toBeGreaterThanOrEqual(panel!.y);
       expect(box!.y + box!.height).toBeLessThanOrEqual(panel!.y + panel!.height + 1);
     }
+    await expect(page.getByTestId('mora-mark')).toHaveCount(1);
+    const sprite = await page.getByTestId('mora-mark').boundingBox();
+    const input = await page.getByTestId('ck-ask').boundingBox();
+    expect(sprite!.x + sprite!.width).toBeLessThanOrEqual(input!.x);
+    expect(dock!.height).toBeGreaterThanOrEqual(size.name === 'iphone' ? 76 : size.name === 'ipad' ? 88 : 96);
+    for (const footer of await page.locator('.source-widget footer').all()) expect(await footer.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(11);
     const mic = await page.getByRole('button', { name: 'Sprechen (in der Demo: tippen)', exact: true }).boundingBox();
     expect(mic!.width).toBeGreaterThanOrEqual(44);
     expect(mic!.x + mic!.width).toBeLessThanOrEqual(size.width - 12);
@@ -107,6 +113,14 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     await shot('09-head-member');
     await page.getByText('Administrator fragen').scrollIntoViewIfNeeded();
     await shot('09b-code-member');
+  }
+  if (improved) {
+    await page.goto('/os');
+    await expect(page.getByTestId('home')).toHaveAttribute('data-scope', 'live');
+    await expect(page.getByText('Quellen sind derzeit nicht verfügbar.')).toBeVisible();
+    await expect(page.getByTestId('mora-mark')).toHaveCount(1);
+    await expect(page.getByTestId('widget-revenue')).toHaveCount(0);
+    await shot('10-saimor-core-unavailable');
   }
   expect(errors).toEqual([]);
 });

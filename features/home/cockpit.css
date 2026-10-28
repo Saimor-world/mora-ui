@@ -227,3 +227,8 @@
 .ck-captain .px-mora{image-rendering:pixelated}.ck-reply{display:block}
 
 @media(min-width:821px) and (max-width:1100px){.ck[data-scope=owner] .ck-panel{padding:16px 18px}.ck[data-scope=owner] .ck-h1{font-size:26px}.ck[data-scope=owner] .ck-item{padding:5px 0}}
+.ck-captain__line{font-size:12px;line-height:1.35;min-width:0}.ck-captain__line button{color:#d8eae2;text-align:left;background:none;border:0;padding:0;cursor:pointer;font:inherit;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:44px}
+.ck-live-home .ck-panel{width:min(680px,65vw)}.ck-live-home .hm-h1{font-size:32px}.ck-live-home .hm-sub{font-size:16px;margin-bottom:20px}.ck-live-home .hm-side{position:absolute;right:30px;top:90px;width:25%}.ck-live-home .hm-firma{font-size:14px;display:block;text-align:left}.ck-live-home .hm-firma span{display:block;font-size:12px}
+@media(max-width:820px){.ck-live-home .ck-panel{width:auto}.ck-live-home .hm-side{display:none}.ck-captain__line{position:absolute;top:4px;left:146px;right:60px;font-size:11px;height:22px}.ck-captain__line button{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;min-height:22px;max-width:100%}.ck-captain > span:last-child{position:relative;top:auto;left:auto}.ck-captain__line span{position:static!important}}
+@media(min-width:821px) and (max-width:1100px){.ck[data-scope=owner] .ck-panel{padding:12px 18px}.ck[data-scope=owner] .source-widget{padding:6px}.ck[data-scope=owner] .ck-item{padding:3px 0}}
+@media(max-width:820px){.ck[data-scope=owner] .ck-panel{padding-top:12px;padding-bottom:12px}.ck[data-scope=owner] .widget-board{gap:4px}}
