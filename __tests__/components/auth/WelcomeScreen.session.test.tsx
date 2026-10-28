@@ -377,7 +377,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
             expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
             expect(localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY)).toBe(WEBSITE_ENTRY_PREVIEW_SESSION_KIND);
             expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
-            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+            expect(mockLocationAssign).toHaveBeenCalledWith('/os');
         });
     });
 
@@ -425,7 +425,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
             expect(localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY)).toBeNull();
             expect(localStorage.getItem('saimor_website_entry_auto_opened_audit-old')).toBeNull();
             expect(localStorage.getItem('saimor_tenant')).toBe('tenant-hq');
-            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+            expect(mockLocationAssign).toHaveBeenCalledWith('/os');
         });
     });
 

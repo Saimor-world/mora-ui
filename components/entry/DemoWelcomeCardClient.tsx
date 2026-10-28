@@ -14,5 +14,5 @@ interface Props {
  */
 export function DemoWelcomeCardClient({ context }: Props) {
     const router = useRouter();
-    return <DemoWelcomeCard context={context} onOpen={() => router.push('/home')} />;
+    return <DemoWelcomeCard context={context} onOpen={() => router.push('/os')} />;
 }

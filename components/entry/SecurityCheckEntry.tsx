@@ -32,7 +32,7 @@ export function SecurityCheckEntry({ context }: Props) {
 
     function handleCta() {
         if (authReady) {
-            window.location.href = '/home';
+            window.location.href = '/os';
         } else {
             setWaiting(true);
         }
@@ -45,7 +45,7 @@ export function SecurityCheckEntry({ context }: Props) {
         markWebsiteEntryContextForHomeOpen(context);
         useNavStore.getState().setActiveMode('private_preview');
         setAuthReady(true);
-        if (waiting) window.location.href = '/home';
+        if (waiting) window.location.href = '/os';
     }
 
     return (

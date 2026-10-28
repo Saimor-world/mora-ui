@@ -548,7 +548,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 setViewMode('workspace');
 
                 // Force a full page navigation so the home bootstrap can pick up the core session cookie.
-                window.location.assign('/home');
+                window.location.assign('/os');
                 return;
             }
 
@@ -588,7 +588,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             markWebsiteEntryContextForHomeOpen(websiteEntryContext);
             toast.success(`${websiteEntryContext.companyName} ist als isolierter HQ-Workspace bereit.`);
             setViewMode('workspace');
-            window.location.assign('/home');
+            window.location.assign('/os');
         } catch (error: any) {
             toast.error(error?.message || 'Preview-Workspace konnte nicht geöffnet werden');
         } finally {
@@ -738,13 +738,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (claimingWebsitePreview) {
                 setViewMode('workspace');
                 toast.success('Kundenaccount ist mit dem HQ-Dossier verbunden.', { id: toastId });
-                window.location.assign('/home');
+                window.location.assign('/os');
                 return;
             }
             if (claimingDemoTrial) {
                 setViewMode('workspace');
                 toast.success('Trial-Workspace ist jetzt mit deinem Account verbunden.', { id: toastId });
-                window.location.assign('/home');
+                window.location.assign('/os');
                 return;
             }
 

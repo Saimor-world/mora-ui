@@ -158,7 +158,7 @@ export function WebsiteEntryTokenLogin({
                     // Force a full refresh/redirect to ensure all stores (authStore, etc.)
                     // pick up the new session from the cookie.
                     if (redirectOnSuccess) {
-                        window.location.href = '/home';
+                        window.location.href = '/os';
                     }
                 } else {
                     throw new Error('Login response invalid');
@@ -196,7 +196,7 @@ export function WebsiteEntryTokenLogin({
                             Demo trotzdem öffnen (ausloggen)
                         </button>
                         <button
-                            onClick={() => { router.push('/home'); }}
+                            onClick={() => { router.push('/os'); }}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-6 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all"
                         >
                             <LogOut size={14} />

@@ -65,6 +65,6 @@ it('CTA redirects to /home after auth ready', async () => {
     render(<SecurityCheckEntry context={mockCtx} />);
     await waitFor(() => {
         screen.getByRole('button', { name: /Workspace öffnen/i }).click();
-        expect(window.location.href).toBe('/home');
+        expect(window.location.href).toBe('/os');
     });
 });
