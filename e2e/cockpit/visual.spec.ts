@@ -55,6 +55,8 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     const title = await page.getByRole('heading', { name: 'Küche', exact: true }).boundingBox();
     const dock = await page.locator('.ck-dock').boundingBox();
     expect(title!.y + title!.height).toBeLessThan(dock!.y - 16);
+    const horizon = await page.locator('.ck-horizon').boundingBox();
+    expect(horizon!.y + horizon!.height).toBeGreaterThanOrEqual(size.height - 1);
     for (const moon of await page.locator('.ck-moon').all()) {
       const target = await moon.boundingBox();
       const orb = await moon.locator('.glass-orb').boundingBox();

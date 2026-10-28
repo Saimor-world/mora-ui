@@ -149,7 +149,7 @@
   .ck-sheet{left:10px;right:10px;width:auto;top:auto;bottom:80px;max-height:70%}
   .ck-reply{bottom:80px}
   .ck-sys{left:4%;right:4%;top:70px;bottom:120px}
-  .ck-horizon{width:900px;top:44%}.ck-horizon__title{font-size:24px}
+  .ck-horizon{width:900px;top:40%;height:60%;aspect-ratio:auto}.ck-horizon__img{background-size:100% 100%}.ck-horizon__title{font-size:24px}
   .ck-presence{top:calc(56% - 94px)}.ck-presence--system{top:auto}
   .ck-moons{top:88px;height:40%}.ck-moon{top:var(--moon-y-phone);min-width:80px;max-width:100px;padding:8px 4px}
   .ck-moon .glass-orb{width:72px!important;height:72px!important;margin:0 0 6px}
