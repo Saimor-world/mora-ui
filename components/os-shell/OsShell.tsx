@@ -163,7 +163,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   // Demo-Firma (fiktiv, nur Vorschau/intern): eigene Brücke im Vollbild, ohne Shell-Leisten.
   const demoViewer = typeof window !== 'undefined' ? readDemoViewer(window.location.search, preview || internal === true) : null;
   if (demoViewer) return <HomeSurface navigate={navigate} preview={preview} />;
-  if (phone && !phoneUniverse) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
+  if (phone && !phoneUniverse && active.id !== 'home') return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
@@ -210,7 +210,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           </Panel>
         ) : null}
 
-        <OsDock
+        {active.id !== 'home' ? <OsDock
           showLegacy={internal || preview}
           items={dockItems}
           mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
@@ -224,7 +224,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           onNotifications={() => setTrayOpen((v) => !v)}
           onMora={() => setMoraOpen(!moraOpen)}
           onMore={() => setMoreOpen((v) => !v)}
-        />
+        /> : null}
 
         {moreOpen ? (
           <div className="os-dialog-backdrop" style={{ alignItems: 'flex-end', padding: 0 }} onMouseDown={(e) => e.target === e.currentTarget && setMoreOpen(false)}>

@@ -10,7 +10,7 @@ export const IntelligencePlayfield: React.FC = () => {
     return (
         <div className="absolute inset-0 pointer-events-none z-[5] overflow-visible">
             {/* Layer 1: Global Pulse Activity */}
-            <PulseRing pulse={pulse} />
+            {pulse !== 'unknown' ? <PulseRing pulse={pulse} /> : null}
 
             {/* Layer 2: Semantic Hotspots (only visible if nodes are mapped) */}
             <HotspotMarkers hotspots={hotspots} />

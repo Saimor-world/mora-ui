@@ -6,7 +6,7 @@ const revision = process.env.COCKPIT_REVISION || 'after';
 const improved = revision === 'after';
 const sizes = [
   { name: 'desktop', width: 1440, height: 900 },
-  { name: 'ipad', width: 1180, height: 820 },
+  { name: 'ipad', width: 1024, height: 768 },
   { name: 'iphone', width: 390, height: 844 },
 ];
 
@@ -45,6 +45,12 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
       expect(box!.y).toBeGreaterThanOrEqual(panel!.y);
       expect(box!.y + box!.height).toBeLessThanOrEqual(panel!.y + panel!.height + 1);
     }
+    await expect(page.getByTestId('mora-mark')).toHaveCount(1);
+    const sprite = await page.getByTestId('mora-mark').boundingBox();
+    const input = await page.getByTestId('ck-ask').boundingBox();
+    expect(sprite!.x + sprite!.width).toBeLessThanOrEqual(input!.x);
+    expect(dock!.height).toBeGreaterThanOrEqual(size.name === 'iphone' ? 76 : size.name === 'ipad' ? 88 : 96);
+    for (const footer of await page.locator('.source-widget footer').all()) expect(await footer.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(11);
     const mic = await page.getByRole('button', { name: 'Sprechen (in der Demo: tippen)', exact: true }).boundingBox();
     expect(mic!.width).toBeGreaterThanOrEqual(44);
     expect(mic!.x + mic!.width).toBeLessThanOrEqual(size.width - 12);
@@ -74,6 +80,17 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
       expect(target!.x + target!.width).toBeLessThanOrEqual(size.width);
     }
   }
+  if (improved) {
+    await page.getByTestId('open-head').click();
+    await expect(page.getByTestId('head-sheet')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toBeVisible();
+    await shot('08-head-admin');
+    await page.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }).click();
+    await expect(page.getByTestId('head-demo-research').locator('li')).toHaveCount(3);
+    await page.getByRole('button', { name: 'Demo-Freigabe vormerken' }).scrollIntoViewIfNeeded();
+    await shot('08b-code-admin');
+    await page.getByTestId('head-sheet').getByRole('button', { name: 'Schließen' }).click();
+  }
   await page.getByTestId('moon-k-rez').click();
   await expect(page.getByTestId('ck-sheet')).toBeVisible();
   await shot('04-folder');
@@ -89,5 +106,21 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByTestId('open-firma').click();
   await shot('07-reduced-motion');
+  if (improved) {
+    await page.getByTestId('open-head').click();
+    await expect(page.getByText('Administrator fragen')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toHaveCount(0);
+    await shot('09-head-member');
+    await page.getByText('Administrator fragen').scrollIntoViewIfNeeded();
+    await shot('09b-code-member');
+  }
+  if (improved) {
+    await page.goto('/os');
+    await expect(page.getByTestId('home')).toHaveAttribute('data-scope', 'live');
+    await expect(page.getByText('Quellen sind derzeit nicht verfügbar.')).toBeVisible();
+    await expect(page.getByTestId('mora-mark')).toHaveCount(1);
+    await expect(page.getByTestId('widget-revenue')).toHaveCount(0);
+    await shot('10-saimor-core-unavailable');
+  }
   expect(errors).toEqual([]);
 });

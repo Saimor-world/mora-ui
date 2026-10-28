@@ -3,7 +3,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import { useNavPos } from '@/lib/mora/navPos';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
+import { Button, Loading, StateView, Text } from '@/components/os-kit';
 import { FOCUS_RESERVE, HORIZON_RESERVE, WorldUniverse } from '@/components/world/WorldUniverse';
 import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
@@ -114,8 +114,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
   // Ruhige Übersicht: Karten, Zähler, Quellenmarken und Horizont erscheinen erst auf Wunsch (Wahl bleibt im Browser).
   // MÔRA nur im Dock (Standard). Zurück in die Szene: localStorage 'mora.universe.moraInScene' = '1'.
-  const [moraInScene, setMoraInScene] = useState(false);
-  useEffect(() => { try { if (localStorage.getItem('mora.universe.moraInScene') === '1') setMoraInScene(true); } catch { /* Standard: nur Dock */ } }, []);
+  const moraInScene = false;
   const [details, setDetails] = useState(false);
   useEffect(() => { try { if (localStorage.getItem('mora.universe.details') === '1') setDetails(true); } catch { /* ohne Speicher: ruhig */ } }, []);
   const toggleDetails = useCallback(() => setDetails((d) => { const n = !d; try { localStorage.setItem('mora.universe.details', n ? '1' : '0'); } catch { /* egal */ } return n; }), []);
@@ -225,7 +224,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-loading">
         <div className="flex flex-col items-center gap-4">
-          <MoraStone size={phone ? 88 : 120} thinking />
+          
           <Text variant="meta">MÔRA liest deine Abteilungen …</Text>
           <div className="w-48"><Loading lines={2} label="Abteilungen werden geladen" /></div>
         </div>
@@ -239,7 +238,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-empty">
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-          <MoraStone size={phone ? 88 : 120} halo />
+          
           <Text tone="default">Noch keine Abteilungen angelegt. Jede Abteilung wird hier ein Planet.</Text>
           {onAddDepartment ? <Button size="sm" onClick={onAddDepartment}>Abteilung hinzufügen</Button> : null}
         </div>

@@ -1,14 +1,15 @@
 'use client';
 import '../cockpit.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Home, Mic, Orbit } from 'lucide-react';
-import { PixelMoraMark } from '@/components/world/PixelMora';
+import { ArrowLeft, Check } from 'lucide-react';
+import { BridgeConsole } from './BridgeConsole';
 import { MORGENROT_SEED } from '@/lib/demo/morgenrot/seed';
 import { MORGENROT_EVENTS, MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/structure';
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../data/homeModel';
 import { askMora, type MoraReply } from '../data/moraDemo';
 import { useDemoDay } from '../data/useDemoDay';
 import { HomeOverview } from '../widgets/HomeOverview';
+import { HeadSheet } from '../departments/HeadSheet';
 import { widgetsFromDemo } from '../widgets/adapters';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
@@ -36,11 +37,12 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
   const [planetId, setPlanetId] = useState<string | null>(own);
   const [moonId, setMoonId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  const [headOpen, setHeadOpen] = useState(false);
   const [q, setQ] = useState('');
   const [reply, setReply] = useState<MoraReply | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => { setPlanetId(own); setMoonId(null); setSheet(null); setReply(null); setView('home'); }, [viewer, own]);
+  useEffect(() => { setPlanetId(own); setMoonId(null); setSheet(null); setHeadOpen(false); setReply(null); setView('home'); }, [viewer, own]);
   useEffect(() => { if (!toast) return undefined; const t = setTimeout(() => setToast(null), 2200); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { // Schnelleinstieg per URL für Vorführung und Screenshots: ?ort=firma|<planet>[&ordner=<mond>]
     const s = new URLSearchParams(window.location.search); const ort = s.get('ort');
@@ -57,8 +59,8 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
     if (it.kind === 'note') { dispatch({ type: 'readNote', id: it.id }); return; }
     setSheet(it.kind as SheetKind);
   };
-  const openMoon = (id: string) => { const p = planets.find((x) => x.moons.some((m) => m.id === id)); if (!p) return; setView('universe'); setPlanetId(p.id); setMoonId(id); };
-  const submit = (e: React.FormEvent) => { e.preventDefault(); if (!q.trim()) return; const r = askMora(q, viewer, MORGENROT_SEED, MORGENROT_EVENTS, DATE, day); setReply(r); setQ(''); if (r.openMoon && !r.action) openMoon(r.openMoon); };
+  const openMoon = (id: string) => { const p = planets.find((x) => x.moons.some((m) => m.id === id)); if (!p) return; setView('universe'); setPlanetId(p.id); setHeadOpen(false); setMoonId(id); };
+
   const confirm = () => { if (reply?.action) { dispatch(reply.action); setToast(reply.action.type === 'note' ? 'Gesendet' : 'Freigegeben'); } setReply(null); };
 
   const showHome = view === 'home';
@@ -69,12 +71,12 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       <div className="ck-space" aria-hidden />
       <div className={`ck-scene ck-scene--${sceneMode}${showHome ? ' ck-scene--behind' : ''}`}>
         {sceneMode === 'planet' && planet
-          ? <OpenPlanet planet={planet} showMoons={!showHome} onMoon={(id) => setMoonId(id)} activeMoon={moonId} />
+          ? <OpenPlanet planet={planet} showMoons={!showHome} onMoon={(id) => { setHeadOpen(false); setMoonId(id); }} activeMoon={moonId} />
           : !(phone && showHome) ? <PlanetSystem planets={planets} attention={attention} company={COMPANY} compact={showHome} onOpen={(id) => { setView('universe'); setPlanetId(id); setMoonId(null); }} /> : null}
       </div>
       <CockpitWindow />
 
-      {!showHome && !moon ? <div className={`ck-presence${sceneMode === 'system' ? ' ck-presence--system' : ''}`} data-testid="cockpit-presence"><PixelMoraMark size={80} /></div> : null}
+
 
       <header className="ck-top">
         <div className="ck-brand"><span>{COMPANY}</span></div>
@@ -87,7 +89,9 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
         </div>
       </header>
 
-      {!showHome && planet && owner ? <button type="button" className="ck-back" onClick={() => { setPlanetId(null); setMoonId(null); }} data-testid="ck-back"><ArrowLeft size={16} /> {COMPANY}</button> : null}
+      {!showHome && planet && owner ? <button type="button" className="ck-back" onClick={() => { setPlanetId(null); setMoonId(null); setHeadOpen(false); }} data-testid="ck-back"><ArrowLeft size={16} /> {COMPANY}</button> : null}
+
+      {!showHome && planet && !moon ? <button type="button" className="ck-head-open" onClick={() => setHeadOpen(true)} data-testid="open-head">Abteilung &amp; Head-MÔRA</button> : null}
 
       {showHome ? (
         <section className="ck-panel" aria-label="Home">
@@ -103,35 +107,26 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
               ))}
             </ol>
           ) : (
-            <div className="ck-calm" data-testid="home-done"><PixelMoraMark size={40} /><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
+            <div className="ck-calm" data-testid="home-done"><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
           )}
           {model.doneToday.length ? <div className="ck-donel">{model.doneToday.map((d) => <span key={d.id}><Check size={13} /> {d.title}{d.id === 'swap' && !owner ? ` · ${d.detail}` : ''}</span>)}</div> : null}
           </HomeOverview>
         </section>
       ) : null}
 
+      {headOpen && planet && !showHome ? <HeadSheet planet={planet} viewer={viewer} day={day} dispatch={dispatch} onClose={() => setHeadOpen(false)} /> : null}
       {moon && planet && !showHome ? <FolderSheet key={moon.id} moon={moon} planetTitle={planet.title} onClose={() => setMoonId(null)} /> : null}
       {sheet ? <ActionSheet kind={sheet} day={day} owner={owner} dispatch={(a) => { dispatch(a); setToast(a.type === 'oat' || a.type === 'close' ? 'Gesendet' : 'Freigegeben'); }} onClose={() => setSheet(null)} /> : null}
 
       {reply ? (
         <div className="ck-reply" role="status" data-testid="mora-reply">
-          <PixelMoraMark size={22} />
           <p>{reply.text}</p>
           <div className="ck-reply__a">{reply.action ? <button type="button" className="ck-btn ck-btn--p" onClick={confirm}>{reply.confirm}</button> : null}<button type="button" className="ck-btn" onClick={() => setReply(null)}>{reply.action ? 'Abbrechen' : 'OK'}</button></div>
         </div>
       ) : null}
       {toast ? <div className="ck-toast" role="status"><Check size={14} /> {toast}</div> : null}
 
-      <nav className="ck-dock" aria-label="Kommandozentrale">
-        <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => setView('home')} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
-        <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
-        <form className="ck-ask" onSubmit={submit}>
-          <PixelMoraMark size={20} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={owner ? 'Frag MÔRA – z. B. „Sag Lena, …“' : 'Frag MÔRA …'} aria-label="Frag MÔRA" data-testid="ck-ask" />
-          <button type="button" className="ck-mic" aria-label="Sprechen (in der Demo: tippen)" onClick={() => setQ(owner ? 'Sag Lena, sie soll heute die Terrasse zumachen' : 'Was muss ich heute machen?')}><Mic size={17} /></button>
-        </form>
-        {!showHome && model.needsYou.length ? <button type="button" className="ck-dock__need" onClick={() => setView('home')}>{model.needsYou.length} für dich</button> : null}
-      </nav>
+      <BridgeConsole home={showHome} onHome={() => { setView('home'); setHeadOpen(false); }} onCompany={() => { setHeadOpen(false); setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} companyLabel={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} value={q} onChange={setQ} onSubmit={() => { if (!q.trim()) return; const r = askMora(q, viewer, MORGENROT_SEED, MORGENROT_EVENTS, DATE, day); setReply(r); setQ(''); if (r.openMoon && !r.action) openMoon(r.openMoon); }} onMic={() => setQ(owner ? 'Sag Lena, sie soll heute die Terrasse zumachen' : 'Was muss ich heute machen?')} micLabel="Sprechen (in der Demo: tippen)" needs={model.needsYou.length} onNeeds={() => { setView('home'); setHeadOpen(false); }} guidance={model.needsYou.some(i => i.kind === 'oat') && planets.some(p => p.id === 'kueche') ? { text: 'Küche: Bestand prüfen?', onOpen: () => openMoon('k-best') } : undefined}/>
       <div className="ck-reset"><button type="button" onClick={() => { dispatch({ type: 'reset' }); setToast('Demo zurückgesetzt'); }}>Demo zurücksetzen</button></div>
     </div>
   );

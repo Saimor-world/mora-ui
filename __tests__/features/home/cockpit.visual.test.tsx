@@ -32,6 +32,8 @@ describe('Cockpit visual accessibility and mobile company context', () => {
     render(<Cockpit initialViewer="marius"/>);
     expect(screen.getAllByTestId('mora-mark')).toHaveLength(1);
     fireEvent.click(screen.getByTestId('open-firma'));
-    expect(screen.getByTestId('cockpit-presence')).toBeInTheDocument();
+    expect(screen.queryByTestId('cockpit-presence')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('mora-mark')).toHaveLength(1);
+    expect(screen.getByTestId('captain-place')).toContainElement(screen.getByTestId('mora-mark'));
   });
 });
