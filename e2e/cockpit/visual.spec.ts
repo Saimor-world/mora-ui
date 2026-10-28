@@ -37,6 +37,14 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     const dock = await page.locator('.ck-dock').boundingBox();
     expect(panel!.y + panel!.height).toBeLessThan(dock!.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size.width);
+    const cards = page.locator('.source-widget');
+    await expect(cards).toHaveCount(6);
+    const visibleCount = size.name === 'iphone' ? 4 : 6;
+    for (const card of (await cards.all()).slice(0, visibleCount)) {
+      const box = await card.boundingBox();
+      expect(box!.y).toBeGreaterThanOrEqual(panel!.y);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(panel!.y + panel!.height + 1);
+    }
     const mic = await page.getByRole('button', { name: 'Sprechen (in der Demo: tippen)', exact: true }).boundingBox();
     expect(mic!.width).toBeGreaterThanOrEqual(44);
     expect(mic!.x + mic!.width).toBeLessThanOrEqual(size.width - 12);

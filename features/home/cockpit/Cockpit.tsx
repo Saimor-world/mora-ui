@@ -8,6 +8,8 @@ import { MORGENROT_EVENTS, MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/stru
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../data/homeModel';
 import { askMora, type MoraReply } from '../data/moraDemo';
 import { useDemoDay } from '../data/useDemoDay';
+import { HomeOverview } from '../widgets/HomeOverview';
+import { widgetsFromDemo } from '../widgets/adapters';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
 import { ActionSheet, FolderSheet, type SheetKind } from './Sheets';
@@ -89,8 +91,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
 
       {showHome ? (
         <section className="ck-panel" aria-label="Home">
-          <h1 className="ck-h1">{model.greeting}</h1>
-          <p className="ck-sub">{model.subline}</p>
+          <HomeOverview greeting={model.greeting} subline={model.subline} titleClass="ck-h1" sublineClass="ck-sub" widgets={widgetsFromDemo(model, day)}>
           {phone && owner ? <div className="ck-home-strip"><PlanetSystem planets={planets} attention={attention} company={COMPANY} compact strip onOpen={(id) => { setView('universe'); setPlanetId(id); setMoonId(null); }} /></div> : null}
           {model.needsYou.length ? (
             <ol className="ck-list">
@@ -105,12 +106,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
             <div className="ck-calm" data-testid="home-done"><PixelMoraMark size={40} /><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
           )}
           {model.doneToday.length ? <div className="ck-donel">{model.doneToday.map((d) => <span key={d.id}><Check size={13} /> {d.title}{d.id === 'swap' && !owner ? ` · ${d.detail}` : ''}</span>)}</div> : null}
-          {owner ? (
-            <div className="ck-facts">
-              <div className="ck-fact"><small>Gestern</small><b>{model.yesterday!.revenue.toLocaleString('de-DE')} €</b><span><em>+{Math.round(model.yesterday!.vsLastWeek * 100)} %</em> zur Vorwoche · Kasse stimmt</span></div>
-              <div className="ck-fact"><small>{model.close ? 'Heute abgeschlossen' : 'Team heute'}</small>{model.close ? <><b>{model.close.cash.toLocaleString('de-DE')} €</b><span>Jonas · {model.close.at} · Kasse stimmt</span></> : <span className="ck-team">{model.team.map((t) => <i key={t.personId}>{t.name} <em>{t.shift.split('–')[0]}</em></i>)}</span>}</div>
-            </div>
-          ) : null}
+          </HomeOverview>
         </section>
       ) : null}
 

@@ -15,6 +15,8 @@ import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from './dat
 import { useDemoViewer } from './data/useDemoViewer';
 import { MicButton } from './ui/MicIcon';
 import { Cockpit } from './cockpit/Cockpit';
+import { HomeOverview } from './widgets/HomeOverview';
+import { widgetsFromToday } from './widgets/adapters';
 
 const DEMO_DATE = '2026-10-28';
 const fmtEur = (n: number) => `${n.toLocaleString('de-DE')} €`;
@@ -25,7 +27,7 @@ function Items({ items, onDone, done }: { items: HomeItem[]; onDone: (id: string
     return (
       <div className="hm-done" data-testid="home-done">
         <PixelMoraMark size={56} />
-        <div><b>Alles erledigt.</b><span>MÔRA kümmert sich um den Rest.</span></div>
+        <div><b>Keine offenen Hinweise.</b><span>Nur verfügbare Quellen sind berücksichtigt.</span></div>
       </div>
     );
   }
@@ -45,7 +47,7 @@ function Items({ items, onDone, done }: { items: HomeItem[]; onDone: (id: string
 function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
   const user = useSessionStore((s) => s.user);
   const name = firstName(user);
-  const { snapshot } = useScopedToday();
+  const { snapshot, loading, loadError } = useScopedToday();
   const items: HomeItem[] = useMemo(() => (snapshot ? deriveAttention(snapshot) : []).slice(0, 3).map((a) => ({ id: a.id, title: a.title, detail: a.reason, action: 'Öffnen', owner: 'me' })), [snapshot]);
   const [done, setDone] = useState<Set<string>>(new Set());
   const h = new Date().getHours();
@@ -56,10 +58,10 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
       <div className="hm-top"><div className="hm-mark"><PixelMoraMark size={28} /><span>MÔRA</span></div></div>
       <div className="hm-grid hm-grid--staff">
         <section>
-          <h1 className="hm-h1">{hello}{name ? `, ${name}` : ''}.</h1>
-          <p className="hm-sub">{items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich. Alles andere läuft.` : 'Gerade braucht dich nichts.'}</p>
-          <Items items={items} done={done} onDone={(id) => { setDone((s) => new Set(s).add(id)); navigate(id === 'mail-unread' ? 'post' : 'today'); }} />
+          <HomeOverview greeting={`${hello}${name ? `, ${name}` : ''}.`} subline={loading ? 'Quellen werden geladen …' : !snapshot || loadError ? 'Quellen sind derzeit nicht verfügbar.' : items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.` : 'Keine offenen Hinweise aus den verfügbaren Quellen.'} titleClass="hm-h1" sublineClass="hm-sub" widgets={widgetsFromToday(snapshot)}>
+          {snapshot && !loadError ? <Items items={items} done={done} onDone={(id) => { setDone((s) => new Set(s).add(id)); navigate(id === 'mail-unread' ? 'post' : 'today'); }} /> : null}
           <MicButton onClick={() => useOsShellStore.getState().setMoraOpen(true)} />
+          </HomeOverview>
         </section>
         <aside className="hm-side">
           <button type="button" className="hm-firma" onClick={() => navigate('universe')}>Firma ansehen <span>Bereiche &amp; Ordner</span></button>
