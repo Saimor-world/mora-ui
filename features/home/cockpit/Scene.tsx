@@ -115,15 +115,24 @@ export function OpenPlanet({
               const x = 50 + (t - 0.5) * (n > 3 ? 64 : 48);
               const y = 36 + Math.pow((t - 0.5) * 2, 2) * 18;
               const phoneY = 30 + Math.pow((t - 0.5) * 2, 2) * (n > 3 ? 36 : 18);
+              const isError = Boolean(m.loadError || m.disabled);
               return (
                 <button
                   key={m.id}
                   type="button"
                   className="ck-moon"
                   aria-pressed={activeMoon === m.id}
-                  style={{ left: `${x}%`, ['--moon-y' as string]: `${y}%`, ['--moon-y-phone' as string]: `${phoneY}%` }}
-                  onClick={() => onMoon(m.id)}
+                  disabled={isError}
+                  style={{
+                    left: `${x}%`,
+                    ['--moon-y' as string]: `${y}%`,
+                    ['--moon-y-phone' as string]: `${phoneY}%`,
+                    cursor: isError ? 'not-allowed' : 'pointer',
+                    opacity: isError ? 0.65 : 1,
+                  }}
+                  onClick={isError ? undefined : () => onMoon(m.id)}
                   data-testid={`moon-${m.id}`}
+                  title={isError ? (m.hint || 'Ordner gerade nicht ladbar') : undefined}
                 >
                   {style === 'pixel' ? (
                     <div
@@ -144,7 +153,9 @@ export function OpenPlanet({
                     <GlassOrb size={90} variant={planet.glass} />
                   )}
                   <b>{m.title}</b>
-                  <small>{m.files.length} {m.files.length === 1 ? 'Eintrag' : 'Einträge'}</small>
+                  <small style={isError ? { color: 'var(--amber, #f59e0b)' } : undefined}>
+                    {isError ? (m.hint || 'Ordner gerade nicht ladbar') : `${m.files.length} ${m.files.length === 1 ? 'Eintrag' : 'Einträge'}`}
+                  </small>
                 </button>
               );
             })}

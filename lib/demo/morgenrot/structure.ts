@@ -5,7 +5,14 @@ import type { JobRoleId } from './jobRoles';
  * Alle Inhalte sind ausgedacht und nur für die Vorführung.
  */
 export interface DemoFile { id: string; name: string; meta: string; body: string[] }
-export interface DemoMoon { id: string; title: string; files: DemoFile[] }
+export interface DemoMoon {
+  id: string;
+  title: string;
+  files: DemoFile[];
+  loadError?: boolean;
+  hint?: string;
+  disabled?: boolean;
+}
 export interface DemoPlanet { id: string; title: string; jobRoles: JobRoleId[]; glass: 'bluegrey' | 'lavender' | 'sage' | 'champagne' | 'paleblue'; moons: DemoMoon[] }
 
 const f = (id: string, name: string, meta: string, ...body: string[]): DemoFile => ({ id, name, meta, body });

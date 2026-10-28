@@ -61,13 +61,19 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
     const moons: DemoMoon[] = [];
     const seenMoonIds = new Set<string>();
 
-    const addMoon = (mId: string, mTitle: string, files: DemoFile[]) => {
+    const addMoon = (
+      mId: string,
+      mTitle: string,
+      files: DemoFile[],
+      extra?: { loadError?: boolean; hint?: string; disabled?: boolean }
+    ) => {
       if (seenMoonIds.has(mId)) return;
       seenMoonIds.add(mId);
       moons.push({
         id: mId,
         title: mTitle,
         files,
+        ...extra,
       });
     };
 
@@ -106,6 +112,20 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
         : [];
 
     for (const space of spaces) {
+      if ((space as any).loadError) {
+        addMoon(
+          String(space.id || `space-${moons.length}`),
+          String(space.name || space.title || 'Bereich'),
+          [],
+          {
+            loadError: true,
+            hint: (space as any).errorHint || 'Ordner gerade nicht ladbar',
+            disabled: true,
+          }
+        );
+        continue;
+      }
+
       const spaceFolders: CoreRawNode[] = Array.isArray(space.folders)
         ? space.folders
         : Array.isArray(space.children)

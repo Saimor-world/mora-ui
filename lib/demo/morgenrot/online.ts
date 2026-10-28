@@ -36,6 +36,9 @@ export interface MorgenrotSpace {
   folders?: MorgenrotFolder[];
   children?: MorgenrotFolder[];
   nodes?: MorgenrotNode[];
+  loadError?: boolean;
+  disabled?: boolean;
+  errorHint?: string;
 }
 
 export interface MorgenrotDepartment {
@@ -136,6 +139,7 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
     // Fetch folders for each space via GET /v3/tree/{space_id}/children?type=space.
     // Do not swallow errors silently.
     const foldersBySpace: Record<string, MorgenrotFolder[]> = {};
+    const spaceLoadErrors: Record<string, boolean> = {};
     if (allSpacesToFetch.length > 0) {
       const spaceFolderResults = await Promise.all(
         allSpacesToFetch.map(async ({ spaceId }) => {
@@ -153,27 +157,21 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
               nodes: normalizeArray(f.nodes ?? f.children),
               children: normalizeArray(f.nodes ?? f.children),
             }));
-            return { spaceId, folders: folderList };
+            return { spaceId, folders: folderList, loadError: false };
           } catch (err: any) {
             console.error(`[loadMorgenrot] Fehler beim Laden der Ordner für Space ${spaceId}:`, err?.message || err);
             return {
               spaceId,
-              folders: [
-                {
-                  id: `err-${spaceId}`,
-                  name: 'Ordner nicht ladbar',
-                  space_id: spaceId,
-                  nodes: [],
-                  children: [],
-                },
-              ],
+              folders: [],
+              loadError: true,
             };
           }
         })
       );
 
-      for (const { spaceId, folders } of spaceFolderResults) {
+      for (const { spaceId, folders, loadError } of spaceFolderResults) {
         foldersBySpace[spaceId] = folders;
+        if (loadError) spaceLoadErrors[spaceId] = true;
       }
     }
 
@@ -187,12 +185,16 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
         const spaces: MorgenrotSpace[] = normalizeArray<any>(d.spaces ?? d.children).map((sp: any) => {
           const spaceId = String(sp.id);
           const childFolders = foldersBySpace[spaceId] ?? normalizeArray(sp.folders);
+          const hasError = Boolean(spaceLoadErrors[spaceId] ?? sp.loadError);
           return {
             ...sp,
             id: spaceId,
             name: String(sp.name || sp.title || 'Bereich'),
             folders: childFolders,
             children: childFolders,
+            loadError: hasError,
+            disabled: hasError,
+            errorHint: hasError ? 'Ordner gerade nicht ladbar' : undefined,
           };
         });
 

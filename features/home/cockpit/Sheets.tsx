@@ -118,18 +118,31 @@ export function DepartmentSheet({
           </div>
           {planet.moons.length > 0 ? (
             <div className="ck-files">
-              {planet.moons.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className="ck-file"
-                  onClick={() => onOpenMoon(m.id)}
-                  data-testid={`dept-moon-${m.id}`}
-                >
-                  <b>{m.title}</b>
-                  <span>{m.files.length} {m.files.length === 1 ? 'Eintrag' : 'Einträge'}</span>
-                </button>
-              ))}
+              {planet.moons.map((m) =>
+                m.loadError || m.disabled ? (
+                  <div
+                    key={m.id}
+                    className="ck-file"
+                    style={{ opacity: 0.65, cursor: 'not-allowed' }}
+                    title={m.hint || 'Ordner gerade nicht ladbar'}
+                    data-testid={`dept-moon-${m.id}`}
+                  >
+                    <b>{m.title}</b>
+                    <span style={{ color: 'var(--amber, #f59e0b)' }}>{m.hint || 'Ordner gerade nicht ladbar'}</span>
+                  </div>
+                ) : (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="ck-file"
+                    onClick={() => onOpenMoon(m.id)}
+                    data-testid={`dept-moon-${m.id}`}
+                  >
+                    <b>{m.title}</b>
+                    <span>{m.files.length} {m.files.length === 1 ? 'Eintrag' : 'Einträge'}</span>
+                  </button>
+                )
+              )}
             </div>
           ) : (
             <div className="ck-empty-note" style={{ padding: '16px 0', color: 'var(--mute)' }}>
