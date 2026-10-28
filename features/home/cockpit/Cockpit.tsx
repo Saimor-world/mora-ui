@@ -8,6 +8,8 @@ import { MORGENROT_EVENTS, MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/stru
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../data/homeModel';
 import { askMora, type MoraReply } from '../data/moraDemo';
 import { useDemoDay } from '../data/useDemoDay';
+import { WidgetBoard } from '../widgets/WidgetBoard';
+import { widgetsFromDemo } from '../widgets/adapters';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
 import { ActionSheet, FolderSheet, type SheetKind } from './Sheets';
@@ -111,6 +113,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
               <div className="ck-fact"><small>{model.close ? 'Heute abgeschlossen' : 'Team heute'}</small>{model.close ? <><b>{model.close.cash.toLocaleString('de-DE')} €</b><span>Jonas · {model.close.at} · Kasse stimmt</span></> : <span className="ck-team">{model.team.map((t) => <i key={t.personId}>{t.name} <em>{t.shift.split('–')[0]}</em></i>)}</span>}</div>
             </div>
           ) : null}
+          <WidgetBoard widgets={widgetsFromDemo(model)} />
         </section>
       ) : null}
 

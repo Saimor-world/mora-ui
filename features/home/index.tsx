@@ -15,6 +15,8 @@ import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from './dat
 import { useDemoViewer } from './data/useDemoViewer';
 import { MicButton } from './ui/MicIcon';
 import { Cockpit } from './cockpit/Cockpit';
+import { WidgetBoard } from './widgets/WidgetBoard';
+import { widgetsFromToday } from './widgets/adapters';
 
 const DEMO_DATE = '2026-10-28';
 const fmtEur = (n: number) => `${n.toLocaleString('de-DE')} €`;
@@ -62,6 +64,7 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
           <MicButton onClick={() => useOsShellStore.getState().setMoraOpen(true)} />
         </section>
         <aside className="hm-side">
+          <WidgetBoard widgets={widgetsFromToday(snapshot)} />
           <button type="button" className="hm-firma" onClick={() => navigate('universe')}>Firma ansehen <span>Bereiche &amp; Ordner</span></button>
           <button type="button" className="hm-firma" onClick={() => navigate('today')}>Heute im Detail <span>Termine, Post, Aufgaben</span></button>
         </aside>
