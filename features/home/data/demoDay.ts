@@ -1,3 +1,4 @@
+import { recordHeadDecision, type HeadRecord } from '../departments/demoHead';
 /** Zustand eines Vorführtags im Café Morgenrot (FIKTIV). Reine Funktionen, damit Tests und UI dasselbe nutzen. */
 export interface DemoNote { id: string; from: string; to: string; text: string; read: boolean }
 export interface DemoDay {
@@ -8,6 +9,7 @@ export interface DemoDay {
   swap: 'requested' | 'approved' | 'declined';
   close: null | { cash: number; by: string; at: string };
   notes: DemoNote[];
+  headRecords?: HeadRecord[];
 }
 
 export type DemoAction =
@@ -20,6 +22,7 @@ export type DemoAction =
   | { type: 'close'; cash: number; by: string; at: string }
   | { type: 'note'; from: string; to: string; text: string }
   | { type: 'readNote'; id: string }
+  | { type: 'head'; record: HeadRecord }
   | { type: 'reset' };
 
 export const initialDay = (): DemoDay => ({
@@ -37,6 +40,7 @@ export function act(s: DemoDay, a: DemoAction): DemoDay {
     case 'close': return { ...s, close: { cash: a.cash, by: a.by, at: a.at } };
     case 'note': return { ...s, notes: [...s.notes, { id: `n${s.notes.length + 1}`, from: a.from, to: a.to, text: a.text, read: false }] };
     case 'readNote': return { ...s, notes: s.notes.map((n) => (n.id === a.id ? { ...n, read: true } : n)) };
+    case 'head': return { ...s, headRecords: recordHeadDecision(s.headRecords ?? [], a.record) };
     case 'reset': return initialDay();
   }
 }

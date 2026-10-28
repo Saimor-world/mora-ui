@@ -9,6 +9,7 @@ import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../da
 import { askMora, type MoraReply } from '../data/moraDemo';
 import { useDemoDay } from '../data/useDemoDay';
 import { HomeOverview } from '../widgets/HomeOverview';
+import { HeadSheet } from '../departments/HeadSheet';
 import { widgetsFromDemo } from '../widgets/adapters';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
@@ -36,11 +37,12 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
   const [planetId, setPlanetId] = useState<string | null>(own);
   const [moonId, setMoonId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  const [headOpen, setHeadOpen] = useState(false);
   const [q, setQ] = useState('');
   const [reply, setReply] = useState<MoraReply | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => { setPlanetId(own); setMoonId(null); setSheet(null); setReply(null); setView('home'); }, [viewer, own]);
+  useEffect(() => { setPlanetId(own); setMoonId(null); setSheet(null); setHeadOpen(false); setReply(null); setView('home'); }, [viewer, own]);
   useEffect(() => { if (!toast) return undefined; const t = setTimeout(() => setToast(null), 2200); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { // Schnelleinstieg per URL für Vorführung und Screenshots: ?ort=firma|<planet>[&ordner=<mond>]
     const s = new URLSearchParams(window.location.search); const ort = s.get('ort');
@@ -87,7 +89,9 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
         </div>
       </header>
 
-      {!showHome && planet && owner ? <button type="button" className="ck-back" onClick={() => { setPlanetId(null); setMoonId(null); }} data-testid="ck-back"><ArrowLeft size={16} /> {COMPANY}</button> : null}
+      {!showHome && planet && owner ? <button type="button" className="ck-back" onClick={() => { setPlanetId(null); setMoonId(null); setHeadOpen(false); }} data-testid="ck-back"><ArrowLeft size={16} /> {COMPANY}</button> : null}
+
+      {!showHome && planet && !moon ? <button type="button" className="ck-head-open" onClick={() => setHeadOpen(true)} data-testid="open-head">Abteilung &amp; Head-MÔRA</button> : null}
 
       {showHome ? (
         <section className="ck-panel" aria-label="Home">
@@ -110,6 +114,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
         </section>
       ) : null}
 
+      {headOpen && planet && !showHome ? <HeadSheet planet={planet} viewer={viewer} day={day} dispatch={dispatch} onClose={() => setHeadOpen(false)} /> : null}
       {moon && planet && !showHome ? <FolderSheet key={moon.id} moon={moon} planetTitle={planet.title} onClose={() => setMoonId(null)} /> : null}
       {sheet ? <ActionSheet kind={sheet} day={day} owner={owner} dispatch={(a) => { dispatch(a); setToast(a.type === 'oat' || a.type === 'close' ? 'Gesendet' : 'Freigegeben'); }} onClose={() => setSheet(null)} /> : null}
 
@@ -123,8 +128,8 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       {toast ? <div className="ck-toast" role="status"><Check size={14} /> {toast}</div> : null}
 
       <nav className="ck-dock" aria-label="Kommandozentrale">
-        <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => setView('home')} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
-        <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
+        <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => { setView('home'); setHeadOpen(false); }} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
+        <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setHeadOpen(false); setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
         <form className="ck-ask" onSubmit={submit}>
           <PixelMoraMark size={20} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={owner ? 'Frag MÔRA – z. B. „Sag Lena, …“' : 'Frag MÔRA …'} aria-label="Frag MÔRA" data-testid="ck-ask" />

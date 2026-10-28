@@ -74,6 +74,15 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
       expect(target!.x + target!.width).toBeLessThanOrEqual(size.width);
     }
   }
+  if (improved) {
+    await page.getByTestId('open-head').click();
+    await expect(page.getByTestId('head-sheet')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toBeVisible();
+    await shot('08-head-admin');
+    await page.getByText('Code-Vorschlag · Beispiel').scrollIntoViewIfNeeded();
+    await shot('08b-code-admin');
+    await page.getByTestId('head-sheet').getByRole('button', { name: 'Schließen' }).click();
+  }
   await page.getByTestId('moon-k-rez').click();
   await expect(page.getByTestId('ck-sheet')).toBeVisible();
   await shot('04-folder');
@@ -89,5 +98,13 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByTestId('open-firma').click();
   await shot('07-reduced-motion');
+  if (improved) {
+    await page.getByTestId('open-head').click();
+    await expect(page.getByText('Administrator fragen')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toHaveCount(0);
+    await shot('09-head-member');
+    await page.getByText('Code-Vorschlag · Beispiel').scrollIntoViewIfNeeded();
+    await shot('09b-code-member');
+  }
   expect(errors).toEqual([]);
 });
