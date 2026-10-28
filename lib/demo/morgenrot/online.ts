@@ -156,7 +156,18 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
             return { spaceId, folders: folderList };
           } catch (err: any) {
             console.error(`[loadMorgenrot] Fehler beim Laden der Ordner für Space ${spaceId}:`, err?.message || err);
-            throw err;
+            return {
+              spaceId,
+              folders: [
+                {
+                  id: `err-${spaceId}`,
+                  name: 'Ordner nicht ladbar',
+                  space_id: spaceId,
+                  nodes: [],
+                  children: [],
+                },
+              ],
+            };
           }
         })
       );

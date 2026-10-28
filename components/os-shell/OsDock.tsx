@@ -91,7 +91,7 @@ function Instruments({ side, led = 0 }: { side: 'l' | 'map' | 'last'; led?: numb
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const mood = useHubMood();
   const variant = useDockVariant();
-  const big = variant !== 'strip';
+  const big = variant !== 'strip' && activeId !== 'home';
   usePalette();
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;

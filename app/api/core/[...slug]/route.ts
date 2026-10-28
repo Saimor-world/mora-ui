@@ -20,18 +20,26 @@ const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.
 function resolveBackendBase(slug: string): string {
   // Keep an escape hatch for a remote agent endpoint.
   if (slug.startsWith('v1/mora/agent/')) return REMOTE_AGENT_URL;
-  return (
-    CORE_BASE_URL ||
+
+  const configured =
     process.env.SAIMOR_CORE_URL ||
     process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
-    process.env.NEXT_PUBLIC_CORE_API_URL ||
-    'https://api.saimor.world'
-  );
+    CORE_BASE_URL ||
+    process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  if (process.env.NODE_ENV === 'production') {
+    if (!configured) {
+      throw new Error('SAIMOR_CORE_URL ist in Produktion nicht konfiguriert');
+    }
+    return configured;
+  }
+
+  return configured || 'https://api.saimor.world';
 }
 
 function buildBackendUrl(slug: string): string {
   const path = /^(v1|v2|v3)\//.test(slug) ? slug : `v1/${slug}`;
-  const base = resolveBackendBase(slug).replace(/\/+$/, '') || 'https://api.saimor.world';
+  const base = resolveBackendBase(slug).replace(/\/+$/, '');
   return `${base}/${path}`;
 }
 
@@ -82,7 +90,19 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
   const params = await context.params;
   const slug = params.slug.join('/');
 
-  const backendUrl = buildBackendUrl(slug);
+  let backendUrl: string;
+  try {
+    backendUrl = buildBackendUrl(slug);
+  } catch (err: any) {
+    console.error(`[core proxy configuration error]: ${err?.message || err}`);
+    return NextResponse.json(
+      {
+        error: 'core_configuration_error',
+        message: err?.message || 'Server-Konfigurationsfehler: SAIMOR_CORE_URL fehlt in Produktion',
+      },
+      { status: 500 }
+    );
+  }
   const url = new URL(request.url);
   const qs = url.searchParams.toString();
   const finalUrl = qs ? `${backendUrl}?${qs}` : backendUrl;
