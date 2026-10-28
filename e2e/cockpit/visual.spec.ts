@@ -81,7 +81,7 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     await shot('08-head-admin');
     await page.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }).click();
     await expect(page.getByTestId('head-demo-research').locator('li')).toHaveCount(3);
-    await page.getByText('Code-Vorschlag · Beispiel').scrollIntoViewIfNeeded();
+    await page.getByRole('button', { name: 'Demo-Freigabe vormerken' }).scrollIntoViewIfNeeded();
     await shot('08b-code-admin');
     await page.getByTestId('head-sheet').getByRole('button', { name: 'Schließen' }).click();
   }
@@ -105,7 +105,7 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     await expect(page.getByText('Administrator fragen')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toHaveCount(0);
     await shot('09-head-member');
-    await page.getByText('Code-Vorschlag · Beispiel').scrollIntoViewIfNeeded();
+    await page.getByText('Administrator fragen').scrollIntoViewIfNeeded();
     await shot('09b-code-member');
   }
   expect(errors).toEqual([]);
