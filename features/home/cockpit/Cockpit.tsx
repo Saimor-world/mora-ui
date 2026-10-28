@@ -72,8 +72,10 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       </div>
       <CockpitWindow />
 
+      {!showHome && !moon ? <div className="ck-presence" data-testid="cockpit-presence"><PixelMoraMark size={80} /></div> : null}
+
       <header className="ck-top">
-        <div className="ck-brand"><PixelMoraMark size={20} /><span>{COMPANY}</span></div>
+        <div className="ck-brand"><span>{COMPANY}</span></div>
         <div className="ck-top__r">
           <span className="ck-time">Mi, 28. Okt · 07:00</span>
           <label className="ck-who"><span className="sr-only">Ansicht als</span>
@@ -89,6 +91,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
         <section className="ck-panel" aria-label="Home">
           <h1 className="ck-h1">{model.greeting}</h1>
           <p className="ck-sub">{model.subline}</p>
+          {phone && owner ? <div className="ck-home-strip"><PlanetSystem planets={planets} attention={attention} company={COMPANY} compact strip onOpen={(id) => { setView('universe'); setPlanetId(id); setMoonId(null); }} /></div> : null}
           {model.needsYou.length ? (
             <ol className="ck-list">
               {model.needsYou.map((it) => (
