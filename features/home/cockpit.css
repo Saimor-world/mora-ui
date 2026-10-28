@@ -32,10 +32,11 @@
 
 /* Geöffneter Planet */
 .ck-open{position:absolute;inset:0}
-.ck-horizon{position:absolute;left:50%;top:58%;transform:translateX(-50%);width:max(1320px,118vw);aspect-ratio:1920/700;pointer-events:none}
+.ck-horizon{position:absolute;left:50%;top:42%;transform:translateX(-50%);width:max(1320px,118vw);aspect-ratio:1920/700;pointer-events:none}
 .ck-horizon__img{position:absolute;inset:0;background:var(--glass) center/contain no-repeat;filter:saturate(.85)}
 .ck-horizon__title{position:absolute;left:0;right:0;bottom:calc(var(--ck-dock-clearance) + 56px);margin:0;text-align:center;font-size:30px;font-weight:600;letter-spacing:-.015em;color:rgba(240,243,238,.95);text-shadow:0 2px 24px rgba(0,0,0,.65)}
 .ck-presence{position:absolute;z-index:3;left:50%;top:calc(58% - 94px);transform:translateX(-50%);pointer-events:none}
+.ck-presence--system{top:auto;bottom:calc(var(--ck-dock-clearance) - 6px)}
 .ck-moons{position:absolute;left:0;right:0;top:96px;height:40%}
 .ck-moon{position:absolute;top:var(--moon-y);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:inherit;cursor:pointer;padding:8px 10px;border-radius:20px;transition:background .2s;min-width:100px;min-height:44px}
 .ck-moon:hover,.ck-moon[aria-pressed=true]{background:rgba(255,255,255,.05)}
@@ -89,10 +90,10 @@
 .ck-dock::before{content:"";position:absolute;left:22px;right:22px;top:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(134,220,201,.35),transparent)}
 .ck-dock__b{display:flex;align-items:center;gap:7px;height:46px;padding:0 14px;border-radius:15px;background:none;border:0;color:#A9BCC2;font:500 14px inherit;cursor:pointer}
 .ck-dock__b[aria-pressed=true]{background:rgba(255,255,255,.08);color:#EEF1EA}
-.ck-ask{flex:1;display:flex;align-items:center;gap:10px;height:46px;margin-left:4px;padding:0 6px 0 14px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06)}
-.ck-ask input{flex:1;min-width:0;background:none;border:0;outline:0;color:#EEF1EA;font:400 15px inherit}
+.ck-ask{flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:46px;margin-left:4px;padding:0 6px 0 14px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06)}
+.ck-ask input{flex:1;width:0;min-width:0;background:none;border:0;outline:0;color:#EEF1EA;font:400 15px inherit}
 .ck-ask input::placeholder{color:#7C9299}
-.ck-mic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;border:0;background:rgba(134,220,201,.12);color:var(--teal);cursor:pointer}
+.ck-mic{width:44px;height:44px;flex:none;border-radius:11px;display:grid;place-items:center;border:0;background:rgba(134,220,201,.12);color:var(--teal);cursor:pointer}
 .ck-dock__need{height:46px;padding:0 14px;border-radius:15px;border:0;background:rgba(134,220,201,.12);color:var(--teal);font:600 13.5px inherit;cursor:pointer;white-space:nowrap}
 .ck-reset{position:absolute;z-index:5;right:34px;bottom:4px}.ck-reset button{background:none;border:0;color:#4F646B;font:12px inherit;cursor:pointer}
 
@@ -137,7 +138,7 @@
   .ck-sys--strip{inset:0!important}
   .ck-sys--strip .ck-sys__orbit,.ck-sys--strip .ck-sys__core{display:none}
   .ck-sys--strip .ck-planet{left:var(--strip-x)!important;top:50%!important;gap:2px;padding:5px 2px;min-width:64px;max-width:25%}
-  .ck-sys--strip .ck-planet b{font-size:10.5px;gap:3px;overflow-wrap:anywhere}
+  .ck-sys--strip .ck-planet b{font-size:10px;gap:3px;white-space:nowrap}
   .ck-sys--strip .ck-planet .glass-orb{margin-bottom:2px}
   .ck-h1{font-size:30px}.ck-sub{font-size:16px;margin-bottom:12px}
   .ck-item{gap:12px;padding:14px 0}.ck-item__t{font-size:16px}.ck-btn{padding:10px 13px;font-size:14px}
@@ -148,8 +149,8 @@
   .ck-sheet{left:10px;right:10px;width:auto;top:auto;bottom:80px;max-height:70%}
   .ck-reply{bottom:80px}
   .ck-sys{left:4%;right:4%;top:70px;bottom:120px}
-  .ck-horizon{width:900px;top:56%}.ck-horizon__title{font-size:24px}
-  .ck-presence{top:calc(56% - 94px)}
+  .ck-horizon{width:900px;top:44%}.ck-horizon__title{font-size:24px}
+  .ck-presence{top:calc(56% - 94px)}.ck-presence--system{top:auto}
   .ck-moons{top:88px;height:40%}.ck-moon{top:var(--moon-y-phone);min-width:80px;max-width:100px;padding:8px 4px}
   .ck-moon .glass-orb{width:72px!important;height:72px!important;margin:0 0 6px}
   .ck-moon .glass-orb img{width:92px!important;height:92px!important;left:-10px!important;top:-10px!important}

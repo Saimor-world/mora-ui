@@ -72,7 +72,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       </div>
       <CockpitWindow />
 
-      {!showHome && !moon ? <div className="ck-presence" data-testid="cockpit-presence"><PixelMoraMark size={80} /></div> : null}
+      {!showHome && !moon ? <div className={`ck-presence${sceneMode === 'system' ? ' ck-presence--system' : ''}`} data-testid="cockpit-presence"><PixelMoraMark size={80} /></div> : null}
 
       <header className="ck-top">
         <div className="ck-brand"><span>{COMPANY}</span></div>
@@ -127,8 +127,8 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       {toast ? <div className="ck-toast" role="status"><Check size={14} /> {toast}</div> : null}
 
       <nav className="ck-dock" aria-label="Kommandozentrale">
-        <button type="button" className="ck-dock__b" aria-pressed={showHome} onClick={() => setView('home')} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
-        <button type="button" className="ck-dock__b" aria-pressed={!showHome} onClick={() => { setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
+        <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => setView('home')} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
+        <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
         <form className="ck-ask" onSubmit={submit}>
           <PixelMoraMark size={20} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={owner ? 'Frag MÔRA – z. B. „Sag Lena, …“' : 'Frag MÔRA …'} aria-label="Frag MÔRA" data-testid="ck-ask" />

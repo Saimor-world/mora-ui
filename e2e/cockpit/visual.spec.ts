@@ -37,6 +37,11 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     const dock = await page.locator('.ck-dock').boundingBox();
     expect(panel!.y + panel!.height).toBeLessThan(dock!.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size.width);
+    const mic = await page.getByRole('button', { name: 'Sprechen (in der Demo: tippen)', exact: true }).boundingBox();
+    expect(mic!.width).toBeGreaterThanOrEqual(44);
+    expect(mic!.x + mic!.width).toBeLessThanOrEqual(size.width - 12);
+    await expect(page.getByRole('button', { name: 'Home', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Firma', exact: true })).toBeVisible();
   }
   await page.getByTestId('open-firma').click();
   await expect(page.getByTestId('planet-system')).toBeVisible();
