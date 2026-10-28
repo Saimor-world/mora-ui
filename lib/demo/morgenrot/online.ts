@@ -98,11 +98,9 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
 
   const query = `?company_id=${encodeURIComponent(MORGENROT.companyId)}`;
   try {
-    const [rawToday, rawTree, rawFolders, rawNodes] = await Promise.all([
+    const [rawToday, rawTree] = await Promise.all([
       coreGet(`/v3/today${query}`, { throwAuthErrors: true }),
       coreGet(`/v3/tree${query}`, { throwAuthErrors: true }),
-      coreGet(`/v3/folders${query}`, { isOptional: true }).catch(() => null),
-      coreGet(`/v3/nodes${query}&limit=500`, { isOptional: true }).catch(() => null),
     ]);
 
     if (rawToday === null || rawTree === null) {
@@ -116,39 +114,59 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
       return { kind: 'forbidden' };
     }
 
-    const flatFolders: MorgenrotFolder[] = normalizeArray(rawFolders);
-    const flatNodes: MorgenrotNode[] = normalizeArray(rawNodes);
-
-    // Group nodes by folder
-    const nodesByFolder: Record<string, MorgenrotNode[]> = {};
-    for (const node of flatNodes) {
-      if (!node?.id || !node.folder_id) continue;
-      (nodesByFolder[node.folder_id] ||= []).push(node);
-    }
-
-    // Attach nodes into folders
-    const enrichedFolders = flatFolders.map((f) => ({
-      ...f,
-      nodes: nodesByFolder[f.id] ?? f.nodes ?? [],
-      children: nodesByFolder[f.id] ?? f.children ?? [],
-    }));
-
-    // Map space_id -> folders, and department_id -> folders
-    const foldersBySpace: Record<string, MorgenrotFolder[]> = {};
-    const foldersByDept: Record<string, MorgenrotFolder[]> = {};
-
-    for (const folder of enrichedFolders) {
-      if (folder.space_id) {
-        (foldersBySpace[folder.space_id] ||= []).push(folder);
-      }
-      const deptId = folder.department_id || (folder.metadata?.department_id as string | undefined);
-      if (deptId) {
-        (foldersByDept[deptId] ||= []).push(folder);
-      }
-    }
-
-    // Build real departments tree with full spaces, folders and nodes
     const rawDeptsList: any[] = normalizeArray(rawTree?.departments ?? rawTree);
+
+    // Collect all spaces from departments to load their folders via GET /v3/tree/{space_id}/children?type=space
+    const allSpacesToFetch: { spaceId: string; spaceName: string; deptId: string }[] = [];
+    for (const d of rawDeptsList) {
+      if (!d) continue;
+      const deptId = String(d.id || '');
+      const rawSpaces: any[] = normalizeArray(d.spaces ?? d.children);
+      for (const sp of rawSpaces) {
+        if (sp?.id) {
+          allSpacesToFetch.push({
+            spaceId: String(sp.id),
+            spaceName: String(sp.name || sp.title || 'Bereich'),
+            deptId,
+          });
+        }
+      }
+    }
+
+    // Fetch folders for each space via GET /v3/tree/{space_id}/children?type=space.
+    // Do not swallow errors silently.
+    const foldersBySpace: Record<string, MorgenrotFolder[]> = {};
+    if (allSpacesToFetch.length > 0) {
+      const spaceFolderResults = await Promise.all(
+        allSpacesToFetch.map(async ({ spaceId }) => {
+          try {
+            const rawChildren = await coreGet(`/v3/tree/${encodeURIComponent(spaceId)}/children?type=space`, {
+              throwAuthErrors: true,
+            });
+            const folderList: MorgenrotFolder[] = normalizeArray<any>(
+              rawChildren?.folders ?? rawChildren?.children ?? rawChildren?.items ?? rawChildren
+            ).map((f: any) => ({
+              ...f,
+              id: String(f.id),
+              name: String(f.name || f.title || 'Ordner'),
+              space_id: spaceId,
+              nodes: normalizeArray(f.nodes ?? f.children),
+              children: normalizeArray(f.nodes ?? f.children),
+            }));
+            return { spaceId, folders: folderList };
+          } catch (err: any) {
+            console.error(`[loadMorgenrot] Fehler beim Laden der Ordner für Space ${spaceId}:`, err?.message || err);
+            throw err;
+          }
+        })
+      );
+
+      for (const { spaceId, folders } of spaceFolderResults) {
+        foldersBySpace[spaceId] = folders;
+      }
+    }
+
+    // Build real departments tree with spaces and fetched folders
     const departments: MorgenrotDepartment[] = rawDeptsList
       .filter((d) => d && (d.id || d.name))
       .map((d: any) => {
@@ -157,7 +175,7 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
 
         const spaces: MorgenrotSpace[] = normalizeArray<any>(d.spaces ?? d.children).map((sp: any) => {
           const spaceId = String(sp.id);
-          const childFolders = foldersBySpace[spaceId] ?? sp.folders ?? [];
+          const childFolders = foldersBySpace[spaceId] ?? normalizeArray(sp.folders);
           return {
             ...sp,
             id: spaceId,
@@ -167,14 +185,14 @@ export async function loadMorgenrot(): Promise<MorgenrotState> {
           };
         });
 
-        // Folders directly on the department (or matched by department_id)
+        // Folders from all spaces in this department plus any direct department folders
+        const foldersFromSpaces = spaces.flatMap((sp) => sp.folders ?? []);
         const directFolders = [
-          ...(foldersByDept[deptId] ?? []),
-          ...(foldersByDept[d.slug] ?? []),
+          ...foldersFromSpaces,
           ...normalizeArray<any>(d.folders),
         ];
 
-        // Deduplicate direct folders by id
+        // Deduplicate folders by id
         const seenFolderIds = new Set<string>();
         const uniqueDirectFolders: MorgenrotFolder[] = [];
         for (const f of directFolders) {

@@ -13,7 +13,7 @@ import { firstName } from '@/lib/auth/displayName';
 import type { FeatureSurfaceProps } from '../../types';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 import { coreTreeToPlanets, deriveLiveAttention } from './coreAdapter';
-import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -125,7 +125,18 @@ export function LiveCockpit({
     return propDepartments && propDepartments.length > 0 ? propDepartments : [];
   }, [propDepartments]);
 
-  const planets: DemoPlanet[] = useMemo(() => coreTreeToPlanets(rawDepts), [rawDepts]);
+  const planets: DemoPlanet[] = useMemo(() => {
+    const fromCore = coreTreeToPlanets(rawDepts);
+    if (fromCore.length > 0) return fromCore;
+    // Falls Café-Abteilungen noch als Ersatz einspringen: nur für Demo-Modus, und deutlich als FIKTIV markiert
+    if (isDemo) {
+      return MORGENROT_STRUCTURE.map((p) => ({
+        ...p,
+        title: p.title.includes('FIKTIV') ? p.title : `${p.title} (FIKTIV)`,
+      }));
+    }
+    return [];
+  }, [rawDepts, isDemo]);
 
   const { attention, items } = useMemo(
     () => deriveLiveAttention(snapshot, navigate),

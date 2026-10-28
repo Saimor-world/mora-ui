@@ -108,7 +108,6 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
       {
         error: 'core_upstream_unreachable',
         message: error?.message || 'Verbindung zu CORE fehlgeschlagen',
-        target: finalUrl,
       },
       { status: 502 }
     );
