@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { HeadSheet } from '@/features/home/departments/HeadSheet';
+import { Cockpit } from '@/features/home/cockpit/Cockpit';
 import { act, initialDay } from '@/features/home/data/demoDay';
 import { canDecideHead } from '@/features/home/departments/demoHead';
 import { MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/structure';
@@ -43,4 +44,18 @@ it('shows explicitly fictional research examples without implying real research'
   fireEvent.click(screen.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }));
   expect(screen.queryByTestId('head-demo-research')).not.toBeInTheDocument();
   expect(screen.getByText(/kein Demo-Beispiel vorbereitet/)).toBeInTheDocument();
+});
+
+it('closes the department sheet when opening a folder', () => {
+  localStorage.clear();
+  window.history.replaceState(null, '', '/os?firma=morgenrot&als=marius');
+  window.matchMedia = jest.fn().mockImplementation(query => ({ matches: false, media: query, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
+  render(<Cockpit initialViewer="marius" />);
+  fireEvent.click(screen.getByTestId('open-firma'));
+  fireEvent.click(screen.getByTestId('open-kueche'));
+  fireEvent.click(screen.getByTestId('open-head'));
+  expect(screen.getByTestId('head-sheet')).toBeInTheDocument();
+  fireEvent.click(screen.getByTestId('moon-k-rez'));
+  expect(screen.queryByTestId('head-sheet')).not.toBeInTheDocument();
+  expect(screen.getByTestId('ck-sheet')).toBeInTheDocument();
 });

@@ -59,7 +59,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
     if (it.kind === 'note') { dispatch({ type: 'readNote', id: it.id }); return; }
     setSheet(it.kind as SheetKind);
   };
-  const openMoon = (id: string) => { const p = planets.find((x) => x.moons.some((m) => m.id === id)); if (!p) return; setView('universe'); setPlanetId(p.id); setMoonId(id); };
+  const openMoon = (id: string) => { const p = planets.find((x) => x.moons.some((m) => m.id === id)); if (!p) return; setView('universe'); setPlanetId(p.id); setHeadOpen(false); setMoonId(id); };
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (!q.trim()) return; const r = askMora(q, viewer, MORGENROT_SEED, MORGENROT_EVENTS, DATE, day); setReply(r); setQ(''); if (r.openMoon && !r.action) openMoon(r.openMoon); };
   const confirm = () => { if (reply?.action) { dispatch(reply.action); setToast(reply.action.type === 'note' ? 'Gesendet' : 'Freigegeben'); } setReply(null); };
 
@@ -71,7 +71,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       <div className="ck-space" aria-hidden />
       <div className={`ck-scene ck-scene--${sceneMode}${showHome ? ' ck-scene--behind' : ''}`}>
         {sceneMode === 'planet' && planet
-          ? <OpenPlanet planet={planet} showMoons={!showHome} onMoon={(id) => setMoonId(id)} activeMoon={moonId} />
+          ? <OpenPlanet planet={planet} showMoons={!showHome} onMoon={(id) => { setHeadOpen(false); setMoonId(id); }} activeMoon={moonId} />
           : !(phone && showHome) ? <PlanetSystem planets={planets} attention={attention} company={COMPANY} compact={showHome} onOpen={(id) => { setView('universe'); setPlanetId(id); setMoonId(null); }} /> : null}
       </div>
       <CockpitWindow />
