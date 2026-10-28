@@ -160,3 +160,15 @@
 @media (min-width:821px){.ck[data-folder="1"] .ck-moons{right:440px}.ck[data-folder="1"] .ck-horizon{left:calc(50% - 220px)}.ck[data-folder="1"] .ck-horizon__title{right:440px}}
 .ck button:focus-visible,.ck select:focus-visible,.ck input:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){.ck-scene,.ck-sys,.ck-planet .glass-orb,.ck-moon,.ck-btn{transition:none}}
+
+/* The source overview uses the same board as live Home. */
+@media (min-width:821px){
+  .ck[data-scope=owner] .ck-panel{width:min(660px,55vw)}
+  .ck[data-scope=owner] .ck-sys--compact{left:61%;right:3%}
+  .ck[data-scope=owner] .ck-h1{font-size:30px}
+  .ck[data-scope=owner] .ck-sub{font-size:14px;margin-bottom:10px}
+  .ck[data-scope=owner] .ck-item{padding:9px 0}
+  .ck[data-scope=owner] .ck-item__t{font-size:14px}
+  .ck[data-scope=owner] .ck-item__d{font-size:12px}
+  .ck[data-scope=owner] .source-widget{grid-column:span 4}
+}

@@ -31,3 +31,18 @@ it('does not invent a total from a mail sample', () => {
   const snapshot = { mail: { status: 'ok', source: 'CORE', unread_count: null, inbox_loaded: 3 }, calendar: { status: 'disconnected' }, tasks: { status: 'unavailable' } } as unknown as TodaySnapshot;
   expect(widgetsFromToday(snapshot)).toEqual([]);
 });
+
+it('adapts six existing café sources for the owner without inventing customer finance widgets', () => {
+  const { initialDay } = require('@/features/home/data/demoDay');
+  const widgets = widgetsFromDemo(model('marius'), initialDay());
+  expect(widgets.map(w => w.id)).toEqual(['revenue', 'team', 'reservations', 'inventory', 'reviews', 'order']);
+  expect(widgets.every(w => w.demo)).toBe(true);
+  expect(widgets.find(w => w.id === 'order')?.content).toMatchObject({ detail: '214 € · Donnerstag' });
+});
+it('keeps the fictional daily close visible in the owner home', () => {
+  const { initialDay, act } = require('@/features/home/data/demoDay');
+  const day = act(initialDay(), { type: 'close', cash: 1906, by: 'jonas', at: '18:04' });
+  const widgets = widgetsFromDemo(buildHomeModel(MORGENROT_SEED, MORGENROT_EVENTS, '2026-10-28', 'marius', day), day);
+  render(<WidgetBoard widgets={widgets} />);
+  expect(screen.getByTestId('widget-close')).toHaveTextContent('1.906 €');
+});
