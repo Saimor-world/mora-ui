@@ -1,8 +1,9 @@
 "use client";
+import { coreGet } from '@/lib/api/http';
 
 export type ConnectorType = "email" | "filesystem" | "notion" | "github" | "n8n";
 export type ConnectorMode = "mock" | "real";
-export type ConnectorState = "disconnected" | "syncing" | "connected" | "error";
+export type ConnectorState = "unknown" | "disconnected" | "syncing" | "connected" | "error";
 
 export interface ConnectorStatus {
   id: string;
@@ -156,7 +157,7 @@ export function getConnectors(seed: ConnectorStatus[] = []): ConnectorStatus[] {
   if (stored.length === 0 && seed.length > 0) {
     writeToStorage(merged);
   }
-  return merged;
+  return merged.map(c => c.state === "connected" ? { ...c, state: "unknown" as const, lastSyncAt: null, objectCount: null } : c);
 }
 
 export function saveConnector(status: ConnectorStatus) {
@@ -179,66 +180,26 @@ function updateList(list: ConnectorStatus[], status: ConnectorStatus) {
   return [...list, status];
 }
 
-function wait(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function withSyncPayload(connector: ConnectorStatus, overrides?: Partial<ConnectorStatus>): ConnectorStatus {
-  return {
-    ...connector,
-    lastSyncAt: overrides?.lastSyncAt ?? new Date().toISOString(),
-    objectCount:
-      typeof overrides?.objectCount === "number"
-        ? overrides.objectCount
-        : typeof connector.objectCount === "number"
-        ? connector.objectCount
-        : 0,
-    ...overrides,
-  };
-}
-
+/** Legacy connector cache is never evidence of a live connection. */
 export async function testConnection(connector: ConnectorStatus): Promise<ConnectorStatus> {
-  await wait(connector.mode === "mock" ? 900 : 1400);
-  const next = withSyncPayload(connector, {
-    state: "connected",
-    objectCount: connector.objectCount ?? Math.max(5, Math.floor(Math.random() * 35) + 5),
-  });
-  return next;
+  if (connector.mode !== 'real') return { ...connector, state: 'unknown', lastSyncAt: null, objectCount: null };
+  try {
+    const result = await coreGet('/v3/connections', { throwAuthErrors: true }) as { connections?: Array<{ id: string; status: string }> } | null;
+    const checked = result?.connections?.find(item => item.id === connector.id);
+    if (connector.mode === 'real' && checked?.status === 'connected') return { ...connector, state: 'connected', objectCount: null, lastSyncAt: null };
+    return { ...connector, state: checked ? 'disconnected' : 'unknown', lastSyncAt: null, objectCount: null };
+  } catch {
+    return { ...connector, state: 'unknown', lastSyncAt: null, objectCount: null };
+  }
 }
 
 export async function syncConnector(connector: ConnectorStatus): Promise<ConnectorStatus> {
-  await wait(connector.mode === "mock" ? 1600 : 2600);
-  const increment = Math.max(1, Math.floor(Math.random() * 4) + 1);
-  const next = withSyncPayload(connector, {
-    state: "connected",
-    objectCount: (connector.objectCount ?? 0) + increment,
-  });
-  return next;
+  // No verified synchronization endpoint exists for this legacy adapter.
+  return { ...connector, state: 'unknown', lastSyncAt: null, objectCount: null };
 }
 
-export function applyMockSnapshot(statuses: ConnectorStatus[]): ConnectorStatus[] {
-  const now = new Date().toISOString();
-  const next = statuses.map<ConnectorStatus>((connector, index) => ({
-    ...connector,
-    mode: "mock" as ConnectorMode,
-    state: "connected" as ConnectorState,
-    lastSyncAt: now,
-    objectCount: (connector.objectCount ?? 12) + (index + 1) * 3,
-  }));
-  saveConnectorList(next);
-  return next;
-}
-
-export function markConnectorState(
-  connector: ConnectorStatus,
-  state: ConnectorState
-): ConnectorStatus {
-  const next =
-    state === "connected"
-      ? withSyncPayload(connector, { state })
-      : { ...connector, state };
+export function markConnectorState(connector: ConnectorStatus, state: ConnectorState): ConnectorStatus {
+  const next = { ...connector, state: state === 'connected' ? 'unknown' as const : state };
   saveConnector(next);
   return next;
 }

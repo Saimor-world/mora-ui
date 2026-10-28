@@ -29,6 +29,8 @@ function renderShell() {
 describe('OS V1.1 Universe & Atmosphäre', () => {
   beforeEach(() => {
     window.location.hash = '';
+    // Home ist jetzt Standard; diese Tests prüfen bewusst die Heute-Detailansicht.
+    window.history.replaceState(null, '', '/os#today');
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
     useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
   });

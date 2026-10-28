@@ -24,8 +24,15 @@ export function getInternalCoreBaseUrl(): string | null {
     if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
         return null;
     }
+    // The Docker service name only resolves next to CORE on the server; on Vercel it never answers.
+    if (process.env.VERCEL) {
+        return null;
+    }
     return 'http://core:8081';
 }
+
+/** Per base URL: an unreachable internal URL must not hold up the public one. */
+export const CORE_UPSTREAM_TIMEOUT_MS = 3000;
 
 export function getCoreUpstreamBaseUrls(): string[] {
     const bases = [getInternalCoreBaseUrl(), getPublicCoreBaseUrl()].filter(Boolean) as string[];
@@ -78,11 +85,20 @@ export async function fetchCoreUpstream(path: string, init: RequestInit): Promis
     let lastError: unknown;
 
     for (const base of bases) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), CORE_UPSTREAM_TIMEOUT_MS);
+        // A caller's own abort still wins.
+        const onCallerAbort = () => controller.abort();
+        init.signal?.addEventListener('abort', onCallerAbort);
         try {
-            return await fetch(`${base}${normalizedPath}`, init);
+            return await fetch(`${base}${normalizedPath}`, { ...init, signal: controller.signal });
         } catch (error) {
             lastError = error;
             console.warn(`[coreReachability] ${base}${normalizedPath} failed:`, error);
+            if (init.signal?.aborted) break;
+        } finally {
+            clearTimeout(timer);
+            init.signal?.removeEventListener('abort', onCallerAbort);
         }
     }
 

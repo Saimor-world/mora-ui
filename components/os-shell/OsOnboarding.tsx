@@ -6,11 +6,12 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { SCENES } from '@/lib/os-prototype/scene';
 import { SourceDock } from '@/features/settings/ui/SourceDock';
 import { finishOnboarding, isOnboardingDone, ONBOARDING_RESTART_EVENT, readLocalOrg, saveLocalOrg } from '@/lib/os-prototype/onboarding';
+import { setStoredPalette, usePalette, type Palette } from '@/lib/mora/palette';
 
 /**
  * V1.6 Ruhiges Onboarding (aus Legacy FirstRunTour/firstRunStore, überarbeitet):
  * vier kurze Schritte, jederzeit überspringbar, in Einstellungen wiederholbar.
- * 1 Look & Phase · 2 Firma/Abteilungen (nur lokal) · 3 Erste Station (V1.7 Andockstation) · 4 Tour Dock & Universe
+ * 1 Look & Farbwelt (Palette) · 2 Firma/Abteilungen (nur lokal) · 3 Erste Station (V1.7 Andockstation) · 4 Tour Dock & Universe
  */
 const STEPS = ['Darstellung', 'Deine Firma', 'Erste Station', 'Kurze Tour'] as const;
 
@@ -21,6 +22,8 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
   const [dept, setDept] = useState('');
   const look = useOsShellStore((s) => s.look);
   const override = useOsShellStore((s) => s.phaseOverride);
+  const currentPalette = usePalette();
+  const [chosenPalette, setChosenPalette] = useState<Palette>(currentPalette);
   const st = useOsShellStore.getState;
 
   useEffect(() => {
@@ -49,6 +52,11 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
   if (!open) return null;
   const addDept = () => { const d = dept.trim(); if (d && !org.departments.includes(d) && org.departments.length < 12) setOrg((o) => ({ ...o, departments: [...o.departments, d] })); setDept(''); };
 
+  const handlePalette = (pal: Palette) => {
+    setChosenPalette(pal);
+    setStoredPalette(pal);
+  };
+
   return (
     <div className="os-dialog-backdrop os-onboarding-backdrop">
       <div role="dialog" aria-modal="true" aria-labelledby="ob-title" className="os-dialog os-onboarding" data-testid="onboarding" data-step={step}>
@@ -64,14 +72,35 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
         <div className="os-onboarding__body mt-3">
           {step === 0 ? (
             <>
-              <Text variant="meta">Später jederzeit in Einstellungen › Darstellung änderbar.</Text>
+              <Text variant="meta">Farbwelt (Palette) und Stil wählen. Später in Einstellungen anpassbar.</Text>
+              
+              <div className="os-phase-row mt-3" role="group" aria-label="Farbwelt">
+                {([
+                  ['2', 'Polarlicht', 'Dunkel-Teal (Standard)'],
+                  ['1', 'Klare Nacht', 'Tiefes Schwarzblau'],
+                  ['0', 'Warmer Kosmos', 'Bernstein & Kupfer'],
+                ] as const).map(([pId, label, sub]) => (
+                  <button
+                    key={pId}
+                    type="button"
+                    aria-pressed={chosenPalette === pId}
+                    onClick={() => handlePalette(pId)}
+                    data-testid={`ob-palette-${pId}`}
+                  >
+                    <b>{label}</b>
+                    <span>{sub}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="os-look-grid mt-3">
-                {([['kosmos', 'Kosmos', 'Raum, Licht und Tagesphasen.'], ['klar', 'Klar', 'Ruhige Business-Ansicht, gleiche Funktionen.']] as const).map(([id, t, d]) => (
+                {([['kosmos', 'Kosmos', 'Raum, Licht und Glasplaneten.'], ['klar', 'Klar', 'Ruhige Business-Ansicht.']] as const).map(([id, t, d]) => (
                   <button key={id} type="button" className="os-look-card" aria-pressed={look === id} onClick={() => st().setLook(id)} data-testid={`ob-look-${id}`}>
                     <span className={`os-look-card__swatch os-look-card__swatch--${id}`} aria-hidden /><b>{t}</b><span>{d}</span>
                   </button>
                 ))}
               </div>
+
               <div className="os-phase-row mt-3" role="group" aria-label="Tagesphase">
                 <button type="button" aria-pressed={!override} onClick={() => st().setPhaseOverride(null)} data-testid="ob-phase-auto"><b>Automatisch</b><span>nach Uhrzeit</span></button>
                 {SCENES.map((s) => <button key={s.id} type="button" aria-pressed={override === s.id} onClick={() => st().setPhaseOverride(s.id)} data-testid={`ob-phase-${s.id}`}><b>{s.label}</b><span>{s.range}</span></button>)}
@@ -102,19 +131,22 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
           ) : null}
 
           {step === 3 ? (
-            <Stack gap={2} data-testid="ob-tour">
-              <Hint tone="insight"><b>Dock (unten):</b> alle Bereiche – Heute, Post, Finanzen, Wissen. Der Stein rechts öffnet MÔRA.</Hint>
-              <Hint><Orbit size={12} className="inline" aria-hidden /> <b>Universe:</b> deine Abteilungen als Kugeln. Klicke eine an, um Dokumente, Signale und den nächsten Schritt zu sehen.</Hint>
-              <Hint><Command size={12} className="inline" aria-hidden /> <b>⌘K</b> sucht überall, <b>?</b> zeigt alle Kürzel, <LayoutGrid size={12} className="inline" aria-hidden /> öffnet die klassische Oberfläche.</Hint>
+            <Stack gap={3}>
+              <Text variant="body">
+                Unten im Dock findest du alle Bereiche: <b>Home</b> für den heutigen Tag, <b>Universe</b> für deine Abteilungen und Ordner, und in der Mitte <b>MÔRA</b> als deine Begleiterin.
+              </Text>
+              <Hint>Mit <kbd className="os-kbd">⌘K</kbd> öffnest du jederzeit die Suche, mit <kbd className="os-kbd">M</kbd> sprichst du direkt mit MÔRA.</Hint>
             </Stack>
           ) : null}
         </div>
 
-        <Stack direction="row" justify="space-between" align="center" className="mt-6">
-          <Button size="sm" variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>Zurück</Button>
-          {step < STEPS.length - 1
-            ? <Button size="sm" onClick={() => { if (step === 1) saveLocalOrg(org); setStep((s) => s + 1); }} data-testid="onboarding-next">Weiter</Button>
-            : <Button size="sm" onClick={() => { close(); navigate('universe'); }} data-testid="onboarding-finish">Zum Universe</Button>}
+        <Stack direction="row" justify="space-between" align="center" className="mt-4 pt-3 border-t border-[var(--os-hairline)]">
+          <Button variant="ghost" size="sm" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))} data-testid="onboarding-prev">Zurück</Button>
+          {step < STEPS.length - 1 ? (
+            <Button size="sm" onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} data-testid="onboarding-next">Weiter</Button>
+          ) : (
+            <Button size="sm" onClick={close} data-testid="onboarding-finish">Fertig</Button>
+          )}
         </Stack>
       </div>
     </div>

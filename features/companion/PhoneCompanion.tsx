@@ -18,7 +18,7 @@ import { renderBold } from '@/features/mora/ui/MoraConsole';
  * Drei Teile, alles echte Daten: Eule (Lage + Chips), „Braucht dich“ (max. 4, Mail-Leser),
  * ruhige MÔRA-Eingabe an den bestehenden CORE-Chat. Kein Dock, keine Planeten.
  */
-export function PhoneCompanion() {
+export function PhoneCompanion({ onOpenUniverse }: { onOpenUniverse?: () => void } = {}) {
   const user = useSessionStore((s) => s.user);
   const live = Boolean(user?.tenant_id);
   const first = firstName(user) || '';
@@ -58,7 +58,8 @@ export function PhoneCompanion() {
 
       <CompanionAsk />
 
-      <p className="pc-desk" data-testid="pc-desktop-hint"><Monitor size={13} aria-hidden /> Universe, Post und alles Weitere: am Desktop öffnen.</p>
+      {onOpenUniverse ? <button type="button" className="pc-universe" onClick={onOpenUniverse} data-testid="pc-universe-link">Universe ansehen</button> : null}
+      <p className="pc-desk" data-testid="pc-desktop-hint"><Monitor size={13} aria-hidden /> Post und alles Weitere: am Desktop öffnen.</p>
     </div>
   );
 }

@@ -307,7 +307,7 @@ function usePixelStyle(): PStyle | null | undefined {
 const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) || 0);
 const mix = (a: number[], b: number[], t: number) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: number; tint: string; variant: PStyle; seed: number }) {
+export function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: number; tint: string; variant: PStyle; seed: number }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;

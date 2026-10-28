@@ -9,7 +9,7 @@
  *
  * Notes:
  * - In Docker, the Core API is reachable via service DNS: `http://core:8081`
- * - In local dev, `http://127.0.0.1:8081` is fine
+ * - In production/preview, fallback to SAIMOR_CORE_URL / NEXT_PUBLIC_CORE_API_URL / https://api.saimor.world
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,7 +20,21 @@ const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.
 function resolveBackendBase(slug: string): string {
   // Keep an escape hatch for a remote agent endpoint.
   if (slug.startsWith('v1/mora/agent/')) return REMOTE_AGENT_URL;
-  return CORE_BASE_URL;
+
+  const configured =
+    process.env.SAIMOR_CORE_URL ||
+    process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
+    CORE_BASE_URL ||
+    process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  if (process.env.NODE_ENV === 'production') {
+    if (!configured) {
+      throw new Error('SAIMOR_CORE_URL ist in Produktion nicht konfiguriert');
+    }
+    return configured;
+  }
+
+  return configured || 'https://api.saimor.world';
 }
 
 function buildBackendUrl(slug: string): string {
@@ -58,16 +72,37 @@ function copyRequestHeaders(req: NextRequest): Headers {
 
 function attachAuthFromCookie(req: NextRequest, headers: Headers): void {
   if (headers.get('authorization')) return;
-  const token = req.cookies.get('mora_auth_token')?.value || req.cookies.get('mora_session')?.value;
+  let token = req.cookies.get('mora_auth_token')?.value || req.cookies.get('mora_session')?.value;
+  if (token) {
+    try {
+      token = decodeURIComponent(token);
+    } catch {
+      // Keep raw token if decode fails
+    }
+  }
   if (!isForwardableCoreToken(token)) return;
   headers.set('authorization', `Bearer ${token}`);
+  // Strip external cookie header when auth bearer token is attached
+  headers.delete('cookie');
 }
 
 async function proxy(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
   const params = await context.params;
   const slug = params.slug.join('/');
 
-  const backendUrl = buildBackendUrl(slug);
+  let backendUrl: string;
+  try {
+    backendUrl = buildBackendUrl(slug);
+  } catch (err: any) {
+    console.error(`[core proxy configuration error]: ${err?.message || err}`);
+    return NextResponse.json(
+      {
+        error: 'core_configuration_error',
+        message: err?.message || 'Server-Konfigurationsfehler: SAIMOR_CORE_URL fehlt in Produktion',
+      },
+      { status: 500 }
+    );
+  }
   const url = new URL(request.url);
   const qs = url.searchParams.toString();
   const finalUrl = qs ? `${backendUrl}?${qs}` : backendUrl;
@@ -79,22 +114,34 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
   const hasBody = method !== 'GET' && method !== 'HEAD';
   const body = hasBody ? await request.arrayBuffer() : undefined;
 
-  const upstream = await fetch(finalUrl, {
-    method,
-    headers,
-    body: body ? body : undefined,
-    redirect: 'manual',
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(finalUrl, {
+      method,
+      headers,
+      body: body ? body : undefined,
+      redirect: 'manual',
+    });
+  } catch (error: any) {
+    console.error(`[core proxy error] ${method} ${finalUrl}:`, error?.message || error);
+    return NextResponse.json(
+      {
+        error: 'core_upstream_unreachable',
+        message: error?.message || 'Verbindung zu CORE fehlgeschlagen',
+      },
+      { status: 502 }
+    );
+  }
+
+  if (!upstream.ok && upstream.status >= 400) {
+    console.warn(`[core proxy upstream ${upstream.status}] ${method} ${finalUrl}`);
+  }
 
   // Stream response back to the browser.
   const responseHeaders = new Headers(upstream.headers);
-  // Avoid caching surprises for auth'd JSON.
   responseHeaders.set('cache-control', 'no-store');
-  // Node.js fetch (undici) auto-decompresses gzip/br responses — the body we stream
-  // is already decoded. Forwarding content-encoding would cause the browser to try
-  // to decompress again, silently producing "Failed to fetch" for larger responses.
   responseHeaders.delete('content-encoding');
-  responseHeaders.delete('content-length'); // length is no longer valid after decompression
+  responseHeaders.delete('content-length');
 
   return new NextResponse(upstream.body, {
     status: upstream.status,

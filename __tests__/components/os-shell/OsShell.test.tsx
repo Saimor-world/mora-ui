@@ -10,6 +10,7 @@ jest.mock('@/lib/os-prototype/useCoreHealth', () => ({
 jest.mock('@/lib/api/moraAgentClient', () => ({ moraAgentClient: { chat: jest.fn() } }));
 jest.mock('@/lib/api/searchClient', () => ({ searchGlobal: jest.fn() }));
 
+jest.mock('@/features/home/index', () => ({ __esModule: true, default: () => require('react').createElement('div', { 'data-testid': 'feature-home' }, 'home') }));
 jest.mock('@/features/today/index', () => ({ __esModule: true, default: () => require('react').createElement('div', { 'data-testid': 'feature-today' }, 'today') }));
 jest.mock('@/features/mora/index', () => ({ __esModule: true, default: () => require('react').createElement('div', { 'data-testid': 'feature-mora' }, 'mora') }));
 jest.mock('@/features/finance/index', () => ({ __esModule: true, default: () => require('react').createElement('div', { 'data-testid': 'feature-finance' }, 'finance') }));
@@ -29,9 +30,10 @@ function renderShell(preview = false) {
 
 describe('OsShell navigation', () => {
   beforeEach(() => {
+    localStorage.setItem('mora.onboarding.done', '1');
     window.history.replaceState(null, '', '/os');
     (openLegacyApp as jest.Mock).mockClear();
-    useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
+    useOsShellStore.setState({ activeFeatureId: 'home', moraOpen: false, paletteOpen: false });
     // SAIMÔR's own organization: sees Finance, Labs and the classic surface. Customers: own test below.
     useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
   });
@@ -39,10 +41,10 @@ describe('OsShell navigation', () => {
   it('renders the six primary surfaces and Labs from manifests', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    for (const label of ['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
+    for (const label of ['Home', 'Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
       expect(within(nav).getByRole('button', { name: label })).toBeInTheDocument();
     }
-    expect(await screen.findByTestId('feature-today')).toBeInTheDocument();
+    expect(await screen.findByTestId('feature-home')).toBeInTheDocument();
     expect(screen.getByTestId('legacy-shell-link')).toHaveAttribute('href', '/home?classic=1');
   });
 

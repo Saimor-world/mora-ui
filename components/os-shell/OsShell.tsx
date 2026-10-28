@@ -6,6 +6,7 @@ import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { MoraMark } from '@/components/world/MoraSpirit';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { PhoneCompanion } from '@/features/companion/PhoneCompanion';
+import { readFirma } from '@/features/home/data/useDemoViewer';
 import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
@@ -53,6 +54,9 @@ const ROLE_WORD: Record<string, string> = { owner: 'Volle Rechte', admin: 'Verwa
 
 export function OsShell({ preview }: { preview: boolean }) {
   const phone = useIsPhone();
+  // Handy: Der Begleiter bleibt Einstieg. Nur über den ruhigen Knopf „Universe ansehen“ (oder ?ansicht=universe) öffnet sich das Universe.
+  const [phoneUniverse, setPhoneUniverse] = useState(false);
+  useEffect(() => { setPhoneUniverse(new URLSearchParams(window.location.search).get('ansicht') === 'universe'); }, []);
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
   // Sitzung = Tenant aus CORE, nicht der Name: ohne hinterlegten Namen ist der Name leer (neutral begrüßen).
@@ -154,8 +158,17 @@ export function OsShell({ preview }: { preview: boolean }) {
     if (active.id !== 'mora' && typeof window !== 'undefined' && window.innerWidth < 900) setMoreOpen(false);
   };
 
-  // Phone: nur der Begleiter (Eule, Braucht dich, MÔRA), nicht das ganze OS.
-  if (phone) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion /></>;
+  // EINE Oberfläche: Morgenrot und Firmen-User laufen in derselben OsShell mit OsDock.
+  const demoFirma = typeof window !== 'undefined' ? readFirma(window.location.search) : null;
+  if (phone && !phoneUniverse && active.id !== 'home' && !demoFirma) {
+    return (
+      <>
+        {!preview ? <OsSessionBoot /> : null}
+        <PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} />
+      </>
+    );
+  }
+
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
@@ -175,7 +188,7 @@ export function OsShell({ preview }: { preview: boolean }) {
             <Stack direction="row" gap={1} align="center">
               <DemoSwitch />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
-                <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
+                <span className="hidden lg:inline">Suchen</span> <span className="os-kbd hidden lg:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
               <StatusMenu org={org} userName={userName} role={role ? ROLE_WORD[role] ?? null : null} internal={internalUser} coreOk={health.isLoading || online}
