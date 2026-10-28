@@ -79,6 +79,8 @@ for (const size of sizes) test(`${size.name}: Home, Universe, Planet und Ordner`
     await expect(page.getByTestId('head-sheet')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Demo-Freigabe vormerken' })).toBeVisible();
     await shot('08-head-admin');
+    await page.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }).click();
+    await expect(page.getByTestId('head-demo-research').locator('li')).toHaveCount(3);
     await page.getByText('Code-Vorschlag · Beispiel').scrollIntoViewIfNeeded();
     await shot('08b-code-admin');
     await page.getByTestId('head-sheet').getByRole('button', { name: 'Schließen' }).click();

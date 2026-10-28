@@ -16,6 +16,7 @@ it('lets the responsible manager decide, but blocks members and other department
 it('only permits the admin hierarchy to mark the simulated code proposal', () => {
   expect(canDecideHead('marius', 'service', 'code-draft')).toBe(true);
   expect(canDecideHead('lena', 'service', 'code-draft')).toBe(false);
+  expect(act(initialDay(), { type: 'head', record: { departmentId: 'service', itemId: 'code-example', actorId: 'lena', choice: 'code-draft', at: '2026-10-28T06:00:00Z' } }).headRecords).toEqual([]);
   render(<HeadSheet planet={service} viewer="lena" day={initialDay()} dispatch={jest.fn()} onClose={jest.fn()} />);
   expect(screen.queryByRole('button', { name: 'Demo-Freigabe vormerken' })).not.toBeInTheDocument();
   expect(screen.getByText('Administrator fragen')).toBeInTheDocument();
@@ -30,4 +31,12 @@ it('records a demo rejection and removes the suggestion', () => {
   expect(screen.queryByTestId('head-suggestion')).not.toBeInTheDocument();
   expect(screen.getByText(/abgelehnt · Demo/)).toBeInTheDocument();
   expect(day.headRecords?.[0].actorId).toBe('lena');
+});
+
+it('shows explicitly fictional research examples without implying real research', () => {
+  render(<HeadSheet planet={service} viewer="tarek" day={initialDay()} dispatch={jest.fn()} onClose={jest.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }));
+  expect(screen.getByTestId('head-demo-research').children).toHaveLength(3);
+  expect(screen.getByText(/keine echte Recherche statt/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Fiktive Vorher-nachher-Vorschau')).toBeInTheDocument();
 });

@@ -202,3 +202,5 @@
 .ck-head-open{position:absolute;z-index:5;right:30px;top:58px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:rgba(8,16,20,.66);color:#dce7e3;cursor:pointer}
 .head-diff{white-space:pre-wrap;font-size:12px;line-height:1.5;color:#a5b8be}
 @media(max-width:820px){.ck-head-open{right:18px;top:59px;font-size:12px}}
+
+.head-results{padding-left:18px;font-size:13px;line-height:1.55;color:#d3dfdb}.head-preview{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.head-preview div{padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)}.head-preview small{color:var(--mute)}.head-preview p{font-size:12px;margin:6px 0 0}
