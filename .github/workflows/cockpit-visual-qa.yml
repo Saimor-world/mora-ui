@@ -1,0 +1,52 @@
+name: Cockpit before-after QA
+on:
+  push:
+    branches: [feat/cockpit-visual-refinement]
+  pull_request:
+    paths: [features/home/**, e2e/cockpit/**, playwright.cockpit.config.ts, .github/workflows/cockpit-visual-qa.yml]
+permissions:
+  contents: read
+concurrency:
+  group: cockpit-qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_OS_PROTOTYPE: '1'
+      NEXT_PUBLIC_OS_PREVIEW: local
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build immutable baseline 2961248
+        run: |
+          git worktree add --detach /tmp/cockpit-baseline 296124808d7749d6f46caa0c1e4b121d8866a5d0
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/cockpit-baseline/node_modules
+          cd /tmp/cockpit-baseline
+          npm run build
+      - name: Capture baseline
+        run: npx playwright test --config=playwright.cockpit.config.ts
+        env:
+          COCKPIT_APP_DIR: /tmp/cockpit-baseline
+          COCKPIT_REVISION: before
+      - name: Build candidate
+        run: npm run build
+      - name: Verify and capture candidate
+        run: npx playwright test --config=playwright.cockpit.config.ts
+        env:
+          COCKPIT_REVISION: after
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cockpit-before-after-${{ github.sha }}
+          path: test-results/cockpit
+          retention-days: 14
