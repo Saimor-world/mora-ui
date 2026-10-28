@@ -6,6 +6,16 @@ export type Palette = '0' | '1' | '2';
 export const DEFAULT_PALETTE: Palette = '2';
 const KEY = 'mora.palette';
 const ok = (v: string | null): v is Palette => v === '0' || v === '1' || v === '2';
+
+export function setStoredPalette(p: Palette): void {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(KEY, p);
+      document.documentElement.dataset.palette = p;
+    }
+  } catch {}
+}
+
 export function usePalette(): Palette {
   const [v, setV] = useState<Palette>(DEFAULT_PALETTE);
   useEffect(() => {

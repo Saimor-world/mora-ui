@@ -914,7 +914,7 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 .os-atmo { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.55) saturate(.75) sepia(.12) contrast(1.02); }
 body:has(.wd-universe) .os-atmo { filter: brightness(.8) saturate(.62) sepia(.08) contrast(1.04); }
 .os-atmo > * { display: none !important; }
-.os-root, .os-shell, .os-atmo__plate, .os-root[data-look='kosmos'] .os-shell__content, .os-shell__content { background: transparent !important; }
+.os-root, .os-shell, .os-atmo__plate { background: transparent !important; }
 .os-shell__topbar { background: transparent !important; box-shadow: none !important; }
 .os-shell__main { scrollbar-width: thin; scrollbar-color: rgba(247, 233, 203, .18) transparent; }
 /* Ruhige, zentrierte Seiten */
@@ -1711,6 +1711,7 @@ html[data-palette='1'] body, html[data-palette='2'] body {
 /* Raum: Foto wird über „color“-Blend in die Palette umgefärbt (Helligkeit/Sterne bleiben), Nebel als klarer Verlauf darüber. */
 html[data-palette='1'] body .os-atmo, html[data-palette='2'] body .os-atmo,
 html[data-palette='1'] .fv, html[data-palette='2'] .fv,
+html[data-palette='1'] .ck-space, html[data-palette='2'] .ck-space,
 html[data-palette='1'] .wd-interior, html[data-palette='2'] .wd-interior {
   background:
     radial-gradient(ellipse 55% 45% at 16% 10%, var(--pal-neb-a), transparent 70%),
@@ -1719,7 +1720,8 @@ html[data-palette='1'] .wd-interior, html[data-palette='2'] .wd-interior {
     url('/universe/deep-space-warm.jpg') center / cover no-repeat var(--pal-sky-tint) !important;
   background-blend-mode: screen, screen, color, normal !important;
 }
-html[data-palette='1'] body .os-atmo, html[data-palette='2'] body .os-atmo { filter: var(--pal-sky-filter-calm) !important; }
+html[data-palette='1'] body .os-atmo, html[data-palette='2'] body .os-atmo,
+html[data-palette='1'] .ck-space, html[data-palette='2'] .ck-space { filter: var(--pal-sky-filter-calm) !important; }
 html[data-palette='1'] body:has(.wd-universe) .os-atmo, html[data-palette='2'] body:has(.wd-universe) .os-atmo,
 html[data-palette='1'] .fv, html[data-palette='2'] .fv { filter: var(--pal-sky-filter) !important; }
 html[data-palette='1'] .fv::before, html[data-palette='2'] .fv::before { background: var(--pal-veil) !important; }

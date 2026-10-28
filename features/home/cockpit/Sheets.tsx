@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
-import { MORGENROT_EVENTS, MORGENROT_STRUCTURE, orderTotal, type DemoMoon } from '@/lib/demo/morgenrot/structure';
+import { MORGENROT_EVENTS, MORGENROT_STRUCTURE, orderTotal, type DemoMoon, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import type { DemoAction, DemoDay } from '../data/demoDay';
 
 const reviewFiles = MORGENROT_STRUCTURE.flatMap((p) => p.moons).flatMap((m) => m.files).filter((f) => MORGENROT_EVENTS.reviews.fileIds.includes(f.id));
@@ -78,6 +78,85 @@ export function FolderSheet({ moon, planetTitle, onClose }: { moon: DemoMoon; pl
           <button key={f.id} type="button" className="ck-file" onClick={() => setOpen(f.id)} data-testid={`file-${f.id}`}><b>{f.name}</b><span>{f.meta}</span></button>
         ))}</div>
       )}
+    </Shell>
+  );
+}
+
+export function DepartmentSheet({
+  planet,
+  tasks,
+  onOpenMoon,
+  onNewFolder,
+  onClose,
+}: {
+  planet: DemoPlanet;
+  tasks?: { id: string; title: string; due?: string | null }[];
+  onOpenMoon: (moonId: string) => void;
+  onNewFolder?: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Shell
+      title={planet.title}
+      sub={`${planet.moons.length} ${planet.moons.length === 1 ? 'Ordner' : 'Ordner'}${tasks?.length ? ` · ${tasks.length} Aufgaben` : ''}`}
+      onClose={onClose}
+    >
+      <div className="ck-dept-sheet">
+        <section className="ck-dept-sec">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Ordner</h3>
+            {onNewFolder ? (
+              <button
+                type="button"
+                className="ck-btn ck-btn--p"
+                style={{ fontSize: 12, padding: '6px 12px' }}
+                onClick={onNewFolder}
+              >
+                + Ordner anlegen
+              </button>
+            ) : null}
+          </div>
+          {planet.moons.length > 0 ? (
+            <div className="ck-files">
+              {planet.moons.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="ck-file"
+                  onClick={() => onOpenMoon(m.id)}
+                  data-testid={`dept-moon-${m.id}`}
+                >
+                  <b>{m.title}</b>
+                  <span>{m.files.length} {m.files.length === 1 ? 'Eintrag' : 'Einträge'}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="ck-empty-note" style={{ padding: '16px 0', color: 'var(--mute)' }}>
+              <p style={{ margin: '0 0 10px' }}>Noch keine Ordner in dieser Abteilung.</p>
+              {onNewFolder ? (
+                <button type="button" className="ck-btn ck-btn--p" onClick={onNewFolder}>
+                  + Ordner anlegen
+                </button>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        {tasks && tasks.length > 0 ? (
+          <section className="ck-dept-sec" style={{ marginTop: 20 }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 600 }}>Aufgaben ({tasks.length})</h3>
+            <div className="ck-files">
+              {tasks.map((t) => (
+                <div key={t.id} className="ck-file" style={{ cursor: 'default' }}>
+                  <b>{t.title}</b>
+                  {t.due ? <span>{t.due}</span> : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
     </Shell>
   );
 }

@@ -7,7 +7,6 @@ import { MoraMark } from '@/components/world/MoraSpirit';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { PhoneCompanion } from '@/features/companion/PhoneCompanion';
 import { readFirma } from '@/features/home/data/useDemoViewer';
-import HomeSurface from '@/features/home';
 import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
@@ -159,12 +158,17 @@ export function OsShell({ preview }: { preview: boolean }) {
     if (active.id !== 'mora' && typeof window !== 'undefined' && window.innerWidth < 900) setMoreOpen(false);
   };
 
-  // Phone: nur der Begleiter (Eule, Braucht dich, MÔRA), nicht das ganze OS.
-  // Demo-Firma Café Morgenrot (fiktiv): eigene Brücke im Vollbild. Sie zeigt nur, was CORE der Sitzung
-  // erlaubt (sonst Anmeldung bzw. kein Zugriff); das Beispiel aus dem Seed nur, wenn CORE nicht erreichbar ist.
+  // EINE Oberfläche: Morgenrot und Firmen-User laufen in derselben OsShell mit OsDock.
   const demoFirma = typeof window !== 'undefined' ? readFirma(window.location.search) : null;
-  if (demoFirma) return <HomeSurface navigate={navigate} preview={preview} />;
-  if (phone && !phoneUniverse && active.id !== 'home') return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
+  if (phone && !phoneUniverse && active.id !== 'home' && !demoFirma) {
+    return (
+      <>
+        {!preview ? <OsSessionBoot /> : null}
+        <PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} />
+      </>
+    );
+  }
+
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
@@ -211,7 +215,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           </Panel>
         ) : null}
 
-        {active.id !== 'home' ? <OsDock
+        <OsDock
           showLegacy={internal || preview}
           items={dockItems}
           mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
@@ -225,7 +229,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           onNotifications={() => setTrayOpen((v) => !v)}
           onMora={() => setMoraOpen(!moraOpen)}
           onMore={() => setMoreOpen((v) => !v)}
-        /> : null}
+        />
 
         {moreOpen ? (
           <div className="os-dialog-backdrop" style={{ alignItems: 'flex-end', padding: 0 }} onMouseDown={(e) => e.target === e.currentTarget && setMoreOpen(false)}>

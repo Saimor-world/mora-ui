@@ -92,13 +92,32 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
   const mood = useHubMood();
   const variant = useDockVariant();
   usePalette();
-  // Auf Home bleibt MÔRA klein (Pixel-Präsenz im Inhalt), kein großes Maskottchen über der Arbeitsfläche.
-  const big = variant !== 'strip' && activeId !== 'home';
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;
   const reduced = useReducedMotion();
   const [phoneW, setPhoneW] = React.useState(false);
-  React.useEffect(() => { if (typeof window.matchMedia !== 'function') return undefined; const q = window.matchMedia('(max-width: 899px)'); const f = () => setPhoneW(q.matches); f(); q.addEventListener('change', f); return () => q.removeEventListener('change', f); }, []);
+  const [tabletW, setTabletW] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const qPhone = window.matchMedia('(max-width: 899px)');
+    const qTablet = window.matchMedia('(min-width: 900px) and (max-width: 1100px)');
+    const f = () => {
+      setPhoneW(qPhone.matches);
+      setTabletW(qTablet.matches);
+    };
+    f();
+    qPhone.addEventListener('change', f);
+    qTablet.addEventListener('change', f);
+    return () => {
+      qPhone.removeEventListener('change', f);
+      qTablet.removeEventListener('change', f);
+    };
+  }, []);
+
+  // Pixel-Art Skalierung: Desktop 76px, iPad 68px, Handy 56px
+  const moraSize = phoneW ? 56 : tabletW ? 68 : 76;
+
   const onMobile = new Set(mobileItems.map((m) => m.id));
   const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
@@ -117,14 +136,19 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
           {variant === 'c' && !phoneW ? <Instruments side="l" led={led} /> : null}
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
-          <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}><CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={big ? undefined : unread} onClick={onNotifications} /></span>
-          {big ? <span className="os-dock__mod" data-led={activeId === 'settings' ? 'on' : undefined}><CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} /></span> : null}
+          <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}><CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={unread} onClick={onNotifications} /></span>
+          <span className="os-dock__mod" data-led={activeId === 'settings' ? 'on' : undefined}><CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} /></span>
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
           {variant === 'c' && !phoneW ? <><Instruments side="map" /><Instruments side="last" /></> : null}
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood}>
-            {big ? <span className="os-dock__cone" aria-hidden /> : null}
-            {PIXEL ? <span data-testid="mora-mark" className="os-dock__px"><PixelMora size={big ? (phoneW ? 96 : 160) : 48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} /></span> : <MoraMark size={40} active={moraOpen} />}
+            {PIXEL ? (
+              <span data-testid="mora-mark" className="os-dock__px" style={{ imageRendering: 'pixelated' }}>
+                <PixelMora size={moraSize} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
+              </span>
+            ) : (
+              <MoraMark size={40} active={moraOpen} />
+            )}
           </button>
           <div id={DOCK_ASK_SLOT} className="os-dock__ask">
             <button type="button" className="os-dock__askbtn" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button>

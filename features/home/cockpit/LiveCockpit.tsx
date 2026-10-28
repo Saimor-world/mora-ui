@@ -2,19 +2,17 @@
 import '../cockpit.css';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
-import { BridgeConsole } from './BridgeConsole';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
-import { FolderSheet } from './Sheets';
+import { DepartmentSheet, FolderSheet } from './Sheets';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { widgetsFromToday } from '../widgets/adapters';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { firstName } from '@/lib/auth/displayName';
 import type { FeatureSurfaceProps } from '../../types';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
-import { coreTreeToPlanets, deriveLiveAttention, type LiveAttentionItem } from './coreAdapter';
+import { coreTreeToPlanets, deriveLiveAttention } from './coreAdapter';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 
 function usePhone() {
@@ -46,7 +44,7 @@ export function LiveCockpit({
   departments: propDepartments,
   snapshot: propSnapshot,
   viewerName: propViewerName,
-  isDemo = true,
+  isDemo = false,
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
@@ -56,8 +54,23 @@ export function LiveCockpit({
   const [view, setView] = useState<'home' | 'universe'>(initialView);
   const [planetId, setPlanetId] = useState<string | null>(null);
   const [moonId, setMoonId] = useState<string | null>(null);
-  const [q, setQ] = useState('');
+  const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [planetStyle, setPlanetStyle] = useState<'glas' | 'pixel'>('glas');
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('mora.planet_style');
+      if (s === 'pixel' || s === 'glas') setPlanetStyle(s);
+    } catch {}
+  }, []);
+
+  const toggleStyle = (st: 'glas' | 'pixel') => {
+    setPlanetStyle(st);
+    try {
+      localStorage.setItem('mora.planet_style', st);
+    } catch {}
+  };
 
   useEffect(() => {
     setView(initialView);
@@ -82,13 +95,22 @@ export function LiveCockpit({
   }, []);
 
   // Compute company name: never "Personal Demo"
-  const companyName = propCompanyName || (user as { active_company_name?: string | null } | null)?.active_company_name || 'Café Morgenrot (FIKTIV)';
+  const companyName =
+    propCompanyName ||
+    (user as { active_company_name?: string | null } | null)?.active_company_name ||
+    'Dein Unternehmen';
 
   // Compute user first name for honest personalized greeting
   let first = propViewerName?.split(/\s+/)[0] || firstName(user);
   const userRole = (user?.role || '').toLowerCase();
   const userEmail = (user?.email || '').toLowerCase();
-  if (!first || first.toLowerCase() === 'inhaber' || first.toLowerCase() === 'owner' || userRole === 'owner' || userEmail.startsWith('inhaber@')) {
+  if (
+    !first ||
+    first.toLowerCase() === 'inhaber' ||
+    first.toLowerCase() === 'owner' ||
+    userRole === 'owner' ||
+    userEmail.startsWith('inhaber@')
+  ) {
     if (companyName.includes('Morgenrot')) {
       first = 'Marius';
     }
@@ -98,11 +120,11 @@ export function LiveCockpit({
   const hello = h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
   const greeting = `${hello}${first ? `, ${first}` : ''}.`;
 
-  // Planets from live departments
-  const rawDepts = propDepartments || [
-    { id: 'kueche', name: 'Küche' },
-    { id: 'service', name: 'Service' },
-  ];
+  // Real company departments: from props (e.g. Morgenrot) or empty list
+  const rawDepts = useMemo(() => {
+    return propDepartments && propDepartments.length > 0 ? propDepartments : [];
+  }, [propDepartments]);
+
   const planets: DemoPlanet[] = useMemo(() => coreTreeToPlanets(rawDepts), [rawDepts]);
 
   const { attention, items } = useMemo(
@@ -111,17 +133,10 @@ export function LiveCockpit({
   );
 
   const planet = planets.find((p) => p.id === planetId) ?? null;
-  const moon = planet?.moons.find((m) => m.id === moonId) ?? null;
+  const moon = planet?.moons?.find((m) => m.id === moonId) ?? null;
 
   const showHome = view === 'home';
   const sceneMode = planet && view === 'universe' ? 'planet' : 'system';
-
-  const ask = () => {
-    if (!q.trim()) return;
-    useOsShellStore.getState().setMoraDraft(q);
-    setQ('');
-    navigate('mora');
-  };
 
   const subline = liveLoading
     ? 'Quellen werden geladen …'
@@ -130,6 +145,31 @@ export function LiveCockpit({
     : items.length
     ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.`
     : 'Keine offenen Hinweise aus den verfügbaren Quellen.';
+
+  const handleWidgetOpen = (widgetId: string) => {
+    if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
+      navigate('tasks');
+    } else if (widgetId === 'calendar') {
+      navigate('calendar');
+    } else if (widgetId === 'mail') {
+      navigate('mora');
+    } else {
+      setView('universe');
+    }
+  };
+
+  // Filter tasks for the selected planet if available
+  const planetTasks = useMemo(() => {
+    if (!planet || !snapshot?.tasks?.due_today) return [];
+    const pTitle = planet.title.toLowerCase();
+    const pId = planet.id.toLowerCase();
+    return snapshot.tasks.due_today
+      .filter((t) => {
+        const text = `${t.title} ${t.id}`.toLowerCase();
+        return text.includes(pTitle) || text.includes(pId);
+      })
+      .map((t) => ({ id: t.id, title: t.title, due: t.due_date }));
+  }, [planet, snapshot]);
 
   return (
     <div
@@ -148,8 +188,13 @@ export function LiveCockpit({
           <OpenPlanet
             planet={planet}
             showMoons={!showHome}
-            onMoon={(id) => setMoonId(id)}
+            onMoon={(id) => {
+              setMoonId(id);
+              setDeptSheetOpen(false);
+            }}
             activeMoon={moonId}
+            onOpenDept={() => setDeptSheetOpen(true)}
+            style={planetStyle}
           />
         ) : !(phone && showHome) ? (
           <PlanetSystem
@@ -157,10 +202,12 @@ export function LiveCockpit({
             attention={attention}
             company={companyName}
             compact={showHome}
+            style={planetStyle}
             onOpen={(id) => {
               setView('universe');
               setPlanetId(id);
               setMoonId(null);
+              setDeptSheetOpen(false);
             }}
           />
         ) : null}
@@ -174,6 +221,24 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
+          <div className="ck-style-switch" role="group" aria-label="Darstellung">
+            <button
+              type="button"
+              className={`ck-style-btn${planetStyle === 'glas' ? ' is-active' : ''}`}
+              onClick={() => toggleStyle('glas')}
+              data-testid="switch-glas"
+            >
+              Glas
+            </button>
+            <button
+              type="button"
+              className={`ck-style-btn${planetStyle === 'pixel' ? ' is-active' : ''}`}
+              onClick={() => toggleStyle('pixel')}
+              data-testid="switch-pixel"
+            >
+              Pixel
+            </button>
+          </div>
           <span className="ck-time">Mi, 28. Okt · 07:00</span>
           <span>aus CORE</span>
           {isDemo ? (
@@ -195,6 +260,7 @@ export function LiveCockpit({
           onClick={() => {
             setPlanetId(null);
             setMoonId(null);
+            setDeptSheetOpen(false);
           }}
           data-testid="ck-back"
         >
@@ -212,6 +278,7 @@ export function LiveCockpit({
               titleClass="ck-h1"
               sublineClass="ck-sub"
               widgets={widgetsFromToday(snapshot)}
+              onOpenWidget={handleWidgetOpen}
             >
               {phone ? (
                 <div className="ck-home-strip">
@@ -221,10 +288,12 @@ export function LiveCockpit({
                     company={companyName}
                     compact
                     strip
+                    style={planetStyle}
                     onOpen={(id) => {
                       setView('universe');
                       setPlanetId(id);
                       setMoonId(null);
+                      setDeptSheetOpen(false);
                     }}
                   />
                 </div>
@@ -269,6 +338,7 @@ export function LiveCockpit({
                         setView('universe');
                         setPlanetId(d.id);
                         setMoonId(null);
+                        setDeptSheetOpen(false);
                       }}
                       style={{ cursor: 'pointer' }}
                     >
@@ -285,7 +355,7 @@ export function LiveCockpit({
       ) : null}
 
       {/* Moon Folder Sheet */}
-      {moon && planet && !showHome ? (
+      {moon && planet && !showHome && !deptSheetOpen ? (
         <FolderSheet
           key={moon.id}
           moon={moon}
@@ -294,38 +364,25 @@ export function LiveCockpit({
         />
       ) : null}
 
+      {/* Department Sheet on Planet click */}
+      {deptSheetOpen && planet && !showHome ? (
+        <DepartmentSheet
+          planet={planet}
+          tasks={planetTasks}
+          onOpenMoon={(id) => {
+            setMoonId(id);
+            setDeptSheetOpen(false);
+          }}
+          onNewFolder={() => setToast('Ordner-Erstellung vorbereitet')}
+          onClose={() => setDeptSheetOpen(false)}
+        />
+      ) : null}
+
       {toast ? (
         <div className="ck-toast" role="status">
           <Check size={14} /> {toast}
         </div>
       ) : null}
-
-      {/* Single MÔRA seated in console center dock */}
-      <BridgeConsole
-        home={showHome}
-        onHome={() => setView('home')}
-        onCompany={() => {
-          setView('universe');
-          setPlanetId(null);
-          setMoonId(null);
-        }}
-        companyLabel={planets.length > 1 ? 'Firma' : planets[0]?.title ?? 'Bereich'}
-        value={q}
-        onChange={setQ}
-        onSubmit={ask}
-        onMic={() => navigate('mora')}
-        micLabel="MÔRA öffnen"
-        needs={items.length}
-        onNeeds={() => setView('home')}
-        guidance={
-          items[0]
-            ? {
-                text: items[0].title,
-                onOpen: () => items[0].onAction?.(),
-              }
-            : undefined
-        }
-      />
     </div>
   );
 }

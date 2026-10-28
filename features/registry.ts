@@ -30,7 +30,8 @@ export const DEFAULT_FEATURE_ID = 'home';
 export function isFeatureVisible(manifest: FeatureManifest, ctx: FeatureVisibilityContext): boolean {
   if (manifest.flag && !ctx.flags.has(manifest.flag)) return false;
   if (!ctx.preview && manifest.permissions && (!ctx.role || !manifest.permissions.includes(ctx.role))) return false;
-  if (!ctx.preview && manifest.internalOnly && ctx.internal !== true) return false;
+  // Internal-only features (Finance, Labs) are never shown to customer users
+  if (manifest.internalOnly && ctx.internal !== true) return false;
   return true;
 }
 
