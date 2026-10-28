@@ -25,7 +25,7 @@ export function HeadSheet({ planet, viewer, day, dispatch, onClose }: { planet: 
   const admin = canDecideHead(viewer, planet.id, 'code-draft');
   const team = MORGENROT_SEED.people.filter(p => planet.jobRoles.includes(p.jobRole));
   const choose = (itemId: string, choice: HeadChoice) => dispatch({ type: 'head', record: { departmentId: planet.id, itemId, actorId: viewer, choice, at: new Date().toISOString() } });
-  return <div className="ck-sheet" role="dialog" aria-label={`Abteilung ${planet.title}`} data-testid="head-sheet">
+  return <div className="ck-sheet ck-head-sheet" role="dialog" aria-label={`Abteilung ${planet.title}`} data-testid="head-sheet">
     <div className="ck-sheet__head"><div><h2>{planet.title}</h2><p>Head-MÔRA · Fiktive Demo</p></div><button type="button" className="ck-icon" onClick={onClose} aria-label="Schließen"><X size={18} /></button></div>
     <div className="ck-sheet__body">
       <div className="ck-card"><div className="ck-card__t">Team &amp; Ordner</div><p className="ck-card__p">{team.map(p => p.name.split(' ')[0]).join(', ') || 'Keine Teamzuordnung'} · {planet.moons.length} Ordner</p></div>
