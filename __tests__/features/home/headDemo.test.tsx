@@ -39,4 +39,8 @@ it('shows explicitly fictional research examples without implying real research'
   expect(screen.getByTestId('head-demo-research').children).toHaveLength(3);
   expect(screen.getByText(/keine echte Recherche statt/)).toBeInTheDocument();
   expect(screen.getByLabelText('Fiktive Vorher-nachher-Vorschau')).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Demo-Auftrag'), { target: { value: 'Andere Aufgabe' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Demo-Ergebnisse anzeigen' }));
+  expect(screen.queryByTestId('head-demo-research')).not.toBeInTheDocument();
+  expect(screen.getByText(/kein Demo-Beispiel vorbereitet/)).toBeInTheDocument();
 });
