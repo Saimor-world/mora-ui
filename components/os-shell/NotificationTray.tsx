@@ -45,7 +45,7 @@ export function NotificationTray({ onClose }: { onClose: () => void }) {
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown); };
   }, [onClose]);
   return (
-    <div ref={ref} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))]" data-testid="notification-tray">
+    <div ref={ref} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))] max-h-[calc(100vh-80px)] overflow-y-auto shadow-2xl" data-testid="notification-tray">
     <Surface variant="strong" padding={4} aria-label="Hinweise" style={{ background: 'var(--os-canvas-raised)' }}>
       <Stack direction="row" justify="space-between" align="center">
         <Text variant="eyebrow">Hinweise</Text>

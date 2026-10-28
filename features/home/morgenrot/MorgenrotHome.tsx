@@ -3,12 +3,10 @@ import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
 import { loadMorgenrot, MORGENROT, type MorgenrotState } from '@/lib/demo/morgenrot/online';
 import type { FeatureSurfaceProps } from '../../types';
-import { deriveAttention } from '../../today/data/attention';
 import { readDemoViewer } from '../data/useDemoViewer';
 import { Cockpit } from '../cockpit/Cockpit';
 import { CockpitWindow } from '../cockpit/Window';
-import { HomeOverview } from '../widgets/HomeOverview';
-import { widgetsFromToday } from '../widgets/adapters';
+import { LiveCockpit } from '../cockpit/LiveCockpit';
 
 const COMPANY = 'Café Morgenrot (FIKTIV)';
 
@@ -23,39 +21,17 @@ function Shell({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /** Signed in as a Morgenrot user: Today and the real departments, both from CORE. */
-function Online({ state, navigate }: { state: Extract<MorgenrotState, { kind: 'online' }>; navigate: FeatureSurfaceProps['navigate'] }) {
-  const { snapshot, departments, viewer } = state;
-  const items = useMemo(() => deriveAttention(snapshot).slice(0, 3), [snapshot]);
-  const first = viewer.name?.split(/\s+/)[0];
-  const h = new Date().getHours();
-  const hello = h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
+function Online({ state, navigate, initialView }: { state: Extract<MorgenrotState, { kind: 'online' }>; navigate: FeatureSurfaceProps['navigate']; initialView?: 'home' | 'universe' }) {
   return (
-    <Shell label="aus CORE">
-      <div data-testid="morgenrot-online">
-        <HomeOverview
-          greeting={`${hello}${first ? `, ${first}` : ''}.`}
-          subline={items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.` : 'Keine offenen Hinweise aus den verfügbaren Quellen.'}
-          titleClass="hm-h1" sublineClass="hm-sub" widgets={widgetsFromToday(snapshot)}
-        >
-          {items.length ? (
-            <ol className="hm-list">
-              {items.map((it, i) => (
-                <li key={it.id} className="hm-item">
-                  <span className="hm-n">{String(i + 1).padStart(2, '0')}</span>
-                  <div className="hm-txt"><div className="hm-t">{it.title}</div><div className="hm-d">{it.reason}</div></div>
-                  <button type="button" className="hm-btn" onClick={() => navigate(it.id === 'mail-unread' ? 'post' : 'today')}>Öffnen</button>
-                </li>
-              ))}
-            </ol>
-          ) : null}
-        </HomeOverview>
-        <div className="mr-depts" aria-label="Abteilungen">
-          {departments.length
-            ? departments.map((d) => <span key={d.id} className="mr-dept" data-testid="morgenrot-department">{d.name}</span>)
-            : <span className="mr-note">Noch keine Abteilungen in CORE.</span>}
-        </div>
-      </div>
-    </Shell>
+    <LiveCockpit
+      navigate={navigate}
+      initialView={initialView}
+      companyName={COMPANY}
+      departments={state.departments}
+      snapshot={state.snapshot}
+      viewerName={state.viewer.name}
+      isDemo={true}
+    />
   );
 }
 
@@ -71,17 +47,17 @@ function Notice({ title, text, action }: { title: string; text: string; action?:
 }
 
 /** Only when CORE did not answer: the fictional example, clearly marked; role switching only here. */
-function Offline() {
+function Offline({ initialView }: { initialView?: 'home' | 'universe' }) {
   const viewer = useMemo(() => (typeof window === 'undefined' ? 'marius' : readDemoViewer(window.location.search, true) ?? 'marius'), []);
   return (
     <div className="mr-offline" data-testid="morgenrot-offline">
       <div className="mr-banner" role="status">Offline-Beispiel, fiktiv · CORE ist gerade nicht erreichbar, nichts hiervon ist gespeichert.</div>
-      <Cockpit initialViewer={viewer} />
+      <Cockpit initialViewer={viewer} initialView={initialView} />
     </div>
   );
 }
 
-export function MorgenrotHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
+export function MorgenrotHome({ navigate, initialView, preview = false }: { navigate: FeatureSurfaceProps['navigate']; initialView?: 'home' | 'universe'; preview?: boolean }) {
   const [state, setState] = useState<MorgenrotState | null>(null);
   useEffect(() => {
     let alive = true;
@@ -90,8 +66,8 @@ export function MorgenrotHome({ navigate }: { navigate: FeatureSurfaceProps['nav
   }, []);
 
   if (!state) return <Shell label="wird geladen"><Notice title={COMPANY} text="Wird aus CORE geladen …" /></Shell>;
-  if (state.kind === 'online') return <Online state={state} navigate={navigate} />;
-  if (state.kind === 'offline') return <Offline />;
+  if (state.kind === 'online') return <Online state={state} navigate={navigate} initialView={initialView} />;
+  if (state.kind === 'offline') return <Offline initialView={initialView} />;
   if (state.kind === 'forbidden') {
     return (
       <Shell label="keine Rechte">

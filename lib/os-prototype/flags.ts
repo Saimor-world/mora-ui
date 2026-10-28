@@ -34,7 +34,7 @@ export function enabledFeatureFlags(env: Record<string, string | undefined> = re
 function readEnv(): Record<string, string | undefined> {
   // Literal references so Next.js inlines them into the client bundle.
   return {
-    NEXT_PUBLIC_OS_PROTOTYPE: process.env.NEXT_PUBLIC_OS_PROTOTYPE,
+    NEXT_PUBLIC_OS_PROTOTYPE: process.env.NEXT_PUBLIC_OS_PROTOTYPE ?? '1',
     NEXT_PUBLIC_OS_PREVIEW: process.env.NEXT_PUBLIC_OS_PREVIEW,
     NEXT_PUBLIC_OS_FLAGS: process.env.NEXT_PUBLIC_OS_FLAGS,
   };

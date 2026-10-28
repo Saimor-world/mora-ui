@@ -16,7 +16,7 @@ import { OpenPlanet, PlanetSystem } from './Scene';
 import { ActionSheet, FolderSheet, type SheetKind } from './Sheets';
 
 const DATE = '2026-10-28';
-const COMPANY = 'Café Morgenrot';
+const COMPANY = 'Café Morgenrot (FIKTIV)';
 const VIEWERS = [['marius', 'Marius · Inhaber'], ['lena', 'Lena · Service'], ['tarek', 'Tarek · Küche'], ['jonas', 'Jonas · Theke']] as const;
 
 function usePhone() {
@@ -25,7 +25,7 @@ function usePhone() {
   return p;
 }
 
-export function Cockpit({ initialViewer }: { initialViewer: string }) {
+export function Cockpit({ initialViewer, initialView = 'home' }: { initialViewer: string; initialView?: 'home' | 'universe' }) {
   const [viewer, setViewer] = useState(initialViewer);
   const { day, dispatch } = useDemoDay();
   const phone = usePhone();
@@ -33,7 +33,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
   const planets = useMemo(() => visiblePlanets(MORGENROT_STRUCTURE, MORGENROT_SEED, viewer), [viewer]);
   const own = landingFor(MORGENROT_SEED, viewer).planet;
   const owner = model.scope === 'owner';
-  const [view, setView] = useState<'home' | 'universe'>('home');
+  const [view, setView] = useState<'home' | 'universe'>(initialView);
   const [planetId, setPlanetId] = useState<string | null>(own);
   const [moonId, setMoonId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetKind | null>(null);

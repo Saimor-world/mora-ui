@@ -99,12 +99,12 @@ function RootPageContent() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleAuthenticated = () => {
-        router.push('/home');
+        router.push('/os');
     };
 
     const handleUnlock = () => {
         setShowLockScreen(false);
-        router.push('/home');
+        router.push('/os');
     };
 
     // Calculate user name from session for Lock Screen

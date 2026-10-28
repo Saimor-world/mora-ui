@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -555,7 +555,7 @@ useEffect(() => {
                                         }`}>
                                         <tab.icon size={15} />
                                     </span>
-                                    <span className={`font-medium tracking-[0.01em] ${active ? '' : 'font-normal'}`}>{tab.label}</span>
+                                    <span className={`font-medium tracking-[0.01em] min-w-0 truncate ${active ? '' : 'font-normal'}`}>{tab.label}</span>
                                     {active && (
                                         <span className={`ml-auto h-1.5 w-1.5 rounded-full ${isStandardMode ? 'bg-[#0078D4]' : 'bg-white/50'}`} />
                                     )}

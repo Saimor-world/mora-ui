@@ -1,72 +1,17 @@
 'use client';
-import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
-import { useNavStore } from '@/lib/store/navStore';
-import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
-import React, { useState } from 'react';
-import { Button, SampleTag, Stack, Surface, Text } from '@/components/os-kit';
-import UniverseView from '@/components/home/UniverseView';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
+import React from 'react';
 import type { FeatureSurfaceProps } from '../types';
-import { useLandscape } from './data/useLandscape';
-import { UniverseLandscape } from './ui/UniverseLandscape';
-import { LiveWorld } from './ui/LiveWorld';
-
-type Lens = 'landscape' | 'organization';
+import { useFirmaParam } from '../home/data/useDemoViewer';
+import { MorgenrotHome } from '../home/morgenrot/MorgenrotHome';
+import { LiveCockpit } from '../home/cockpit/LiveCockpit';
 
 /**
- * Universe place (V1.3: am Original orientiert). Two lenses:
- *  - Organisationsfeld (Standard): mit Sitzung die Welt des Betriebs aus echten
- *    Daten (LiveWorld: Abteilungen als matte Planeten um MÔRA, Richtung visual-v1);
- *    in der lokalen Vorschau das Demo-Paket „Simple Coffee Group“.
- *  - OS-Bereiche: die V1.2-Landschaft der OS-Bereiche um MÔRA.
+ * Universe surface: Glasplaneten-Cockpit im Firmen-Modus (Universe-Sicht).
+ * Keine flachen SVG-Ellipsen mehr, sondern echte Glasplaneten als Abteilungen
+ * und Monde als Ordner um MÔRA.
  */
 export default function UniverseSurface({ navigate, preview }: FeatureSurfaceProps) {
-  const [lens, setLens] = useState<Lens>('organization');
-  const landscape = useLandscape(preview);
-  const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
-  const hasSession = useSessionStore((st) => Boolean(st.user?.tenant_id));
-  const demo = preview && !hasSession;
-  const demoCompany = useDemoStore((s) => s.demoCompanyId);
-  const navCompany = useNavStore((s) => s.activeCompanyId);
-  const sessionCompany = useSessionStore((st) => (st.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
-  const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
-  const [wizard, setWizard] = React.useState(false);
-  const openArea = (target: string) => (target === 'universe:organization' ? setLens('organization') : navigate(target));
-
-  return (
-    <div className="os-universe" data-testid="feature-universe" data-lens={lens}>
-      {/* V1.5: DepartmentWizard war im Legacy-Bestand ohne Einstieg. */}
-      {wizard && companyId ? <DepartmentWizard isOpen onClose={() => setWizard(false)} companyId={companyId} /> : null}
-      <Surface padding={4} className="os-universe__intro" aria-label="Universe">
-        <Stack direction="row" align="center" justify="space-between" gap={3} wrap>
-          <Stack gap={1} className="min-w-0">
-            <Stack direction="row" gap={2} align="center" className="os-universe__eyebrow"><Text variant="eyebrow">Universe</Text>{landscape.sample ? <SampleTag /> : null}</Stack>
-            <Text variant="title" as="h1">{lens === 'organization' ? (demo ? 'Simple Coffee Group – deine Abteilungen' : 'Deine Abteilungen') : 'Deine Arbeitsbereiche'}</Text>
-            <div className="os-universe__hint"><Text variant="meta">
-              {lens === 'organization'
-                ? hasSession && !demo
-                  ? 'Wähle einen Bereich – Pfeiltasten, Enter zum Hineinzoomen, oder frag MÔRA unten.'
-                  : 'Jede Kugel ist eine Abteilung. Klicke eine an, um Dokumente, Aufgaben und Hinweise zu sehen. Linien zeigen Zusammenhänge, die MÔRA gefunden hat.'
-                : landscape.sample
-                  ? 'Lokale Vorschau: die OS-Bereiche um MÔRA, gespeist aus dem Demo-Paket.'
-                  : 'Deine OS-Bereiche als Planeten um MÔRA. Wähle einen Planeten, um hineinzuzoomen.'}
-            </Text></div>
-          </Stack>
-          <Stack direction="row" gap={2} wrap className="os-universe__actions">
-            <div className="os-tabs os-universe__lens" role="tablist" aria-label="Ansicht">
-              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'organization'} onClick={() => setLens('organization')} data-testid="universe-lens-organization">Abteilungen</button>
-              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'landscape'} onClick={() => setLens('landscape')} data-testid="universe-lens-landscape">Arbeitsbereiche</button>
-            </div>
-            <Button size="sm" variant="ghost" disabled={demo || !companyId} title={demo ? 'Braucht eine CORE-Sitzung' : undefined} onClick={() => setWizard(true)} data-testid="universe-add-department" aria-label="Abteilung hinzufügen"><span className="os-universe__addlong">Abteilung hinzufügen</span><span className="os-universe__addshort" aria-hidden>+ Abteilung</span></Button>
-          </Stack>
-        </Stack>
-      </Surface>
-      <div className="os-universe__field" data-testid="universe-field">
-        {lens === 'landscape'
-          ? <UniverseLandscape landscape={landscape} sample={landscape.sample} onOpenArea={openArea} onAskMora={askMora} />
-          : hasSession ? <LiveWorld onAskMora={askMora} navigate={navigate} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
-      </div>
-    </div>
-  );
+  const firma = useFirmaParam();
+  if (firma === 'morgenrot') return <MorgenrotHome navigate={navigate} initialView="universe" preview={preview} />;
+  return <LiveCockpit navigate={navigate} initialView="universe" />;
 }

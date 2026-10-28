@@ -25,7 +25,7 @@ function resolveBackendBase(slug: string): string {
 
 function buildBackendUrl(slug: string): string {
   const path = /^(v1|v2|v3)\//.test(slug) ? slug : `v1/${slug}`;
-  const base = resolveBackendBase(slug).replace(/\/+$/, '');
+  const base = resolveBackendBase(slug).replace(/\/+$/, '') || 'http://127.0.0.1:8081';
   return `${base}/${path}`;
 }
 
