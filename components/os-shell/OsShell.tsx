@@ -160,9 +160,9 @@ export function OsShell({ preview }: { preview: boolean }) {
   };
 
   // Phone: nur der Begleiter (Eule, Braucht dich, MÔRA), nicht das ganze OS.
-  // Demo-Firma (fiktiv, nur Vorschau/intern): auf dem Handy direkt die eigene Home-Ansicht.
+  // Demo-Firma (fiktiv, nur Vorschau/intern): eigene Brücke im Vollbild, ohne Shell-Leisten.
   const demoViewer = typeof window !== 'undefined' ? readDemoViewer(window.location.search, preview || internal === true) : null;
-  if (phone && !phoneUniverse && demoViewer) return <HomeSurface navigate={navigate} preview={preview} />;
+  if (demoViewer) return <HomeSurface navigate={navigate} preview={preview} />;
   if (phone && !phoneUniverse) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>

@@ -14,7 +14,7 @@ import { deriveAttention } from '../today/data/attention';
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from './data/homeModel';
 import { useDemoViewer } from './data/useDemoViewer';
 import { MicButton } from './ui/MicIcon';
-import { CompanyUniverse } from './ui/CompanyUniverse';
+import { Cockpit } from './cockpit/Cockpit';
 
 const DEMO_DATE = '2026-10-28';
 const fmtEur = (n: number) => `${n.toLocaleString('de-DE')} €`;
@@ -39,57 +39,6 @@ function Items({ items, onDone, done }: { items: HomeItem[]; onDone: (id: string
         </li>
       ))}
     </ol>
-  );
-}
-
-function DemoHome({ viewer }: { viewer: string }) {
-  const model = useMemo(() => buildHomeModel(MORGENROT_SEED, MORGENROT_EVENTS, DEMO_DATE, viewer), [viewer]);
-  const planets = useMemo(() => visiblePlanets(MORGENROT_STRUCTURE, MORGENROT_SEED, viewer), [viewer]);
-  const landing = landingFor(MORGENROT_SEED, viewer);
-  const [view, setView] = useState<'home' | 'firma'>('home');
-  const [done, setDone] = useState<Set<string>>(new Set());
-  const markDone = (id: string) => setDone((s) => new Set(s).add(id));
-  const company = 'Café Morgenrot';
-
-  if (view === 'firma') return <div className="hm"><div className="hm-sky" aria-hidden /><CompanyUniverse planets={planets} initial={null} onBack={() => setView('home')} company={company} /></div>;
-  return (
-    <div className="hm" data-testid="home" data-scope={model.scope}>
-      <div className="hm-sky" aria-hidden />
-      <div className="hm-top">
-        <div className="hm-mark"><PixelMoraMark size={28} /><span>MÔRA</span></div>
-        <div className="hm-meta">{company} · Mittwoch, 28. Oktober · 07:00</div>
-      </div>
-      <div className={model.scope === 'owner' ? 'hm-grid' : 'hm-grid hm-grid--staff'}>
-        <section>
-          <h1 className="hm-h1">{model.greeting}</h1>
-          <p className="hm-sub">{model.subline}</p>
-          <Items items={model.needsYou} onDone={markDone} done={done} />
-  <MicButton onClick={() => useOsShellStore.getState().setMoraOpen(true)} />
-        </section>
-        <aside className="hm-side">
-          {model.yesterday ? (
-            <>
-              <h3 className="hm-eb">Gestern</h3>
-              <div className="hm-k">{fmtEur(model.yesterday.revenue)}</div>
-              <div className="hm-ks"><span className="hm-up">+{Math.round(model.yesterday.vsLastWeek * 100)} %</span> zur Vorwoche{model.yesterday.tillOk ? ' · Kasse stimmt' : ''}</div>
-            </>
-          ) : null}
-          {model.team.length ? (
-            <>
-              <h3 className="hm-eb">Team heute</h3>
-              {model.team.map((t) => <div key={t.personId} className="hm-row"><span>{t.name} · {t.role}</span><span>{t.shift}</span></div>)}
-              <button type="button" className="hm-firma" onClick={() => setView('firma')} data-testid="open-firma">Firma ansehen <span>{planets.length} Bereiche</span></button>
-            </>
-          ) : landing.planet ? (
-            <>
-              <h3 className="hm-eb">Dein Bereich</h3>
-              <CompanyUniverse planets={planets} initial={landing.planet} company={company} />
-            </>
-          ) : null}
-        </aside>
-      </div>
-      <div className="hm-foot"><span>{FICTIONAL_NOTICE}</span>{model.scope === 'owner' ? <span>„Sag Lena, sie soll heute die Terrasse zumachen.“</span> : null}</div>
-    </div>
   );
 }
 
@@ -124,6 +73,6 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
 export default function HomeSurface({ navigate, preview }: FeatureSurfaceProps) {
   const internal = useIsSaimorInternal();
   const viewer = useDemoViewer(preview || internal === true);
-  if (viewer) return <DemoHome viewer={viewer} />;
+  if (viewer) return <Cockpit initialViewer={viewer} />;
   return <LiveHome navigate={navigate} />;
 }
