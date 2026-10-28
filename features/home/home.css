@@ -59,3 +59,12 @@
   .hm-foot{left:20px;right:20px;bottom:16px;flex-direction:column;gap:4px;font-size:12px}.hm-foot span:last-child{display:none}
   .hm-sys{grid-template-columns:1fr 1fr;margin-top:32px}.hm-sys__p{transform:none}
 }
+
+/* Café Morgenrot (FIKTIV): Zustände ohne Seed, Rückfall-Banner, echte Abteilungen aus CORE. */
+.mr .mr-state .hm-btn{display:inline-flex;text-decoration:none;margin-top:4px}
+.mr-depts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.mr-dept{padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#EEF1EA;font-size:13px}
+.mr-note{color:#8FA6AE;font-size:13px}
+.mr-offline{position:relative}
+.mr-banner{position:fixed;z-index:60;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 24px);padding:8px 14px;border-radius:999px;
+  background:rgba(233,185,103,.16);border:1px solid rgba(233,185,103,.45);color:#F7E9CB;font-size:13px;text-align:center}

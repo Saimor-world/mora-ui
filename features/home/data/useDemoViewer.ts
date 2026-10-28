@@ -2,20 +2,23 @@
 import { useEffect, useState } from 'react';
 import { MORGENROT_SEED } from '@/lib/demo/morgenrot/seed';
 
-/**
- * Fiktive Demo-Firma (Café Morgenrot) im echten OS: ?firma=morgenrot[&als=lena|tarek|jonas|marius].
- * Nur Anzeige, keine Rechte und kein Login – darum nur in der lokalen Vorschau oder intern erlaubt.
- */
-export function readDemoViewer(search: string, allowed: boolean): string | null {
-  if (!allowed) return null;
-  const q = new URLSearchParams(search);
-  if (q.get('firma') !== 'morgenrot') return null;
-  const als = q.get('als') ?? 'marius';
-  return MORGENROT_SEED.people.some((p) => p.id === als) ? als : 'marius';
+/** `?firma=morgenrot`: open the demo company Café Morgenrot (FIKTIV). */
+export function readFirma(search: string): 'morgenrot' | null {
+  return new URLSearchParams(search).get('firma') === 'morgenrot' ? 'morgenrot' : null;
 }
 
-export function useDemoViewer(allowed: boolean): string | null {
-  const [v, setV] = useState<string | null>(null);
-  useEffect(() => { setV(readDemoViewer(window.location.search, allowed)); }, [allowed]);
-  return v;
+export function useFirmaParam(): 'morgenrot' | null {
+  const [firma, setFirma] = useState<'morgenrot' | null>(null);
+  useEffect(() => { setFirma(readFirma(window.location.search)); }, []);
+  return firma;
+}
+
+/**
+ * Local role switch of the fictional seed (`&als=lena|tarek|jonas|marius`).
+ * Only used by the offline fallback, when CORE is not reachable; online the role comes from the session.
+ */
+export function readDemoViewer(search: string, allowed: boolean): string | null {
+  if (!allowed || !readFirma(search)) return null;
+  const als = new URLSearchParams(search).get('als') ?? 'marius';
+  return MORGENROT_SEED.people.some((p) => p.id === als) ? als : 'marius';
 }

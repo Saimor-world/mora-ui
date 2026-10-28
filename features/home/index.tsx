@@ -1,7 +1,6 @@
 'use client';
 import './home.css';
 import React, { useMemo, useState } from 'react';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { firstName } from '@/lib/auth/displayName';
@@ -9,10 +8,10 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention } from '../today/data/attention';
 import type { HomeItem } from './data/homeModel';
-import { useDemoViewer } from './data/useDemoViewer';
+import { useFirmaParam } from './data/useDemoViewer';
 import { BridgeConsole } from './cockpit/BridgeConsole';
 import { CockpitWindow } from './cockpit/Window';
-import { Cockpit } from './cockpit/Cockpit';
+import { MorgenrotHome } from './morgenrot/MorgenrotHome';
 import { HomeOverview } from './widgets/HomeOverview';
 import { widgetsFromToday } from './widgets/adapters';
 
@@ -68,9 +67,9 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
   );
 }
 
-export default function HomeSurface({ navigate, preview }: FeatureSurfaceProps) {
-  const internal = useIsSaimorInternal();
-  const viewer = useDemoViewer(preview || internal === true);
-  if (viewer) return <Cockpit initialViewer={viewer} />;
+export default function HomeSurface({ navigate }: FeatureSurfaceProps) {
+  const firma = useFirmaParam();
+  // ?firma=morgenrot: the real demo company from CORE; the seed only as a marked offline fallback.
+  if (firma === 'morgenrot') return <MorgenrotHome navigate={navigate} />;
   return <LiveHome navigate={navigate} />;
 }
