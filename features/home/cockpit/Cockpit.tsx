@@ -8,7 +8,7 @@ import { MORGENROT_EVENTS, MORGENROT_STRUCTURE } from '@/lib/demo/morgenrot/stru
 import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from '../data/homeModel';
 import { askMora, type MoraReply } from '../data/moraDemo';
 import { useDemoDay } from '../data/useDemoDay';
-import { WidgetBoard } from '../widgets/WidgetBoard';
+import { HomeOverview } from '../widgets/HomeOverview';
 import { widgetsFromDemo } from '../widgets/adapters';
 import { CockpitWindow } from './Window';
 import { OpenPlanet, PlanetSystem } from './Scene';
@@ -91,8 +91,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
 
       {showHome ? (
         <section className="ck-panel" aria-label="Home">
-          <h1 className="ck-h1">{model.greeting}</h1>
-          <p className="ck-sub">{model.subline}</p>
+          <HomeOverview greeting={model.greeting} subline={model.subline} titleClass="ck-h1" sublineClass="ck-sub" widgets={widgetsFromDemo(model, day)}>
           {phone && owner ? <div className="ck-home-strip"><PlanetSystem planets={planets} attention={attention} company={COMPANY} compact strip onOpen={(id) => { setView('universe'); setPlanetId(id); setMoonId(null); }} /></div> : null}
           {model.needsYou.length ? (
             <ol className="ck-list">
@@ -107,7 +106,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
             <div className="ck-calm" data-testid="home-done"><PixelMoraMark size={40} /><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
           )}
           {model.doneToday.length ? <div className="ck-donel">{model.doneToday.map((d) => <span key={d.id}><Check size={13} /> {d.title}{d.id === 'swap' && !owner ? ` · ${d.detail}` : ''}</span>)}</div> : null}
-          <WidgetBoard widgets={widgetsFromDemo(model, day)} />
+          </HomeOverview>
         </section>
       ) : null}
 

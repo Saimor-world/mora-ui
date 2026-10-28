@@ -15,7 +15,7 @@ import { buildHomeModel, landingFor, visiblePlanets, type HomeItem } from './dat
 import { useDemoViewer } from './data/useDemoViewer';
 import { MicButton } from './ui/MicIcon';
 import { Cockpit } from './cockpit/Cockpit';
-import { WidgetBoard } from './widgets/WidgetBoard';
+import { HomeOverview } from './widgets/HomeOverview';
 import { widgetsFromToday } from './widgets/adapters';
 
 const DEMO_DATE = '2026-10-28';
@@ -58,13 +58,12 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
       <div className="hm-top"><div className="hm-mark"><PixelMoraMark size={28} /><span>MÔRA</span></div></div>
       <div className="hm-grid hm-grid--staff">
         <section>
-          <h1 className="hm-h1">{hello}{name ? `, ${name}` : ''}.</h1>
-          <p className="hm-sub">{loading ? 'Quellen werden geladen …' : !snapshot || loadError ? 'Quellen sind derzeit nicht verfügbar.' : items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.` : 'Keine offenen Hinweise aus den verfügbaren Quellen.'}</p>
+          <HomeOverview greeting={`${hello}${name ? `, ${name}` : ''}.`} subline={loading ? 'Quellen werden geladen …' : !snapshot || loadError ? 'Quellen sind derzeit nicht verfügbar.' : items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.` : 'Keine offenen Hinweise aus den verfügbaren Quellen.'} titleClass="hm-h1" sublineClass="hm-sub" widgets={widgetsFromToday(snapshot)}>
           {snapshot && !loadError ? <Items items={items} done={done} onDone={(id) => { setDone((s) => new Set(s).add(id)); navigate(id === 'mail-unread' ? 'post' : 'today'); }} /> : null}
           <MicButton onClick={() => useOsShellStore.getState().setMoraOpen(true)} />
+          </HomeOverview>
         </section>
         <aside className="hm-side">
-          <WidgetBoard widgets={widgetsFromToday(snapshot)} />
           <button type="button" className="hm-firma" onClick={() => navigate('universe')}>Firma ansehen <span>Bereiche &amp; Ordner</span></button>
           <button type="button" className="hm-firma" onClick={() => navigate('today')}>Heute im Detail <span>Termine, Post, Aufgaben</span></button>
         </aside>

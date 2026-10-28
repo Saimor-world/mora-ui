@@ -26,7 +26,7 @@ export function widgetsFromDemo(model: HomeModel, day?: DemoDay): SourceWidget[]
     const moon = (id: string) => MORGENROT_STRUCTURE.flatMap(p => p.moons).find(m => m.id === id);
     const list = (id: string, title: string, source: string, moonId: string) => {
       const folder = moon(moonId);
-      if (folder) widgets.push({ id, title, source, ...common, content: { type: 'list', items: folder.files.slice(0, 2).map(f => ({ id: f.id, title: f.name, detail: f.meta })) } });
+      if (folder) widgets.push({ id, title, source, ...common, content: { type: 'list', items: folder.files.slice(0, 2).map(f => ({ id: f.id, title: f.name })) } });
     };
     list('reservations', 'Reservierungen', 'Reservierungen', 's-res');
     list('inventory', 'Bestand', 'Bestandsliste', 'k-best');

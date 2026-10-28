@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { WidgetBoard } from '@/features/home/widgets/WidgetBoard';
+import { HomeOverview } from '@/features/home/widgets/HomeOverview';
 import { widgetsFromDemo, widgetsFromToday } from '@/features/home/widgets/adapters';
 import { buildHomeModel } from '@/features/home/data/homeModel';
 import { MORGENROT_SEED } from '@/lib/demo/morgenrot/seed';
@@ -9,12 +10,13 @@ import type { TodaySnapshot } from '@/lib/api/todayClient';
 
 const model = (id: string) => buildHomeModel(MORGENROT_SEED, MORGENROT_EVENTS, '2026-10-28', id);
 it('renders the same board with fictional café data and scoped CORE data', () => {
-  const { rerender } = render(<WidgetBoard widgets={widgetsFromDemo(model('marius'))} />);
+  const { rerender } = render(<HomeOverview greeting="Café" subline="Demo" titleClass="" sublineClass="" widgets={widgetsFromDemo(model('marius'))}><span>Demo</span></HomeOverview>);
   expect(screen.getByTestId('widget-revenue')).toHaveTextContent('1.842 €');
   expect(screen.getAllByText(/Fiktive Demo/).length).toBeGreaterThan(0);
   const meta = { status: 'ok', source: 'CORE', as_of: '10:00' };
   const snapshot = { mail: { ...meta, unread_count: 4 }, calendar: { ...meta, status: 'disconnected', events: [] }, tasks: { ...meta, status: 'unavailable', due_today: [] } } as unknown as TodaySnapshot;
-  rerender(<WidgetBoard widgets={widgetsFromToday(snapshot)} />);
+  rerender(<HomeOverview greeting="SAIMÔR" subline="Live" titleClass="" sublineClass="" widgets={widgetsFromToday(snapshot)}><span>Live</span></HomeOverview>);
+  expect(screen.getByRole('heading', { name: 'SAIMÔR' })).toBeInTheDocument();
   expect(screen.getByTestId('widget-mail')).toHaveTextContent('4 ungelesen');
   expect(screen.queryByTestId('widget-revenue')).not.toBeInTheDocument();
   expect(screen.queryByTestId('widget-calendar')).not.toBeInTheDocument();
