@@ -27,7 +27,7 @@ function Items({ items, onDone, done }: { items: HomeItem[]; onDone: (id: string
     return (
       <div className="hm-done" data-testid="home-done">
         <PixelMoraMark size={56} />
-        <div><b>Alles erledigt.</b><span>MÔRA kümmert sich um den Rest.</span></div>
+        <div><b>Keine offenen Hinweise.</b><span>Nur verfügbare Quellen sind berücksichtigt.</span></div>
       </div>
     );
   }
@@ -47,7 +47,7 @@ function Items({ items, onDone, done }: { items: HomeItem[]; onDone: (id: string
 function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
   const user = useSessionStore((s) => s.user);
   const name = firstName(user);
-  const { snapshot } = useScopedToday();
+  const { snapshot, loading, loadError } = useScopedToday();
   const items: HomeItem[] = useMemo(() => (snapshot ? deriveAttention(snapshot) : []).slice(0, 3).map((a) => ({ id: a.id, title: a.title, detail: a.reason, action: 'Öffnen', owner: 'me' })), [snapshot]);
   const [done, setDone] = useState<Set<string>>(new Set());
   const h = new Date().getHours();
@@ -59,8 +59,8 @@ function LiveHome({ navigate }: { navigate: FeatureSurfaceProps['navigate'] }) {
       <div className="hm-grid hm-grid--staff">
         <section>
           <h1 className="hm-h1">{hello}{name ? `, ${name}` : ''}.</h1>
-          <p className="hm-sub">{items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich. Alles andere läuft.` : 'Gerade braucht dich nichts.'}</p>
-          <Items items={items} done={done} onDone={(id) => { setDone((s) => new Set(s).add(id)); navigate(id === 'mail-unread' ? 'post' : 'today'); }} />
+          <p className="hm-sub">{loading ? 'Quellen werden geladen …' : !snapshot || loadError ? 'Quellen sind derzeit nicht verfügbar.' : items.length ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.` : 'Keine offenen Hinweise aus den verfügbaren Quellen.'}</p>
+          {snapshot && !loadError ? <Items items={items} done={done} onDone={(id) => { setDone((s) => new Set(s).add(id)); navigate(id === 'mail-unread' ? 'post' : 'today'); }} /> : null}
           <MicButton onClick={() => useOsShellStore.getState().setMoraOpen(true)} />
         </section>
         <aside className="hm-side">
