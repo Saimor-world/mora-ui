@@ -6,7 +6,7 @@ const revision = process.env.COCKPIT_REVISION || 'after';
 const improved = revision === 'after';
 const sizes = [
   { name: 'desktop', width: 1440, height: 900 },
-  { name: 'ipad', width: 1180, height: 820 },
+  { name: 'ipad', width: 1024, height: 768 },
   { name: 'iphone', width: 390, height: 844 },
 ];
 

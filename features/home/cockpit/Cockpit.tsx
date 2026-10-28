@@ -76,7 +76,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       </div>
       <CockpitWindow />
 
-      {!showHome && !moon ? <div className={`ck-presence${sceneMode === 'system' ? ' ck-presence--system' : ''}`} data-testid="cockpit-presence"><PixelMoraMark size={80} /></div> : null}
+
 
       <header className="ck-top">
         <div className="ck-brand"><span>{COMPANY}</span></div>
@@ -107,7 +107,7 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
               ))}
             </ol>
           ) : (
-            <div className="ck-calm" data-testid="home-done"><PixelMoraMark size={40} /><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
+            <div className="ck-calm" data-testid="home-done"><div><b>Alles erledigt.</b><span>Ich melde mich, wenn etwas kommt.</span></div></div>
           )}
           {model.doneToday.length ? <div className="ck-donel">{model.doneToday.map((d) => <span key={d.id}><Check size={13} /> {d.title}{d.id === 'swap' && !owner ? ` · ${d.detail}` : ''}</span>)}</div> : null}
           </HomeOverview>
@@ -120,7 +120,6 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
 
       {reply ? (
         <div className="ck-reply" role="status" data-testid="mora-reply">
-          <PixelMoraMark size={22} />
           <p>{reply.text}</p>
           <div className="ck-reply__a">{reply.action ? <button type="button" className="ck-btn ck-btn--p" onClick={confirm}>{reply.confirm}</button> : null}<button type="button" className="ck-btn" onClick={() => setReply(null)}>{reply.action ? 'Abbrechen' : 'OK'}</button></div>
         </div>
@@ -130,12 +129,12 @@ export function Cockpit({ initialViewer }: { initialViewer: string }) {
       <nav className="ck-dock" aria-label="Kommandozentrale">
         <button type="button" className="ck-dock__b" aria-label="Home" aria-pressed={showHome} onClick={() => { setView('home'); setHeadOpen(false); }} data-testid="dock-home"><Home size={18} /><span>Home</span></button>
         <button type="button" className="ck-dock__b" aria-label={owner ? 'Firma' : planets[0]?.title ?? 'Bereich'} aria-pressed={!showHome} onClick={() => { setHeadOpen(false); setView('universe'); if (owner && view === 'universe') { setPlanetId(null); setMoonId(null); } }} data-testid="open-firma"><Orbit size={18} /><span>{owner ? 'Firma' : planets[0]?.title ?? 'Bereich'}</span></button>
+        <div className="ck-captain" data-testid="captain-place"><PixelMoraMark size={phone ? 56 : 72} /><span>Was jetzt wichtig ist</span></div>
         <form className="ck-ask" onSubmit={submit}>
-          <PixelMoraMark size={20} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={owner ? 'Frag MÔRA – z. B. „Sag Lena, …“' : 'Frag MÔRA …'} aria-label="Frag MÔRA" data-testid="ck-ask" />
           <button type="button" className="ck-mic" aria-label="Sprechen (in der Demo: tippen)" onClick={() => setQ(owner ? 'Sag Lena, sie soll heute die Terrasse zumachen' : 'Was muss ich heute machen?')}><Mic size={17} /></button>
         </form>
-        {!showHome && model.needsYou.length ? <button type="button" className="ck-dock__need" onClick={() => setView('home')}>{model.needsYou.length} für dich</button> : null}
+        {model.needsYou.length ? <button type="button" className="ck-dock__need" onClick={() => setView('home')}>{model.needsYou.length} für dich</button> : null}
       </nav>
       <div className="ck-reset"><button type="button" onClick={() => { dispatch({ type: 'reset' }); setToast('Demo zurückgesetzt'); }}>Demo zurücksetzen</button></div>
     </div>
