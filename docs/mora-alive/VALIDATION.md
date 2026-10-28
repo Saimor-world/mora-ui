@@ -100,3 +100,20 @@ separate jade readable, all states render, no GPU nonfinite values, stable reduc
 no mobile overflow. Existing renderer/browser matrix provides captures for visual review.
 Local TypeScript and targeted lint pass. Source is exported immutably to Website.
 Rollback: re-export canonical source bdef1aced365b52ada55f907db49d8651560da77.
+
+## Luminous presence — 27 October 2026
+
+Target: Marius' reference image (glowing bean-shaped light body, two dark eyes, separate jade stone, no mouth).
+The previous revision rendered as matte beige with pinched tips at both ends; the "corporate presence" notes above
+(neutral mouth, one ground ring, 24 dust points) no longer describe the scene.
+
+- Form: deformed sphere instead of a loft, so both ends stay round in every pose, including night rest. Fuller
+  bean (width/height ≈ 0.5), soft waist only on the stone side, head leaning towards the stone. Pole normals fixed.
+- Material: warm inner lamp in the lower body, milky skin, soft amber where the skin is thin, a small mint
+  reflection on the waist facing the stone, warm halo behind the body. Base brightness kept low so ACES tone
+  mapping shows light instead of white paint.
+- Eyes: placed on the computed surface (`surfacePoint`), upright dark ovals turned slightly towards the stone.
+- Jade: larger, clouded instead of a cell pattern; hovers beside the head; while working it loops there and never
+  crosses the body.
+- Test: `__tests__/components/mora/alive/characterForm.test.ts` (finite volume, bean proportion, round poles,
+  eyes on the surface). Captures at 1440 and 390 for idle, working, night rest and error reviewed locally.

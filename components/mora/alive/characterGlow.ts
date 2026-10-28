@@ -18,7 +18,7 @@ export function createCharacterGlow(renderer: THREE.WebGLRenderer) {
   const combine = new THREE.ShaderMaterial({ uniforms: { image: { value: source.texture }, glow: { value: pong.texture } },
     vertexShader: vertex, depthTest: false, depthWrite: false,
     fragmentShader: `uniform sampler2D image;uniform sampler2D glow;varying vec2 vUv;
-      void main(){vec4 base=texture2D(image,vUv);vec3 bloom=texture2D(glow,vUv).rgb*.72*(1.-base.a);
+      void main(){vec4 base=texture2D(image,vUv);vec3 bloom=texture2D(glow,vUv).rgb*.95*(1.-base.a);
         float a=clamp(base.a+max(bloom.r,max(bloom.g,bloom.b))*.8,0.,1.);
         vec3 premultiplied=base.rgb+bloom;
         gl_FragColor=vec4(premultiplied/max(a,.001),a);

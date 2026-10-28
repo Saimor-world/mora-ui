@@ -2,7 +2,7 @@
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import type { CharacterState } from '@/lib/mora/alive/engine';
-import { createLightForm, LIGHT_PALETTE as P } from './characterForm';
+import { createLightForm, LIGHT_PALETTE as P, surfacePoint } from './characterForm';
 import { halo, jadeMaterial, lightMaterial } from './characterMaterials';
 import { createCharacterGlow } from './characterGlow';
 
@@ -16,24 +16,27 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
 function buildCharacter() {
   const body = new THREE.Group(), presence = new THREE.Group();
   const face = new THREE.Group(), jade = new THREE.Group();
-  const material = lightMaterial(.98);
+  const material = lightMaterial(1);
   presence.add(new THREE.Mesh(createLightForm(), material));
   body.add(presence, jade);
   const openEyes: THREE.Group[] = [], closedEyes: THREE.Mesh[] = [];
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Group();eye.position.set(.045 + side * .135, .60, .255);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(.042, 24, 16),
-      new THREE.MeshPhysicalMaterial({ color: '#12392d', roughness: .36,
-        metalness: 0, clearcoat: .3, clearcoatRoughness: .25 }));
-    iris.scale.set(.75, 1.05, .45);eye.add(iris);openEyes.push(eye);face.add(eye);
-    const closed = faceStroke([new THREE.Vector3(-.032,0,0),
-      new THREE.Vector3(0,.004,0),new THREE.Vector3(.032,0,0)], .005);
-    closed.position.copy(eye.position);closedEyes.push(closed);face.add(closed);
+  const irisMaterial = new THREE.MeshPhysicalMaterial({ color: '#0c261f', roughness: .3,
+    metalness: 0, clearcoat: .6, clearcoatRoughness: .2 });
+  // Two dark, upright ovals set into the head, turned slightly towards the stone.
+  for (const side of [.08, .5]) {
+    const { point, normal } = surfacePoint(.55, side);
+    const eye = new THREE.Group();eye.position.copy(point).addScaledVector(normal, .004);
+    eye.lookAt(eye.position.clone().add(normal));
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(.058, 28, 20), irisMaterial);
+    iris.scale.set(.74, 1.18, .3);eye.add(iris);openEyes.push(eye);face.add(eye);
+    const closed = faceStroke([new THREE.Vector3(-.036,0,0),
+      new THREE.Vector3(0,-.012,.004),new THREE.Vector3(.036,0,0)], .006);
+    closed.position.copy(eye.position);closed.quaternion.copy(eye.quaternion);closedEyes.push(closed);face.add(closed);
   }
   presence.add(face);
-  const stone = new THREE.Mesh(new THREE.SphereGeometry(.15, 32, 24), jadeMaterial());
-  stone.scale.set(.88, 1.16, .82);stone.rotation.z = -.22;jade.add(stone);
-  const aura = halo(P.cream, 2.5, .035);aura.position.set(-.1,0,-.5);body.add(aura);
+  const stone = new THREE.Mesh(new THREE.SphereGeometry(.21, 40, 28), jadeMaterial());
+  stone.scale.set(.84, 1.18, .82);stone.rotation.z = -.2;jade.add(stone);
+  const aura = halo(P.gold, 3.6, .16);aura.position.set(-.05,-.15,-.6);body.add(aura);
   const light = new THREE.PointLight(P.cream, 1.1, 4, 2);
   light.position.set(-.2,.5,1);body.add(light);
   return { body, presence, face, openEyes, closedEyes, jade, light, material, aura };
@@ -60,7 +63,8 @@ export default function CharacterScene(props: CharacterSceneProps) {
     const landing = halo(P.cream, 1.8, .045);
     landing.rotation.x = -Math.PI/2;landing.position.y = -1.4;scene.add(landing);
     const target = new THREE.Vector3();
-    let frame=0, elapsed=0, orbit=.22, velocity=.16, aperture=0, sleep=0, painted=0, previous=performance.now(), disposed=false;
+    const idleJade = new THREE.Vector3(), roamJade = new THREE.Vector3(), restJade = new THREE.Vector3(.74,-.82,.36), stoneDir = new THREE.Vector3();
+    let frame=0, elapsed=0, orbit=.22, velocity=.16, roam=0, aperture=0, sleep=0, painted=0, previous=performance.now(), disposed=false;
     function draw(time: number) {
       frame=0; if (disposed) return;
       const { state, still, active, interaction } = latest.current;
@@ -87,18 +91,22 @@ export default function CharacterScene(props: CharacterSceneProps) {
       // Small gaze shifts preserve the simple face; idle gently attends to the stone.
       face.position.set(still?0:tapped?interaction.current.x*.012:Math.cos(orbit)*.008,
         still?0:interaction.current.y*.008,0);
-      if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.04:busy?.38:.16,2,dt);orbit+=dt*velocity;}
-      jade.position.set(Math.cos(orbit)*THREE.MathUtils.lerp(.82,.58,sleep),
-        THREE.MathUtils.lerp(.20,-.45,sleep)-Math.sin(orbit)*.15,
-        Math.sin(orbit)*.43);jade.rotation.y=orbit*.25;
+      if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.04:busy?.38:.3,2,dt);orbit+=dt*velocity;}
+      // The stone keeps company beside the head; work makes it loop there, never across the body.
+      roam=still?(busy?1:0):THREE.MathUtils.damp(roam,busy?1:0,1.5,dt);
+      idleJade.set(.98+Math.cos(orbit)*.04,.2+Math.sin(orbit*1.3)*.05,.42+Math.sin(orbit)*.05);
+      roamJade.set(1.02+Math.cos(orbit*2.2)*.2,.22+Math.sin(orbit*2.2)*.2,.42+Math.sin(orbit*1.1)*.12);
+      jade.position.lerpVectors(idleJade,roamJade,roam).lerp(restJade,sleep);jade.rotation.y=orbit*.25;
+      stoneDir.set(jade.position.x,jade.position.y-.3,jade.position.z).normalize();
+      material.uniforms.stoneDir.value.copy(stoneDir);
       const dim=state==='error'||state==='offline';
       material.uniforms.time.value=t;material.uniforms.sleep.value=sleep;
       material.uniforms.motion.value=still||rest?0:(busy?.8:.45);
       material.uniforms.warmth.value=dim?.28:1-sleep*.5;
-      material.uniforms.opacity.value=.98;
+      material.uniforms.opacity.value=1;
       material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);
       material.uniforms.gold.value.set(dim?'#8e819d':state==='approval'?'#f3bb61':P.gold);
-      aura.material.uniforms.strength.value=state==='offline'?.01:.035-sleep*.02;
+      aura.material.uniforms.strength.value=state==='offline'?.03:.16-sleep*.08;
       light.intensity=state==='offline'?.3:1.1-sleep*.5;
       glow.render(scene,camera);
       if(still&&process.env.NEXT_PUBLIC_MORA_RENDER_QA==='1')renderer.domElement.dataset.gpuNonfinite=String(glow.checkFinite());
