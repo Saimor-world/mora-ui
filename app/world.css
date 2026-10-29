@@ -1749,6 +1749,7 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
 .os-root .ck[data-view='home'] .ck-item__t { font-size: 17px; line-height: 1.4; font-weight: 500; }
 .os-root .ck[data-view='home'] .ck-item__d { display: block; margin-top: 5px; font-size: 14px; line-height: 1.5; -webkit-line-clamp: unset; overflow: visible; }
 .os-root .ck .ck-btn { min-height: 44px; font-size: 14px; line-height: 1.3; }
+.os-root .fiktiv-badge,
 .os-root .ck .ck-fict {
   display: inline-flex;
   align-items: center;
@@ -1766,7 +1767,8 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
   white-space: nowrap;
 }
 .os-root .ck .ck-brand { min-width: 0; line-height: 1.4; }
-.os-root .mr-offline .mr-banner { top: 26px; max-width: min(640px, calc(100% - 48px)); padding: 5px 12px; font-size: 11px; line-height: 1.45; background: rgba(18, 32, 31, .96); border-color: rgba(220, 208, 171, .28); }
+.os-root .source-widget .fiktiv-badge { min-height: 18px; padding: 1px 5px; font-size: 10px; letter-spacing: .02em; }
+.os-root .mr-offline .mr-banner { display: block; top: 26px; max-width: min(640px, calc(100% - 48px)); padding: 5px 12px; font-size: 11px; line-height: 1.45; letter-spacing: 0; white-space: normal; background: rgba(18, 32, 31, .96); border-color: rgba(220, 208, 171, .28); }
 .os-root .ck .ck-scene { transition-property: opacity; }
 .os-root .ck .ck-sys { transition: opacity .2s ease; }
 .os-root .ck .ck-planet b { max-width: 148px; font-size: 15px; line-height: 1.4; font-weight: 500; letter-spacing: 0; text-align: center; text-wrap: balance; }
