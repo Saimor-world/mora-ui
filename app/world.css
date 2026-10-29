@@ -1853,7 +1853,8 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
   .os-root .ck .ck-moon { width: 100px; gap: 6px; }
   .os-root .ck .ck-moon b { font-size: 14px; min-height: 40px; }
   .os-root .ck .ck-moons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 16px 8px; top: 124px; bottom: calc(var(--ck-dock-clearance) + 100px); height: auto; padding: 8px 20px; overflow-y: auto; }
-  .os-root .ck .ck-moons .ck-moon { position: relative; left: auto !important; top: auto !important; transform: none; width: 100%; max-width: none; min-width: 0; padding: 8px; }
+  .os-root .ck .ck-moons .ck-moon { position: relative; left: auto !important; top: auto !important; transform: none; width: 100%; max-width: none; min-width: 0; padding: 8px; background: linear-gradient(180deg, transparent 44%, rgba(5, 17, 21, .82) 72%); }
+  .os-root .ck .ck-moons .ck-moon[aria-pressed='true'] { outline: 1px solid var(--teal); }
   .os-root .ck .ck-moons .ck-moon b { width: 100%; max-width: 150px; }
   .os-root:has(.os-preview-banner) .ck .ck-top { top: 44px; }
   .os-root .mr-offline .mr-banner { top: 100px; left: 12px; right: 12px; transform: none; max-width: none; border-radius: 10px; font-size: 11px; text-align: left; padding: 8px 10px; }
