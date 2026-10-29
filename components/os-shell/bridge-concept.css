@@ -31,5 +31,7 @@
 @media (max-width: 899px) {
   .os-dock[data-variant='c'] .bridge-concept { inset-inline: 12px; height: 76px; }
   .bridge-concept__legend { inset: auto 5% 22px; font-size: 10px; }
-  .bridge-concept__legend span:nth-child(2) { font-size: 8px; }
+  .bridge-concept__legend span:nth-child(2) { position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); white-space: nowrap; font-size: 8px; }
+  .ck-universe-unified[data-phone='1'] .ck-briefing-wrap { max-height: 145px; overflow-y: auto; padding: 10px; border-radius: 12px; background: rgba(5, 20, 22, .86); }
+  .ck-universe-unified[data-phone='1'] .ck-scene--system .ck-sys { top: 245px; bottom: 196px; }
 }
