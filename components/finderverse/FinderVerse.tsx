@@ -2,9 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
-import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
+import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { focusTiles, formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
-import { matteTone } from '@/lib/universe/matteTone';
 import type { LiveDay } from '@/lib/lea/live';
 
 /** „1 Eintrag“, „3 Einträge“. */
@@ -149,7 +148,6 @@ export function FinderVerse(p: FinderVerseProps) {
   const hints = liveHints(planet, day);
   const canFolder = !readOnly && planet.kind !== 'tasks' && (planet.kind === 'department' || planet.spaces.length > 0) && !moon;
   const canInside = !readOnly && Boolean(moon);
-  const moonTone = (m: Moon) => matteTone(m.name, { count: m.count });
   const levelKey = `${planet.id}/${moonId ?? ''}`;
   const centerName = moon ? moon.name : planet.name;
   const ring = moon ? [] : planet.moons;
@@ -249,7 +247,8 @@ export function FinderVerse(p: FinderVerseProps) {
       <div className="fv-body">
         <section className="fv-stage" aria-label={centerName}>
           {view === 'universe' ? (
-            <div key={levelKey} className="fv-orbit" data-dir={dir} style={{ transformOrigin: origin }} data-testid="fv-orbit">
+            <div key={levelKey} className={`fv-orbit${!moon ? ' fv-orbit--horizon' : ''}`} data-dir={dir} style={{ transformOrigin: origin }} data-testid="fv-orbit">
+              {!moon ? <div className="fv-horizon" aria-hidden /> : null}
               <svg className="fv-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
                 <defs>
                   <linearGradient id="fv-filament" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -269,7 +268,7 @@ export function FinderVerse(p: FinderVerseProps) {
                 ) : null}
               </svg>
               <div className="fv-center">
-                <WorldPlanetSphere tone={moon ? moonTone(moon) : planet.tone} size={phone ? 104 : 150} />
+                {moon ? <GlassOrb variant={glassVariantFor(planet.name)} size={phone ? 104 : 150} /> : null}
                 <span className="fv-center__name">{centerName}</span>
                 <span className="fv-center__meta">{moon ? `${entries(moon.count)}${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
               </div>
@@ -283,9 +282,9 @@ export function FinderVerse(p: FinderVerseProps) {
                   data-testid={`fv-moon-${m.id}`}
                   aria-label={`Ordner ${m.name} öffnen · ${entries(m.count)}`}
                 >
-                  <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}>
+                  <GlassOrb variant={glassVariantFor(planet.name)} size={phone ? 48 : 64}>
                     <span className="wd-badge" aria-hidden>{m.count}</span>
-                  </WorldPlanetSphere>
+                  </GlassOrb>
                   <span className="fv-moon__name">{m.name}</span>
                 </button>
               ))}

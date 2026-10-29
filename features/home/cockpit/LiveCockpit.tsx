@@ -1,10 +1,8 @@
 'use client';
 import '../cockpit.css';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
-import { OpenPlanet, PlanetSystem } from './Scene';
-import { DepartmentSheet, FolderSheet } from './Sheets';
+import { PlanetSystem } from './Scene';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { widgetsFromToday } from '../widgets/adapters';
 import { useScopedToday } from '@/lib/os/useScopedToday';
@@ -14,8 +12,9 @@ import type { FeatureSurfaceProps } from '../../types';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 import type { FPlanet } from '@/lib/lea/finder';
 import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from './coreAdapter';
-import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -35,6 +34,8 @@ export interface LiveCockpitProps {
   companyName?: string;
   departments?: any[];
   finderPlanets?: FPlanet[];
+  finderLoading?: boolean;
+  finderFailed?: boolean;
   snapshot?: TodaySnapshot | null;
   viewerName?: string | null;
   isDemo?: boolean;
@@ -46,6 +47,8 @@ export function LiveCockpit({
   companyName: propCompanyName,
   departments: propDepartments,
   finderPlanets,
+  finderLoading = false,
+  finderFailed = false,
   snapshot: propSnapshot,
   viewerName: propViewerName,
   isDemo = false,
@@ -55,49 +58,6 @@ export function LiveCockpit({
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
   const phone = usePhone();
-  const [view, setView] = useState<'home' | 'universe'>(initialView);
-  const [planetId, setPlanetId] = useState<string | null>(null);
-  const [moonId, setMoonId] = useState<string | null>(null);
-  const [deptSheetOpen, setDeptSheetOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const [planetStyle, setPlanetStyle] = useState<'glas' | 'pixel'>('glas');
-
-  useEffect(() => {
-    try {
-      const s = localStorage.getItem('mora.planet_style');
-      if (s === 'pixel' || s === 'glas') setPlanetStyle(s);
-    } catch {}
-  }, []);
-
-  const toggleStyle = (st: 'glas' | 'pixel') => {
-    setPlanetStyle(st);
-    try {
-      localStorage.setItem('mora.planet_style', st);
-    } catch {}
-  };
-
-  useEffect(() => {
-    setView(initialView);
-  }, [initialView]);
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const t = setTimeout(() => setToast(null), 2200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  // Handle URL shortcut (?ort=firma|<planet>&ordner=<mond>)
-  useEffect(() => {
-    const s = new URLSearchParams(window.location.search);
-    const ort = s.get('ort');
-    if (ort) {
-      setView('universe');
-      if (ort !== 'firma') setPlanetId(ort);
-      const o = s.get('ordner');
-      if (o) setMoonId(o);
-    }
-  }, []);
-
   // Compute company name: strip literal [FIKTIV]/(FIKTIV), show badge via effectiveIsDemo
   const rawCompanyName =
     propCompanyName ||
@@ -142,26 +102,42 @@ export function LiveCockpit({
     if (fromCore.length > 0) return fromCore;
     const fromWorld = finderPlanets ? finderToCockpitPlanets(finderPlanets) : [];
     if (fromWorld.length > 0) return fromWorld;
-    // Falls Café-Abteilungen noch als Ersatz einspringen: nur für Demo-Modus (Kennzeichnung über .fiktiv-badge)
-    if (effectiveIsDemo && !propDepartments) {
-      return MORGENROT_STRUCTURE.map((p) => ({
-        ...p,
-        title: stripFiktiv(p.title) || p.title,
-      }));
-    }
+    // An online Home never invents departments that cannot be opened in CORE.
+    // The explicitly marked Offline component owns the separate fictional seed.
     return [];
-  }, [rawDepts, finderPlanets, effectiveIsDemo, propDepartments]);
+  }, [rawDepts, finderPlanets]);
 
   const { attention, items } = useMemo(
     () => deriveLiveAttention(snapshot, navigate),
     [snapshot, navigate]
   );
 
-  const planet = planets.find((p) => p.id === planetId) ?? null;
-  const moon = planet?.moons?.find((m) => m.id === moonId) ?? null;
-
-  const showHome = view === 'home';
-  const sceneMode = planet && view === 'universe' ? 'planet' : 'system';
+  // Home is an overview, not a second Universe. Every entry goes to the same
+  // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
+  const openDepartment = useCallback((id: string) => {
+    if (!planets.some((p) => p.id === id)) return;
+    useUniverseFocus.getState().show({ planetId: id });
+    navigate('universe');
+  }, [planets, navigate]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('ort');
+    if (!id && initialView !== 'universe') return;
+    if (finderLoading) return;
+    const target = planets.find((p) => p.id === id);
+    if (target) {
+      const moonId = params.get('ordner');
+      useUniverseFocus.getState().show({ planetId: target.id, moonId: target.moons.some((m) => m.id === moonId) ? moonId : null });
+    } else useUniverseFocus.getState().take();
+    // Consume the old shortcut so returning Home cannot replay the handoff.
+    if (id) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ort');
+      url.searchParams.delete('ordner');
+      window.history.replaceState(window.history.state, '', url.toString());
+    }
+    navigate('universe');
+  }, [initialView, navigate, planets, finderLoading]);
 
   const subline = liveLoading && propSnapshot === undefined
     ? 'Quellen werden geladen …'
@@ -179,61 +155,30 @@ export function LiveCockpit({
     } else if (widgetId === 'mail') {
       navigate('mora');
     } else {
-      setView('universe');
+      navigate('universe');
     }
   };
-
-  // Filter tasks for the selected planet if available
-  const planetTasks = useMemo(() => {
-    if (!planet || !snapshot?.tasks?.due_today) return [];
-    const pTitle = planet.title.toLowerCase();
-    const pId = planet.id.toLowerCase();
-    return snapshot.tasks.due_today
-      .filter((t) => {
-        const text = `${t.title} ${t.id}`.toLowerCase();
-        return text.includes(pTitle) || text.includes(pId);
-      })
-      .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
-  }, [planet, snapshot]);
 
   return (
     <div
       className="ck"
       data-testid="home"
       data-scope="owner"
-      data-view={view}
+      data-view="home"
       data-phone={phone ? '1' : '0'}
-      data-folder={moon && !showHome ? '1' : '0'}
+      data-folder="0"
     >
       <div className="ck-space" aria-hidden />
 
       {/* 3D Scene canvas */}
-      <div className={`ck-scene ck-scene--${sceneMode}${showHome ? ' ck-scene--behind' : ''}`}>
-        {sceneMode === 'planet' && planet ? (
-          <OpenPlanet
-            planet={planet}
-            showMoons={!showHome}
-            onMoon={(id) => {
-              setMoonId(id);
-              setDeptSheetOpen(false);
-            }}
-            activeMoon={moonId}
-            onOpenDept={() => setDeptSheetOpen(true)}
-            style={planetStyle}
-          />
-        ) : !(phone && showHome) ? (
+      <div className="ck-scene ck-scene--system ck-scene--behind">
+        {!phone ? (
           <PlanetSystem
             planets={planets}
             attention={attention}
             company={companyName}
-            compact={showHome}
-            style={planetStyle}
-            onOpen={(id) => {
-              setView('universe');
-              setPlanetId(id);
-              setMoonId(null);
-              setDeptSheetOpen(false);
-            }}
+            compact
+            onOpen={openDepartment}
           />
         ) : null}
       </div>
@@ -246,24 +191,6 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
-          <div className="ck-style-switch" role="group" aria-label="Darstellung">
-            <button
-              type="button"
-              className={`ck-style-btn${planetStyle === 'glas' ? ' is-active' : ''}`}
-              onClick={() => toggleStyle('glas')}
-              data-testid="switch-glas"
-            >
-              Glas
-            </button>
-            <button
-              type="button"
-              className={`ck-style-btn${planetStyle === 'pixel' ? ' is-active' : ''}`}
-              onClick={() => toggleStyle('pixel')}
-              data-testid="switch-pixel"
-            >
-              Pixel
-            </button>
-          </div>
           <span className="ck-time">Mi, 28. Okt · 07:00</span>
           <span>aus CORE</span>
           {effectiveIsDemo ? (
@@ -277,24 +204,7 @@ export function LiveCockpit({
         </div>
       </header>
 
-      {/* Navigation back from planet horizon */}
-      {!showHome && planet ? (
-        <button
-          type="button"
-          className="ck-back"
-          onClick={() => {
-            setPlanetId(null);
-            setMoonId(null);
-            setDeptSheetOpen(false);
-          }}
-          data-testid="ck-back"
-        >
-          <ArrowLeft size={16} /> {companyName}
-        </button>
-      ) : null}
-
       {/* Left panel: HomeOverview with live tiles */}
-      {showHome ? (
         <section className="ck-panel" aria-label="Home">
           <div data-testid="morgenrot-online">
             <HomeOverview
@@ -313,13 +223,7 @@ export function LiveCockpit({
                     company={companyName}
                     compact
                     strip
-                    style={planetStyle}
-                    onOpen={(id) => {
-                      setView('universe');
-                      setPlanetId(id);
-                      setMoonId(null);
-                      setDeptSheetOpen(false);
-                    }}
+                    onOpen={openDepartment}
                   />
                 </div>
               ) : null}
@@ -355,59 +259,24 @@ export function LiveCockpit({
               <div className="mr-depts" aria-label="Abteilungen">
                 {planets.length ? (
                   planets.map((d) => (
-                    <span
+                    <button
+                      type="button"
                       key={d.id}
                       className="mr-dept"
                       data-testid="morgenrot-department"
-                      onClick={() => {
-                        setView('universe');
-                        setPlanetId(d.id);
-                        setMoonId(null);
-                        setDeptSheetOpen(false);
-                      }}
+                      onClick={() => openDepartment(d.id)}
                       style={{ cursor: 'pointer' }}
                     >
                       {d.title}
-                    </span>
+                    </button>
                   ))
                 ) : (
-                  <span className="mr-note">Noch keine Abteilungen in CORE.</span>
+                  <span className="mr-note">{finderLoading ? 'Abteilungen werden geladen …' : finderFailed ? 'Abteilungen gerade nicht lesbar.' : 'Noch keine Abteilungen in CORE.'}</span>
                 )}
               </div>
             </HomeOverview>
           </div>
         </section>
-      ) : null}
-
-      {/* Moon Folder Sheet */}
-      {moon && planet && !showHome && !deptSheetOpen ? (
-        <FolderSheet
-          key={moon.id}
-          moon={moon}
-          planetTitle={planet.title}
-          onClose={() => setMoonId(null)}
-        />
-      ) : null}
-
-      {/* Department Sheet on Planet click */}
-      {deptSheetOpen && planet && !showHome ? (
-        <DepartmentSheet
-          planet={planet}
-          tasks={planetTasks}
-          onOpenMoon={(id) => {
-            setMoonId(id);
-            setDeptSheetOpen(false);
-          }}
-          onNewFolder={() => setToast('Ordner-Erstellung vorbereitet')}
-          onClose={() => setDeptSheetOpen(false)}
-        />
-      ) : null}
-
-      {toast ? (
-        <div className="ck-toast" role="status">
-          <Check size={14} /> {toast}
-        </div>
-      ) : null}
     </div>
   );
 }

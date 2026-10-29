@@ -1685,3 +1685,206 @@ html:is([data-palette='1'], [data-palette='2']) .wd-roles button[aria-pressed='t
 html:is([data-palette='1'], [data-palette='2']) .pc-desk { color: var(--pal-text) !important; }
 html:is([data-palette='1'], [data-palette='2']) summary { color: var(--pal-text) !important; background-color: var(--pal-glass-strong) !important; }
 html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-text) !important; text-shadow: 0 1px 2px rgba(2,22,28,.95), 0 0 10px rgba(2,22,28,.9), 0 0 22px rgba(2,22,28,.7) !important; }
+/* Visual refinement of #200. Presentation only: keep the existing pixel assets,
+   palette, navigation, data states and hit targets. No orbit/state calculations. */
+.os-root .ck {
+  --ck-dock-clearance: max(168px, var(--os-dock-space, 140px));
+  --glass-bg: rgba(9, 24, 27, .86);
+  --line: rgba(195, 224, 215, .14);
+  --mute: #a7bcb8;
+  --teal: #a7d7c7;
+}
+.os-root .ck[data-view='home'] .ck-panel {
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--glass-bg);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(232, 246, 240, .04);
+  backdrop-filter: blur(16px) saturate(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(110%);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(181, 209, 198, .28) transparent;
+  scrollbar-gutter: stable;
+}
+.os-root .ck[data-view='home'] .ck-h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 2.8vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  font-weight: 550;
+  text-wrap: balance;
+}
+.os-root .ck[data-view='home'] .ck-sub {
+  margin-bottom: 24px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #b4c7c2;
+}
+.os-root .ck[data-view='home'] .widget-board { gap: 14px; margin-top: 24px; }
+.os-root .ck[data-view='home'] .source-widget {
+  grid-column: span 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 142px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(175, 211, 195, .045);
+  border-color: rgba(195, 224, 215, .14);
+  overflow-wrap: break-word;
+}
+.os-root .ck[data-view='home'] .source-widget--l { grid-column: span 12; }
+.os-root .ck[data-view='home'] .source-widget h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #b9d0c7;
+}
+.os-root .ck[data-view='home'] .source-widget strong { font-size: 21px; line-height: 1.3; font-weight: 550; letter-spacing: -.015em; }
+.os-root .ck[data-view='home'] .source-widget :is(p, li) { margin: 0; font-size: 14px; line-height: 1.5; }
+.os-root .ck[data-view='home'] .source-widget ul { display: grid; gap: 8px; }
+.os-root .ck[data-view='home'] .source-widget footer { margin-top: auto; padding-top: 8px; font-size: 12px; line-height: 1.5; color: var(--mute); }
+.os-root .ck[data-view='home'] .source-widget[role='button']:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+.os-root .ck[data-view='home'] .ck-list { margin-top: 24px; }
+.os-root .ck[data-view='home'] .ck-item { padding: 16px 0; gap: 16px; align-items: flex-start; }
+.os-root .ck[data-view='home'] .ck-item__t { font-size: 17px; line-height: 1.4; font-weight: 500; }
+.os-root .ck[data-view='home'] .ck-item__d { display: block; margin-top: 5px; font-size: 14px; line-height: 1.5; -webkit-line-clamp: unset; overflow: visible; }
+.os-root .ck .ck-btn { min-height: 44px; font-size: 14px; line-height: 1.3; }
+.os-root .fiktiv-badge,
+.os-root .ck .ck-fict {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid rgba(220, 208, 171, .25);
+  border-radius: 7px;
+  background: rgba(220, 208, 171, .035);
+  color: #d8cfb5;
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: .055em;
+  white-space: nowrap;
+}
+.os-root .ck .ck-brand { min-width: 0; line-height: 1.4; }
+.os-root .source-widget .fiktiv-badge { min-height: 18px; padding: 1px 5px; font-size: 10px; letter-spacing: .02em; }
+.os-root .mr-offline .mr-banner { display: block; top: 26px; max-width: min(640px, calc(100% - 48px)); padding: 5px 12px; font-size: 11px; line-height: 1.45; letter-spacing: 0; white-space: normal; background: rgba(18, 32, 31, .96); border-color: rgba(220, 208, 171, .28); }
+.os-root .ck .ck-scene { transition-property: opacity; }
+.os-root .ck .ck-sys { transition: opacity .2s ease; }
+.os-root .ck .ck-planet b { max-width: 148px; font-size: 15px; line-height: 1.4; font-weight: 500; letter-spacing: 0; text-align: center; text-wrap: balance; }
+.os-root .ck .ck-planet small { font-size: 12px; line-height: 1.45; }
+.os-root .ck .ck-moon { gap: 8px; width: 140px; }
+.os-root .ck .ck-moons { z-index: 2; }
+.os-root .ck .ck-moon b { display: flex; align-items: center; justify-content: center; min-height: 42px; font-size: 15px; line-height: 1.4; text-align: center; text-wrap: balance; }
+.os-root .ck .ck-moon small { min-height: 18px; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.os-root .ck .ck-dept-sheet { gap: 24px; }
+.os-root .ck .ck-dept-sec { padding-top: 20px; }
+.os-root .ck .ck-files { gap: 10px; }
+.os-root .ck .ck-file { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; min-height: 64px; padding: 16px; border-radius: 14px; }
+.os-root .ck .ck-file b { min-width: 0; font-size: 15px; line-height: 1.5; font-weight: 500; overflow-wrap: break-word; }
+.os-root .ck .ck-file > span { font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; text-align: end; }
+
+/* Use exactly the existing 288px reserved lane: 264px panel + 24px inset. */
+.os-root .wd-horizon {
+  width: 264px;
+  right: 24px;
+  /* The field already reserves dock space; keep the scroll edge above its lip. */
+  max-height: calc(100% - 60px - max(72px, calc(var(--os-dock-space, 140px) / 2)));
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  -webkit-mask-image: none;
+  mask-image: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(181, 209, 198, .25) transparent;
+}
+.os-root .wd-horizon .fv-eyebrow { margin: 0; font-size: 11px; line-height: 1.5; letter-spacing: .12em; }
+.os-root .wd-horizon__row { gap: 8px; min-height: 72px; padding: 14px; border-radius: 12px; }
+.os-root .wd-horizon__row span { font-size: 11px; line-height: 1.4; letter-spacing: .08em; }
+.os-root .wd-horizon__row b { font-size: 14px; line-height: 1.5; font-weight: 500; overflow-wrap: break-word; word-break: normal; }
+.os-root .wd-horizon__bar { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 10px 12px; min-height: 64px; padding: 12px 14px; }
+.os-root .wd-horizon__bar span { grid-column: 1; grid-row: 1; font-size: 13px; line-height: 1.45; overflow-wrap: break-word; }
+.os-root .wd-horizon__bar b { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.os-root .wd-horizon__bar i { grid-column: 1 / -1; grid-row: 2; height: 3px; max-width: 100%; border-radius: 2px; }
+.os-root :is(.wd-horizon__hint, .wd-horizon__foot) { margin: 4px 0; font-size: 12px; line-height: 1.6; }
+.os-root .wd-label { gap: 4px; }
+.os-root .wd-universe .wd-name { max-width: 148px; font-size: 14px; line-height: 1.45; font-weight: 500; letter-spacing: .01em; overflow-wrap: break-word; word-break: normal; text-wrap: balance; text-shadow: 0 1px 3px rgba(0, 0, 0, .9); }
+.os-root .wd-universe .wd-meta { max-width: 148px; font-size: 12px; line-height: 1.45; letter-spacing: 0; color: #aebbb6; }
+.os-root .wd-badge { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; }
+.os-root .fv-moon__name { min-height: 40px; max-width: 144px; line-height: 1.4; overflow-wrap: break-word; text-wrap: balance; }
+/* Pixel artwork stays crisp; surrounding UI follows the quiet green cockpit. */
+.os-root .wd-universe[data-view='pixel'] .wd-label { gap: 4px; padding: 8px 10px; border: 1px solid rgba(184, 212, 202, .12); border-radius: 8px; background: rgba(8, 22, 27, .78); box-shadow: none; }
+.os-root .wd-universe[data-view='pixel'] .wd-name { font-size: 15px; font-weight: 500; letter-spacing: .01em; }
+.os-root .wd-universe[data-view='pixel'] .wd-meta { font-size: 12px; color: #aebbb6; }
+.os-root .wd-universe[data-view='pixel'] .wd-badge { border: 1px solid rgba(184, 212, 202, .32); border-radius: 4px; background: #102529; box-shadow: none; }
+.os-root .wd-universe[data-view='pixel'] .wd-moonlabel { border: 0; border-radius: 4px; background: rgba(8, 22, 27, .86); }
+/* One shared department room: the familiar horizon with the live Finder controls. */
+.os-root .fv-horizon { position: absolute; left: 50%; top: 46%; width: max(118%, 960px); aspect-ratio: 1920 / 700; transform: translateX(-50%); background: url('/universe/glass/half.png') center / contain no-repeat; pointer-events: none; }
+.os-root .fv-orbit--horizon .fv-center { top: auto; bottom: 12%; transform: translateX(-50%); z-index: 1; padding: 10px 20px; border-radius: 16px; background: rgba(8, 22, 27, .68); }
+.os-root .fv-orbit--horizon .fv-center__name { font-size: 28px; margin-top: 0; }
+.os-root .fv-orbit--horizon .fv-empty { top: 18%; bottom: auto; width: min(360px, calc(100% - 32px)); }
+.os-root .fv .fv-moon { z-index: 2; }
+.os-root .fv .fv-moon .wd-badge { top: -4px; right: -4px; }
+.os-root .fv .fv-moon__name { padding: 3px 8px; border-radius: 6px; background: rgba(8, 22, 27, .76); }
+.os-root .fv-lines { opacity: .5; }
+
+@media (min-width: 821px) {
+  .os-root .ck[data-scope='owner'][data-view='home'] .ck-panel { width: min(760px, 60vw); }
+  .os-root .ck[data-scope='owner'] .ck-sys--compact { left: 65%; right: 3%; }
+}
+@media (min-width: 821px) and (max-width: 1100px) {
+  .os-root .ck[data-view='home'] .ck-panel { padding: 24px; }
+  .os-root .ck[data-view='home'] .ck-h1 { font-size: 32px; }
+  .os-root .ck[data-view='home'] .source-widget { padding: 16px; min-height: 132px; }
+  .os-root .ck[data-view='home'] .source-widget strong { font-size: 19px; }
+  .os-root .mr-offline .mr-banner { left: 24px; right: 24px; top: 60px; transform: none; max-width: none; text-align: left; }
+  .os-root .mr-offline .ck[data-view='home'] .ck-panel { top: 104px; max-height: calc(100% - 104px - var(--ck-dock-clearance)); }
+  .os-root .mr-offline .ck[data-view='universe'] :is(.ck-back, .ck-head-open) { top: 100px; }
+}
+/* Wrap the existing instruments at tablet widths; keep every control and its
+   behaviour. Wrapping app rows avoid clipping the right edge of the dock. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .os-root .os-dock[data-variant='c'] .os-dock__capsule { grid-template-columns: 144px minmax(280px, 1fr) 248px; column-gap: 12px; padding-inline: 20px !important; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group--apps { flex-wrap: wrap; gap: 4px; max-width: 248px; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group--tools { gap: 4px; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group button { width: 44px !important; height: 44px !important; }
+}
+@media (max-width: 820px) {
+  .os-root .ck .ck-top { top: 16px; left: 18px; right: 18px; align-items: flex-start; gap: 12px; }
+  .os-root .ck .ck-top__r { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .os-root .ck .ck-brand { font-size: 13px; max-width: 46%; }
+  .os-root .ck[data-view='home'] .ck-panel { top: 82px; left: 12px; right: 12px; width: auto; max-height: calc(100% - 82px - var(--ck-dock-clearance)); padding: 22px 18px; border-radius: 20px; }
+  .os-root .ck[data-view='home'] .ck-h1 { font-size: 32px; }
+  .os-root .ck[data-view='home'] .ck-sub { font-size: 16px; margin-bottom: 20px; }
+  .os-root .ck[data-view='home'] .widget-board { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 20px; }
+  .os-root .ck[data-view='home'] .source-widget { grid-column: auto; padding: 18px; min-height: 128px; }
+  .os-root .ck[data-view='home'] .source-widget h2 { font-size: 14px; }
+  .os-root .ck[data-view='home'] .source-widget strong { font-size: 21px; }
+  .os-root .ck[data-view='home'] .source-widget :is(p, li) { font-size: 15px; }
+  .os-root .ck[data-view='home'] .source-widget footer { font-size: 12px; }
+  .os-root .ck[data-view='home'] .ck-item { padding: 16px 0; }
+  .os-root .ck[data-view='home'] .ck-item__t { font-size: 17px; }
+  .os-root .ck[data-view='home'] .ck-item__d { font-size: 14px; }
+  .os-root .ck .ck-file { grid-template-columns: minmax(0, 1fr) auto; padding: 14px; gap: 8px; }
+  .os-root .ck .ck-moon { width: 100px; gap: 6px; }
+  .os-root .ck .ck-moon b { font-size: 14px; min-height: 40px; }
+  .os-root .ck .ck-moons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 16px 8px; top: 124px; bottom: calc(var(--ck-dock-clearance) + 100px); height: auto; padding: 8px 20px; overflow-y: auto; }
+  .os-root .ck .ck-moons .ck-moon { position: relative; left: auto !important; top: auto !important; transform: none; width: 100%; max-width: none; min-width: 0; padding: 8px; background: linear-gradient(180deg, transparent 44%, rgba(5, 17, 21, .82) 72%); }
+  .os-root .ck .ck-moons .ck-moon[aria-pressed='true'] { outline: 1px solid var(--teal); }
+  .os-root .ck .ck-moons .ck-moon b { width: 100%; max-width: 150px; }
+  .os-root:has(.os-preview-banner) .ck .ck-top { top: 44px; }
+  .os-root .mr-offline .mr-banner { top: 100px; left: 12px; right: 12px; transform: none; max-width: none; border-radius: 10px; font-size: 11px; text-align: left; padding: 8px 10px; }
+  .os-root .mr-offline .ck[data-view='home'] .ck-panel { top: 174px; max-height: calc(100% - 174px - var(--ck-dock-clearance)); }
+  .os-root .ck :is(.ck-back, .ck-head-open) { top: 76px; max-width: calc(50% - 24px); min-height: 44px; font-size: 12px; line-height: 1.35; white-space: normal; }
+  .os-root .mr-offline .ck[data-view='universe'] :is(.ck-back, .ck-head-open) { top: 160px; }
+  .os-root .mr-offline .ck[data-view='universe'] .ck-moons { top: 218px; }
+  .os-root .mr-offline .ck[data-view='universe'] .ck-sys:not(.ck-sys--strip) { top: 172px; bottom: var(--ck-dock-clearance); }
+  .os-root .ck .ck-sys:not(.ck-sys--strip) .ck-sys__core { max-width: 100px; font-size: 10px; line-height: 1.4; letter-spacing: .06em; text-align: center; }
+  .os-root .ck .ck-home-strip { height: 112px; margin: 16px -6px; }
+  .os-root .ck .ck-sys--strip .ck-planet b { max-width: 82px; font-size: 12px; line-height: 1.4; white-space: normal; }
+  .os-root .wd-universe[data-phone='true'] .wd-name { max-width: 108px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .os-root .ck :is(.ck-scene, .ck-sys) { transition: none; }
+}
