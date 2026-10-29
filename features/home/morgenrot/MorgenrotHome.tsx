@@ -51,7 +51,7 @@ function Offline({ initialView }: { initialView?: 'home' | 'universe' }) {
   const viewer = useMemo(() => (typeof window === 'undefined' ? 'marius' : readDemoViewer(window.location.search, true) ?? 'marius'), []);
   return (
     <div className="mr-offline" data-testid="morgenrot-offline">
-      <div className="mr-banner" role="status">Offline-Beispiel, fiktiv · CORE ist gerade nicht erreichbar, nichts hiervon ist gespeichert.</div>
+      <div className="mr-banner fiktiv-badge" role="status">Offline-Beispiel, fiktiv · CORE ist gerade nicht erreichbar, nichts hiervon ist gespeichert.</div>
       <Cockpit initialViewer={viewer} initialView={initialView} />
     </div>
   );

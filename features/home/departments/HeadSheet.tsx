@@ -26,7 +26,7 @@ export function HeadSheet({ planet, viewer, day, dispatch, onClose }: { planet: 
   const team = MORGENROT_SEED.people.filter(p => planet.jobRoles.includes(p.jobRole));
   const choose = (itemId: string, choice: HeadChoice) => dispatch({ type: 'head', record: { departmentId: planet.id, itemId, actorId: viewer, choice, at: new Date().toISOString() } });
   return <div className="ck-sheet ck-head-sheet" role="dialog" aria-label={`Abteilung ${planet.title}`} data-testid="head-sheet">
-    <div className="ck-sheet__head"><div className="ck-role-title"><div><h2>MÔRA · Rolle {planet.title}</h2><p>Fiktive Demo</p></div></div><button type="button" className="ck-icon" onClick={onClose} aria-label="Schließen"><X size={18} /></button></div>
+    <div className="ck-sheet__head"><div className="ck-role-title"><div><h2>MÔRA · Rolle {planet.title}</h2><p className="fiktiv-badge">Fiktive Demo</p></div></div><button type="button" className="ck-icon" onClick={onClose} aria-label="Schließen"><X size={18} /></button></div>
     <div className="ck-sheet__body">
       <div className="ck-card"><div className="ck-card__t">Team &amp; Ordner</div><p className="ck-card__p">{team.map(p => p.name.split(' ')[0]).join(', ') || 'Keine Teamzuordnung'} · {planet.moons.length} Ordner</p></div>
       <div className="ck-card"><div className="ck-card__t">Heute für dich · Beispiel</div><p className="ck-card__p">Ein vorbereitetes Beispiel für {planet.title}. Diese Aufgaben wurden noch nicht ausgeführt.</p></div>

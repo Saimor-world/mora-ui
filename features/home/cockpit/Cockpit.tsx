@@ -85,7 +85,7 @@ export function Cockpit({ initialViewer, initialView = 'home' }: { initialViewer
           <label className="ck-who"><span className="sr-only">Ansicht als</span>
             <select value={viewer} onChange={(e) => switchViewer(e.target.value)} data-testid="viewer-switch">{VIEWERS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}</select>
           </label>
-          <span className="ck-fict" title="Café Morgenrot, Mitarbeitende, Schichten und Zahlen sind erfunden.">Fiktive Demo</span>
+          <span className="ck-fict fiktiv-badge" title="Café Morgenrot, Mitarbeitende, Schichten und Zahlen sind erfunden.">Fiktive Demo</span>
         </div>
       </header>
 

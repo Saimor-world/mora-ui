@@ -254,7 +254,7 @@ export function LiveCockpit({
           <span>aus CORE</span>
           {isDemo ? (
             <span
-              className="ck-fict"
+              className="ck-fict fiktiv-badge"
               title="Café Morgenrot, Mitarbeitende, Schichten und Zahlen sind erfunden."
             >
               Fiktive Demo
