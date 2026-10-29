@@ -12,8 +12,10 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { firstName } from '@/lib/auth/displayName';
 import type { FeatureSurfaceProps } from '../../types';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
-import { coreTreeToPlanets, deriveLiveAttention } from './coreAdapter';
+import type { FPlanet } from '@/lib/lea/finder';
+import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from './coreAdapter';
 import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -32,6 +34,7 @@ export interface LiveCockpitProps {
   initialView?: 'home' | 'universe';
   companyName?: string;
   departments?: any[];
+  finderPlanets?: FPlanet[];
   snapshot?: TodaySnapshot | null;
   viewerName?: string | null;
   isDemo?: boolean;
@@ -42,6 +45,7 @@ export function LiveCockpit({
   initialView = 'home',
   companyName: propCompanyName,
   departments: propDepartments,
+  finderPlanets,
   snapshot: propSnapshot,
   viewerName: propViewerName,
   isDemo = false,
@@ -94,14 +98,22 @@ export function LiveCockpit({
     }
   }, []);
 
-  // Compute company name: never "Personal Demo"
-  const companyName =
+  // Compute company name: strip literal [FIKTIV]/(FIKTIV), show badge via effectiveIsDemo
+  const rawCompanyName =
     propCompanyName ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
     'Dein Unternehmen';
+  const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';
+  const effectiveIsDemo =
+    isDemo ||
+    hasFiktivMarker(rawCompanyName) ||
+    user?.tenant_id === 'tenant-demo-morgenrot' ||
+    snapshot?.requested_scope?.tenant_id === 'tenant-demo-morgenrot' ||
+    /morgenrot/i.test(rawCompanyName);
 
   // Compute user first name for honest personalized greeting
-  let first = propViewerName?.split(/\s+/)[0] || firstName(user);
+  const cleanViewerName = propViewerName ? stripFiktiv(propViewerName) : null;
+  let first = cleanViewerName?.split(/\s+/)[0] || firstName(user);
   const userRole = (user?.role || '').toLowerCase();
   const userEmail = (user?.email || '').toLowerCase();
   if (
@@ -120,7 +132,7 @@ export function LiveCockpit({
   const hello = h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
   const greeting = `${hello}${first ? `, ${first}` : ''}.`;
 
-  // Real company departments: from props (e.g. Morgenrot) or empty list
+  // Real company departments: from props (e.g. Morgenrot) or from useWorld().finder (same source as Universe)
   const rawDepts = useMemo(() => {
     return propDepartments && propDepartments.length > 0 ? propDepartments : [];
   }, [propDepartments]);
@@ -128,15 +140,17 @@ export function LiveCockpit({
   const planets: DemoPlanet[] = useMemo(() => {
     const fromCore = coreTreeToPlanets(rawDepts);
     if (fromCore.length > 0) return fromCore;
-    // Falls Café-Abteilungen noch als Ersatz einspringen: nur für Demo-Modus, und deutlich als FIKTIV markiert
-    if (isDemo) {
+    const fromWorld = finderPlanets ? finderToCockpitPlanets(finderPlanets) : [];
+    if (fromWorld.length > 0) return fromWorld;
+    // Falls Café-Abteilungen noch als Ersatz einspringen: nur für Demo-Modus (Kennzeichnung über .fiktiv-badge)
+    if (effectiveIsDemo && !propDepartments) {
       return MORGENROT_STRUCTURE.map((p) => ({
         ...p,
-        title: p.title.includes('FIKTIV') ? p.title : `${p.title} (FIKTIV)`,
+        title: stripFiktiv(p.title) || p.title,
       }));
     }
     return [];
-  }, [rawDepts, isDemo]);
+  }, [rawDepts, finderPlanets, effectiveIsDemo, propDepartments]);
 
   const { attention, items } = useMemo(
     () => deriveLiveAttention(snapshot, navigate),
@@ -149,9 +163,9 @@ export function LiveCockpit({
   const showHome = view === 'home';
   const sceneMode = planet && view === 'universe' ? 'planet' : 'system';
 
-  const subline = liveLoading
+  const subline = liveLoading && propSnapshot === undefined
     ? 'Quellen werden geladen …'
-    : !snapshot || loadError
+    : !snapshot || (loadError && propSnapshot === undefined)
     ? 'Quellen sind derzeit nicht verfügbar.'
     : items.length
     ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.`
@@ -179,7 +193,7 @@ export function LiveCockpit({
         const text = `${t.title} ${t.id}`.toLowerCase();
         return text.includes(pTitle) || text.includes(pId);
       })
-      .map((t) => ({ id: t.id, title: t.title, due: t.due_date }));
+      .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
   }, [planet, snapshot]);
 
   return (
@@ -252,7 +266,7 @@ export function LiveCockpit({
           </div>
           <span className="ck-time">Mi, 28. Okt · 07:00</span>
           <span>aus CORE</span>
-          {isDemo ? (
+          {effectiveIsDemo ? (
             <span
               className="ck-fict fiktiv-badge"
               title="Café Morgenrot, Mitarbeitende, Schichten und Zahlen sind erfunden."

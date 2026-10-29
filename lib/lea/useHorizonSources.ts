@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 
 export interface HorizonMail { status: 'ok' | 'unavailable'; items: { id: string; subject: string; from?: string }[]; hidden?: number }
 export interface HorizonFeed { status: 'ok' | 'unavailable'; items: { id: string; title: string; source?: string }[] }
@@ -42,7 +43,7 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
     queryFn: async (): Promise<HorizonMail> => {
       const raw = await coreGet(`/v3/mail/messages?${q}&limit=20`, { isOptional: true });
       if (raw == null) return { status: 'unavailable', items: [] };
-      const all = arr(raw, ['messages', 'items']).map((m, i) => ({ id: String(m.id ?? i), subject: String(m.subject ?? '(ohne Betreff)'), from: m.from ? String(m.from) : undefined }));
+      const all = arr(raw, ['messages', 'items']).map((m, i) => ({ id: String(m.id ?? i), subject: stripFiktiv(String(m.subject ?? '(ohne Betreff)')) || '(ohne Betreff)', from: m.from ? String(m.from) : undefined }));
       return { status: 'ok', items: all.filter((m) => !isNoiseMail(m)), hidden: all.filter(isNoiseMail).length };
     },
   });
@@ -51,7 +52,7 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
     queryFn: async (): Promise<HorizonFeed> => {
       const raw = await coreGet(`/v3/integrations/rss/items?limit=5&${q}`, { isOptional: true });
       if (raw == null) return { status: 'unavailable', items: [] };
-      return { status: 'ok', items: arr(raw, ['items']).map((m, i) => ({ id: String(m.id ?? m.link ?? i), title: String(m.title ?? 'Eintrag'), source: m.source ? String(m.source) : undefined })) };
+      return { status: 'ok', items: arr(raw, ['items']).map((m, i) => ({ id: String(m.id ?? m.link ?? i), title: stripFiktiv(String(m.title ?? 'Eintrag')) || 'Eintrag', source: m.source ? String(m.source) : undefined })) };
     },
   });
   const sources = useQuery({

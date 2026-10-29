@@ -2,7 +2,7 @@
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
+import { Button, Loading, StateView, Text } from '@/components/os-kit';
 import { FOCUS_RESERVE, HORIZON_RESERVE, WorldUniverse } from '@/components/world/WorldUniverse';
 import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
@@ -18,7 +18,7 @@ import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
-import { planetCounts, type Star } from '@/lib/lea/finder';
+import { COLLECT_PLANET, planetCounts, type Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useMoraLive } from '../data/useMoraLive';
@@ -53,10 +53,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const dayActions = useDayActions(world.companyId);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
-  // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
-  const placeIds = useMemo(() => new Set(world.planets.map((p) => p.id)), [world.planets]);
-  const finderPlanets = useMemo(() => world.finder.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
-  const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
+  // Nur Orte (echte Abteilungen, nie „Ohne Abteilung“) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
+  const placeIds = useMemo(() => new Set(world.planets.filter((p) => p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim())).map((p) => p.id)), [world.planets]);
+  const finderPlanets = useMemo(() => world.finder.filter((p) => p.kind === 'department' && placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
+  const worldPlanets = useMemo(() => world.planets.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.planets, placeIds]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const reduced = !!useReducedMotion();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -88,14 +88,14 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
   const close = useCallback(() => { setOpenId(null); setInitial(null); setZoomTo(null); }, []);
-  /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
+  /** Kamerafahrt: erst kurz auf den Planeten zoomen, dann den Finder öffnen. */
   const openPlanet = useCallback((id: string) => {
     clearTimeout(zoomTimer.current);
     if (id === world.tasksPlanetId) { setSelectedId(null); setTaskSheet(true); return; }
     setActiveId(id); setSelectedId(id);
     if (reduced) { setOpenId(id); return; }
     setZoomTo(id);
-    zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 520);
+    zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 180);
   }, [reduced, world.tasksPlanetId]);
   useEffect(() => () => clearTimeout(zoomTimer.current), []);
   /** Erster Klick wählt (Fokus-Panel), zweiter Klick auf denselben Planeten zoomt hinein. */
@@ -211,7 +211,6 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-loading">
         <div className="flex flex-col items-center gap-4">
-          <MoraStone size={phone ? 88 : 120} thinking />
           <Text variant="meta">MÔRA liest deine Abteilungen …</Text>
           <div className="w-48"><Loading lines={2} label="Abteilungen werden geladen" /></div>
         </div>
@@ -225,7 +224,6 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-empty">
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-          <MoraStone size={phone ? 88 : 120} halo />
           <Text tone="default">Noch keine Abteilungen angelegt. Jede Abteilung wird hier ein Planet.</Text>
           {onAddDepartment ? <Button size="sm" onClick={onAddDepartment}>Abteilung hinzufügen</Button> : null}
         </div>
@@ -238,6 +236,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       <WorldUniverse
         planets={worldPlanets}
         phone={phone}
+        moraInScene={false}
         sources={companyView && !phone ? horizon.sources : null}
         onOpenSource={() => openLegacyApp('settings')}
         hidden={Boolean(open)}
@@ -255,7 +254,6 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         counts={counts}
         comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
       {calendarNotice ? <p role="status">{calendarNotice}</p> : null}
       {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}

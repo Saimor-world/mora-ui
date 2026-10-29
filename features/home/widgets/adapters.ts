@@ -2,17 +2,18 @@ import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { HomeModel } from '../data/homeModel';
 import type { SourceWidget } from './types';
 import { MORGENROT_EVENTS, MORGENROT_STRUCTURE, orderTotal } from '@/lib/demo/morgenrot/structure';
+import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { reviewsOpen, type DemoDay } from '../data/demoDay';
 
 const readable = (s?: TodaySourceMeta | null) =>
   Boolean(s && (s.status === 'ok' || s.status === 'empty' || s.status === 'stale'));
 
-const meta = (s: TodaySourceMeta, fallbackSource: string) => ({
+const meta = (s: TodaySourceMeta, fallbackSource: string, demo = false) => ({
   source: fallbackSource,
   updatedAt: s.last_synced_at ?? s.as_of ?? null,
   state: s.status === 'stale' ? ('stale' as const) : ('ready' as const),
   size: 'm' as const,
-  demo: false,
+  demo,
 });
 
 /** Values are scoped by useScopedToday and are not fabricated from a partial sample. */
@@ -25,15 +26,17 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
     const unread = snapshot.mail.unread_count;
     const recent = snapshot.mail.items ?? [];
     if (recent.length > 0) {
+      const slice = recent.slice(0, 3);
+      const isFiktiv = slice.some((m) => hasFiktivMarker(m.subject));
       out.push({
         id: 'mail',
         title: 'Posteingang',
-        ...meta(snapshot.mail, 'Post'),
+        ...meta(snapshot.mail, 'Post', isFiktiv),
         content: {
           type: 'list',
-          items: recent.slice(0, 3).map((m) => ({
+          items: slice.map((m) => ({
             id: m.id,
-            title: m.subject || 'Ohne Betreff',
+            title: stripFiktiv(m.subject) || 'Ohne Betreff',
             detail: m.from_addr || undefined,
           })),
         },
@@ -56,15 +59,16 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
   if (readable(snapshot.calendar)) {
     const evs = snapshot.calendar.events ?? [];
     if (evs.length > 0) {
+      const isFiktiv = evs.some((e) => hasFiktivMarker(e.title));
       out.push({
         id: 'calendar',
         title: 'Heutige Termine',
-        ...meta(snapshot.calendar, 'Kalender'),
+        ...meta(snapshot.calendar, 'Kalender', isFiktiv),
         content: {
           type: 'appointments',
           items: evs.map((e) => ({
             id: e.id,
-            title: e.title,
+            title: stripFiktiv(e.title) || e.title,
             detail: e.time ? `${e.time} Uhr` : undefined,
           })),
         },
@@ -90,15 +94,16 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
     const counts = snapshot.tasks.counts;
 
     if (due.length > 0) {
+      const isFiktiv = due.some((t) => hasFiktivMarker(t.title));
       out.push({
         id: 'tasks',
         title: 'Heute fällig',
-        ...meta(snapshot.tasks, 'Aufgaben'),
+        ...meta(snapshot.tasks, 'Aufgaben', isFiktiv),
         content: {
           type: 'list',
           items: due.map((t) => ({
             id: t.id,
-            title: t.title,
+            title: stripFiktiv(t.title) || t.title,
             detail: t.priority ? `Priorität ${t.priority}` : undefined,
           })),
         },
@@ -117,15 +122,17 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
     }
 
     if (overdue.length > 0) {
+      const slice = overdue.slice(0, 3);
+      const isFiktiv = slice.some((t) => hasFiktivMarker(t.title));
       out.push({
         id: 'overdue-tasks',
         title: 'Überfällige Aufgaben',
-        ...meta(snapshot.tasks, 'Aufgaben'),
+        ...meta(snapshot.tasks, 'Aufgaben', isFiktiv),
         content: {
           type: 'list',
-          items: overdue.slice(0, 3).map((t) => ({
+          items: slice.map((t) => ({
             id: t.id,
-            title: t.title,
+            title: stripFiktiv(t.title) || t.title,
             detail: t.due_date ? `Fällig seit ${t.due_date}` : undefined,
           })),
         },
@@ -136,6 +143,10 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
   // 4. Nightwatch / System-Integrität (nur falls vorhanden)
   if (readable(snapshot.nightwatch) && (snapshot.nightwatch.open_incidents !== null || snapshot.nightwatch.health_score !== null)) {
     const incidents = snapshot.nightwatch.open_incidents ?? 0;
+    const rawScore = snapshot.nightwatch.health_score;
+    const scorePct = rawScore !== null
+      ? Math.round(rawScore > 0 && rawScore <= 1 ? rawScore * 100 : rawScore)
+      : null;
     out.push({
       id: 'nightwatch',
       title: 'Betriebsstatus',
@@ -143,7 +154,7 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
       content: {
         type: 'status',
         label: incidents === 0 ? 'Alles ruhig' : `${incidents} offener Hinweis`,
-        detail: snapshot.nightwatch.health_score !== null ? `Score ${Math.round(snapshot.nightwatch.health_score * 100)} %` : undefined,
+        detail: scorePct !== null ? `Score ${scorePct} %` : undefined,
       },
     });
   }
@@ -174,7 +185,7 @@ export function widgetsFromDemo(model: HomeModel, day?: DemoDay): SourceWidget[]
       ...common,
       content: {
         type: 'list',
-        items: model.team.map((t) => ({ id: t.personId, title: t.name, detail: t.shift })),
+        items: model.team.map((t) => ({ id: t.personId, title: stripFiktiv(t.name) || t.name, detail: t.shift })),
       },
     });
     if (day?.close) {
@@ -201,7 +212,7 @@ export function widgetsFromDemo(model: HomeModel, day?: DemoDay): SourceWidget[]
           ...common,
           content: {
             type: 'list',
-            items: folder.files.slice(0, 2).map((f) => ({ id: f.id, title: f.name })),
+            items: folder.files.slice(0, 2).map((f) => ({ id: f.id, title: stripFiktiv(f.name) || f.name })),
           },
         });
       }

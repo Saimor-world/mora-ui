@@ -5,12 +5,13 @@ import { coreGet } from '@/lib/api/http';
 import { calendarReadWindow, calendarSnapshotIsCurrent, fetchCalendarReadSnapshot } from '@/lib/api/calendarReadClient';
 import { listCompanyFiles } from '@/lib/api/filesClient';
 import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
 import { buildLiveDay, calendarMeta } from './live';
 import { isCalendarDept, planetTraits, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
-import { buildFinder, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
+import { buildFinder, COLLECT_PLANET, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
 import { matteTone, toneSlots } from '@/lib/universe/matteTone';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
@@ -66,7 +67,8 @@ export function useWorld() {
     queryKey: ['lea-world', 'nodes', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']),
+    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes'])
+      .map((n) => ({ ...n, ...(n.title ? { title: stripFiktiv(n.title) } : {}), ...(n.name ? { name: stripFiktiv(n.name) } : {}) })),
   });
   // Hochgeladene Dateien (GET /v3/files) sind ebenfalls Sterne ihres Ordners; mit Knoten verknüpfte zählen dort.
   const files = useQuery({
@@ -75,7 +77,7 @@ export function useWorld() {
     staleTime: 30_000,
     queryFn: async () => (await listCompanyFiles(companyId!).catch(() => []))
       .filter((f) => f.folder_id && !f.linked_node_id)
-      .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
+      .map((f): FNode => ({ id: f.id, name: stripFiktiv(f.filename), type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
   });
   const events = useQuery({
     queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
@@ -92,7 +94,7 @@ export function useWorld() {
     queryFn: async () => {
       const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
       if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) throw new Error('Tasks unavailable');
-      return list<WorldTask>(raw, ['tasks', 'items']);
+      return list<WorldTask>(raw, ['tasks', 'items']).map((t) => ({ ...t, title: stripFiktiv(t.title) }));
     },
   });
   const phases = useDayStore((s) => s.phases);
@@ -102,7 +104,7 @@ export function useWorld() {
     count: calendarComplete ? events.data.count : null } : null, [events.data, calendarComplete, events.isError]);
   const tasksComplete = tasks.isSuccess;
   const calendarEvents = useMemo<WorldEvent[]>(() => calendarComplete ? (events.data?.events ?? []).map((event) => ({
-    id: event.id, title: event.title, date: event.date, time: event.time ?? undefined, duration: event.duration ?? undefined,
+    id: event.id, title: stripFiktiv(event.title), date: event.date, time: event.time ?? undefined, duration: event.duration ?? undefined,
   })) : [], [calendarComplete, events.data]);
   const day = useMemo(() => {
     const result = buildLiveDay(calendarEvents, tasks.data ?? [], phases, now, 'Europe/Berlin');
@@ -112,25 +114,25 @@ export function useWorld() {
   }, [calendarEvents, tasks.data, phases, calendarComplete, tasksComplete, now]);
   // Finder = Universe: Abteilungen, Ordner (Monde), Inhalte (Sterne) und der Aufgaben-Planet.
   const finder: FPlanet[] = useMemo(() => buildFinder({
-    departments: (tree.data?.departments ?? []) as never,
+    departments: (tree.data?.departments ?? []).map((d) => ({ ...d, name: stripFiktiv(d.name) })) as never,
     unassigned: tree.data?.unassigned ?? [],
-    folders: folders.data ?? [],
+    folders: (folders.data ?? []).map((f) => ({ ...f, ...(f.name ? { name: stripFiktiv(f.name) } : {}) })),
     nodes: [...(nodes.data ?? []), ...(files.data ?? [])],
     tasks: tasks.isSuccess ? tasks.data ?? [] : null,
   }), [tree.data, folders.data, nodes.data, files.data, tasks.data, tasks.isSuccess]);
   // Live: was Lea heute tut („ist da“, abgeschlossen), steht sofort am Termin-Planeten.
   const places = useMemo(() => {
     const depts = tree.data?.departments ?? [];
-    // Grammatik des Universe: Planeten sind nur Abteilungen (Orte). Aufgaben ohne Ordner und Termine sind
-    // keine Orte – sie stehen im Horizont und bei MÔRA. Eine reine Termin-Abteilung ohne Ordner ist eine Quelle.
-    return finder.filter((p) => p.kind !== 'tasks' && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
+    // Grammatik des Universe: Planeten sind nur echte Abteilungen (Orte). „Ohne Abteilung“ (collect),
+    // Aufgaben ohne Ordner und reine Termin-Abteilungen ohne Ordner sind keine Planeten für Kunden.
+    return finder.filter((p) => p.kind === 'department' && p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim()) && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
   }, [finder, tree.data]);
   // Ton je Ort fest aus dem Namen, Nachbarn auf der Bahn entzerrt – derselbe Ton im Universe und im Finder.
   const toneById = useMemo(() => {
     const slots = toneSlots(places.map((p) => p.name));
     return new Map(places.map((p, i) => [p.id, matteTone(p.name, {}, slots[i])]));
   }, [places]);
-  const finderToned: FPlanet[] = useMemo(() => finder.map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
+  const finderToned: FPlanet[] = useMemo(() => finder.filter((p) => p.kind !== 'collect' && p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim())).map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
   const planets: WorldPlanet[] = useMemo(() => {
     const live = calendarMeta(day, 'Europe/Berlin');
     const depts = tree.data?.departments ?? [];
