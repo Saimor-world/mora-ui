@@ -65,9 +65,8 @@ export function orbitScale(height: number, phone: boolean, width = Infinity): nu
   return Math.round(Math.max(1, Math.min(1.35, height / SCALE_HEIGHT, width / SCALE_WIDTH)) * 100) / 100;
 }
 
-/** MÔRA ist immer der größte Körper (oder 0, wenn MÔRA nur im Dock sitzt). */
+/** MÔRA ist immer der größte Körper. */
 export function moraSize(phone: boolean, scale = 1, base = 120): number {
-  if (base === 0) return 0;
   return Math.round((phone ? 88 : base) * scale);
 }
 
@@ -137,8 +136,7 @@ export function layoutCalm(opts: OrbitOptions): OrbitLayout {
     const cols = Math.ceil(n / rows);
     const rowH = big + (lab + CALM_MOONS) * scale; // Schrift und Mondbogen schrumpfen nicht mit
     const mora = mora0 * f;
-    const gap = mora > 0 ? CALM_GAP * scale * f : 0;
-    return { cellW, cols, rows, big, rowH, mora, gap, total: mora + gap + rows * rowH };
+    return { cellW, cols, rows, big, rowH, mora, total: mora + CALM_GAP * scale * f + rows * rowH };
   };
   // Erst luftig (max. 4 Spalten, volle Größe), dann etwas kleiner, zuletzt breiter statt höher.
   const tries: [number, number][] = [];
@@ -158,7 +156,7 @@ export function layoutCalm(opts: OrbitOptions): OrbitLayout {
     const size = Math.round((allSame ? CALM_SIZES[1] : CALM_SIZES[tier(o.w)]) * scale * f);
     const x = cx + (col - (inRow - 1) / 2) * g.cellW;
     // Unterkanten bündig: Namen stehen je Reihe auf einer Linie, kleinere Planeten sitzen etwas höher über ihrem Namen.
-    const y = top + g.mora + g.gap + row * g.rowH + CALM_MOONS * scale + g.big - size / 2;
+    const y = top + g.mora + CALM_GAP * scale * f + row * g.rowH + CALM_MOONS * scale + g.big - size / 2;
     // angle π/4: Licht von links oben, Planet „vorne“ (Name darunter, Monde oben).
     slots[o.i] = { ring: 0, angle: Math.PI / 4, size, at: { x, y } };
   });
@@ -296,8 +294,7 @@ function overlap(a: Rect, b: Rect, pad = PAD): number {
   const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + pad;
   return w > 0 && h > 0 ? w * h : 0;
 }
-function moraRect(layout: OrbitLayout): Rect | null {
-  if (layout.mora <= 0) return null;
+function moraRect(layout: OrbitLayout): Rect {
   const r = layout.mora / 2 + 4;
   return { x0: layout.cx - r, y0: layout.cy - r, x1: layout.cx + r, y1: layout.cy + r, kind: 'sphere' };
 }

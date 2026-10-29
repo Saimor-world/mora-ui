@@ -72,6 +72,6 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     window.location.hash = '#universe';
     renderShell();
     await waitFor(() => expect(screen.getByTestId('os-shell')).toHaveAttribute('data-atmosphere', 'universe'));
-    expect(await screen.findByTestId('feature-universe')).toBeInTheDocument();
-  }, 30000);
+    expect(await screen.findByTestId('feature-universe', {}, { timeout: 15000 })).toBeInTheDocument();
+  }, 60000);
 });

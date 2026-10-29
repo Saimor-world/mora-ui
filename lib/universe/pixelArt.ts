@@ -40,20 +40,6 @@ const LOOK: Record<PlanetKind, Look> = {
 };
 export const kindLook = (k: PlanetKind): Look => LOOK[k];
 
-// Distinct, quiet mineral families for otherwise identical sandy bodies.
-// The stable seed affects appearance only; department identity and data signs stay intact.
-const MINERALS = [
-  ramp('#101b24', '#263b47', '#526b78', '#93a9ad', '#d5dfd5'),
-  ramp('#1b1720', '#44323a', '#78515a', '#ad8582', '#ddd1bb'),
-  ramp('#101e20', '#213d40', '#416c6a', '#83aaa0', '#d5dcca'),
-  ramp('#1c1922', '#39384b', '#62627e', '#aaa5bb', '#e1dbcd'),
-];
-function materialLook(spec: PlanetSpec): Look {
-  if (spec.kind !== 'desert') return LOOK[spec.kind];
-  const base = MINERALS[(spec.seed >>> 8) % MINERALS.length];
-  return { ...LOOK.desert, base, atmo: base[3], ring: [base[1], base[2], base[3], base[4]], glow: base[2] };
-}
-
 // ---------- Rauschen (deterministisch, ohne Math.random) ----------
 function h3(x: number, y: number, z: number, s: number): number {
   let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2147483647) ^ Math.imul(s | 0, 1274126177);
@@ -143,7 +129,7 @@ const LIGHTS = hex('#ffd36b');
 /** Ein Takt (Frame) eines Planeten: Oberfläche, Ring, Atmosphäre, Funkeln. `rot` dreht die Oberfläche. */
 export function paintPlanet(spec: PlanetSpec, geo: Geometry, frame = 0): Bitmap {
   const { S, R, c, mask, nx, ny, nz, lam } = geo;
-  const look = materialLook(spec);
+  const look = LOOK[spec.kind];
   const bm = newBitmap(S, S);
   const sd = spec.seed % 9973;
   const rot = frame * look.speed + (spec.seed % 628) / 100;
@@ -168,11 +154,11 @@ export function paintPlanet(spec: PlanetSpec, geo: Geometry, frame = 0): Bitmap 
         const warp = fbm3(px * 2.2, py * 2.2, pz * 2.2, sd) - 0.5;
         const band = Math.sin((py * 7.5 + warp * 2.6) * Math.PI) * 0.5 + 0.5;
         let t = band * 0.62 + 0.18 + (fbm3(px * 5, py * 9, pz * 5, sd + 7) - 0.5) * 0.14;
-        const cream = Math.sin((py * 5 + warp * 1.6 + 0.5) * Math.PI) > 0.96;
+        const cream = Math.sin((py * 7.5 + warp * 2.6 + 0.5) * Math.PI) > 0.93;
         let col: RGB;
         const sd2 = (px - storm[0]) ** 2 + ((py - storm[1]) * 1.7) ** 2 + (pz - storm[2]) ** 2;
-        if (sd2 < 0.05) col = sd2 < 0.012 ? look.base[4] : sd2 < 0.03 ? look.base[3] : look.base[1];
-        else col = cream ? look.base[3] : pick(look.base, clamp(t, 0, 1), 0.5);
+        if (sd2 < 0.05) col = sd2 < 0.012 ? hex('#f4d0b0') : sd2 < 0.03 ? hex('#e0795a') : hex('#a04a3a');
+        else col = cream ? look.ring[3] : pick(look.base, clamp(t, 0, 1), 0.5);
         return shadeBy(col, shade, b, look.base);
       }
       case 'ocean': {
@@ -203,10 +189,9 @@ export function paintPlanet(spec: PlanetSpec, geo: Geometry, frame = 0): Bitmap 
         return pick(look.base, clamp((0.12 + facet * 0.35) * 0.55 + shade * 0.62 + (Math.abs(py) > 0.78 ? 0.14 : 0), 0, 1), b);
       }
       case 'desert': {
-        const warp = fbm3(px * 2.5, py * 2.5, pz * 2.5, sd, 2) - 0.5;
-        const dune = Math.sin((py * 4.2 + warp * 1.4) * Math.PI) * 0.5 + 0.5;
-        // Broad, stepped strata read as pixel clusters, rather than noisy photographic bands.
-        let t = 0.08 + Math.floor(dune * 3) * 0.04 + shade * 0.72;
+        const warp = fbm3(px * 3, py * 3, pz * 3, sd) - 0.5;
+        const dune = Math.sin((py * 9 + warp * 3.2) * Math.PI) * 0.5 + 0.5;
+        let t = (0.2 + dune * 0.28 + (fbm3(px * 5, py * 5, pz * 5, sd + 1) - 0.5) * 0.18) * 0.4 + shade * 0.62;
         for (const k of cs) { const d = Math.acos(clamp(px * k.v[0] + py * k.v[1] + pz * k.v[2], -1, 1)); if (d < k.r) t -= 0.18; else if (d < k.r + 0.05) t += 0.12; }
         return pick(look.base, clamp(t, 0, 1), b);
       }
@@ -258,17 +243,6 @@ export function paintPlanet(spec: PlanetSpec, geo: Geometry, frame = 0): Bitmap 
     if (mask[i]) {
       if (rg && rg.front) { put(bm, x, y, rg.col); continue; }
       let col = surface(i, x, y);
-      // Keep solid colour clusters: five authored tones, no smooth colour interpolation.
-      // Lava and ocean retain their deliberately separate fissure/cloud colours.
-      if (spec.kind !== 'lava' && spec.kind !== 'ocean') {
-        let distance = Infinity;
-        let tone = look.base[0];
-        for (const candidate of look.base) {
-          const d = (col[0] - candidate[0]) ** 2 + (col[1] - candidate[1]) ** 2 + (col[2] - candidate[2]) ** 2;
-          if (d < distance) { distance = d; tone = candidate; }
-        }
-        col = tone;
-      }
       if (edge(x, y)) {
         const lit = lam[i] > 0.28 || (nx[i] * geo.L.x + ny[i] * geo.L.y) > 0.25;
         col = lit && look.atmo ? mix(col, look.atmo, 0.55) : mix(col, look.base[0], 0.65);

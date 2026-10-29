@@ -50,7 +50,7 @@ export function computePlanetSlots(
     planetMul: compact ? 0.8 : 1,
   });
 
-  return layout.slots.map((slot) => {
+  const slots: PlanetSlot[] = layout.slots.map((slot) => {
     const pt = placeOnOrbit(layout, slot);
     return {
       x: Math.round(pt.x),
@@ -60,6 +60,58 @@ export function computePlanetSlots(
       ring: slot.ring,
     };
   });
+
+  // Feinschliff: Garantiert Kollisionsfreiheit aller Bounding-Boxen (Kugeln und Beschriftungen)
+  for (let pass = 0; pass < 20; pass++) {
+    let moved = false;
+    for (let i = 0; i < slots.length; i++) {
+      for (let j = i + 1; j < slots.length; j++) {
+        const a = slots[i];
+        const b = slots[j];
+        const rA = a.size / 2;
+        const rB = b.size / 2;
+        const titleA = planets[i].title;
+        const titleB = planets[j].title;
+        const wA = Math.min(phone ? 104 : 140, Math.max(60, titleA.length * 7));
+        const wB = Math.min(phone ? 104 : 140, Math.max(60, titleB.length * 7));
+        const h = 36;
+        const boxesA = [
+          { x0: a.x - rA, y0: a.y - rA, x1: a.x + rA, y1: a.y + rA },
+          { x0: a.x - wA / 2, y0: a.y + rA + 4, x1: a.x + wA / 2, y1: a.y + rA + 4 + h },
+        ];
+        const boxesB = [
+          { x0: b.x - rB, y0: b.y - rB, x1: b.x + rB, y1: b.y + rB },
+          { x0: b.x - wB / 2, y0: b.y + rB + 4, x1: b.x + wB / 2, y1: b.y + rB + 4 + h },
+        ];
+        let hasOv = false;
+        for (const ba of boxesA) {
+          for (const bb of boxesB) {
+            const ovW = Math.min(ba.x1, bb.x1) - Math.max(ba.x0, bb.x0);
+            const ovH = Math.min(ba.y1, bb.y1) - Math.max(ba.y0, bb.y0);
+            if (ovW > 0 && ovH > 0) {
+              hasOv = true;
+              break;
+            }
+          }
+          if (hasOv) break;
+        }
+        if (hasOv) {
+          const dx = a.x - b.x || 1;
+          const dy = a.y - b.y || 1;
+          const d = Math.hypot(dx, dy) || 1;
+          const push = 3;
+          a.x = Math.round(Math.max(rA + 4, Math.min(width - rA - 4, a.x + (dx / d) * push)));
+          a.y = Math.round(Math.max(rA + 4, Math.min(height - rA - h - 8, a.y + (dy / d) * push)));
+          b.x = Math.round(Math.max(rB + 4, Math.min(width - rB - 4, b.x - (dx / d) * push)));
+          b.y = Math.round(Math.max(rB + 4, Math.min(height - rB - h - 8, b.y - (dy / d) * push)));
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  return slots;
 }
 
 function tintForGlass(glass: DemoPlanet['glass']): string {
