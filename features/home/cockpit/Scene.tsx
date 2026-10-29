@@ -5,6 +5,9 @@ import { PixelSphere } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
+import { PixelPlanet, PixelMoon } from '@/components/world/PixelPlanet';
+import { planetKind, seedOf } from '@/lib/universe/pixelArt';
+import { toneSlot } from '@/lib/universe/matteTone';
 
 export interface PlanetSlot {
   x: number;
@@ -224,19 +227,16 @@ export function OpenPlanet({
                   title={isError ? (m.hint || 'Ordner gerade nicht ladbar') : undefined}
                 >
                   {style === 'pixel' ? (
-                    <div
-                      style={{
-                        width: 90,
-                        height: 90,
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        marginBottom: 6,
-                        imageRendering: 'pixelated',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      <PixelSphere size={90} lit={0.8} tint={tint} variant="A" seed={i + 20} />
+                    <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <PixelMoon
+                        kind={planetKind(cleanPlanetTitle, toneSlot(cleanPlanetTitle))}
+                        d={44}
+                        x={22}
+                        y={22}
+                        seed={seedOf(m.id)}
+                        light={{ x: -0.6, y: -0.6 }}
+                        tasks={m.files.some((f) => f.name.toLowerCase().includes('aufgabe'))}
+                      />
                     </div>
                   ) : (
                     <GlassOrb size={90} variant={planet.glass} />
@@ -260,9 +260,25 @@ export function OpenPlanet({
           </div>
         )
       ) : null}
-      <div className="ck-horizon" style={{ ['--glass' as string]: `url(/universe/glass/half.png)` }}>
-        <div className="ck-horizon__img" />
-      </div>
+      {style === 'pixel' ? (
+        <div className="ck-horizon ck-horizon--pixel" style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', overflow: 'hidden' }}>
+          <div style={{ transform: 'translateY(42%) scale(2.6)', imageRendering: 'pixelated' }}>
+            <PixelPlanet
+              kind={planetKind(cleanPlanetTitle, toneSlot(cleanPlanetTitle))}
+              size={360}
+              seed={seedOf(planet.id)}
+              light={{ x: -0.6, y: -0.6 }}
+              folders={n}
+              activity={1}
+              open={1}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="ck-horizon" style={{ ['--glass' as string]: `url(/universe/glass/half.png)` }}>
+          <div className="ck-horizon__img" />
+        </div>
+      )}
       <h2
         className="ck-horizon__title"
         style={onOpenDept ? { cursor: 'pointer' } : undefined}

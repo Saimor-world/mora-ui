@@ -2,6 +2,7 @@
 
 import '@/features/home/cockpit.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { DepartmentSheet, FolderSheet } from '@/features/home/cockpit/Sheets';
@@ -53,6 +54,9 @@ export interface UnifiedUniverseProps {
   initialStyle?: 'glas' | 'pixel';
 }
 
+const PX = 2;
+const pixelSize = (size: number, angle: number) =>
+  Math.max(2 * PX * 5, Math.round((size * (Math.sin(angle) > 0 ? 1 : 0.85)) / (2 * PX)) * 2 * PX);
 /**
  * HQ-Pixelansicht (Marius hq.saimor.world, Merge #186):
  * - Hintergrund: PixelSky
@@ -67,12 +71,16 @@ function PixelUniverseOverview({
   phone,
   incidentMap,
   onOpenPlanet,
+  tasks = [],
+  reduced = false,
 }: {
   planets: DemoPlanet[];
   attention: Set<string>;
   phone: boolean;
   incidentMap: Map<string, number>;
   onOpenPlanet: (id: string) => void;
+  tasks?: Array<{ id: string; title: string; status?: string; is_overdue?: boolean | null; department_id?: string | null }>;
+  reduced?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 1200, height: 680 });
@@ -109,7 +117,7 @@ function PixelUniverseOverview({
       weights,
       phone,
       calm: true,
-      moraBase: phone ? 88 : 140,
+      moraBase: 0,
       labels,
     });
   }, [size.width, size.height, weights, phone, labels]);
@@ -121,30 +129,7 @@ function PixelUniverseOverview({
       style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
       data-testid="pixel-universe"
     >
-      {/* Genau eine schwebende PixelMora im Zentrum des ruhigen Rasters */}
-      <button
-        type="button"
-        className="wd-mora"
-        style={{
-          position: 'absolute',
-          left: Math.round(layout.cx / 2) * 2,
-          top: Math.round(layout.cy / 2) * 2,
-          width: Math.round(layout.mora / 2) * 2,
-          height: Math.round(layout.mora / 2) * 2,
-          transform: 'translate(-50%, -50%)',
-          zIndex: 10 + Math.round(layout.cy),
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-        onClick={() => useOsShellStore.getState().setMoraOpen(true)}
-        aria-label="MÔRA öffnen"
-        data-testid="world-mora"
-      >
-        <span className="wd-mora-glide" data-testid="world-mora-glide">
-          <PixelMora size={phone ? 36 : Math.round(layout.mora * 0.64)} mood="idle" />
-        </span>
-      </button>
+
 
       {/* Planeten im ruhigen Raster */}
       {planets.map((planet, i) => {
@@ -154,7 +139,7 @@ function PixelUniverseOverview({
         const displayName = stripFiktiv(planet.title) || planet.title;
         const kind = planetKind(displayName, toneSlot(displayName));
         const seed = seedOf(displayName);
-        const sz = slot.size;
+        const sz = pixelSize(slot.size, slot.angle);
         const light = { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) };
         const incCount = incidentMap.get(planet.id) ?? 0;
 
@@ -180,10 +165,29 @@ function PixelUniverseOverview({
             {planet.moons?.length ? (
               <PlanetOrbit
                 tone={matteTone(displayName).vars}
-                away={1}
+                away={slot && Math.cos(slot.angle) < 0 ? -1 : 1}
                 orbit={{
-                  moons: planet.moons.map((m) => ({ id: m.id, label: m.title, stars: [] })),
-                  stars: [],
+                  moons: planet.moons.map((m) => ({
+                    id: m.id,
+                    label: stripFiktiv(m.title) || m.title,
+                    stars: (m.files || []).map((f) => ({
+                      id: f.id,
+                      label: f.name,
+                      kind: 'doc' as const,
+                      done: true,
+                      overdue: false,
+                    })),
+                  })),
+                  stars: tasks
+                    .filter((t) => t.department_id === planet.id)
+                    .slice(0, 8)
+                    .map((t) => ({
+                      id: t.id,
+                      label: t.title,
+                      kind: 'task' as const,
+                      done: t.status === 'done',
+                      overdue: Boolean(t.is_overdue),
+                    })),
                 }}
                 size={sz}
                 phone={phone}
@@ -199,7 +203,7 @@ function PixelUniverseOverview({
               activity={attention.has(planet.id) ? 1 : 0}
               overdue={attention.has(planet.id) || incCount > 0 ? 1 : 0}
               open={0}
-              reduced={false}
+              reduced={reduced}
             />
             <span className="wd-label">
               <span className="wd-name">{displayName}</span>
@@ -248,6 +252,7 @@ export function UnifiedUniverse({
 }: UnifiedUniverseProps) {
   const world = useWorld();
   const phone = usePhone();
+  const motionReduced = Boolean(useReducedMotion());
   const user = useSessionStore((s) => s.user);
   const { snapshot } = useScopedToday();
 
@@ -442,11 +447,9 @@ export function UnifiedUniverse({
     const moonIds = new Set(planet.moons?.map((m) => m.id) ?? []);
     return snapshot.tasks.due_today
       .filter((t) => {
-        const dId = (t as { department_id?: string }).department_id;
-        if (dId) return dId === planet.id;
-        const fId = (t as { folder_id?: string }).folder_id;
-        if (fId && moonIds.has(fId)) return true;
-        return (t as { department_id?: string }).department_id === planet.id;
+        if (t.department_id) return t.department_id === planet.id;
+        if (t.folder_id && moonIds.has(t.folder_id)) return true;
+        return false;
       })
       .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
   }, [planet, snapshot]);
@@ -462,7 +465,7 @@ export function UnifiedUniverse({
     >
       {/* Background: PixelSky in pixel mode, ck-space in glass mode */}
       {planetStyle === 'pixel' ? (
-        <PixelSky reduced={false} />
+        <PixelSky reduced={motionReduced} />
       ) : (
         <div className="ck-space" aria-hidden />
       )}
@@ -548,6 +551,8 @@ export function UnifiedUniverse({
             phone={phone}
             incidentMap={departmentIncidentMap}
             onOpenPlanet={handleOpenPlanet}
+            tasks={snapshot?.tasks?.due_today ?? []}
+            reduced={motionReduced}
           />
         ) : (
           <PlanetSystem

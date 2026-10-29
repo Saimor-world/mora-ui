@@ -1565,8 +1565,17 @@ html[data-dock='c'] .os-shell::before { content: ''; position: fixed; left: 0; r
 .os-dock[data-variant='c'] .os-dock__crumbs button { all: unset; cursor: pointer; color: rgb(var(--c-jade-hi)); text-decoration: underline dotted rgba(var(--c-jade-hi), .5); text-underline-offset: 2px; }
 .os-dock[data-variant='c'] .os-dock__crumbs button:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
 
-@media (min-width: 900px) {
-  .os-dock[data-variant='c'] .os-dock__capsule { display: grid !important; grid-template-columns: 1fr minmax(520px, 640px) 1fr; align-items: end; min-height: var(--os-dock-space) !important; padding: 0 2.8vw 16px !important; column-gap: 16px; }
+@media (min-width: 900px) and (max-width: 1199px) {
+  .os-dock[data-variant='c'] .os-dock__capsule { display: grid !important; grid-template-columns: minmax(180px, auto) minmax(360px, 460px) minmax(180px, auto); align-items: end; min-height: var(--os-dock-space) !important; padding: 0 16px 16px !important; column-gap: 12px; }
+  .os-dock[data-variant='c'] .os-dock__group--tools { justify-self: end; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
+  .os-dock[data-variant='c'] .os-dock__group--apps { justify-self: start; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
+  .os-dock[data-variant='c'] .os-dock__item--mobile { display: none !important; }
+  .os-dock[data-variant='c'] .os-dock__label { display: none; }
+  .os-dock[data-variant='c'] .os-dock__hub { position: relative; flex-direction: column; align-items: center; gap: 6px; max-width: none; margin-top: -120px; width: 100%; }
+  .os-dock[data-variant='c'] .os-dock__ask { width: 100%; max-width: 440px; margin: 0 auto; }
+}
+@media (min-width: 1200px) {
+  .os-dock[data-variant='c'] .os-dock__capsule { display: grid !important; grid-template-columns: 1fr minmax(460px, 580px) 1fr; align-items: end; min-height: var(--os-dock-space) !important; padding: 0 2.8vw 16px !important; column-gap: 16px; }
   .os-dock[data-variant='c'] .os-dock__group--tools { justify-self: end; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
   .os-dock[data-variant='c'] .os-dock__group--apps { justify-self: start; align-self: end; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
   .os-dock[data-variant='c'] .os-dock__item--mobile { display: none !important; }

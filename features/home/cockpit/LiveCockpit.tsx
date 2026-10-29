@@ -258,6 +258,26 @@ export function LiveCockpit({
         ) : null}
       </div>
 
+      {/* Genau EIN Umschalter links (.wd-view) für die gesamte App */}
+      <button
+        type="button"
+        className="wd-view"
+        aria-pressed={planetStyle === 'pixel'}
+        onClick={() => toggleStyle(planetStyle === 'pixel' ? 'glas' : 'pixel')}
+        data-testid="world-view-toggle"
+        title={planetStyle === 'pixel' ? 'Zurück zur Glas-Ansicht' : 'Zurück zur Pixel-Ansicht'}
+      >
+        <i aria-hidden />
+        {planetStyle === 'pixel' ? (
+          <>
+            Gesamtansicht
+            <small>ohne Pixel</small>
+          </>
+        ) : (
+          'Pixel-Ansicht'
+        )}
+      </button>
+
       <CockpitWindow />
 
       {/* Top HUD */}
@@ -266,24 +286,7 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
-          <div className="ck-style-switch" role="group" aria-label="Darstellung">
-            <button
-              type="button"
-              className={`ck-style-btn${planetStyle === 'glas' ? ' is-active' : ''}`}
-              onClick={() => toggleStyle('glas')}
-              data-testid="switch-glas"
-            >
-              Glas
-            </button>
-            <button
-              type="button"
-              className={`ck-style-btn${planetStyle === 'pixel' ? ' is-active' : ''}`}
-              onClick={() => toggleStyle('pixel')}
-              data-testid="switch-pixel"
-            >
-              Pixel
-            </button>
-          </div>
+
           <span className="ck-time">Mi, 28. Okt · 07:00</span>
           <span>aus CORE</span>
           {effectiveIsDemo ? (

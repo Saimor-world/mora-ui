@@ -53,6 +53,10 @@ export type TodayTask = {
   status: 'backlog' | 'in_progress' | 'done';
   priority?: 'low' | 'medium' | 'high' | null;
   due_date?: string | null;
+  department_id?: string | null;
+  folder_id?: string | null;
+  completed_at?: string | null;
+  is_overdue?: boolean | null;
 };
 
 export type TodayIncident = {

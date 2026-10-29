@@ -51,7 +51,7 @@ function relDay(iso?: string): string | null {
 const STAGE: Record<string, string> = { universe: 'Im All', approach: 'Anflug', orbit: 'Im Orbit', landed: 'Gelandet' };
 
 /** Cockpit-Instrumente (Variante C): nur echte Zahlen aus CORE bzw. den Mitteilungen. */
-function Instruments({ side, led = 0, onNavigate }: { side: 'l' | 'map' | 'last'; led?: number; onNavigate?: (id: string) => void }) {
+function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l' | 'map' | 'last'; led?: number; onNavigate?: (id: string) => void; onNotifications?: () => void }) {
   const world = useWorld();
   const pos = useNavPos();
   const planets = world.planets ?? [];
@@ -75,8 +75,11 @@ function Instruments({ side, led = 0, onNavigate }: { side: 'l' | 'map' | 'last'
           type="button"
           className="os-dock__gauge os-dock__gauge--btn"
           data-warn={led > 0 ? 'true' : undefined}
-          onClick={() => onNavigate?.('universe')}
-          title="Planeten mit Aufmerksamkeit öffnen"
+          onClick={() => {
+            if (onNotifications) onNotifications();
+            else onNavigate?.('notifications');
+          }}
+          title="Mitteilungen öffnen (braucht dich)"
           style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
         >
           <b>{led > 0 ? led : '–'}</b>
@@ -157,7 +160,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
-          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} onNavigate={onNavigate} /> : null}
+          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} onNavigate={onNavigate} onNotifications={onNotifications} /> : null}
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}>
