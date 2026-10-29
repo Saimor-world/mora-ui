@@ -1819,6 +1819,15 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
 .os-root .wd-universe[data-view='pixel'] .wd-meta { font-size: 12px; color: #aebbb6; }
 .os-root .wd-universe[data-view='pixel'] .wd-badge { border: 1px solid rgba(184, 212, 202, .32); border-radius: 4px; background: #102529; box-shadow: none; }
 .os-root .wd-universe[data-view='pixel'] .wd-moonlabel { border: 0; border-radius: 4px; background: rgba(8, 22, 27, .86); }
+/* One shared department room: the familiar horizon with the live Finder controls. */
+.os-root .fv-horizon { position: absolute; left: 50%; top: 46%; width: max(118%, 960px); aspect-ratio: 1920 / 700; transform: translateX(-50%); background: url('/universe/glass/half.png') center / contain no-repeat; pointer-events: none; }
+.os-root .fv-orbit--horizon .fv-center { top: auto; bottom: 12%; transform: translateX(-50%); z-index: 1; padding: 10px 20px; border-radius: 16px; background: rgba(8, 22, 27, .68); }
+.os-root .fv-orbit--horizon .fv-center__name { font-size: 28px; margin-top: 0; }
+.os-root .fv-orbit--horizon .fv-empty { top: 18%; bottom: auto; width: min(360px, calc(100% - 32px)); }
+.os-root .fv .fv-moon { z-index: 2; }
+.os-root .fv .fv-moon .wd-badge { top: -4px; right: -4px; }
+.os-root .fv .fv-moon__name { padding: 3px 8px; border-radius: 6px; background: rgba(8, 22, 27, .76); }
+.os-root .fv-lines { opacity: .5; }
 
 @media (min-width: 821px) {
   .os-root .ck[data-scope='owner'][data-view='home'] .ck-panel { width: min(760px, 60vw); }
