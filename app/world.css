@@ -1789,6 +1789,8 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
 .os-root .wd-horizon {
   width: 264px;
   right: 24px;
+  /* The field already reserves dock space; keep the scroll edge above its lip. */
+  max-height: calc(100% - 60px - max(72px, calc(var(--os-dock-space, 140px) / 2)));
   gap: 12px;
   padding: 20px;
   border-radius: 20px;
