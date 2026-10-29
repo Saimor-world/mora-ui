@@ -3,6 +3,7 @@ import React from 'react';
 import { GlassOrb } from '@/components/world/GlassOrb';
 import { PixelSphere } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 
 /** Planetensystem der Firma: Abteilungen als Glas- oder Pixel-Planeten auf einer ruhigen Ellipse um das Café. */
 const SLOTS = [
@@ -43,12 +44,13 @@ export function PlanetSystem({
         <ellipse cx="50" cy="49" rx="33" ry="28" />
         <ellipse className="ck-sys__orbit2" cx="50" cy="49" rx="44" ry="37" />
       </svg>
-      <div className="ck-sys__core" aria-hidden><span />{company}</div>
+      <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>
       {planets.map((p, i) => {
         const s = SLOTS[i % SLOTS.length];
         const folderCount = p.moons?.length ?? 0;
         const orbSize = strip ? 48 : compact ? Math.round(s.size * 0.9) : s.size;
         const tint = tintForGlass(p.glass);
+        const cleanTitle = stripFiktiv(p.title) || p.title;
 
         return (
           <button
@@ -77,7 +79,7 @@ export function PlanetSystem({
             ) : (
               <GlassOrb size={orbSize} variant={p.glass} />
             )}
-            <b>{p.title.endsWith(' (FIKTIV)') ? <>{p.title.slice(0, -9)} <span className="fiktiv-badge">(FIKTIV)</span></> : p.title}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
+            <b>{cleanTitle}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
             <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>
           </button>
         );
@@ -104,6 +106,7 @@ export function OpenPlanet({
 }) {
   const n = planet.moons?.length ?? 0;
   const tint = tintForGlass(planet.glass);
+  const cleanPlanetTitle = stripFiktiv(planet.title) || planet.title;
 
   return (
     <div className="ck-open" data-testid={`planet-${planet.id}`}>
@@ -152,7 +155,7 @@ export function OpenPlanet({
                   ) : (
                     <GlassOrb size={90} variant={planet.glass} />
                   )}
-                  <b>{m.title}</b>
+                  <b>{stripFiktiv(m.title) || m.title}</b>
                   <small style={isError ? { color: 'var(--amber, #f59e0b)' } : undefined}>
                     {isError ? (m.hint || 'Ordner gerade nicht ladbar') : `${m.files.length} ${m.files.length === 1 ? 'Eintrag' : 'Einträge'}`}
                   </small>
@@ -162,7 +165,7 @@ export function OpenPlanet({
           </div>
         ) : (
           <div className="ck-empty-horizon" style={{ position: 'absolute', top: 110, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: 10 }}>
-            <p style={{ color: 'var(--mute)', margin: '0 0 12px', fontSize: 14 }}>Noch keine Ordner in {planet.title}.</p>
+            <p style={{ color: 'var(--mute)', margin: '0 0 12px', fontSize: 14 }}>Noch keine Ordner in {cleanPlanetTitle}.</p>
             {onOpenDept ? (
               <button type="button" className="ck-btn ck-btn--p" onClick={onOpenDept}>
                 Abteilung ansehen
@@ -180,7 +183,7 @@ export function OpenPlanet({
         onClick={onOpenDept}
         title="Details zu dieser Abteilung öffnen"
       >
-        {planet.title}
+        {cleanPlanetTitle}
       </h2>
     </div>
   );

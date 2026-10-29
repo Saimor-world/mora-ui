@@ -122,7 +122,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const setUser = useSessionStore((s) => s.setUser);
     const queryClient = useQueryClient();
     const hasInvite = inviteCode.trim().length > 0;
-    const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
+    const ambientMotionEnabled = false;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Beispielinstanz erkunden oder mit Zugangsdaten weiter'
@@ -839,13 +839,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             {/* Noise Texture Overlay for Organic Feel */}
             {/* Noise texture removed - asset not available */}
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
                 {mode === 'welcome' && (
                     <motion.div
                         key="welcome"
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.1 }}
                         className="relative z-10 flex flex-col items-center gap-12 max-w-2xl w-full px-6"
                     >
                         <motion.div
@@ -1075,7 +1076,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             </div>
                                         )}
 
-                                        <AnimatePresence mode="wait">
+                                        <AnimatePresence mode="sync">
                                             {tokenValid === null && (
                                                 <motion.div
                                                     key="checking"
@@ -1195,7 +1196,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5, staggerChildren: 0.1 }}
+                                transition={{ duration: 0.12 }}
                                 className="w-full max-w-md space-y-3"
                             >
                                 {surfaceProfile.isLocalTruthSurface && (
@@ -1212,9 +1213,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 {/* Anmelden Button */}
                                 <motion.button
                                     onClick={() => setMode('login')}
-                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    whileHover={{ x: 2 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-colors duration-150 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     <div className="relative p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-300">
@@ -1238,9 +1239,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             setMode('login');
                                         }
                                     }}
-                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    whileHover={{ x: 2 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-colors duration-150 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     <div className="relative p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-all duration-300">
@@ -1277,9 +1278,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 {mode === 'login' && (
                     <motion.div
                         key="login"
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.1 }}
                         className="relative z-10 w-full max-w-md px-6"
                     >
                         {/* Glass Form Container */}

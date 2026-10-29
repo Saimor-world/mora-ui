@@ -46,6 +46,7 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
   const night = mood === 'night' || (mood === 'idle' && isNight());
   const busy = mood === 'thinking' || mood === 'speaking' || mood === 'listening' || mood === 'waiting';
   const flying = !!target;
+  const canRoam = roam.length > 0 || flying;
   const [eyes, setEyes] = useState<'eyes' | 'eyes_closed' | 'eyes_l' | 'eyes_r'>('eyes');
   const [happy, setHappy] = useState(false);
   const [pose, setPose] = useState({ x: 0, y: 0, tilt: 0 });
@@ -56,9 +57,9 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
   const live = useRef({ roam, fresh, night, busy, flying });
   live.current = { roam, fresh, night, busy, flying };
 
-  // Entscheidungen: eigener Takt, aus echtem Zustand.
+  // Entscheidungen: eigener Takt, aus echtem Zustand (nur wenn Bewegungsziele existieren).
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || !canRoam) return;
     let last: Intent | undefined; let t: ReturnType<typeof setTimeout>;
     const step = () => {
       const s = live.current;
@@ -70,11 +71,11 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
     };
     t = setTimeout(step, 1200);
     return () => clearTimeout(t);
-  }, [reduced]);
+  }, [reduced, canRoam]);
 
-  // Bewegung: weich, auf Pixelraster gerundet.
+  // Bewegung: weich, auf Pixelraster gerundet (kein 60fps-Dauerlauf im Dock ohne Roaming).
   useEffect(() => {
-    if (reduced) { setPose({ x: 0, y: 0, tilt: 0 }); return; }
+    if (reduced || !canRoam) { setPose((p) => (p.x === 0 && p.y === 0 && p.tilt === 0 ? p : { x: 0, y: 0, tilt: 0 })); return; }
     let raf = 0; let prev = performance.now();
     const tick = (now: number) => {
       const dt = Math.min(64, now - prev); prev = now;
@@ -88,21 +89,25 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [reduced, scale]);
+  }, [reduced, scale, canRoam]);
 
-  // Blinzeln und Blick zum Cursor.
+  // Blinzeln und gedrosselter Blick zum Cursor (vermeidet getBoundingClientRect-Reflow bei jedem Pointer-Pixel).
   useEffect(() => {
     if (night) { setEyes('eyes_closed'); return; }
     let t: ReturnType<typeof setTimeout>;
     const blink = () => { setEyes('eyes_closed'); setTimeout(() => setEyes(look.current < 0 ? 'eyes_l' : look.current > 0 ? 'eyes_r' : 'eyes'), 140); t = setTimeout(blink, 2600 + Math.random() * 3800); };
     if (!reduced) t = setTimeout(blink, 2000); else setEyes('eyes');
+    let lastMove = 0;
     const onMove = (e: PointerEvent) => {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      if (now - lastMove < 120) return;
+      lastMove = now;
       const r = box.current?.getBoundingClientRect(); if (!r) return;
       const dx = e.clientX - (r.left + r.width / 2); const dy = e.clientY - (r.top + r.height / 2);
       const n: 0 | -1 | 1 = Math.hypot(dx, dy) < 220 ? (dx < -12 ? -1 : dx > 12 ? 1 : 0) : 0;
       if (n !== look.current) { look.current = n; setEyes(n < 0 ? 'eyes_l' : n > 0 ? 'eyes_r' : 'eyes'); }
     };
-    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointermove', onMove, { passive: true });
     return () => { clearTimeout(t); window.removeEventListener('pointermove', onMove); };
   }, [night, reduced]);
 

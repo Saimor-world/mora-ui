@@ -31,10 +31,7 @@ const pixelSize = (size: number, angle: number) => Math.max(2 * PX * 5, Math.rou
 
 /**
  * Universe aus echten Daten (Richtung visual-v1): MÔRA – Marius' Jadestein mit Augen –
- * in der Mitte, die Abteilungen als matte Planeten auf feinen Bahnen. Die Planeten bleiben
- * auf ihrem Platz und schweben dort nur ganz leicht (wenige Pixel, sehr langsam, 60 fps
- * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
- * Der Hintergrund bleibt das Universe-Bild der Shell.
+ * im Dock (oder optional in der Mitte), die Abteilungen als matte Planeten auf feinen Bahnen.
  */
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
 const ASK_RESERVE_PHONE = 212; // Frag-MÔRA-Leiste + Dock + Zuordnen-Chip (44 px + Luft) liegen über dem unteren Feldrand (gemessen bei 390×844)
@@ -54,7 +51,7 @@ export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = PixelMora }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = PixelMora, moraInScene = true }: {
   spiritMood?: SpiritMood;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
@@ -62,6 +59,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   spiritCaption?: string | null;
   /** Pluggable MÔRA figure: same props as MoraSpirit, so a new look can drop in. */
   SpiritFigure?: React.ComponentType<SpiritFigureProps>;
+  /** false: MÔRA sitzt nur im Dock, keine zweite schwebende MÔRA / Sprechblase im Feld. */
+  moraInScene?: boolean;
   /** Doppelklick: direkt hineinzoomen. */
   onZoomPlanet?: (id: string) => void;
   /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
@@ -121,8 +120,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : pixel ? ASK_RESERVE_CALM : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 150 : undefined, calm: pixel, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
-    [size.width, size.height, planets, phone, insetLeft, insetRight, pixel],
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : pixel ? ASK_RESERVE_CALM : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: !moraInScene ? 0 : pixel ? 150 : undefined, calm: pixel, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    [size.width, size.height, planets, phone, insetLeft, insetRight, pixel, moraInScene],
   );
 
   const place = useCallback((t: number) => {
@@ -131,25 +130,29 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       const el = planetRefs.current[i];
       if (!el) return;
       const p = placeOnOrbit(layout, slot);
-      const { dx, dy } = floatOffset(i, pixel ? t * 0.45 : t);
+      const { dx, dy } = t === 0 || layout.calm ? { dx: 0, dy: 0 } : floatOffset(i, pixel ? t * 0.45 : t);
       if (pixel) {
         // Pixel-Ansicht: ganzzahlige Lage in Kunstpixel-Schritten, keine Skalierung – nichts wird unscharf.
         const half = pixelSize(slot.size, slot.angle) / 2;
         const sx = Math.round((p.x + dx - half) / PX) * PX, sy = Math.round((p.y + dy - half) / PX) * PX;
-        el.style.transform = `translate3d(${sx}px, ${sy}px, 0)`;
+        const nextTransform = `translate3d(${sx}px, ${sy}px, 0)`;
+        if (el.style.transform !== nextTransform) el.style.transform = nextTransform;
       } else {
-        el.style.transform = `translate3d(${(p.x + dx).toFixed(2)}px, ${(p.y + dy).toFixed(2)}px, 0) translate(-50%, -50%) scale(${p.front ? 1 : 0.85})`;
+        const nextTransform = `translate3d(${(p.x + dx).toFixed(2)}px, ${(p.y + dy).toFixed(2)}px, 0) translate(-50%, -50%) scale(${p.front ? 1 : 0.85})`;
+        if (el.style.transform !== nextTransform) el.style.transform = nextTransform;
       }
-      el.style.zIndex = String(p.z);
-      el.dataset.depth = p.front ? 'front' : 'back';
+      const nextZ = String(p.z);
+      if (el.style.zIndex !== nextZ) el.style.zIndex = nextZ;
+      const nextDepth = p.front ? 'front' : 'back';
+      if (el.dataset.depth !== nextDepth) el.dataset.depth = nextDepth;
     });
   }, [layout, pixel]);
 
-  // Ein Takt für alle Planeten; steht bei verborgenem Tab, Zeiger/Fokus und „weniger Bewegung“.
+  // Ein Takt für alle Planeten; im ruhigen Raster (layout.calm), bei verborgenem Feld oder „weniger Bewegung“ kein Dauer-Rendering.
   useEffect(() => {
     if (!layout) return;
     place(0);
-    if (reduced || typeof requestAnimationFrame === 'undefined') return;
+    if (reduced || hidden || layout.calm || typeof requestAnimationFrame === 'undefined') return;
     let frame = 0;
     let t = 0;
     let last = performance.now();
@@ -163,13 +166,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [layout, place, reduced]);
+  }, [layout, place, reduced, hidden]);
 
   const hold = (on: boolean) => () => { paused.current = on; };
 
-  // Parallaxe: Sternenschichten folgen dem Zeiger ganz leicht (nur Desktop, nie bei „weniger Bewegung“).
+  // Parallaxe: Sternenschichten folgen dem Zeiger ganz leicht (nur Gesamtansicht am Desktop, nie im Pixel-Modus oder bei „weniger Bewegung“).
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (reduced || phone || e.pointerType !== 'mouse') return;
+    if (reduced || phone || pixel || hidden || e.pointerType !== 'mouse') return;
     const el = fieldRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
@@ -179,13 +182,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 
   // Kamera: Ursprung auf den Zielplaneten, dann weich hinein (CSS-Transition auf .wd-zoomwrap).
   const spiritPoint = (() => {
-    if (!layout || !spiritTarget) return null;
+    if (!layout || !spiritTarget || !moraInScene) return null;
     if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
     const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
     return pp && sl ? stopShort(layout, pp, sl.size) : null;
   })();
   // MÔRAs Ziele: Planeten relativ zur Mitte, gewichtet nach echter Aktivität / offenen Punkten.
-  const roam = layout ? planets.flatMap((p, k) => { const sl = layout.slots[k]; const pp = sl ? placeOnOrbit(layout, sl) : null; const t = p.traits;
+  const roam = layout && moraInScene ? planets.flatMap((p, k) => { const sl = layout.slots[k]; const pp = sl ? placeOnOrbit(layout, sl) : null; const t = p.traits;
     return pp && sl ? [{ id: p.id, ...stopShort(layout, pp, sl.size), weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
   const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
@@ -194,7 +197,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
 
   return (
-    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined} data-view={pixel ? 'pixel' : 'full'}>
+    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={pixel ? undefined : onPointerMove} data-camera={zoomPt ? 'zooming' : undefined} data-view={pixel ? 'pixel' : 'full'}>
       {pixel ? <PixelSky reduced={reduced} /> : (<>
       <div className="wd-parallax wd-parallax--far" aria-hidden />
       <div className="wd-parallax wd-parallax--mid" aria-hidden />
@@ -206,8 +209,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       {layout ? (
         <svg className="wd-orbits" shapeRendering={pixel ? 'crispEdges' : undefined} width={size.width} height={size.height} aria-hidden>
           {layout.calm ? null : layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
-          {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
-          {layout.slots.map((slot, i) => {
+          {/* Netz: jede Abteilung hängt an MÔRA (wenn MÔRA im Feld schwebt); die aktive leuchtet. */}
+          {moraInScene ? layout.slots.map((slot, i) => {
             const pt = placeOnOrbit(layout, slot);
             const id = planets[i]?.id;
             const active = id === activeId || id === selectedId;
@@ -220,7 +223,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
                 {pulse ? <path className="wd-link-pulse" d={d} data-testid={`world-pulse-${id}`} /> : null}
               </g>
             );
-          })}
+          }) : null}
           {sources?.length && !layout.calm ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
@@ -240,7 +243,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       });
       })() : null}
 
-      {layout ? (
+      {layout && moraInScene ? (
         <button
           type="button"
           className="wd-mora"
@@ -257,13 +260,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           </span>
         </button>
       ) : null}
-      {layout && spiritCaption ? (
+      {layout && moraInScene && spiritCaption ? (
         <div className="wd-mora-step" role="status" aria-live="polite" data-testid="world-mora-step"
           style={{ left: layout.cx + (spiritPoint?.x ?? 0), top: layout.cy + (spiritPoint?.y ?? 0) - (phone ? 30 : 46), zIndex: 400 }}>
           <span className="wd-mora-step__who">MÔRA</span>{spiritCaption}
         </div>
       ) : null}
-      {layout && moraLine ? (
+      {layout && moraInScene && moraLine ? (
         // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
         <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 106 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
@@ -302,7 +305,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
                 <>
                   {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={sz} phone={phone} pixel={pixel ? { kind, light, seed: seedOf(planet.name) } : undefined} /> : null}
                   {planet.traits && !pixel ? <PlanetTraitsLayer traits={planet.traits} size={sz} phone={phone} /> : null}
-                  {pixel && slot ? <PixelPlanet kind={kind} size={sz} seed={seedOf(planet.name)} light={light} folders={tr?.folders} activity={tr?.activity} overdue={tr?.overdue} open={tr?.open} reduced={reduced} /> : null}
+                  {pixel && slot ? <PixelPlanet kind={kind} size={sz} seed={seedOf(planet.name)} light={light} folders={tr?.folders} activity={tr?.activity} overdue={tr?.overdue} open={tr?.open} reduced={reduced || hidden} /> : null}
                   <WorldPlanetSphere light={slot ? light : undefined} tone={planet.tone} className={`wd-tex-${tr?.texture ?? 0}`} size={sz}>
                     {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
                   </WorldPlanetSphere>

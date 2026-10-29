@@ -16,7 +16,7 @@ import { OpenPlanet, PlanetSystem } from './Scene';
 import { ActionSheet, FolderSheet, type SheetKind } from './Sheets';
 
 const DATE = '2026-10-28';
-const COMPANY = 'Café Morgenrot (FIKTIV)';
+const COMPANY = 'Café Morgenrot';
 const VIEWERS = [['marius', 'Marius · Inhaber'], ['lena', 'Lena · Service'], ['tarek', 'Tarek · Küche'], ['jonas', 'Jonas · Theke']] as const;
 
 function usePhone() {

@@ -8,13 +8,13 @@ import { Cockpit } from '../cockpit/Cockpit';
 import { CockpitWindow } from '../cockpit/Window';
 import { LiveCockpit } from '../cockpit/LiveCockpit';
 
-const COMPANY = 'Café Morgenrot (FIKTIV)';
+const COMPANY = 'Café Morgenrot';
 
 function Shell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="ck ck-live-home mr" data-testid="home" data-scope="morgenrot">
       <div className="ck-space" aria-hidden /><CockpitWindow />
-      <header className="ck-top"><span>{COMPANY}</span><span>{label}</span></header>
+      <header className="ck-top"><span>{COMPANY}</span><span>{label} <span className="ck-fict fiktiv-badge">Fiktive Demo</span></span></header>
       <div className="ck-live-grid"><section className="ck-panel" aria-label={COMPANY}>{children}</section></div>
     </div>
   );

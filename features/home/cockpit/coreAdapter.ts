@@ -1,6 +1,7 @@
 import type { DemoFile, DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
-import { deriveAttention } from '../../today/data/attention';
+import { COLLECT_PLANET, type FPlanet } from '@/lib/lea/finder';
 
 const GLASS_PALETTE: DemoPlanet['glass'][] = ['champagne', 'sage', 'lavender', 'bluegrey', 'paleblue'];
 
@@ -39,6 +40,40 @@ export interface LiveAttentionItem {
   onAction?: () => void;
 }
 
+function isOhneAbteilung(id: string, title: string): boolean {
+  return id === COLLECT_PLANET || /^ohne[\s-]*abteilung$/i.test(title.trim());
+}
+
+/**
+ * Maps FPlanet[] from useWorld().finder (the exact same source Universe uses) to Cockpit DemoPlanet[].
+ * Filters out "Ohne Abteilung" and tasks planets.
+ */
+export function finderToCockpitPlanets(finder: FPlanet[]): DemoPlanet[] {
+  if (!Array.isArray(finder)) return [];
+  return finder
+    .filter((p) => p && p.kind === 'department' && !isOhneAbteilung(p.id, p.name))
+    .map((p, index) => {
+      const title = stripFiktiv(p.name) || 'Abteilung';
+      return {
+        id: p.id,
+        title,
+        jobRoles: ['inhaber', 'service', 'kueche', 'aushilfe'],
+        glass: pickGlass(p.id, title, index),
+        position: { x: 50, y: 50 },
+        moons: p.moons.map((m) => ({
+          id: m.id,
+          title: stripFiktiv(m.name) || 'Ordner',
+          files: m.stars.map((s) => ({
+            id: s.id,
+            name: stripFiktiv(s.name) || 'Eintrag',
+            meta: s.hint ? stripFiktiv(s.hint) : s.kind,
+            body: [],
+          })),
+        })),
+      };
+    });
+}
+
 /**
  * Maps live CORE tree/department models to Cockpit scene types (DemoPlanet, DemoMoon, DemoFile).
  * Real departments = Planets, real folders/spaces = Moons, real nodes = Files.
@@ -47,15 +82,16 @@ export interface LiveAttentionItem {
 export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
   if (!rawTreeOrDepartments) return [];
 
-  const rawDepts: CoreRawNode[] = Array.isArray(rawTreeOrDepartments)
+  const rawDepts: CoreRawNode[] = (Array.isArray(rawTreeOrDepartments)
     ? rawTreeOrDepartments.filter((d) => d && (d.type === 'department' || (!d.type && (d.id || d.name))))
     : Array.isArray(rawTreeOrDepartments.departments)
       ? rawTreeOrDepartments.departments
-      : [];
+      : []
+  ).filter((d: CoreRawNode) => !isOhneAbteilung(String(d?.id || ''), String(d?.name || d?.title || '')));
 
   return rawDepts.map((dept, index) => {
     const id = String(dept.id || `dept-${index}`);
-    const title = String(dept.name || dept.title || 'Abteilung');
+    const title = stripFiktiv(String(dept.name || dept.title || 'Abteilung')) || 'Abteilung';
     const glass = pickGlass(id, title, index);
 
     const moons: DemoMoon[] = [];
@@ -71,7 +107,7 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
       seenMoonIds.add(mId);
       moons.push({
         id: mId,
-        title: mTitle,
+        title: stripFiktiv(mTitle) || 'Ordner',
         files,
         ...extra,
       });
@@ -95,7 +131,7 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
         String(folder.name || folder.title || 'Ordner'),
         rawFiles.map((node, fIndex) => ({
           id: String(node.id || `node-${fIndex}`),
-          name: String(node.title || node.name || 'Dokument'),
+          name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
           meta: String(node.type || 'Dokument'),
           body: Array.isArray(node.body)
             ? node.body
@@ -144,7 +180,7 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
             String(folder.name || folder.title || 'Ordner'),
             rawFiles.map((node, fIndex) => ({
               id: String(node.id || `node-${fIndex}`),
-              name: String(node.title || node.name || 'Dokument'),
+              name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
               meta: String(node.type || 'Dokument'),
               body: Array.isArray(node.body)
                 ? node.body
@@ -164,7 +200,7 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
           String(space.name || space.title || 'Bereich'),
           rawFiles.map((node, fIndex) => ({
             id: String(node.id || `node-${fIndex}`),
-            name: String(node.title || node.name || 'Dokument'),
+            name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
             meta: String(node.type || 'Bereich'),
             body: Array.isArray(node.body)
               ? node.body
@@ -232,7 +268,7 @@ export function deriveLiveAttention(
     const nextEv = snapshot.calendar.events[0];
     items.push({
       id: 'live-cal',
-      title: nextEv.title,
+      title: stripFiktiv(nextEv.title) || nextEv.title,
       detail: `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
       action: 'Kalender ansehen',
       onAction: () => navigate?.('calendar'),
@@ -243,7 +279,7 @@ export function deriveLiveAttention(
     const nextTask = snapshot.tasks.due_today[0];
     items.push({
       id: 'live-task',
-      title: nextTask.title,
+      title: stripFiktiv(nextTask.title) || nextTask.title,
       detail: 'Heute zur Erledigung fällig.',
       action: 'Aufgabe erledigen',
       onAction: () => navigate?.('tasks'),
