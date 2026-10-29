@@ -1,4 +1,5 @@
 'use client';
+/** @deprecated Abgelöst durch UnifiedUniverse (ein kanonisches Universe). Nicht mehr aktiv im Shell-Routing eingebunden. */
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -27,6 +28,9 @@ import { planetForTarget } from '@/lib/mora/liveRun';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
+import { MORGENROT } from '@/lib/demo/morgenrot/online';
+import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
 
 /** Universe mit Sitzung: die Abteilungen des Betriebs aus CORE, nichts aus Vorlagen. */
 export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora: (text: string) => void; onAddDepartment?: () => void; navigate?: (target: string) => void }) {
@@ -80,6 +84,21 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   useEffect(() => { if (seenMail.current !== undefined && mailId && mailId !== seenMail.current) fly('mail'); seenMail.current = mailId; }, [mailId, fly]);
   // Live MÔRA: real run steps from CORE (owner SSE). Desktop only; phone is the companion.
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const sessionTenant = useSessionStore((s) => s.user?.tenant_id);
+  const sessionIsDemo = useSessionStore((s) => Boolean((s.user as { is_demo?: boolean } | null)?.is_demo || s.user?.role === 'demo'));
+  const sessionCompanyName = useSessionStore((s) => (s.user as { active_company_name?: string | null } | null)?.active_company_name ?? '');
+  const activeCompanyIsDemo = useActiveCompanyIsDemo();
+  const isDemo = Boolean(
+    sessionIsDemo ||
+    activeCompanyIsDemo ||
+    sessionTenant === MORGENROT.tenantId ||
+    sessionTenant === 'tenant-demo' ||
+    world.companyId === MORGENROT.companyId ||
+    hasFiktivMarker(sessionCompanyName) ||
+    world.tasks.some((t) => hasFiktivMarker(t.title)) ||
+    world.events.some((e) => hasFiktivMarker(e.title)) ||
+    (horizon.mail?.status === 'ok' && horizon.mail.items.some((m) => hasFiktivMarker(m.subject)))
+  );
   const live = useMoraLive(!phone && hasSession && companyView);
   const livePlanet = live.active || live.done ? planetForTarget(live.target, worldPlanets) : null;
   const liveCaption = live.active || live.done ? live.label : null;
@@ -237,6 +256,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         planets={worldPlanets}
         phone={phone}
         moraInScene={false}
+        isDemo={isDemo}
         sources={companyView && !phone ? horizon.sources : null}
         onOpenSource={() => openLegacyApp('settings')}
         hidden={Boolean(open)}
@@ -256,7 +276,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
       />
       {calendarNotice ? <p role="status">{calendarNotice}</p> : null}
-      {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
+      {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={stripFiktiv(world.day.sentence) || world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
       {selected ? (
         <PlanetFocus
           planet={selected}
@@ -277,18 +297,18 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <p className="fv-eyebrow">Dein Horizont</p>
           <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-calendar">
             <span>Kalender</span>
-            <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
+            <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${stripFiktiv(world.day.running.title) || world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${stripFiktiv(world.day.next.title) || world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
             <span>Aufgaben</span>
-            <b>{world.day.taskLine}</b>
+            <b>{stripFiktiv(world.day.taskLine) || world.day.taskLine}</b>
           </button>
           <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />
           {companyView ? (
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
-                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? (stripFiktiv(horizon.mail.items[0].subject) || horizon.mail.items[0].subject) : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>
               {/* Feed-Zeile entfernt (24.10.2026): allgemeine RSS-Einträge waren Rauschen; der Feed bleibt unter Post. */}
             </>
@@ -298,9 +318,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           {finderPlanets.map((p) => {
             const n = planetCounts(p).items;
             const max = Math.max(1, ...finderPlanets.map((q) => planetCounts(q).items));
+            const pName = stripFiktiv(p.name) || p.name;
             return (
               <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => setSelectedId(p.id)} data-testid={`horizon-bar-${p.id}`}>
-                <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b title={`${n} Einträge in ${p.moons.length} Ordnern`}>{n}</b>
+                <span>{pName}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b title={`${n} Einträge in ${p.moons.length} Ordnern`}>{n}</b>
               </button>
             );
           })}
@@ -315,6 +336,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         <FinderVerse
           key={open.id}
           planet={open}
+          isDemo={isDemo}
           initialMoonId={initial?.moonId}
           initialStarId={initial?.starId}
           phone={phone}

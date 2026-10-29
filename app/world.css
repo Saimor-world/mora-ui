@@ -1511,6 +1511,14 @@ html[data-dock='c'] .os-shell::before { content: ''; position: fixed; left: 0; r
 
 /* MÔRA als Navigatorin im Projektor */
 .os-dock[data-variant='c'] .os-dock__stone { position: relative; width: 200px; height: 186px; border-radius: 0; background: none !important; overflow: visible; display: flex; align-items: flex-end; justify-content: center; }
+.os-dock[data-variant='c'] .os-dock__stone[data-big='false'] { width: 120px; height: 120px; overflow: visible; }
+.os-dock[data-variant='c'] .os-dock__stone[data-big='false']::after { width: 96px; height: 16px; bottom: 2px; }
+.os-dock[data-variant='c'] .os-dock__stone[data-big='false'] .os-dock__px { margin-bottom: 6px; }
+@media (max-width: 899px) {
+  .os-dock[data-variant='c'] .os-dock__stone[data-big='false'] { width: 96px; height: 96px; }
+  .os-dock[data-variant='c'] .os-dock__stone[data-big='false']::after { width: 76px; height: 14px; bottom: 2px; }
+  .os-dock[data-variant='c'] .os-dock__stone[data-big='false'] .os-dock__px { margin-bottom: 4px; }
+}
 .os-dock[data-variant='c'] .os-dock__stone[aria-pressed='true'] { background: none !important; }
 .os-dock[data-variant='c'] .os-dock__stone::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 150px; height: 22px; transform: translateX(-50%); border-radius: 50%; z-index: 0;
   background: radial-gradient(closest-side, rgba(var(--c-jade), .55), rgba(var(--c-jade), .12) 60%, transparent), radial-gradient(closest-side, rgba(var(--c-deep), .9), rgba(var(--c-deep), .6));

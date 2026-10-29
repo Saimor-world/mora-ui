@@ -16,6 +16,9 @@ import type { FPlanet } from '@/lib/lea/finder';
 import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from './coreAdapter';
 import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
+import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { UnifiedUniverse } from '@/features/universe/ui/UnifiedUniverse';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -51,7 +54,9 @@ export function LiveCockpit({
   isDemo = false,
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
-  const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
+  const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday({
+    enabled: propSnapshot === undefined,
+  });
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
   const phone = usePhone();
@@ -99,6 +104,7 @@ export function LiveCockpit({
   }, []);
 
   // Compute company name: strip literal [FIKTIV]/(FIKTIV), show badge via effectiveIsDemo
+  const activeCompanyIsDemo = useActiveCompanyIsDemo();
   const rawCompanyName =
     propCompanyName ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
@@ -106,9 +112,13 @@ export function LiveCockpit({
   const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';
   const effectiveIsDemo =
     isDemo ||
+    activeCompanyIsDemo ||
+    Boolean((user as { is_demo?: boolean } | null)?.is_demo) ||
     hasFiktivMarker(rawCompanyName) ||
     user?.tenant_id === 'tenant-demo-morgenrot' ||
+    user?.tenant_id === 'tenant-demo' ||
     snapshot?.requested_scope?.tenant_id === 'tenant-demo-morgenrot' ||
+    snapshot?.requested_scope?.tenant_id === 'tenant-demo' ||
     /morgenrot/i.test(rawCompanyName);
 
   // Compute user first name for honest personalized greeting
@@ -196,7 +206,11 @@ export function LiveCockpit({
       .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
   }, [planet, snapshot]);
 
-  return (
+    if (view === 'universe') {
+    return <UnifiedUniverse navigate={navigate} initialPlanetId={planetId} initialStyle={planetStyle} />;
+  }
+
+return (
     <div
       className="ck"
       data-testid="home"
@@ -229,10 +243,8 @@ export function LiveCockpit({
             compact={showHome}
             style={planetStyle}
             onOpen={(id) => {
-              setView('universe');
-              setPlanetId(id);
-              setMoonId(null);
-              setDeptSheetOpen(false);
+              useOsShellStore.getState().setUniverseFocus(id);
+              navigate('universe');
             }}
           />
         ) : null}

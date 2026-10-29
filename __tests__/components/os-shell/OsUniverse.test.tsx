@@ -47,22 +47,17 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     expect(within(layer).queryByTestId('os-atmo-motion')).toBeNull();
   });
 
-  it('Heute → Universe: with a session the world of the business (LiveWorld, real data), OS-Bereiche lens shows the landscape, atmosphere switches to universe', async () => {
+  it('Heute → Universe: with a session the world of the business (real data), atmosphere switches to universe', async () => {
     renderShell();
     fireEvent.click(await screen.findByTestId('today-universe-card'));
     // Der Ort lädt lazy; in jsdom kann das länger als die 900-ms-Leerlaufschwelle dauern.
-    expect(await screen.findByTestId('live-world', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByTestId('feature-universe', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.queryByTestId('legacy-universe-view')).toBeNull();
     expect(window.location.hash).toBe('#universe');
-    fireEvent.click(screen.getByTestId('universe-lens-landscape'));
-    expect(await screen.findByTestId('universe-landscape')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('universe-lens-organization'));
     const layer = screen.getByTestId('os-universe-layer');
     expect(layer).toHaveAttribute('data-mode', 'universe');
     expect(within(layer).getByTestId('legacy-living-background')).toBeInTheDocument();
     expect(within(layer).getByTestId('legacy-ritual-styler')).toHaveAttribute('data-muted', 'true');
-    // Bewegung ist fähigkeits- und leerlaufabhängig (useAmbientCapability, 900 ms); der erste Test
-    // prüft, dass sie zu Beginn aus ist. Hier hängt der Wert nur von der Ladezeit ab.
     expect(layer).toHaveAttribute('data-motion');
   });
 

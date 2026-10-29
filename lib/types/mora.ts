@@ -69,6 +69,7 @@ export interface User {
   role: UserRole;
   settings?: Record<string, unknown>;
   tenant_id?: string;
+  is_demo?: boolean;
   operational_state?: import('@/lib/types/session').OperationalState;
   setup_required?: boolean;
   active_company_id?: string;

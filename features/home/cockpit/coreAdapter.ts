@@ -54,22 +54,34 @@ export function finderToCockpitPlanets(finder: FPlanet[]): DemoPlanet[] {
     .filter((p) => p && p.kind === 'department' && !isOhneAbteilung(p.id, p.name))
     .map((p, index) => {
       const title = stripFiktiv(p.name) || 'Abteilung';
+      const moons = p.moons.length > 0
+        ? p.moons.map((m) => ({
+            id: m.id,
+            title: stripFiktiv(m.name) || 'Ordner',
+            files: m.stars.map((s) => ({
+              id: s.id,
+              name: stripFiktiv(s.name) || 'Eintrag',
+              meta: s.hint ? stripFiktiv(s.hint) : s.kind,
+              body: [],
+            })),
+          }))
+        : (p.spaces ?? []).map((sp) => ({
+            id: sp.id,
+            title: stripFiktiv(sp.name) || 'Bereich',
+            files: p.stars.map((s) => ({
+              id: s.id,
+              name: stripFiktiv(s.name) || 'Eintrag',
+              meta: s.hint ? stripFiktiv(s.hint) : s.kind,
+              body: [],
+            })),
+          }));
       return {
         id: p.id,
         title,
         jobRoles: ['inhaber', 'service', 'kueche', 'aushilfe'],
         glass: pickGlass(p.id, title, index),
         position: { x: 50, y: 50 },
-        moons: p.moons.map((m) => ({
-          id: m.id,
-          title: stripFiktiv(m.name) || 'Ordner',
-          files: m.stars.map((s) => ({
-            id: s.id,
-            name: stripFiktiv(s.name) || 'Eintrag',
-            meta: s.hint ? stripFiktiv(s.hint) : s.kind,
-            body: [],
-          })),
-        })),
+        moons,
       };
     });
 }

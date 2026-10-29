@@ -87,7 +87,7 @@ function Instruments({ side, led = 0 }: { side: 'l' | 'map' | 'last'; led?: numb
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const mood = useHubMood();
   const variant = useDockVariant();
-  const big = variant !== 'strip' && activeId !== 'home';
+  const big = variant !== 'strip' && activeId === 'home';
   usePalette();
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;
@@ -125,17 +125,17 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
             <CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={big ? undefined : unread} onClick={onNotifications} />
           </span>
           {big ? (
-            <span className="os-dock__mod" data-led={activeId === 'settings' ? 'on' : undefined}>
+            <span className="os-dock__mod">
               <CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} />
             </span>
           ) : null}
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
           {variant === 'c' && !phoneW ? <><Instruments side="map" /><Instruments side="last" /></> : null}
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood}>
+          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood} data-big={big ? 'true' : 'false'}>
             {big ? <span className="os-dock__cone" aria-hidden /> : null}
             <span data-testid="mora-mark" className="os-dock__px" style={{ imageRendering: 'pixelated' }}>
-              <PixelMora size={big ? (phoneW ? 96 : 160) : 48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
+              <PixelMora size={big ? (phoneW ? 96 : 160) : (phoneW ? 56 : 72)} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
             </span>
           </button>
           <div id={DOCK_ASK_SLOT} className="os-dock__ask">

@@ -6,6 +6,7 @@ import { SCENES } from '@/lib/os-prototype/scene';
 import { usePhase } from '@/lib/os-prototype/usePhase';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import { useDemoCompanies, useIsSaimorHq } from '@/lib/hooks/useIsSaimorInternal';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 
 /**
  * Firmen-Schalter nur für SAIMÔR-HQ: die echte Firma heißt einfach „SAIMÔR“, darunter die
@@ -25,7 +26,8 @@ export function DemoSwitch() {
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [open]);
   if (!hq || (!companies.length && !current)) return null;
-  const label = current ? companies.find((c) => c.id === current)?.name ?? 'Demo' : 'SAIMÔR';
+  const rawLabel = current ? companies.find((c) => c.id === current)?.name ?? 'Demo' : 'SAIMÔR';
+  const label = stripFiktiv(rawLabel) || rawLabel;
   return (
     <div className="os-context__demoswitch" ref={ref} data-testid="demo-switch">
       <button type="button" className="os-company-pill" aria-haspopup="menu" aria-expanded={open} aria-label={`Firma wählen: ${label}`} onClick={() => setOpen((v) => !v)}>
@@ -50,11 +52,14 @@ export function CompanyOptions({ onPick }: { onPick?: () => void }) {
     <div className="os-company-options" data-testid="company-options">
       <div className="os-company-options__label">Firma</div>
       <button type="button" role="menuitemradio" aria-checked={!current} onClick={() => pick(null)}>SAIMÔR{!current ? <Check size={13} aria-hidden /> : null}</button>
-      {companies.filter((c, i, a) => c.id === current || a.findIndex((x) => x.name === c.name) === i).map((c) => (
-        <button key={c.id} type="button" role="menuitemradio" aria-checked={current === c.id} onClick={() => pick(c.id)}>
-          <span>{c.name}<em> · Demo</em></span>{current === c.id ? <Check size={13} aria-hidden /> : null}
-        </button>
-      ))}
+      {companies.filter((c, i, a) => c.id === current || a.findIndex((x) => (stripFiktiv(x.name) || x.name) === (stripFiktiv(c.name) || c.name)) === i).map((c) => {
+        const cName = stripFiktiv(c.name) || c.name;
+        return (
+          <button key={c.id} type="button" role="menuitemradio" aria-checked={current === c.id} onClick={() => pick(c.id)}>
+            <span>{cName}<em> · Demo</em></span>{current === c.id ? <Check size={13} aria-hidden /> : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -65,10 +70,11 @@ export function DemoBanner() {
   const setDemo = useDemoStore((s) => s.setDemoCompany);
   const companies = useDemoCompanies(Boolean(current));
   if (!current) return null;
-  const name = companies.find((c) => c.id === current)?.name;
+  const rawName = companies.find((c) => c.id === current)?.name;
+  const name = rawName ? (stripFiktiv(rawName) || rawName) : undefined;
   return (
     <div className="os-demo-banner" role="note" data-testid="demo-banner">
-      <span>Demo{name ? ` · ${name}` : ''}</span>
+      <span>Demo{name ? ` · ${name}` : ''} <span className="fiktiv-badge">Fiktiv</span></span>
       <button type="button" onClick={() => setDemo(null)} data-testid="demo-back">zurück zu SAIMÔR</button>
     </div>
   );
@@ -109,17 +115,19 @@ export function StatusMenu({ org, userName, role, core, coreOk, internal = false
   const focusUntil = useOsShellStore((s) => s.focusUntil);
   const enter = () => { if (closeT.current) clearTimeout(closeT.current); setOpen(true); };
   const leave = () => { closeT.current = setTimeout(() => setOpen(false), 180); };
+  const cleanOrg = stripFiktiv(org) || org;
+  const cleanUser = userName ? (stripFiktiv(userName) || userName) : null;
   return (
     <div className="os-status" ref={ref} onMouseEnter={enter} onMouseLeave={leave} data-testid="status-menu">
-      <button type="button" className="os-status__btn" aria-haspopup="true" aria-expanded={open} aria-label={`Status: ${org}`} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="os-status__btn" aria-haspopup="true" aria-expanded={open} aria-label={`Status: ${cleanOrg}`} onClick={() => setOpen((v) => !v)}>
         <span className={`os-status__dot${coreOk ? '' : ' os-status__dot--warn'}`} aria-hidden />
         {focusUntil ? <ContextClock internal={internal} /> : null}
         <ChevronDown size={12} aria-hidden />
       </button>
       {open ? (
         <div className="os-status__menu" role="menu">
-          <div className="os-status__org">{org}</div>
-          {userName || role ? <div className="os-status__row">{[userName, role].filter(Boolean).join(' · ')}</div> : null}
+          <div className="os-status__org">{cleanOrg}</div>
+          {cleanUser || role ? <div className="os-status__row">{[cleanUser, role].filter(Boolean).join(' · ')}</div> : null}
           {core ? <div className={`os-status__row${coreOk ? '' : ' os-status__row--warn'}`}>{core}</div> : null}
           {internal ? <div className="os-status__row os-status__faint">Lokale Instanz</div> : null}
           {!focusUntil ? <ContextClock internal={internal} /> : null}
