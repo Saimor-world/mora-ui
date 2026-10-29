@@ -1775,6 +1775,7 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
 .os-root .ck .ck-planet b { max-width: 148px; font-size: 15px; line-height: 1.4; font-weight: 500; letter-spacing: 0; text-align: center; text-wrap: balance; }
 .os-root .ck .ck-planet small { font-size: 12px; line-height: 1.45; }
 .os-root .ck .ck-moon { gap: 8px; width: 140px; }
+.os-root .ck .ck-moons { z-index: 2; }
 .os-root .ck .ck-moon b { display: flex; align-items: center; justify-content: center; min-height: 42px; font-size: 15px; line-height: 1.4; text-align: center; text-wrap: balance; }
 .os-root .ck .ck-moon small { min-height: 18px; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; }
 .os-root .ck .ck-dept-sheet { gap: 24px; }
