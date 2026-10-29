@@ -1862,6 +1862,7 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
   .os-root .ck :is(.ck-back, .ck-head-open) { top: 76px; max-width: calc(50% - 24px); min-height: 44px; font-size: 12px; line-height: 1.35; white-space: normal; }
   .os-root .mr-offline .ck[data-view='universe'] :is(.ck-back, .ck-head-open) { top: 160px; }
   .os-root .mr-offline .ck[data-view='universe'] .ck-moons { top: 218px; }
+  .os-root .mr-offline .ck[data-view='universe'] .ck-sys:not(.ck-sys--strip) { top: 172px; bottom: var(--ck-dock-clearance); }
   .os-root .ck .ck-home-strip { height: 112px; margin: 16px -6px; }
   .os-root .ck .ck-sys--strip .ck-planet b { max-width: 82px; font-size: 12px; line-height: 1.4; white-space: normal; }
   .os-root .wd-universe[data-phone='true'] .wd-name { max-width: 108px; font-size: 13px; }
