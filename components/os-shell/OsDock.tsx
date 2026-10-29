@@ -12,6 +12,7 @@ import { PixelMora } from '@/components/world/PixelMora';
 import { DOCK_ASK_SLOT, useHubMood } from '@/lib/mora/hubMood';
 import { useReducedMotion } from 'framer-motion';
 import type { FeatureManifest } from '@/features/types';
+import { BridgeConcept } from './BridgeConcept';
 
 /**
  * V1.3 – Marius' Dock als Hauptnavigation. Kapsel, Icons, Tooltips und
@@ -156,6 +157,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
   );
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
+      {variant === 'c' ? <BridgeConcept /> : null}
       <div className="os-dock__capsule" data-testid="dock">
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />

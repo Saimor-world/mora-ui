@@ -1,0 +1,35 @@
+/* Study for the bridge. It does not invent events or change dock actions. */
+.os-dock[data-variant='c'] .bridge-concept {
+  position: absolute;
+  inset: auto 2.5vw calc(100% - 22px);
+  height: clamp(90px, 14vh, 150px);
+  pointer-events: none;
+  z-index: 0;
+}
+.bridge-concept__arc {
+  position: absolute;
+  inset: 12px 0 -32px;
+  border: 1px solid rgba(150, 221, 190, .38);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: radial-gradient(ellipse at 50% 110%, rgba(83, 174, 140, .13), transparent 65%);
+  box-shadow: 0 -1px 18px rgba(101, 210, 170, .12);
+}
+.bridge-concept__legend {
+  position: absolute;
+  inset: auto 4% 33px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #c8e0d3;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 5px #000;
+}
+.bridge-concept__legend span:nth-child(2) { color: #d6bf89; font-size: 9px; letter-spacing: .16em; }
+@media (max-width: 899px) {
+  .os-dock[data-variant='c'] .bridge-concept { inset-inline: 12px; height: 76px; }
+  .bridge-concept__legend { inset: auto 5% 22px; font-size: 10px; }
+  .bridge-concept__legend span:nth-child(2) { font-size: 8px; }
+}
