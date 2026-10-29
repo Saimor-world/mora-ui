@@ -51,7 +51,7 @@ function relDay(iso?: string): string | null {
 const STAGE: Record<string, string> = { universe: 'Im All', approach: 'Anflug', orbit: 'Im Orbit', landed: 'Gelandet' };
 
 /** Cockpit-Instrumente (Variante C): nur echte Zahlen aus CORE bzw. den Mitteilungen. */
-function Instruments({ side, led = 0 }: { side: 'l' | 'map' | 'last'; led?: number }) {
+function Instruments({ side, led = 0, onNavigate }: { side: 'l' | 'map' | 'last'; led?: number; onNavigate?: (id: string) => void }) {
   const world = useWorld();
   const pos = useNavPos();
   const planets = world.planets ?? [];
@@ -61,12 +61,51 @@ function Instruments({ side, led = 0 }: { side: 'l' | 'map' | 'last'; led?: numb
   if (side === 'l') {
     return (
       <div className="os-dock__inst" data-testid="dock-instruments">
-        <div className="os-dock__gauge"><b>{planets.length ? `${active}/${planets.length}` : '–'}</b><span>Bereiche aktiv · 7 T.</span></div>
-        <div className="os-dock__gauge" data-warn={led > 0 ? 'true' : undefined}><b>{led}</b><span>braucht dich</span></div>
+        <button
+          type="button"
+          className="os-dock__gauge os-dock__gauge--btn"
+          onClick={() => onNavigate?.('universe')}
+          title="Zur Universe-Übersicht"
+          style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+        >
+          <b>{planets.length ? (active > 0 ? `${active}/${planets.length}` : `–/${planets.length}`) : '–'}</b>
+          <span>Bereiche aktiv · 7 T.</span>
+        </button>
+        <button
+          type="button"
+          className="os-dock__gauge os-dock__gauge--btn"
+          data-warn={led > 0 ? 'true' : undefined}
+          onClick={() => onNavigate?.('universe')}
+          title="Planeten mit Aufmerksamkeit öffnen"
+          style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+        >
+          <b>{led > 0 ? led : '–'}</b>
+          <span>braucht dich</span>
+        </button>
       </div>
     );
   }
-  if (side === 'last') return <div className="os-dock__gauge os-dock__gauge--last"><b>{relDay(last?.traits?.lastAt) ?? '–'}</b><span>{last ? `zuletzt · ${last.name}` : 'zuletzt aktiv'}</span></div>;
+  if (side === 'last') {
+    return (
+      <button
+        type="button"
+        className="os-dock__gauge os-dock__gauge--last os-dock__gauge--btn"
+        onClick={() => {
+          if (last?.id) {
+            useNavPos.getState().set({ planet: { id: last.id, name: last.name }, open: true, moon: null });
+            onNavigate?.('universe');
+          } else {
+            onNavigate?.('universe');
+          }
+        }}
+        title={last ? `Zuletzt aktiv: ${last.name} öffnen` : 'Keine kürzliche Aktivität'}
+        style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+      >
+        <b>{relDay(last?.traits?.lastAt) ?? '–'}</b>
+        <span>{last ? `zuletzt · ${last.name}` : 'zuletzt aktiv'}</span>
+      </button>
+    );
+  }
   return (
       <div className="os-dock__map" aria-label="Positionskarte" data-testid="dock-position">
         <span className="os-dock__radar" aria-hidden>
@@ -118,7 +157,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
-          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} /> : null}
+          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} onNavigate={onNavigate} /> : null}
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}>
@@ -131,13 +170,16 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
           ) : null}
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
-          {variant === 'c' && !phoneW ? <><Instruments side="map" /><Instruments side="last" /></> : null}
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood} data-big={big ? 'true' : 'false'}>
-            {big ? <span className="os-dock__cone" aria-hidden /> : null}
-            <span data-testid="mora-mark" className="os-dock__px" style={{ imageRendering: 'pixelated' }}>
-              <PixelMora size={big ? (phoneW ? 96 : 160) : (phoneW ? 56 : 72)} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
-            </span>
-          </button>
+          <div className="os-dock__stage">
+            {variant === 'c' && !phoneW ? <Instruments side="map" onNavigate={onNavigate} /> : null}
+            <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood} data-big={big ? 'true' : 'false'}>
+              {big ? <span className="os-dock__cone" aria-hidden /> : null}
+              <span data-testid="mora-mark" className="os-dock__px" style={{ imageRendering: 'pixelated' }}>
+                <PixelMora size={big ? (phoneW ? 96 : 160) : (phoneW ? 56 : 72)} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
+              </span>
+            </button>
+            {variant === 'c' && !phoneW ? <Instruments side="last" onNavigate={onNavigate} /> : null}
+          </div>
           <div id={DOCK_ASK_SLOT} className="os-dock__ask">
             <button type="button" className="os-dock__askbtn" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button>
           </div>

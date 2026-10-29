@@ -1,7 +1,7 @@
 'use client';
 
 import '@/features/home/cockpit.css';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { DepartmentSheet, FolderSheet } from '@/features/home/cockpit/Sheets';
@@ -16,6 +16,18 @@ import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
 import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
+import { useNavPos } from '@/lib/mora/navPos';
+import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
+import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
+import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
+import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
+import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
+import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
+import { PixelMora } from '@/components/world/PixelMora';
+import { PlanetOrbit } from '@/components/world/WorldUniverse';
+import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
+import { planetKind, seedOf } from '@/lib/universe/pixelArt';
+import { matteTone, toneSlot } from '@/lib/universe/matteTone';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -42,11 +54,191 @@ export interface UnifiedUniverseProps {
 }
 
 /**
+ * HQ-Pixelansicht (Marius hq.saimor.world, Merge #186):
+ * - Hintergrund: PixelSky
+ * - Planeten: PixelPlanet mit planetKind & seedOf aus pixelArt.ts
+ * - Mini-Monde: PlanetOrbit mit PixelMoon & Pixel-Sternen
+ * - Genau EINE schwebende PixelMora im Zentrum
+ * - Ruhiges Raster-Layout über layoutOrbits(..., { calm: true })
+ */
+function PixelUniverseOverview({
+  planets,
+  attention,
+  phone,
+  incidentMap,
+  onOpenPlanet,
+}: {
+  planets: DemoPlanet[];
+  attention: Set<string>;
+  phone: boolean;
+  incidentMap: Map<string, number>;
+  onOpenPlanet: (id: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 1200, height: 680 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const weights = useMemo(() => planets.map((_, i) => 50 + (i % 3) * 10), [planets]);
+  const labels = useMemo<PlanetLabel[]>(
+    () =>
+      planets.map((p) => ({
+        name: stripFiktiv(p.title) || p.title,
+        moons: p.moons?.length ?? 0,
+      })),
+    [planets]
+  );
+
+  const layout = useMemo(() => {
+    return layoutOrbits({
+      width: size.width,
+      height: Math.max(240, size.height - (phone ? 180 : 140)),
+      weights,
+      phone,
+      calm: true,
+      moraBase: phone ? 88 : 140,
+      labels,
+    });
+  }, [size.width, size.height, weights, phone, labels]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="wd-pixel-universe"
+      style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
+      data-testid="pixel-universe"
+    >
+      {/* Genau eine schwebende PixelMora im Zentrum des ruhigen Rasters */}
+      <button
+        type="button"
+        className="wd-mora"
+        style={{
+          position: 'absolute',
+          left: Math.round(layout.cx / 2) * 2,
+          top: Math.round(layout.cy / 2) * 2,
+          width: Math.round(layout.mora / 2) * 2,
+          height: Math.round(layout.mora / 2) * 2,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10 + Math.round(layout.cy),
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+        onClick={() => useOsShellStore.getState().setMoraOpen(true)}
+        aria-label="MÔRA öffnen"
+        data-testid="world-mora"
+      >
+        <span className="wd-mora-glide" data-testid="world-mora-glide">
+          <PixelMora size={phone ? 36 : Math.round(layout.mora * 0.64)} mood="idle" />
+        </span>
+      </button>
+
+      {/* Planeten im ruhigen Raster */}
+      {planets.map((planet, i) => {
+        const slot = layout.slots[i];
+        if (!slot) return null;
+        const pt = placeOnOrbit(layout, slot);
+        const displayName = stripFiktiv(planet.title) || planet.title;
+        const kind = planetKind(displayName, toneSlot(displayName));
+        const seed = seedOf(displayName);
+        const sz = slot.size;
+        const light = { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) };
+        const incCount = incidentMap.get(planet.id) ?? 0;
+
+        return (
+          <button
+            key={planet.id}
+            type="button"
+            className="wd-planet"
+            style={{
+              position: 'absolute',
+              left: Math.round(pt.x),
+              top: Math.round(pt.y),
+              transform: 'translate(-50%, -50%)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'inherit',
+            }}
+            onClick={() => onOpenPlanet(planet.id)}
+            data-testid={`world-planet-${planet.id}`}
+            aria-label={`${displayName} öffnen`}
+          >
+            {planet.moons?.length ? (
+              <PlanetOrbit
+                tone={matteTone(displayName).vars}
+                away={1}
+                orbit={{
+                  moons: planet.moons.map((m) => ({ id: m.id, label: m.title, stars: [] })),
+                  stars: [],
+                }}
+                size={sz}
+                phone={phone}
+                pixel={{ kind, light, seed }}
+              />
+            ) : null}
+            <PixelPlanet
+              kind={kind}
+              size={sz}
+              seed={seed}
+              light={light}
+              folders={planet.moons?.length ?? 0}
+              activity={attention.has(planet.id) ? 1 : 0}
+              overdue={attention.has(planet.id) || incCount > 0 ? 1 : 0}
+              open={0}
+              reduced={false}
+            />
+            <span className="wd-label">
+              <span className="wd-name">{displayName}</span>
+              <span className="wd-meta">
+                {planet.moons?.length ? `${planet.moons.length} Ordner` : 'noch leer'}
+              </span>
+              {incCount > 0 ? (
+                <span
+                  className="ck-incident-tag"
+                  style={{
+                    color: 'var(--rose, #f87171)',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                  }}
+                >
+                  ● Vorfall ({incCount})
+                </span>
+              ) : null}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * Unified Universe — Der einzige Renderer für das Universe:
- * - Kombiniert die Planeten, den Horizont (ck-horizon) und die Tiefe aus Version A mit dem Pixel/Normal-Umschalter aus Version B.
- * - Genau EINE MÔRA im OsDock (keine zweite in Szene oder HUD).
- * - Zustand (gewählter Planet, Ordner, Daten) bleibt beim Umschalten zwischen Pixel und Glas erhalten.
- * - Echte Abteilungsaufgaben im DepartmentSheet, DepartmentWizard für neue Abteilungen.
+ * - HQ-Pixelansicht (WorldUniverse-Bausteine, PixelSky, PixelPlanet, Mini-Monde) im Pixel-Modus
+ * - HQ-Gesamtansicht mit dunklen Glasplaneten und Tiefe im Glas-Modus
+ * - Genau EIN Umschalter (.wd-view) links auf halber Höhe
+ * - Zustand (gewählter Planet, Ordner, Daten) bleibt beim Umschalten nahtlos erhalten
+ * - Nav-Position wird an useNavPos gemeldet (Dock-Brotkrumen, Orbit/Universe-Umschaltung)
+ * - Abteilungsaufgaben über department_id zugeordnet
+ * - Vorhandene CORE/OpenFlow-Signale (Nightwatch, IncidentStatusPanel, DailyBriefing) angebunden
  */
 export function UnifiedUniverse({
   navigate,
@@ -65,7 +257,7 @@ export function UnifiedUniverse({
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // Style state: 'glas' (HQ-Gesamtansicht mit dunklen Glasplaneten) oder 'pixel' (HQ-Pixelansicht mit Mini-Monden)
-  // Genau EIN Umschalter (.wd-view links auf halber Höhe aus Version B)
+  // Genau EIN Umschalter (.wd-view links auf halber Höhe)
   const [planetStyle, setPlanetStyle] = useState<'glas' | 'pixel'>(() => {
     if (initialStyle) return initialStyle;
     if (typeof window !== 'undefined') {
@@ -152,23 +344,35 @@ export function UnifiedUniverse({
     [snapshot, navigate]
   );
 
+  // Nightwatch incidents & daily briefing
+  const { data: nightwatchIncidents = [] } = useNightwatchIncidents(false);
+  const { data: dailyBriefing } = useDailyBriefing();
+
   const planet = planets.find((p) => p.id === planetId) ?? null;
   const moon = planet?.moons?.find((m) => m.id === moonId) ?? null;
   const sceneMode = planet ? 'planet' : 'system';
 
-  // Filter tasks for the selected planet if available (identical to LiveCockpit)
-  const planetTasks = useMemo(() => {
-    if (!planet || !snapshot?.tasks?.due_today) return [];
-    const pTitle = planet.title.toLowerCase();
-    const pId = planet.id.toLowerCase();
-    return snapshot.tasks.due_today
-      .filter((t) => {
-        const text = `${t.title} ${t.id}`.toLowerCase();
-        return text.includes(pTitle) || text.includes(pId);
-      })
-      .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
-  }, [planet, snapshot]);
+  // Incidents mapped to departments
+  const departmentIncidentMap = useMemo(() => {
+    const map = new Map<string, number>();
+    planets.forEach((p) => {
+      const incs = filterIncidentsForDepartment(nightwatchIncidents, p.id);
+      if (incs.length > 0) map.set(p.id, incs.length);
+    });
+    return map;
+  }, [planets, nightwatchIncidents]);
 
+  const activeDeptIncidents = useMemo(() => {
+    if (!planet) return [];
+    return filterIncidentsForDepartment(nightwatchIncidents, planet.id);
+  }, [nightwatchIncidents, planet]);
+
+  const incidentPanels = useMemo(() => {
+    if (activeDeptIncidents.length === 0) return [];
+    return nightwatchIncidentsToIncidentStatusPanels(activeDeptIncidents);
+  }, [activeDeptIncidents]);
+
+  // Synchronisiere useNavPos für Dock-Instrumente und Brotkrumen
   const handleOpenPlanet = (id: string) => {
     setPlanetId(id);
     setMoonId(null);
@@ -181,6 +385,72 @@ export function UnifiedUniverse({
     setDeptSheetOpen(false);
   };
 
+  useEffect(() => {
+    useNavPos.getState().set({
+      planet: planet ? { id: planet.id, name: planet.title } : null,
+      open: Boolean(planet),
+      moon: moon ? { id: moon.id, name: moon.title } : null,
+      toUniverse: handleBackToUniverse,
+      toPlanet: () => {
+        setMoonId(null);
+        setDeptSheetOpen(false);
+      },
+    });
+  }, [planet, moon]);
+
+  useEffect(() => {
+    return () => {
+      useNavPos.getState().set({ planet: null, open: false, moon: null });
+    };
+  }, []);
+
+  // Morning briefing data mapped to BriefingStack items
+  const briefings = useMemo<Briefing[]>(() => {
+    if (!dailyBriefing) return [];
+    const list: Briefing[] = [];
+    if (dailyBriefing.text) {
+      list.push({
+        id: 'briefing-main',
+        label: 'Morgen-Briefing',
+        title: dailyBriefing.date || 'Heute',
+        detail: dailyBriefing.text,
+      });
+    }
+    if (dailyBriefing.metrics?.unread_mails > 0) {
+      list.push({
+        id: 'briefing-mails',
+        label: 'Post',
+        title: `${dailyBriefing.metrics.unread_mails} ungelesene Mails`,
+        detail: 'Braucht Aufmerksamkeit',
+      });
+    }
+    if (dailyBriefing.metrics?.active_incidents > 0) {
+      list.push({
+        id: 'briefing-incidents',
+        label: 'Nightwatch',
+        title: `${dailyBriefing.metrics.active_incidents} aktive Vorfälle`,
+        detail: 'Systemmeldungen prüfen',
+        accentColor: '#f87171',
+      });
+    }
+    return list;
+  }, [dailyBriefing]);
+
+  // Filter tasks for the selected planet strictly by department_id
+  const planetTasks = useMemo(() => {
+    if (!planet || !snapshot?.tasks?.due_today) return [];
+    const moonIds = new Set(planet.moons?.map((m) => m.id) ?? []);
+    return snapshot.tasks.due_today
+      .filter((t) => {
+        const dId = (t as { department_id?: string }).department_id;
+        if (dId) return dId === planet.id;
+        const fId = (t as { folder_id?: string }).folder_id;
+        if (fId && moonIds.has(fId)) return true;
+        return (t as { department_id?: string }).department_id === planet.id;
+      })
+      .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
+  }, [planet, snapshot]);
+
   return (
     <div
       className="ck ck-universe-unified"
@@ -190,7 +460,12 @@ export function UnifiedUniverse({
       data-phone={phone ? '1' : '0'}
       data-folder={moon ? '1' : '0'}
     >
-      <div className="ck-space" aria-hidden />
+      {/* Background: PixelSky in pixel mode, ck-space in glass mode */}
+      {planetStyle === 'pixel' ? (
+        <PixelSky reduced={false} />
+      ) : (
+        <div className="ck-space" aria-hidden />
+      )}
 
       {/* Version B style switcher positioned on the left at ~half height (single switcher) */}
       <button
@@ -242,7 +517,17 @@ export function UnifiedUniverse({
         </div>
       </header>
 
-      {/* 3D Scene canvas */}
+      {/* Morning Briefing (if data is available) */}
+      {briefings.length > 0 && !planet ? (
+        <div
+          className="ck-briefing-wrap"
+          style={{ position: 'absolute', top: 72, left: 24, zIndex: 12, maxWidth: 360 }}
+        >
+          <BriefingStack briefings={briefings} />
+        </div>
+      ) : null}
+
+      {/* Scene canvas */}
       <div className={`ck-scene ck-scene--${sceneMode}`}>
         {sceneMode === 'planet' && planet ? (
           <OpenPlanet
@@ -255,6 +540,14 @@ export function UnifiedUniverse({
             activeMoon={moonId}
             onOpenDept={() => setDeptSheetOpen(true)}
             style={planetStyle}
+          />
+        ) : planetStyle === 'pixel' ? (
+          <PixelUniverseOverview
+            planets={planets}
+            attention={attention}
+            phone={phone}
+            incidentMap={departmentIncidentMap}
+            onOpenPlanet={handleOpenPlanet}
           />
         ) : (
           <PlanetSystem
@@ -270,7 +563,7 @@ export function UnifiedUniverse({
 
       <CockpitWindow />
 
-      {/* Sheets: Folder (Files) & Department (Tasks) */}
+      {/* Sheets: Folder (Files) & Department (Tasks + IncidentStatusPanels) */}
       {moon && planet ? (
         <FolderSheet
           moon={moon}
@@ -283,6 +576,7 @@ export function UnifiedUniverse({
         <DepartmentSheet
           planet={planet}
           tasks={planetTasks}
+          incidentPanels={incidentPanels}
           onOpenMoon={(mId) => {
             setMoonId(mId);
             setDeptSheetOpen(false);

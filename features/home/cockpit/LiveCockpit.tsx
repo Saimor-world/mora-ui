@@ -65,7 +65,15 @@ export function LiveCockpit({
   const [moonId, setMoonId] = useState<string | null>(null);
   const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [planetStyle, setPlanetStyle] = useState<'glas' | 'pixel'>('glas');
+  const [planetStyle, setPlanetStyle] = useState<'glas' | 'pixel'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('mora.planet_style');
+        if (s === 'pixel' || s === 'glas') return s;
+      } catch {}
+    }
+    return 'pixel';
+  });
 
   useEffect(() => {
     try {
@@ -206,11 +214,11 @@ export function LiveCockpit({
       .map((t) => ({ id: t.id, title: stripFiktiv(t.title) || t.title, due: t.due_date }));
   }, [planet, snapshot]);
 
-    if (view === 'universe') {
+  if (view === 'universe') {
     return <UnifiedUniverse navigate={navigate} initialPlanetId={planetId} initialStyle={planetStyle} />;
   }
 
-return (
+  return (
     <div
       className="ck"
       data-testid="home"

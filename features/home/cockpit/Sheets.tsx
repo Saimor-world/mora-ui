@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { MORGENROT_EVENTS, MORGENROT_STRUCTURE, orderTotal, type DemoMoon, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import type { DemoAction, DemoDay } from '../data/demoDay';
+import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
+import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 
 const reviewFiles = MORGENROT_STRUCTURE.flatMap((p) => p.moons).flatMap((m) => m.files).filter((f) => MORGENROT_EVENTS.reviews.fileIds.includes(f.id));
 export type SheetKind = 'reviews' | 'order' | 'swap' | 'oat' | 'close';
@@ -85,12 +87,14 @@ export function FolderSheet({ moon, planetTitle, onClose }: { moon: DemoMoon; pl
 export function DepartmentSheet({
   planet,
   tasks,
+  incidentPanels,
   onOpenMoon,
   onNewFolder,
   onClose,
 }: {
   planet: DemoPlanet;
   tasks?: { id: string; title: string; due?: string | null }[];
+  incidentPanels?: IncidentStatusPanelData[];
   onOpenMoon: (moonId: string) => void;
   onNewFolder?: () => void;
   onClose: () => void;
@@ -155,6 +159,19 @@ export function DepartmentSheet({
             </div>
           )}
         </section>
+
+        {incidentPanels && incidentPanels.length > 0 ? (
+          <section className="ck-dept-sec" style={{ marginTop: 20 }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 600, color: 'var(--rose, #f87171)' }}>
+              Vorfälle ({incidentPanels.length})
+            </h3>
+            <div className="ck-files">
+              {incidentPanels.map((panel) => (
+                <IncidentStatusPanel key={panel.id} panel={panel} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {tasks && tasks.length > 0 ? (
           <section className="ck-dept-sec" style={{ marginTop: 20 }}>

@@ -130,8 +130,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
     expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    // Keine schwebende MÔRA im Feld
-    expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(0);
+    // Im Pixel-Modus genau eine schwebende PixelMora im Zentrum (wie WorldUniverse HQ auf hq.saimor.world)
+    expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
     unmountUniverse();
 
     // 2. Einstieg Home (LiveCockpit mit view="universe")
@@ -143,7 +143,7 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
     expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    expect(cockpitUniverseContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(0);
+    expect(cockpitUniverseContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
     unmountCockpit();
   });
 

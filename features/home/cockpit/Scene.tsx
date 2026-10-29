@@ -1,15 +1,63 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassOrb } from '@/components/world/GlassOrb';
 import { PixelSphere } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
+import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
 
-/** Planetensystem der Firma: Abteilungen als Glas- oder Pixel-Planeten auf einer ruhigen Ellipse um das Café. */
-const SLOTS = [
-  { x: 18, y: 54, size: 120 }, { x: 49, y: 22, size: 146 },
-  { x: 82, y: 48, size: 116 }, { x: 58, y: 78, size: 108 },
-];
+export interface PlanetSlot {
+  x: number;
+  y: number;
+  size: number;
+  angle?: number;
+  ring?: number;
+}
+
+/**
+ * Berechnet für n Planeten dynamische, kollisionsfreie Positionen über layoutOrbits.
+ * Verhindert Überlappungen von Planeten und Labels bei beliebig vielen Abteilungen.
+ */
+export function computePlanetSlots(
+  planets: Array<{ id: string; title: string; moons?: unknown[] }>,
+  options?: { width?: number; height?: number; phone?: boolean; compact?: boolean }
+): PlanetSlot[] {
+  const n = planets.length;
+  if (n === 0) return [];
+
+  const width = Math.max(300, options?.width ?? 1200);
+  const height = Math.max(240, options?.height ?? 680);
+  const phone = options?.phone ?? width <= 820;
+  const compact = options?.compact ?? false;
+
+  const weights = planets.map((_, i) => 50 + (i % 3) * 10);
+  const labels: PlanetLabel[] = planets.map((p) => ({
+    name: stripFiktiv(p.title) || p.title,
+    moons: p.moons?.length ?? 0,
+  }));
+
+  const layout = layoutOrbits({
+    width,
+    height,
+    weights,
+    phone,
+    labels,
+    moraBase: 0,
+    calm: false,
+    planetMul: compact ? 0.8 : 1,
+  });
+
+  return layout.slots.map((slot) => {
+    const pt = placeOnOrbit(layout, slot);
+    return {
+      x: Math.round(pt.x),
+      y: Math.round(pt.y),
+      size: slot.size,
+      angle: slot.angle,
+      ring: slot.ring,
+    };
+  });
+}
 
 function tintForGlass(glass: DemoPlanet['glass']): string {
   switch (glass) {
@@ -38,15 +86,49 @@ export function PlanetSystem({
   strip?: boolean;
   style?: 'glas' | 'pixel';
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ width: number; height: number }>({
+    width: compact ? 600 : 1200,
+    height: compact ? 450 : 680,
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const slots = useMemo(() => {
+    return computePlanetSlots(planets, {
+      width: size.width,
+      height: size.height,
+      phone: size.width <= 820,
+      compact,
+    });
+  }, [planets, size.width, size.height, compact]);
+
   return (
-    <div className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}`} data-testid="planet-system">
+    <div
+      ref={containerRef}
+      className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}`}
+      data-testid="planet-system"
+    >
       <svg className="ck-sys__orbit" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
         <ellipse cx="50" cy="49" rx="33" ry="28" />
         <ellipse className="ck-sys__orbit2" cx="50" cy="49" rx="44" ry="37" />
       </svg>
       <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>
       {planets.map((p, i) => {
-        const s = SLOTS[i % SLOTS.length];
+        const s = slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
         const folderCount = p.moons?.length ?? 0;
         const orbSize = strip ? 48 : compact ? Math.round(s.size * 0.9) : s.size;
         const tint = tintForGlass(p.glass);
@@ -57,7 +139,11 @@ export function PlanetSystem({
             key={p.id}
             type="button"
             className="ck-planet"
-            style={{ left: `${s.x}%`, top: `${s.y}%`, ['--strip-x' as string]: `${((i + .5) / planets.length) * 100}%` }}
+            style={{
+              left: `${s.x}px`,
+              top: `${s.y}px`,
+              ['--strip-x' as string]: `${((i + 0.5) / planets.length) * 100}%`,
+            }}
             onClick={() => onOpen(p.id)}
             data-testid={`open-${p.id}`}
           >

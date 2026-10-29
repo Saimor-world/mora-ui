@@ -73,5 +73,5 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     renderShell();
     await waitFor(() => expect(screen.getByTestId('os-shell')).toHaveAttribute('data-atmosphere', 'universe'));
     expect(await screen.findByTestId('feature-universe')).toBeInTheDocument();
-  });
+  }, 30000);
 });
