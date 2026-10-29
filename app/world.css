@@ -1688,6 +1688,7 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
 /* Visual refinement of #200. Presentation only: keep the existing pixel assets,
    palette, navigation, data states and hit targets. No orbit/state calculations. */
 .os-root .ck {
+  --ck-dock-clearance: max(168px, var(--os-dock-space, 140px));
   --glass-bg: rgba(9, 24, 27, .86);
   --line: rgba(195, 224, 215, .14);
   --mute: #a7bcb8;
@@ -1819,6 +1820,16 @@ html[data-palette='2'] :is(.wd-meta, .wd-planet .wd-name) { color: var(--pal-tex
   .os-root .ck[data-view='home'] .ck-h1 { font-size: 32px; }
   .os-root .ck[data-view='home'] .source-widget { padding: 16px; min-height: 132px; }
   .os-root .ck[data-view='home'] .source-widget strong { font-size: 19px; }
+  .os-root .mr-offline .mr-banner { left: 24px; right: 24px; top: 60px; transform: none; max-width: none; text-align: left; }
+  .os-root .mr-offline .ck[data-view='home'] .ck-panel { top: 104px; max-height: calc(100% - 104px - var(--ck-dock-clearance)); }
+}
+/* Wrap the existing instruments at tablet widths; keep every control and its
+   behaviour. Wrapping app rows avoid clipping the right edge of the dock. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .os-root .os-dock[data-variant='c'] .os-dock__capsule { grid-template-columns: 144px minmax(280px, 1fr) 248px; column-gap: 12px; padding-inline: 20px !important; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group--apps { flex-wrap: wrap; gap: 4px; max-width: 248px; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group--tools { gap: 4px; }
+  .os-root .os-dock[data-variant='c'] .os-dock__group button { width: 44px !important; height: 44px !important; }
 }
 @media (max-width: 820px) {
   .os-root .ck .ck-top { top: 16px; left: 18px; right: 18px; align-items: flex-start; gap: 12px; }
