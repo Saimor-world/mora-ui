@@ -77,7 +77,7 @@ export function PlanetSystem({
             ) : (
               <GlassOrb size={orbSize} variant={p.glass} />
             )}
-            <b>{p.title}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
+            <b>{p.title.endsWith(' (FIKTIV)') ? <>{p.title.slice(0, -9)} <span className="fiktiv-badge">(FIKTIV)</span></> : p.title}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
             <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>
           </button>
         );

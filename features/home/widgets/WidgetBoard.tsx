@@ -58,7 +58,7 @@ export function WidgetBoard({ widgets, onOpen }: WidgetBoardProps) {
             {w.state === 'unavailable' ? <p>Quelle derzeit nicht verfügbar</p> : <WidgetBody content={w.content} />}
             <footer>
               {humanSourceName(w.source)}
-              {w.demo ? ' · Fiktive Demo' : ''}
+              {w.demo ? <> · <span className="fiktiv-badge">Fiktive Demo</span></> : ''}
               {w.state === 'stale' ? ' · Stand veraltet' : ''}
               {w.updatedAt ? ` · ${humanTime(w.updatedAt)}` : ''}
             </footer>
