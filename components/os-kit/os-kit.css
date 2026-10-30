@@ -157,8 +157,7 @@
 
 /* MÔRA stone */
 .os-mora-stone { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
-.os-mora-stone img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; position: relative; z-index: 1; }
-.os-mora-stone .mora-face { z-index: 2; }
+.os-mora-stone > .px-mora { position: relative; z-index: 1; }
 .os-mora-stone--halo::before { content: ''; position: absolute; inset: -35%; border-radius: 50%; background: radial-gradient(circle, var(--os-stone-halo), transparent 68%); }
 .os-mora-stone--thinking::before { background: radial-gradient(circle, var(--os-stone-halo-thinking), transparent 68%); animation: os-breathe 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .os-mora-stone--thinking::before { animation: none; } }

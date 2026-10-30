@@ -70,7 +70,7 @@ describe('OsShell navigation', () => {
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByRole('button', { name: 'Post' }));
     await screen.findByTestId('feature-post');
     act(() => { fireEvent.keyDown(window, { key: 'j', metaKey: true }); });
-    const panel = await screen.findByTestId('mora-console-panel');
+    const panel = await screen.findByTestId('mora-stage');
     expect(panel).toHaveTextContent('Bei: Post');
     expect(panel).toHaveTextContent('nur mit Bestätigung');
   });

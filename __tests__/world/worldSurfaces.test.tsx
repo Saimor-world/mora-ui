@@ -56,7 +56,7 @@ describe('PhoneHome (V4)', () => {
     render(<PhoneHome greeting="Guten Morgen" firstName="Lea" navigate={navigate} onAskMora={ask} />);
     const stone = screen.getAllByTestId('mora-stone')[0];
     expect(stone).toHaveAttribute('data-face', 'true');
-    expect(stone.querySelector('img')?.getAttribute('src')).toBe('/brand/mora-stone-v1.png');
+    expect(stone.querySelector('img[src="/mora/pixel/body.png"]')).not.toBeNull();
     expect(screen.getAllByRole('button', { name: /MÔRA/ })).toHaveLength(1);
     expect(screen.queryByTestId('phone-home-strip')).toBeNull();
     const onlyToday = screen.getByTestId('day-tasks');

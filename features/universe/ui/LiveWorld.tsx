@@ -1,4 +1,5 @@
 'use client';
+import { useMoraPresence } from '@/lib/mora/moraPresence';
 /** @deprecated Abgelöst durch UnifiedUniverse (ein kanonisches Universe). Nicht mehr aktiv im Shell-Routing eingebunden. */
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
@@ -101,6 +102,13 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   );
   const live = useMoraLive(!phone && hasSession && companyView);
   const livePlanet = live.active || live.done ? planetForTarget(live.target, worldPlanets) : null;
+  const guideTo = livePlanet ?? flyTo;
+  // MÔRA führt: die eine Dock-MÔRA fliegt zum Planeten, über den sie gerade spricht.
+  useEffect(() => {
+    if (guideTo) useMoraPresence.getState().goTo(`[data-planet-id="${guideTo}"]`, 'guide');
+    else useMoraPresence.getState().goHome();
+  }, [guideTo]);
+
   const liveCaption = live.active || live.done ? live.label : null;
   const spiritMood: SpiritMood = live.active ? (livePlanet ? 'flying' : 'thinking') : live.done ? 'done' : outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
     : flyTo ? 'flying' : outcome === 'done' ? 'done' : listening ? 'listening' : night ? 'night' : 'idle';

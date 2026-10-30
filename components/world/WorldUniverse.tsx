@@ -300,6 +300,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             ref={(el) => { planetRefs.current[i] = el; }}
             type="button"
             className="wd-planet"
+            data-planet-id={planet.id}
             data-active={planet.id === activeId ? 'true' : undefined}
             data-selected={planet.id === selectedId ? 'true' : undefined}
             aria-pressed={planet.id === selectedId}
