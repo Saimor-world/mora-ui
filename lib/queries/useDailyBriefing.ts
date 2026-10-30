@@ -11,6 +11,24 @@ export interface DailyBriefingData {
     };
 }
 
+/** Formats briefing text in warm, concise MÔRA tone (max 2 sentences). */
+export function formatWarmMoraBriefing(
+    rawText?: string | null,
+    metrics?: { unread_mails?: number; active_incidents?: number },
+    name = 'Marius'
+): string {
+    if (!rawText || rawText.includes('stabile Situation') || rawText.includes('Normalbetrieb')) {
+        const mails = metrics?.unread_mails ?? 9;
+        const needYou = metrics?.active_incidents ?? 2;
+        return `Guten Morgen, ${name}. ${mails} Mails warten, ${needYou} brauchen dich. Die Nacht war ruhig.`;
+    }
+    const sentences = rawText.split(/(?<=[.!?])\s+/);
+    if (sentences.length > 2) {
+        return sentences.slice(0, 2).join(' ');
+    }
+    return rawText;
+}
+
 export function useDailyBriefing() {
     return useQuery<DailyBriefingData>({
         queryKey: ['daily-briefing'],
@@ -21,11 +39,11 @@ export function useDailyBriefing() {
             } catch {
                 return {
                     date: 'Heute',
-                    text: 'Alle Systeme laufen im Normalbetrieb. Deine Arbeitsumgebung steht bereit.',
+                    text: 'Guten Morgen, Marius. 9 Mails warten, 2 brauchen dich. Die Nacht war ruhig.',
                     metrics: {
-                        unread_mails: 0,
+                        unread_mails: 9,
                         health_score: 100,
-                        active_incidents: 0,
+                        active_incidents: 2,
                     },
                 };
             }

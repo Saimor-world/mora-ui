@@ -15,14 +15,14 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
-import { MORGENROT_STRUCTURE, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
+import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
 import { useNavPos } from '@/lib/mora/navPos';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
-import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
-import { mailCounts, warmBriefing } from '@/lib/mora/bridgeData';
+import { useDailyBriefing, formatWarmMoraBriefing } from '@/lib/queries/useDailyBriefing';
+import { mailCounts } from '@/lib/mora/bridgeData';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
@@ -272,7 +272,7 @@ function PixelUniverseOverview({
                   <span
                     className="ck-incident-tag"
                     style={{
-                      color: 'var(--rose, #f87171)',
+                      color: '#fbbf24',
                       fontSize: 11,
                       fontWeight: 500,
                       display: 'flex',
@@ -281,7 +281,7 @@ function PixelUniverseOverview({
                       gap: 4,
                     }}
                   >
-                    ● Vorfall ({incCount})
+                    <i style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /> Vorfall ({incCount})
                   </span>
                 ) : null}
               </span>
@@ -329,10 +329,10 @@ export function UnifiedUniverse({
       try {
         const stored = localStorage.getItem('mora.planet_style');
         if (stored === 'pixel' || stored === 'glas') return stored;
-        if (localStorage.getItem('mora.universe.view') === 'full') return 'glas';
+        if (localStorage.getItem('mora.universe.view') === 'pixel') return 'pixel';
       } catch {}
     }
-    return 'pixel';
+    return 'glas';
   });
 
   const toggleStyle = (next?: 'glas' | 'pixel') => {
@@ -391,26 +391,48 @@ export function UnifiedUniverse({
   );
 
   // Real CORE departments from useWorld().finder (Ohne Abteilung already filtered out)
-  // Fallback to MORGENROT_STRUCTURE when offline/demo so planets are always visible
+  // Only real data from CORE is shown — no fictional fallback
   const planets: DemoPlanet[] = useMemo(() => {
-    const fromWorld = finderToCockpitPlanets(world.finder);
-    if (fromWorld.length > 0) return fromWorld;
-    if (effectiveIsDemo) {
-      return MORGENROT_STRUCTURE.map((p) => ({
-        ...p,
-        title: stripFiktiv(p.title) || p.title,
-      }));
-    }
-    return [];
-  }, [world.finder, effectiveIsDemo]);
-
-  const { attention } = useMemo(
-    () => deriveLiveAttention(snapshot, navigate),
-    [snapshot, navigate]
-  );
+    return finderToCockpitPlanets(world.finder);
+  }, [world.finder]);
 
   // Nightwatch incidents & daily briefing
   const { data: nightwatchIncidents = [] } = useNightwatchIncidents(false);
+
+  const { attention } = useMemo(
+    () => deriveLiveAttention(snapshot, navigate, nightwatchIncidents),
+    [snapshot, navigate, nightwatchIncidents]
+  );
+
+  const planetSignals = useMemo(() => {
+    const map = new Map<string, { isAlarm: boolean; reason: string }>();
+    planets.forEach((p) => {
+      const incs = filterIncidentsForDepartment(nightwatchIncidents, p.id);
+      const crit = incs.find((i) => i.severity === 'critical' || i.severity === 'fatal');
+      if (crit) {
+        map.set(p.id, { isAlarm: true, reason: crit.title || 'Kritischer Vorfall' });
+        return;
+      }
+      if (incs.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: incs[0].title || 'Vorfall in Prüfung' });
+        return;
+      }
+      const overdue = (snapshot?.tasks?.overdue ?? []).filter((t) => t.department_id === p.id);
+      if (overdue.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: overdue[0].title || `${overdue.length} überfällige Aufgabe` });
+        return;
+      }
+      const due = (snapshot?.tasks?.due_today ?? []).filter((t) => t.department_id === p.id);
+      if (due.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: due[0].title || `${due.length} heute fällig` });
+        return;
+      }
+      if (attention.has(p.id)) {
+        map.set(p.id, { isAlarm: false, reason: 'Braucht dich' });
+      }
+    });
+    return map;
+  }, [planets, nightwatchIncidents, snapshot?.tasks, attention]);
   const { data: dailyBriefing } = useDailyBriefing();
 
   const planet = planets.find((p) => p.id === planetId) ?? null;
@@ -476,13 +498,12 @@ export function UnifiedUniverse({
     // Eine Mail-Zahl für Briefing und Dock; MÔRA spricht kurz und warm aus denselben Daten.
     const briefingUnread = dailyBriefing.metrics?.unread_mails ?? null;
     const mail = mailCounts(snapshot, briefingUnread);
-    const warm = warmBriefing(snapshot, briefingUnread, new Date().getHours());
-    if (warm || dailyBriefing.text) {
+    if (dailyBriefing.text) {
       list.push({
         id: 'briefing-main',
         label: 'Morgen-Briefing',
         title: dailyBriefing.date || 'Heute',
-        detail: warm ?? dailyBriefing.text,
+        detail: formatWarmMoraBriefing(dailyBriefing.text, dailyBriefing.metrics, companyName.includes('Morgenrot') ? 'Marius' : undefined),
       });
     }
     if ((mail.unread ?? 0) > 0) {
@@ -503,7 +524,7 @@ export function UnifiedUniverse({
       });
     }
     return list;
-  }, [dailyBriefing, snapshot]);
+  }, [dailyBriefing, snapshot, companyName]);
 
   // Filter tasks for the selected planet strictly by department_id
   const planetTasks = useMemo(() => {
@@ -534,18 +555,6 @@ export function UnifiedUniverse({
         <div className="ck-space" aria-hidden />
       )}
 
-      {/* Version B style switcher positioned on the left at ~half height (single switcher) */}
-      <button
-        type="button"
-        className="wd-view ck-style-toggle"
-        aria-pressed={planetStyle === 'pixel'}
-        onClick={() => toggleStyle()}
-        data-testid="world-view-toggle"
-        title={planetStyle === 'pixel' ? 'Zurück zur Gesamtansicht (Glas)' : 'Zur Pixel-Ansicht'}
-      >
-        <i aria-hidden />
-        {planetStyle === 'pixel' ? 'Pixel-Ansicht' : <>Gesamtansicht<small>ohne Pixel</small></>}
-      </button>
 
       {/* Top HUD with Navigation & Actions */}
       <header className="ck-top" data-testid="universe-topbar">
@@ -571,6 +580,38 @@ export function UnifiedUniverse({
         </div>
 
         <div className="ck-top__r flex items-center gap-2">
+          <button
+            type="button"
+            className="ck-btn ck-style-toggle"
+            style={{
+              fontSize: 12,
+              padding: '5px 12px',
+              borderRadius: 999,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+            aria-pressed={planetStyle === 'pixel'}
+            onClick={() => toggleStyle()}
+            data-testid="world-view-toggle"
+            title={planetStyle === 'pixel' ? 'Zurück zur Gesamtansicht (Glas)' : 'Zur Pixel-Ansicht'}
+          >
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: planetStyle === 'pixel' ? 0 : '50%',
+                background: 'currentColor',
+                display: 'inline-block',
+              }}
+              aria-hidden
+            />
+            {planetStyle === 'pixel' ? 'Glas-Ansicht' : 'Pixel-Ansicht'}
+          </button>
           <button
             type="button"
             className="ck-btn"
@@ -687,6 +728,7 @@ export function UnifiedUniverse({
           <PlanetSystem
             planets={planets}
             attention={attention}
+            signals={planetSignals}
             company={companyName}
             compact={false}
             style={planetStyle}

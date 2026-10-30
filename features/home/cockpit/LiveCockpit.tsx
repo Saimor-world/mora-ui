@@ -6,6 +6,7 @@ import { PlanetSystem } from './Scene';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { widgetsFromToday } from '../widgets/adapters';
 import { useScopedToday } from '@/lib/os/useScopedToday';
+import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { firstName } from '@/lib/auth/displayName';
 import type { FeatureSurfaceProps } from '../../types';
@@ -107,10 +108,59 @@ export function LiveCockpit({
     return [];
   }, [rawDepts, finderPlanets]);
 
+  const { data: nightwatchIncidents = [] } = useNightwatchIncidents(false);
   const { attention, items } = useMemo(
-    () => deriveLiveAttention(snapshot, navigate),
-    [snapshot, navigate]
+    () => deriveLiveAttention(snapshot, navigate, nightwatchIncidents),
+    [snapshot, navigate, nightwatchIncidents]
   );
+
+  const planetSignals = useMemo(() => {
+    const map = new Map<string, { isAlarm: boolean; reason: string }>();
+    planets.forEach((p) => {
+      const incs = nightwatchIncidents.filter((i) => i.department_id === p.id);
+      const crit = incs.find((i) => i.severity === 'critical' || i.severity === 'fatal');
+      if (crit) {
+        map.set(p.id, { isAlarm: true, reason: crit.title || 'Kritischer Vorfall' });
+        return;
+      }
+      if (incs.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: incs[0].title || 'Vorfall in Prüfung' });
+        return;
+      }
+      const overdue = (snapshot?.tasks?.overdue ?? []).filter((t) => t.department_id === p.id);
+      if (overdue.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: overdue[0].title || `${overdue.length} überfällige Aufgabe` });
+        return;
+      }
+      const due = (snapshot?.tasks?.due_today ?? []).filter((t) => t.department_id === p.id);
+      if (due.length > 0) {
+        map.set(p.id, { isAlarm: false, reason: due[0].title || `${due.length} heute fällig` });
+        return;
+      }
+      if (attention.has(p.id)) {
+        map.set(p.id, { isAlarm: false, reason: 'Braucht dich' });
+      }
+    });
+    return map;
+  }, [planets, nightwatchIncidents, snapshot?.tasks, attention]);
+
+  const timeHeader = useMemo(() => {
+    const rawDate = snapshot?.calendar?.date;
+    if (rawDate) {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) {
+        const dayName = d.toLocaleDateString('de-DE', { weekday: 'short' });
+        const dayNum = d.getDate();
+        const monthName = d.toLocaleDateString('de-DE', { month: 'short' });
+        return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
+      }
+    }
+    const now = new Date();
+    const dayName = now.toLocaleDateString('de-DE', { weekday: 'short' });
+    const dayNum = now.getDate();
+    const monthName = now.toLocaleDateString('de-DE', { month: 'short' });
+    return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
+  }, [snapshot?.calendar?.date]);
 
   // Home is an overview, not a second Universe. Every entry goes to the same
   // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
@@ -141,7 +191,7 @@ export function LiveCockpit({
 
   const subline = liveLoading && propSnapshot === undefined
     ? 'Quellen werden geladen …'
-    : !snapshot || (loadError && propSnapshot === undefined)
+    : loadError && propSnapshot === undefined && !liveLoading
     ? 'Quellen sind derzeit nicht verfügbar.'
     : items.length
     ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.`
@@ -176,6 +226,7 @@ export function LiveCockpit({
           <PlanetSystem
             planets={planets}
             attention={attention}
+            signals={planetSignals}
             company={companyName}
             compact
             onOpen={openDepartment}
@@ -191,7 +242,7 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
-          <span className="ck-time">Mi, 28. Okt · 07:00</span>
+          <span className="ck-time">{timeHeader}</span>
           <span>aus CORE</span>
           {effectiveIsDemo ? (
             <span

@@ -1,3 +1,11 @@
+function formatGermanPriority(p?: string | null): string | undefined {
+  if (!p) return undefined;
+  const s = p.trim().toLowerCase();
+  if (s === 'high' || s === 'urgent' || s === 'hoch') return 'Hohe Priorität';
+  if (s === 'medium' || s === 'normal' || s === 'mittel') return 'Mittlere Priorität';
+  if (s === 'low' || s === 'niedrig') return 'Geringe Priorität';
+  return `Priorität ${p}`;
+}
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { HomeModel } from '../data/homeModel';
 import type { SourceWidget } from './types';
@@ -104,7 +112,7 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
           items: due.map((t) => ({
             id: t.id,
             title: stripFiktiv(t.title) || t.title,
-            detail: t.priority ? `Priorität ${t.priority}` : undefined,
+            detail: formatGermanPriority(t.priority),
           })),
         },
       });
