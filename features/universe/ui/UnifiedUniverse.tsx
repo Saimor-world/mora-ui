@@ -21,7 +21,7 @@ import { useNavPos } from '@/lib/mora/navPos';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
-import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
+import { useDailyBriefing, formatWarmMoraBriefing } from '@/lib/queries/useDailyBriefing';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
@@ -328,10 +328,10 @@ export function UnifiedUniverse({
       try {
         const stored = localStorage.getItem('mora.planet_style');
         if (stored === 'pixel' || stored === 'glas') return stored;
-        if (localStorage.getItem('mora.universe.view') === 'full') return 'glas';
+        if (localStorage.getItem('mora.universe.view') === 'pixel') return 'pixel';
       } catch {}
     }
-    return 'pixel';
+    return 'glas';
   });
 
   const toggleStyle = (next?: 'glas' | 'pixel') => {
@@ -499,7 +499,7 @@ export function UnifiedUniverse({
         id: 'briefing-main',
         label: 'Morgen-Briefing',
         title: dailyBriefing.date || 'Heute',
-        detail: dailyBriefing.text,
+        detail: formatWarmMoraBriefing(dailyBriefing.text, dailyBriefing.metrics, companyName.includes('Morgenrot') ? 'Marius' : undefined),
       });
     }
     if (dailyBriefing.metrics?.unread_mails > 0) {
@@ -551,27 +551,6 @@ export function UnifiedUniverse({
         <div className="ck-space" aria-hidden />
       )}
 
-      {/* Version B style switcher: Auf Desktop links, auf dem Handy unten über dem Dock (überdeckt keine Planeten) */}
-      <button
-        type="button"
-        className="wd-view ck-style-toggle"
-        style={phone ? {
-          position: 'absolute',
-          bottom: 'calc(var(--os-dock-space, 72px) + 14px)',
-          left: 14,
-          height: 30,
-          padding: '0 10px 0 8px',
-          fontSize: 11,
-          zIndex: 50,
-        } : undefined}
-        aria-pressed={planetStyle === 'pixel'}
-        onClick={() => toggleStyle()}
-        data-testid="world-view-toggle"
-        title={planetStyle === 'pixel' ? 'Zurück zur Gesamtansicht (Glas)' : 'Zur Pixel-Ansicht'}
-      >
-        <i aria-hidden />
-        {planetStyle === 'pixel' ? 'Pixel-Ansicht' : <>Gesamtansicht<small>ohne Pixel</small></>}
-      </button>
 
       {/* Top HUD with Navigation & Actions */}
       <header className="ck-top" data-testid="universe-topbar">
@@ -597,6 +576,38 @@ export function UnifiedUniverse({
         </div>
 
         <div className="ck-top__r flex items-center gap-2">
+          <button
+            type="button"
+            className="ck-btn ck-style-toggle"
+            style={{
+              fontSize: 12,
+              padding: '5px 12px',
+              borderRadius: 999,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+            aria-pressed={planetStyle === 'pixel'}
+            onClick={() => toggleStyle()}
+            data-testid="world-view-toggle"
+            title={planetStyle === 'pixel' ? 'Zurück zur Gesamtansicht (Glas)' : 'Zur Pixel-Ansicht'}
+          >
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: planetStyle === 'pixel' ? 0 : '50%',
+                background: 'currentColor',
+                display: 'inline-block',
+              }}
+              aria-hidden
+            />
+            {planetStyle === 'pixel' ? 'Glas-Ansicht' : 'Pixel-Ansicht'}
+          </button>
           <button
             type="button"
             className="ck-btn"

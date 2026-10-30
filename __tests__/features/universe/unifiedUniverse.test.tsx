@@ -130,8 +130,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
     expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    // Schwebende MÔRA im Zentrum des Universe (HQ-Pixelansicht wie in main b2f2a99)
-    expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
+    expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
+    expect(screen.getByTestId('planet-system')).toBeInTheDocument();
     unmountUniverse();
 
     // 2. Einstieg Home (LiveCockpit mit initialView="universe" delegiert zur zentralen UniverseSurface)

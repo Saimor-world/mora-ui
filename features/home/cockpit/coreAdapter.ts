@@ -299,7 +299,10 @@ export function deriveLiveAttention(
   }
 
   if (snapshot.calendar?.events?.length) {
-    const nextEv = snapshot.calendar.events[0];
+    const validEvents = snapshot.calendar.events.filter(
+      (e) => !e.title.toLowerCase().includes('tarek')
+    );
+    const nextEv = validEvents[0];
     items.push({
       id: 'live-cal',
       title: stripFiktiv(nextEv.title) || nextEv.title,
