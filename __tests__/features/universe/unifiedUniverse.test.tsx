@@ -134,16 +134,15 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
     unmountUniverse();
 
-    // 2. Einstieg Home (LiveCockpit mit view="universe")
-    const { container: cockpitUniverseContainer, unmount: unmountCockpit } = render(
+    // 2. Einstieg Home (LiveCockpit mit initialView="universe" delegiert zur zentralen UniverseSurface)
+    const navigateMock = jest.fn();
+    const { unmount: unmountCockpit } = render(
       <QueryClientProvider client={qc}>
-        <LiveCockpit navigate={jest.fn()} initialView="universe" />
+        <LiveCockpit navigate={navigateMock} initialView="universe" />
       </QueryClientProvider>
     );
 
-    expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
-    expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    expect(cockpitUniverseContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
+    expect(navigateMock).toHaveBeenCalledWith('universe');
     unmountCockpit();
   });
 
