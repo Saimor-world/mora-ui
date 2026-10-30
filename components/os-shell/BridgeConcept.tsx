@@ -51,7 +51,9 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const renderControl = (control:typeof controls[number]) => {
     const Icon=control.icon;
     const count=control.id==='post' && available(snapshot?.mail) ? snapshot?.mail.unread_count : control.id==='today' && available(snapshot?.tasks) ? snapshot?.tasks.counts.open : control.id==='notifications' ? attention : control.id==='incidents' && available(snapshot?.nightwatch) ? snapshot?.nightwatch.open_incidents : null;
-    return <button type="button" key={control.id} className="bridge__dock-item" data-active={control.id===activeId?'true':undefined} onClick={control.action} title={control.name} aria-current={control.id===activeId?'page':undefined}><span className="bridge__dock-icon"><Icon size={19} strokeWidth={1.5} />{typeof count==='number' && count>0 ? <b className="bridge__badge">{count}</b> : null}</span><span>{control.name}</span></button>;
+    const next=snapshot?.calendar.next_event;
+    const status=control.id==='calendar' && available(snapshot?.calendar) && next?.time ? `Heute ${next.time}` : control.id==='incidents' && count===0 ? 'Ruhig' : null;
+    return <button type="button" key={control.id} className="bridge__dock-item" data-active={control.id===activeId?'true':undefined} onClick={control.action} title={status ? `${control.name} · ${status}` : control.name} aria-current={control.id===activeId?'page':undefined}><span className="bridge__dock-icon"><Icon size={19} strokeWidth={1.5} />{typeof count==='number' && count>0 ? <b className="bridge__badge">{count}</b> : null}</span><span>{control.name}</span>{status ? <small className="bridge__dock-status">{status}</small> : null}</button>;
   };
   return <nav className="os-dock bridge" data-variant="c" aria-label="SAIMÔR Brücke" data-testid="os-dock">
     <div className="bridge__body" data-testid="dock"><div className="bridge__rim" aria-hidden="true" />
