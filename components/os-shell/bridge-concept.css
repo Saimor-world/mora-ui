@@ -72,3 +72,4 @@ html[data-dock='c'] { --os-dock-space:240px; }
 .bridge__dock-item { color:#e0eee2; font-size:11px; }
 .bridge__heart { top:-73px; }
 @media(max-width:699px){ .bridge__hull {top:-20px;height:calc(100% + 20px)}.bridge__station-wing {top:56px;padding:4px 2px} }
+.bridge__dock-item > span:not(.bridge__dock-icon) { white-space:nowrap; font-size:9px; }
