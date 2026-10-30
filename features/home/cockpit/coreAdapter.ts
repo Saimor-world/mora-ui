@@ -1,3 +1,10 @@
+export function isEventAbsenceOrOpen(e?: { absence?: any; is_absent?: any; is_open?: any; open?: any; status?: string; phase?: string } | null): boolean {
+  if (!e) return false;
+  if (e.absence || e.is_absent || e.is_open || e.open) return true;
+  const st = String(e.status || e.phase || '').toLowerCase();
+  return st === 'open' || st === 'offen' || st === 'absent' || st === 'sick' || st === 'abwesend' || st === 'krank';
+}
+
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { DemoFile, DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
@@ -38,6 +45,7 @@ export interface LiveAttentionItem {
   detail: string;
   action: string;
   primary?: boolean;
+  isWarning?: boolean;
   onAction?: () => void;
 }
 
@@ -301,11 +309,15 @@ export function deriveLiveAttention(
   if (snapshot.calendar?.events?.length) {
     const nextEv = snapshot.calendar.events[0];
     if (nextEv) {
+      const open = isEventAbsenceOrOpen(nextEv);
       items.push({
         id: 'live-cal',
         title: stripFiktiv(nextEv.title) || nextEv.title,
-        detail: `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
-        action: 'Kalender ansehen',
+        detail: open
+          ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen (Krankmeldung / Abwesenheit)`
+          : `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
+        action: open ? 'Schicht besetzen' : 'Kalender ansehen',
+        isWarning: open,
         onAction: () => navigate?.('calendar'),
       });
     }

@@ -45,6 +45,12 @@ export type TodayCalendarEvent = {
   time?: string;
   duration?: number;
   location?: string;
+  status?: string;
+  absence?: boolean | string | null;
+  is_absent?: boolean | null;
+  is_open?: boolean | null;
+  open?: boolean | null;
+  phase?: string;
 };
 
 export type TodayTask = {

@@ -12,6 +12,7 @@ import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { firstName } from '@/lib/auth/displayName';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
@@ -21,7 +22,7 @@ import { useNavPos } from '@/lib/mora/navPos';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
-import { useDailyBriefing, formatWarmMoraBriefing } from '@/lib/queries/useDailyBriefing';
+import { useDailyBriefing, buildMoraBriefing } from '@/lib/queries/useDailyBriefing';
 import { mailCounts } from '@/lib/mora/bridgeData';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
@@ -476,15 +477,16 @@ export function UnifiedUniverse({
   const briefings = useMemo<Briefing[]>(() => {
     if (!dailyBriefing) return [];
     const list: Briefing[] = [];
-    // Eine Mail-Zahl für Briefing und Dock; MÔRA spricht kurz und warm aus denselben Daten.
+    // Eine Mail-Zahl für Briefing-Karte, Dock-Badge und Post (mailCounts).
     const briefingUnread = dailyBriefing.metrics?.unread_mails ?? null;
     const mail = mailCounts(snapshot, briefingUnread);
-    if (dailyBriefing.text) {
+    const briefingText = buildMoraBriefing(dailyBriefing, firstName(user));
+    if (briefingText) {
       list.push({
         id: 'briefing-main',
         label: 'Morgen-Briefing',
         title: dailyBriefing.date || 'Heute',
-        detail: formatWarmMoraBriefing(dailyBriefing.text, dailyBriefing.metrics, companyName.includes('Morgenrot') ? 'Marius' : undefined),
+        detail: briefingText,
       });
     }
     if ((mail.unread ?? 0) > 0) {
@@ -495,7 +497,7 @@ export function UnifiedUniverse({
         detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : 'Wartet auf dich',
       });
     }
-    if (dailyBriefing.metrics?.active_incidents > 0) {
+    if (dailyBriefing.metrics?.active_incidents && dailyBriefing.metrics.active_incidents > 0) {
       list.push({
         id: 'briefing-incidents',
         label: 'Nightwatch',
@@ -505,7 +507,7 @@ export function UnifiedUniverse({
       });
     }
     return list;
-  }, [dailyBriefing, snapshot, companyName]);
+  }, [dailyBriefing, user, snapshot]);
 
   // Filter tasks for the selected planet strictly by department_id
   const planetTasks = useMemo(() => {
