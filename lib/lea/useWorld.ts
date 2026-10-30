@@ -5,7 +5,6 @@ import { coreGet } from '@/lib/api/http';
 import { calendarReadWindow, calendarSnapshotIsCurrent, fetchCalendarReadSnapshot } from '@/lib/api/calendarReadClient';
 import { listCompanyFiles } from '@/lib/api/filesClient';
 import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
-import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
@@ -67,8 +66,7 @@ export function useWorld() {
     queryKey: ['lea-world', 'nodes', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes'])
-      .map((n) => ({ ...n, ...(n.title ? { title: stripFiktiv(n.title) } : {}), ...(n.name ? { name: stripFiktiv(n.name) } : {}) })),
+    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']),
   });
   // Hochgeladene Dateien (GET /v3/files) sind ebenfalls Sterne ihres Ordners; mit Knoten verknüpfte zählen dort.
   const files = useQuery({
@@ -77,7 +75,7 @@ export function useWorld() {
     staleTime: 30_000,
     queryFn: async () => (await listCompanyFiles(companyId!).catch(() => []))
       .filter((f) => f.folder_id && !f.linked_node_id)
-      .map((f): FNode => ({ id: f.id, name: stripFiktiv(f.filename), type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
+      .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
   });
   const events = useQuery({
     queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
@@ -94,7 +92,7 @@ export function useWorld() {
     queryFn: async () => {
       const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
       if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) throw new Error('Tasks unavailable');
-      return list<WorldTask>(raw, ['tasks', 'items']).map((t) => ({ ...t, title: stripFiktiv(t.title) }));
+      return list<WorldTask>(raw, ['tasks', 'items']);
     },
   });
   const phases = useDayStore((s) => s.phases);
@@ -104,7 +102,7 @@ export function useWorld() {
     count: calendarComplete ? events.data.count : null } : null, [events.data, calendarComplete, events.isError]);
   const tasksComplete = tasks.isSuccess;
   const calendarEvents = useMemo<WorldEvent[]>(() => calendarComplete ? (events.data?.events ?? []).map((event) => ({
-    id: event.id, title: stripFiktiv(event.title), date: event.date, time: event.time ?? undefined, duration: event.duration ?? undefined,
+    id: event.id, title: event.title, date: event.date, time: event.time ?? undefined, duration: event.duration ?? undefined,
   })) : [], [calendarComplete, events.data]);
   const day = useMemo(() => {
     const result = buildLiveDay(calendarEvents, tasks.data ?? [], phases, now, 'Europe/Berlin');
@@ -114,9 +112,9 @@ export function useWorld() {
   }, [calendarEvents, tasks.data, phases, calendarComplete, tasksComplete, now]);
   // Finder = Universe: Abteilungen, Ordner (Monde), Inhalte (Sterne) und der Aufgaben-Planet.
   const finder: FPlanet[] = useMemo(() => buildFinder({
-    departments: (tree.data?.departments ?? []).map((d) => ({ ...d, name: stripFiktiv(d.name) })) as never,
+    departments: (tree.data?.departments ?? []) as never,
     unassigned: tree.data?.unassigned ?? [],
-    folders: (folders.data ?? []).map((f) => ({ ...f, ...(f.name ? { name: stripFiktiv(f.name) } : {}) })),
+    folders: folders.data ?? [],
     nodes: [...(nodes.data ?? []), ...(files.data ?? [])],
     tasks: tasks.isSuccess ? tasks.data ?? [] : null,
   }), [tree.data, folders.data, nodes.data, files.data, tasks.data, tasks.isSuccess]);

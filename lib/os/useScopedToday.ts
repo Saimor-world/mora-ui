@@ -19,6 +19,7 @@ export function invalidateToday(): void {
 
 type ScopedTodayOptions = {
   backgroundRefresh?: boolean;
+  enabled?: boolean;
 };
 
 type SnapshotState = {
@@ -26,7 +27,7 @@ type SnapshotState = {
   data: TodaySnapshot;
 };
 
-export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions = {}) {
+export function useScopedToday({ backgroundRefresh = false, enabled = true }: ScopedTodayOptions = {}) {
   const activeCompanyId = useScopeCompanyId();
   const user = useSessionStore((state) => state.user);
   const sessionGeneration = useSessionStore((state) => state.sessionGeneration);
@@ -79,6 +80,11 @@ export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions
   }, [activeCompanyId, contextKey, userId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return undefined;
+    }
     requestGenerationRef.current += 1;
     setSnapshotState(null);
     setLoadError(null);
@@ -111,7 +117,7 @@ export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions
         document.removeEventListener('visibilitychange', refreshIfUseful);
       }
     };
-  }, [backgroundRefresh, refresh]);
+  }, [backgroundRefresh, enabled, refresh]);
 
   return {
     snapshot,

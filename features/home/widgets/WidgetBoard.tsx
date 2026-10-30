@@ -73,5 +73,21 @@ function WidgetBody({ content }: { content: SourceWidget['content'] }) {
   if (content.type === 'metric') return <><strong>{content.value}</strong>{content.detail && <p>{content.detail}</p>}</>;
   if (content.type === 'status') return <><strong>{content.label}</strong>{content.detail && <p>{content.detail}</p>}</>;
   if (content.type === 'approval') return <><strong>{content.title}</strong>{content.detail && <p>{content.detail}</p>}</>;
-  return <ul>{content.items.map(item => <li key={item.id}>{item.title}{item.detail && <span> · {item.detail}</span>}</li>)}</ul>;
+  return (
+    <ul>
+      {content.items.map((item) => {
+        const isOpen = item.detail?.includes('Offen');
+        return (
+          <li key={item.id}>
+            {item.title}
+            {item.detail && (
+              <span style={isOpen ? { color: 'var(--amber, #f59e0b)', fontWeight: 500 } : undefined}>
+                {' · '}{item.detail}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }

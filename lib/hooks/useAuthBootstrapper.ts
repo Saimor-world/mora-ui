@@ -34,6 +34,7 @@ export function mapProfileToUser(profile: UserProfile): User {
         email: profile.email,
         role: profile.role as UserRole,
         tenant_id: profile.tenant_id,
+        is_demo: Boolean(profile.is_demo || profile.demo_mode),
         operational_state: profile.operational_state,
         setup_required: profile.setup_required,
         active_company_id: profile.active_company_id,

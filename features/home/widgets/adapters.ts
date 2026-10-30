@@ -1,3 +1,18 @@
+function isEventAbsenceOrOpen(e?: { absence?: any; is_absent?: any; is_open?: any; open?: any; status?: string; phase?: string } | null): boolean {
+  if (!e) return false;
+  if (e.absence || e.is_absent || e.is_open || e.open) return true;
+  const st = String(e.status || e.phase || '').toLowerCase();
+  return st === 'open' || st === 'offen' || st === 'absent' || st === 'sick' || st === 'abwesend' || st === 'krank';
+}
+
+function formatGermanPriority(p?: string | null): string | undefined {
+  if (!p) return undefined;
+  const s = p.trim().toLowerCase();
+  if (s === 'high' || s === 'urgent' || s === 'hoch') return 'Hohe Priorität';
+  if (s === 'medium' || s === 'normal' || s === 'mittel') return 'Mittlere Priorität';
+  if (s === 'low' || s === 'niedrig') return 'Geringe Priorität';
+  return `Priorität ${p}`;
+}
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { HomeModel } from '../data/homeModel';
 import type { SourceWidget } from './types';
@@ -66,11 +81,16 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
         ...meta(snapshot.calendar, 'Kalender', isFiktiv),
         content: {
           type: 'appointments',
-          items: evs.map((e) => ({
-            id: e.id,
-            title: stripFiktiv(e.title) || e.title,
-            detail: e.time ? `${e.time} Uhr` : undefined,
-          })),
+          items: evs.map((e) => {
+            const open = isEventAbsenceOrOpen(e);
+            return {
+              id: e.id,
+              title: stripFiktiv(e.title) || e.title,
+              detail: open
+                ? `${e.time ? `${e.time} Uhr · ` : ''}Offen`
+                : e.time ? `${e.time} Uhr` : undefined,
+            };
+          }),
         },
       });
     } else {
@@ -104,7 +124,7 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
           items: due.map((t) => ({
             id: t.id,
             title: stripFiktiv(t.title) || t.title,
-            detail: t.priority ? `Priorität ${t.priority}` : undefined,
+            detail: formatGermanPriority(t.priority),
           })),
         },
       });

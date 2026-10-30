@@ -7,7 +7,7 @@ import { MoraMark } from '@/components/world/MoraSpirit';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { PhoneCompanion } from '@/features/companion/PhoneCompanion';
 import { readFirma } from '@/features/home/data/useDemoViewer';
-import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
+import { Button, Divider, Loading, NavItem, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -17,7 +17,7 @@ import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 import type { FeatureManifest, FeatureSurfaceProps } from '@/features/types';
-import { MoraConsole } from '@/features/mora/ui/MoraConsole';
+import { MoraStage } from '@/features/mora/ui/MoraStage';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { enabledFeatureFlags } from '@/lib/os-prototype/flags';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
@@ -152,6 +152,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Studio';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
+  const closeMora = useCallback(() => setMoraOpen(false), [setMoraOpen]);
   const askMora = (text: string) => {
     useOsShellStore.getState().setMoraDraft(text);
     setMoraOpen(true);
@@ -209,11 +210,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           </div>
         </main>
 
-        {moraOpen && active.id !== 'mora' ? (
-          <Panel label="MÔRA" className="os-shell__mora">
-            <MoraConsole variant="panel" navigate={navigate} onClose={() => setMoraOpen(false)} />
-          </Panel>
-        ) : null}
+        {moraOpen && active.id !== 'mora' ? <MoraStage navigate={navigate} onClose={closeMora} /> : null}
 
         <OsDock
           showLegacy={internal || preview}
@@ -228,6 +225,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           controlOpen={controlOpen}
           onNotifications={() => setTrayOpen((v) => !v)}
           onMora={() => setMoraOpen(!moraOpen)}
+          onAsk={askMora}
           onMore={() => setMoreOpen((v) => !v)}
         />
 
