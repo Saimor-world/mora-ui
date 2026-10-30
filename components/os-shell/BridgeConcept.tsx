@@ -57,7 +57,7 @@ function useOrbReflections(water:React.RefObject<HTMLDivElement|null>):Orb[]{
   return orbs;
 }
 /** Zusatz-Widgets: nur echte Snapshot-Werte; fehlt die Quelle, steht dort „Offline“. */
-type Widget={id:string;label:string;value:string;tone:'calm'|'amber'|'red';icon:typeof CalendarClock;target:'calendar'|'today'|'control'};
+type Widget={id:string;label:string;value:string;tone:'calm'|'amber'|'red';icon:typeof CalendarClock;sub?:string;target:'calendar'|'today'|'control'};
 export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):Widget[]{
   const cal=snapshot&&available(snapshot.calendar)?snapshot.calendar:null;
   const tasks=snapshot&&available(snapshot.tasks)?snapshot.tasks:null;
@@ -69,8 +69,23 @@ export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):W
     {id:'next',label:'Als Nächstes',value:!cal?'Offline':next?`${next.time?`${next.time} `:''}${next.title.replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim()}`:'Heute frei',tone:'calm',icon:CalendarClock,target:'calendar'},
     {id:'overdue',label:'Überfällig',value:overdue===null?'Offline':overdue?`${overdue} ${overdue===1?'Aufgabe':'Aufgaben'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
     {id:'events',label:'Termine',value:count===null?'Offline':String(count),tone:'calm',icon:CalendarDays,target:'calendar'},
-    {id:'phase',label:'Zeit-Theme',value:scene?`${scene.label} · ${scene.range.split(' · ')[0]}`:'…',tone:'calm',icon:SunMoon,target:'control'},
+    {id:'phase',label:'Zeit-Theme',value:scene?scene.label:'…',sub:scene?scene.range:undefined,tone:'calm',icon:SunMoon,target:'control'},
   ];
+}
+const clean=(t?:string|null)=>(t??'').replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim();
+/** Zweite Zeile je Kachel: nur echte Snapshot-Inhalte, sonst leer. */
+export function tileSub(id:string, snapshot:TodaySnapshot|null):string{
+  if(!snapshot)return '';
+  const tasks=available(snapshot.tasks)?snapshot.tasks:null; const cal=available(snapshot.calendar)?snapshot.calendar:null;
+  switch(id){
+    case 'post':{if(!available(snapshot.mail))return '';const m=snapshot.mail.items.find(i=>!i.read)??snapshot.mail.items[0];return clean(m?.subject);}
+    case 'today':{if(!tasks)return '';const t=tasks.due_today[0]??tasks.items.find(i=>i.status!=='done');return t?clean(t.title):'';}
+    case 'overdue':return tasks?.overdue[0]?clean(tasks.overdue[0].title):'';
+    case 'next':return cal?.next_event?.location?clean(cal.next_event.location):'';
+    case 'events':{if(!cal)return '';const n=cal.next_event?.id;const after=cal.events.filter(e=>e.date===snapshot.date&&e.id!==n&&(!cal.next_event?.time||(e.time??'')>cal.next_event.time));return after[0]?`Danach ${after[0].time?after[0].time+' ':''}${clean(after[0].title)}`:'';}
+    case 'nightwatch':{if(!available(snapshot.nightwatch))return '';const at=snapshot.nightwatch.last_synced_at??snapshot.nightwatch.as_of;const d=at?new Date(at):null;return d&&!isNaN(d.getTime())?`Letzter Check ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:snapshot.timezone||undefined})}`:'';}
+    default:return '';
+  }
 }
 const complicationText=(g:Station)=>g.id==='team'||g.id==='nightwatch'?g.value:g.detail;
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
@@ -128,14 +143,14 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   };
   const holoRef=useRef<HTMLElement|null>(null);
   const [holoPos,setHoloPos]=useState<{left:number;top:number}|null>(null);
-  const showHolo=Boolean(active&&card);
+  const showHolo=Boolean(active&&card&&!phone&&(activeId==='home'||activeId==='universe'));
   useEffect(()=>{
     if(!showHolo)return;
     /** Kollisionsfrei: nächstgelegene freie Stelle über dem Wasser, Planeten und Tageslabels bleiben frei. */
     const place=()=>{
       const el=holoRef.current; const host=el?.offsetParent as HTMLElement|null; if(!el||!host)return;
       const hr=host.getBoundingClientRect(); const w=el.offsetWidth, h=el.offsetHeight;
-      const obstacles=Array.from(document.querySelectorAll<HTMLElement>('.ck-planet,.bridge__mark-label,.bridge__mora,.bridge__voice,.bridge__comp')).map(o=>o.getBoundingClientRect()).filter(r=>r.width>0);
+      const obstacles=Array.from(document.querySelectorAll<HTMLElement>('.ck-planet,.ck-panel,.bridge__mark-label,.bridge__mora,.bridge__voice,.bridge__comp')).map(o=>o.getBoundingClientRect()).filter(r=>r.width>0);
       const free=(l:number,t:number)=>t>=64&&l>=16&&l+w<=window.innerWidth-16&&!obstacles.some(o=>l<o.right+8&&l+w>o.left-8&&t<o.bottom+8&&t+h>o.top-8);
       const cx=hr.left+hr.width/2; let best:{l:number;t:number;d:number}|null=null;
       for(let t=hr.top-h-8;t>hr.top-h-360;t-=12)for(let l=16;l+w<=window.innerWidth-16;l+=16){if(!free(l,t))continue;const d=Math.hypot(l+w/2-cx,(hr.top-h-8-t)*1.6);if(!best||d<best.d)best={l,t,d};}
@@ -145,9 +160,9 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     return()=>{window.clearTimeout(t);window.removeEventListener('resize',place);};
   },[showHolo,card?.title]);
   const act=(g:Station)=>g.id==='post'?()=>onNavigate('post'):g.id==='today'?()=>onNavigate('today'):g.id==='team'?()=>openLegacyApp('calendar'):openNightwatch;
-  const complication=(g:Station)=><button key={g.id} type="button" className="bridge__comp" data-station={g.id} data-tone={g.tone} onClick={act(g)} title={`${g.label}: ${g.value} · ${g.detail}`}><Ring station={g} /><span className="bridge__comp-text"><small>{g.label}</small><strong>{complicationText(g)}</strong></span></button>;
+  const complication=(g:Station)=><button key={g.id} type="button" className="bridge__comp" data-station={g.id} data-tone={g.tone} onClick={act(g)} title={`${g.label}: ${g.value} · ${g.detail}`}><Ring station={g} /><span className="bridge__comp-text"><small>{g.label}</small><strong>{complicationText(g)}</strong>{g.id==='team'?(g.detail&&g.detail!==complicationText(g)?<em>{g.detail}</em>:null):tileSub(g.id,snapshot)?<em>{tileSub(g.id,snapshot)}</em>:null}</span></button>;
   const widget=(w:Widget)=>{const Icon=w.icon;const go=w.target==='calendar'?()=>openLegacyApp('calendar'):w.target==='today'?()=>onNavigate('today'):(onControl??onMore);
-    return <button key={w.id} type="button" className="bridge__comp bridge__comp--mini" data-station={w.id} data-tone={w.tone} onClick={go} title={`${w.label}: ${w.value}`}><span className="bridge__ring bridge__ring--icon" aria-hidden="true"><Icon size={16} strokeWidth={1.6} /></span><span className="bridge__comp-text"><small>{w.label}</small><strong>{w.value}</strong></span></button>;};
+    return <button key={w.id} type="button" className="bridge__comp bridge__comp--mini" data-station={w.id} data-tone={w.tone} onClick={go} title={`${w.label}: ${w.value}`}><span className="bridge__ring bridge__ring--icon" aria-hidden="true"><Icon size={16} strokeWidth={1.6} /></span><span className="bridge__comp-text"><small>{w.label}</small><strong>{w.value}</strong>{(w.sub??tileSub(w.id,snapshot))?<em>{w.sub??tileSub(w.id,snapshot)}</em>:null}</span></button>;};
   // Tagesbogen: höchstens 4 Beschriftungen, alle oberhalb, keine im MÔRA-Bereich.
   const arc=marks.map(m=>({...m,x:dayX(m.minute)})).filter(m=>Math.abs(m.x-50)>=11)
     .reduce<(typeof marks[number]&{x:number})[]>((kept,m)=>kept.length<4 && kept.every(k=>Math.abs(k.x-m.x)>=16) ? [...kept,m] : kept,[])
@@ -172,14 +187,16 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
       </section>
       <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__comps" aria-label="Lage">
-        <div className="bridge__comps-side" data-side="left">{gauges.slice(0,2).map(complication)}{widgets.slice(0,2).map(widget)}</div>
+        <div className="bridge__col" data-col="outer" data-side="left">{complication(gauges[0])}{widget(widgets[0])}</div>
+        <div className="bridge__col" data-col="inner" data-side="left">{complication(gauges[1])}{widget(widgets[1])}</div>
         <div className="bridge__comps-gap" aria-hidden="true" />
-        <div className="bridge__comps-side" data-side="right">{gauges.slice(2,4).map(complication)}{widgets.slice(2,4).map(widget)}</div>
+        <div className="bridge__col" data-col="inner" data-side="right">{complication(gauges[2])}{widget(widgets[2])}</div>
+        <div className="bridge__col" data-col="outer" data-side="right">{complication(gauges[3])}{widget(widgets[3])}</div>
       </section>
       <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
         <span className="bridge__beam" aria-hidden="true" />
         <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
-        {active && card ? <article ref={holoRef} className="bridge__holo" style={holoPos?{left:holoPos.left,top:holoPos.top,right:"auto"}:undefined} data-placed={holoPos?"true":undefined} data-kind={card.kind} data-urgent={card.urgent?'true':undefined} aria-live="polite">
+        {showHolo && card ? <article ref={holoRef} className="bridge__holo" style={holoPos?{left:holoPos.left,top:holoPos.top,right:"auto"}:undefined} data-placed={holoPos?"true":undefined} data-kind={card.kind} data-urgent={card.urgent?'true':undefined} aria-live="polite">
           <small>{card.eyebrow}</small><strong>{card.title}</strong><p>{card.detail}</p>
           <div className="bridge__holo-actions"><button type="button" data-primary="true" onClick={()=>openTarget(card.primary.target)}>{card.primary.label}</button>{card.urgent?<button type="button" onClick={later}>Später</button>:null}</div>
         </article> : null}

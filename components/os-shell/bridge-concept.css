@@ -278,3 +278,45 @@ html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect
 .ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+6) :is(img,canvas) { filter:hue-rotate(-90deg) saturate(1.4) drop-shadow(0 0 10px rgba(150,230,140,.35)); }
 .ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n) :is(img,canvas) { filter:hue-rotate(75deg) saturate(1.3) drop-shadow(0 0 10px rgba(190,170,255,.35)); }
 @media (max-width:1180px) and (min-width:700px) { .bridge__comps-side { grid-template-columns:repeat(2,180px); } .bridge__comps .bridge__comp { width:180px; } .bridge__comps-gap { width:330px; } .bridge__comp-text strong { font-size:12px; line-height:15px; } .bridge__now::after { display:none; } }
+
+/* final: one full-width dock composition, clickable everywhere */
+.bridge__pill, .bridge__app, .bridge__comps .bridge__comp, .bridge__holo, .bridge__ask, .bridge__mora { pointer-events:auto; }
+.bridge__comps { left:24px; right:24px; top:-30px; transform:none; display:grid; grid-template-columns:1fr 1fr 420px 1fr 1fr; gap:12px; align-items:start; pointer-events:none; }
+.bridge__comps-gap { width:auto; }
+.bridge__col { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.bridge__col[data-col='outer'] { margin-top:16px; }
+.bridge__col[data-col='inner'] { margin-top:60px; }
+.bridge__comps .bridge__col .bridge__comp { width:100%; height:65px; padding:8px 14px 8px 12px; gap:12px; transform:none; align-items:center; }
+.bridge__comps .bridge__col[data-col='outer'] .bridge__comp { height:87px; }
+.bridge__comps .bridge__col .bridge__comp:hover { transform:translateY(-2px); }
+.bridge__comps .bridge__comp-text { flex:1; gap:1px; }
+.bridge__comps .bridge__comp-text strong { font-size:14px; line-height:18px; -webkit-line-clamp:1; }
+.bridge__comps .bridge__comp-text em { font-style:normal; font-size:12px; line-height:16px; color:var(--br-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bridge__comps [data-col='outer'] .bridge__comp-text em { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.bridge__comps [data-col='outer'] .bridge__ring { transform:scale(1.2); }
+.bridge__voice { width:140px; max-width:140px; }
+@media (max-width:1180px) and (min-width:700px) {
+  .bridge__comps { grid-template-columns:1fr 1fr 380px 1fr 1fr; left:16px; right:16px; gap:8px; }
+  .bridge__col { gap:8px; } .bridge__comps .bridge__col .bridge__comp { width:100%; padding:6px 10px 6px 8px; gap:8px; }
+  .bridge__ask > button { width:360px; } .bridge__voice { width:112px; max-width:112px; }
+}
+/* final: one lake behind every OS page (Pixel-Universe keeps its own sky); panels stay above the water */
+html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-space) {
+  background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
+  background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
+  background-blend-mode: normal !important; filter: var(--lake-pal, saturate(1.05)) var(--lake-phase, brightness(1.05)) !important;
+}
+@media (min-width:700px) { html[data-dock='c'] .ck-panel { max-height: calc(100% - 480px) !important; } }
+.bridge__comps [data-col='outer'] .bridge__comp-text strong { -webkit-line-clamp:2; white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+.bridge__comps [data-col='outer'] .bridge__comp-text em { -webkit-line-clamp:1; }
+@media (min-width:700px) {
+  html[data-dock='c'] .os-shell:not([data-place='universe']):not([data-place='home']) .os-shell__content {
+    height: calc(100% - var(--os-dock-space, 264px) - 64px); overflow-y: auto; padding-bottom: 24px !important; box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent);
+  }
+}
+/* final · phone: universe planets stay above MÔRA and the day line; home strip labels never collide */
+@media (max-width:699px) {
+  .ck-universe-unified .ck-sys:not(.ck-sys--strip) { height: calc(100dvh - 424px) !important; min-height: 300px; translate: 0 24px !important; }
+  .ck-sys.ck-sys--strip .ck-planet b { font-size: 8.5px !important; line-height: 1.1 !important; max-width: 48px !important; width: 48px !important; white-space: normal !important; text-align: center; overflow-wrap: normal; letter-spacing: -.01em; }
+}
