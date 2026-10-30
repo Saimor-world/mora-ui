@@ -1,128 +1,52 @@
-/* Grok v4 – die Brücke, Apple-artig komponiert.
-   Eine Mittelachse (MÔRA → Satz → Suche → Dock), eine Reihe Komplikationen,
-   ein Tagesbogen. 8px-Raster, eine Schrift (system-ui) in drei Gewichten. */
+/* Die Brücke: ein Cockpit über dem See.
+   Von der Wellenkante bis zum Rand: Tagesleiste auf der Welle, vier Instrumente links/rechts,
+   MÔRAs Feld in der Mitte, darunter Statusleiste und App-Leiste. 8px-Raster, eine Schrift. */
 html[data-dock='c'] {
-  --os-dock-space:264px;
-  --br-glass:rgba(14,40,36,.52);
+  --os-dock-space:304px;
+  --br-glass:rgba(10,34,44,.42);
   --br-glass-hi:rgba(255,255,255,.10);
-  --br-line:rgba(255,255,255,.12);
-  --br-text:#eef6f1; --br-mute:rgba(222,238,228,.62);
-  --br-accent:#9fe8bd; --br-amber:#f2c06a; --br-red:#f58c7d;
+  --br-line:rgba(200,240,250,.12);
+  --br-text:#eef6f1; --br-mute:rgba(222,238,228,.62); --br-faint:rgba(222,238,228,.42);
+  --br-accent:#9feaf0; --br-amber:#f2c06a; --br-red:#f58c7d;
+  --br-font:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
   --br-spring:cubic-bezier(.34,1.56,.64,1);
   --br-ease:cubic-bezier(.45,.05,.25,1);
+  --dw-top:#0d3140; --dw-mid:#082430; --dw-bot:#03111a; --dw-rim:#bfeaf0; --dw-rim-hi:#e6fbff;
+  --dw-plate:rgba(8,30,40,.34); --dw-plate-hi:rgba(160,230,240,.07);
+  --lake-pal:saturate(1.05); --lake-phase:brightness(1.05);
 }
-.os-dock.bridge { z-index:50; padding:0 !important; }
+/* Farbwelten (data-palette) und Zeit-Themes (data-phase) färben Dock und See */
+html[data-palette='1'] {
+  --dw-top:#14274e; --dw-mid:#0c1838; --dw-bot:#050a1e; --dw-rim:#c4cfff; --dw-rim-hi:#eef1ff;
+  --dw-plate:rgba(12,20,52,.36); --dw-plate-hi:rgba(170,186,255,.08);
+  --br-glass:rgba(14,22,54,.46); --br-line:rgba(196,208,255,.14); --br-accent:#b4c2ff;
+  --lake-pal:hue-rotate(34deg) saturate(1.1);
+}
+html[data-palette='0'] {
+  --dw-top:#3a2a22; --dw-mid:#241812; --dw-bot:#100a07; --dw-rim:#f0d2b0; --dw-rim-hi:#fff2e2;
+  --dw-plate:rgba(40,26,18,.38); --dw-plate-hi:rgba(255,214,170,.07);
+  --br-glass:rgba(44,30,22,.48); --br-line:rgba(255,226,196,.14); --br-accent:#f2c896;
+  --lake-pal:sepia(.55) hue-rotate(-28deg) saturate(.85) brightness(.95);
+}
+html[data-phase='flow']   { --lake-phase:brightness(1.12) saturate(1.05); }
+html[data-phase='build']  { --lake-phase:brightness(1.18) contrast(.98); }
+html[data-phase='lounge'] { --lake-phase:sepia(.22) saturate(1.15) brightness(1.02); }
+html[data-phase='night']  { --lake-phase:brightness(.8) saturate(.85); }
+
+.os-dock.bridge { z-index:60; padding:0 !important; }
 .bridge { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
-.bridge__body { position:relative; width:100%; height:264px; color:var(--br-text); }
-.bridge__hull { position:absolute; z-index:0; left:0; right:0; top:-58px; width:100%; height:calc(100% + 58px); pointer-events:none; filter:drop-shadow(0 -16px 32px rgba(0,0,0,.30)); }
-
-/* Frosted glass, ein Rezept für alles */
-.bridge__comp, .bridge__voice, .bridge__ask > button, .bridge__pill {
-  background:var(--br-glass);
-  -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%);
-  border:1px solid var(--br-line);
-  box-shadow:inset 0 1px 0 var(--br-hi, var(--br-glass-hi)), 0 8px 24px rgba(0,0,0,.28);
-}
-
-/* 1 · Tagesbogen: eine Linie, Beschriftungen nur oben, gleiche Größe */
-.bridge__day { position:absolute; z-index:4; top:-58px; left:0; right:0; height:calc(100% + 58px); pointer-events:none; }
-.bridge__mark { position:absolute; width:6px; height:6px; min-width:0 !important; min-height:0 !important; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:rgba(238,246,241,.85); cursor:pointer; pointer-events:auto; }
-.bridge__mark[data-past='true'] { background:rgba(238,246,241,.35); }
-.bridge__mark[data-problem='true'] { background:var(--br-amber); box-shadow:0 0 8px var(--br-amber); }
-.bridge__mark-label { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); white-space:nowrap; color:var(--br-mute); font:400 12px/16px inherit; font-family:inherit; text-shadow:0 1px 8px rgba(0,0,0,.6); }
-.bridge__mark-label b { color:var(--br-text); font-weight:600; margin-right:4px; }
-.bridge__mark[data-past='true'] .bridge__mark-label { opacity:.55; }
-.bridge__mark[data-problem='true'] .bridge__mark-label, .bridge__mark[data-problem='true'] .bridge__mark-label b { color:var(--br-amber); opacity:1; }
-.bridge__now { position:absolute; width:8px; height:8px; border-radius:50%; transform:translate(-50%,-50%); background:var(--br-accent); box-shadow:0 0 0 4px rgba(159,232,189,.18),0 0 12px var(--br-accent); animation:bridge-breathe 3s ease-in-out infinite; }
-@keyframes bridge-breathe { 50% { box-shadow:0 0 0 7px rgba(159,232,189,.08),0 0 16px var(--br-accent); } }
-
-/* 2 · Komplikationen: eine Reihe, symmetrisch um MÔRA, gleiche Größe und Grundlinie */
-.bridge__comps { position:absolute; z-index:3; top:92px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:0; }
-.bridge__comps-side { display:flex; gap:16px; }
-.bridge__comps-gap { width:480px; }
-.bridge__comp { display:flex; align-items:center; gap:8px; width:200px; height:56px; padding:0 16px 0 12px; border-radius:16px; color:var(--br-text); text-align:left; cursor:pointer; transition:transform .5s var(--br-spring), background .2s; }
-.bridge__comp:hover, .bridge__comp:focus-visible { transform:translateY(-2px); background:rgba(30,66,58,.6); }
-.bridge__ring { width:32px; height:32px; flex:none; }
-.bridge__ring svg { width:32px; height:32px; display:block; }
-.bridge__ring-track { fill:none; stroke:rgba(255,255,255,.12); stroke-width:3; }
-.bridge__ring-fill { fill:none; stroke:var(--br-accent); stroke-width:3; stroke-linecap:round; }
-.bridge__pulse { fill:none; stroke:var(--br-accent); stroke-width:1.75; stroke-linejoin:round; stroke-linecap:round; stroke-dasharray:40; animation:bridge-pulse 2.4s linear infinite; }
-@keyframes bridge-pulse { from { stroke-dashoffset:80; } to { stroke-dashoffset:0; } }
-.bridge__comp[data-tone='amber'] .bridge__ring-fill, .bridge__comp[data-tone='amber'] .bridge__pulse { stroke:var(--br-amber); }
-.bridge__comp[data-tone='red'] .bridge__ring-fill, .bridge__comp[data-tone='red'] .bridge__pulse { stroke:var(--br-red); }
-.bridge__comp-text { display:flex; flex-direction:column; min-width:0; }
-.bridge__comp-text small { font:600 10px/16px inherit; font-family:inherit; letter-spacing:.08em; text-transform:uppercase; color:var(--br-mute); }
-.bridge__comp-text strong { font:500 14px/16px inherit; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bridge__comp[data-tone='amber'] strong { color:var(--br-amber); }
-.bridge__comp[data-tone='red'] strong { color:var(--br-red); }
-
-/* 3 · Mittelachse: MÔRA → Satz → Suche */
-.bridge__heart { position:absolute; z-index:6; left:50%; top:-64px; width:480px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none; }
-.bridge__heart > * { pointer-events:auto; }
-.bridge__beam { position:absolute; inset:-40px 80px auto; height:200px; pointer-events:none !important; background:radial-gradient(ellipse at 50% 70%,rgba(110,224,164,.26),transparent 60%); }
-.bridge__mora { position:relative; z-index:1; display:grid; place-items:center; width:144px; height:144px; padding:0; border:0; background:none; cursor:pointer; filter:drop-shadow(0 0 16px rgba(110,224,164,.45)); transition:transform .9s var(--br-spring); will-change:transform; }
-.bridge__mora .px-mora { image-rendering:pixelated; }
-.bridge__heart[data-mood='thinking'] .bridge__mora, .bridge__heart[data-mood='speaking'] .bridge__mora, .bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 20px rgba(242,192,106,.6)); }
-.bridge__mora[data-flying='true'] { z-index:60; transition-timing-function:var(--br-ease); filter:drop-shadow(0 16px 32px rgba(0,0,0,.45)); }
-.bridge__voice { max-width:440px; height:32px; margin:0; padding:0 16px; border-radius:16px; display:flex; align-items:center; font:400 13px/32px inherit; font-family:inherit; color:var(--br-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:opacity .3s; }
-.bridge__mora[data-flying='true'] + .bridge__voice { opacity:0; }
-.bridge__ask { margin-top:8px; }
-.bridge__ask > button { display:flex; align-items:center; gap:8px; width:400px; height:40px; padding:0 16px; border-radius:12px; color:var(--br-mute); font:400 14px/1 inherit; font-family:inherit; cursor:text; transition:background .2s, box-shadow .2s; }
-.bridge__ask > button span { flex:1; text-align:left; }
-.bridge__ask > button:hover { background:rgba(30,66,58,.62); box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 4px rgba(159,232,189,.08),0 8px 24px rgba(0,0,0,.28); }
-.bridge__ask kbd { padding:0 8px; border-radius:6px; border:1px solid var(--br-line); font:500 11px/20px inherit; font-family:inherit; color:var(--br-mute); }
-
-/* 4 · Dock-Pille: zentriert, schwebend, 52px-Icons, Lupe, Punkt, Tooltips */
-.bridge__pill { position:absolute; z-index:5; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:flex-end; gap:8px; height:68px; padding:8px 12px; border-radius:24px; }
-.bridge__app { position:relative; display:grid; place-items:center; width:52px; height:52px; padding:0; border:0; background:none; color:var(--br-text); cursor:pointer; transform-origin:bottom center; transition:transform .45s var(--br-spring), margin .45s var(--br-spring); }
-.bridge__app-icon { display:grid; place-items:center; width:52px; height:52px; border-radius:14px; background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)); box-shadow:inset 0 1px 0 rgba(255,255,255,.14); color:rgba(238,246,241,.9); }
-.bridge__app[data-active='true'] .bridge__app-icon { color:var(--br-accent); background:linear-gradient(180deg,rgba(159,232,189,.18),rgba(159,232,189,.05)); }
-.bridge__app[data-active='true']::after { content:''; position:absolute; bottom:-7px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:var(--br-text); }
-.bridge__app:hover, .bridge__app:focus-visible { transform:scale(1.4); margin:0 10px; z-index:2; }
-.bridge__app:hover + .bridge__app, .bridge__app:has(+ .bridge__app:hover) { transform:scale(1.18); margin:0 4px; }
-.bridge__app::before { content:attr(data-tip); position:absolute; bottom:calc(100% + 12px); left:50%; transform:translateX(-50%) scale(.72); padding:4px 8px; border-radius:8px; background:rgba(20,30,28,.86); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); border:1px solid var(--br-line); color:var(--br-text); font:500 11px/16px inherit; font-family:inherit; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s; }
-.bridge__app:hover::before, .bridge__app:focus-visible::before { opacity:1; }
-.bridge__badge { position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ff5b4f; color:#fff; font:600 11px/18px inherit; font-family:inherit; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.35); }
-.bridge__badge[data-alert='true'] { background:#ff3b30; }
+.bridge__body { position:relative; width:100%; height:304px; color:var(--br-text); }
+.bridge button { font-family:inherit; }
 .bridge button:focus-visible { outline:2px solid var(--br-accent); outline-offset:2px; }
-.bridge__legacy { position:absolute; right:16px; bottom:8px; color:var(--br-mute); font:11px inherit; font-family:inherit; text-decoration:none; }
 
-/* osTokens setzt --os-dock-space inline auf .os-root (96px) – für die Brücke gilt ihre echte Höhe. */
-html[data-dock='c'] .os-root { --os-dock-space:264px !important; }
-@media (max-width:699px) { html[data-dock='c'] .os-root { --os-dock-space:200px !important; } }
-/* Universe endet über dem Hügel */
-@media (min-width:700px) { html[data-dock='c'] .os-root .ck-scene--system .ck-sys:not(.ck-sys--strip) { bottom:296px !important; } html[data-dock='c'] .os-root .ck-style-toggle { top:16px !important; bottom:auto !important; left:auto !important; right:160px !important; } }
-html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% - var(--os-dock-space) - 32px); min-height:0; }
-/* Home: keine Karte unter dem Hügel (Hügel ragt 58px + MÔRA über den Dock-Körper) */
-html[data-dock='c'] .os-root .ck { --ck-dock-clearance:calc(var(--os-dock-space) + 88px); }
-
-/* Flug-Anker */
-.mora-anchor { position:absolute; pointer-events:none; width:120px; height:120px; }
-.mora-anchor--planet { right:9%; top:16%; }
-
-@media (max-width:1180px) and (min-width:700px) { .bridge__comp { width:144px; } .bridge__comps-side { gap:8px; } .bridge__comps-gap { width:440px; } .bridge__voice { max-width:400px; } .bridge__app, .bridge__app-icon { width:44px; height:44px; } .bridge__pill { height:60px; } }
-@media (max-width:699px) {
-  html[data-dock='c'] { --os-dock-space:200px; }
-  .bridge__body { height:200px; } .bridge__hull { top:-20px; height:calc(100% + 20px); }
-  .bridge__comps, .bridge__mark-label { display:none; } .bridge__mark[data-problem='true'] .bridge__mark-label { display:block; font-size:11px; }
-  .bridge__heart { top:-72px; width:100%; } .bridge__mora { width:96px; height:96px; }
-  .bridge__voice { max-width:calc(100vw - 32px); font-size:12px; } .bridge__ask > button { width:calc(100vw - 48px); }
-  .bridge__pill { bottom:8px; max-width:calc(100vw - 16px); gap:4px; padding:6px 8px; height:52px; border-radius:18px; overflow-x:auto; }
-  .bridge__app, .bridge__app-icon { width:40px; height:40px; flex:none; } .bridge__app-icon { border-radius:11px; }
-  .bridge__app:hover, .bridge__app:hover + .bridge__app, .bridge__app:has(+ .bridge__app:hover) { transform:none; margin:0; }
-  .bridge__app::before { display:none; }
-}
-@media (prefers-reduced-motion:reduce) { .bridge__mora, .bridge__mora *, .bridge__app, .bridge__comp { transition:none !important; animation:none !important; } .bridge__pulse, .bridge__now { animation:none; } }
-/* Randbeschriftungen nicht abschneiden */
-.bridge__mark[data-edge='start'] .bridge__mark-label { left:-4px; transform:none; }
-.bridge__mark[data-edge='end'] .bridge__mark-label { left:auto; right:-4px; transform:none; }
-
-/* v6 · Wasser: der Hügel ist eine dunkle, leuchtende Wasserfläche.
-   Spiegelung = echte Planetenbilder, gespiegelt, gestaucht, weichgezeichnet (keine Canvas-Arbeit pro Frame). */
+/* Rumpf, Wasser, Platte: eine Fläche, die der Welle folgt */
+.bridge__hull { position:absolute; z-index:0; left:0; right:0; top:-58px; width:100%; height:calc(100% + 58px); pointer-events:none; filter:drop-shadow(0 -16px 32px rgba(0,0,0,.30)); }
+.bridge__hull path:last-of-type { stroke-opacity:.9; filter:drop-shadow(0 0 3px var(--br-accent)); }
 .bridge__water { position:absolute; z-index:1; left:0; right:0; top:-58px; height:calc(100% + 58px); overflow:hidden; pointer-events:none;
   -webkit-mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0 L1440 300 L0 300 Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat; mask:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0 L1440 300 L0 300 Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat; }
-.bridge__reflect { position:absolute; inset:0; filter:blur(5px); opacity:.26; animation:bridge-ripple 6s ease-in-out infinite alternate; transform-origin:50% 0; }
-.bridge__reflect img { position:absolute; transform:scaleY(-1); -webkit-mask-image:linear-gradient(0deg,#000,transparent 85%); mask-image:linear-gradient(0deg,#000,transparent 85%); }
+.bridge__reflect { position:absolute; inset:0; filter:blur(2.5px) saturate(1.1); opacity:.58; animation:bridge-ripple 6s ease-in-out infinite alternate; transform-origin:50% 0; }
+html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect { filter:blur(2.5px) var(--lake-pal); }
+.bridge__reflect img { position:absolute; transform:scaleY(-1); -webkit-mask-image:linear-gradient(0deg,#000 10%,transparent 92%); mask-image:linear-gradient(0deg,#000 10%,transparent 92%); }
 @keyframes bridge-ripple { 0% { transform:scaleY(1) skewX(0); } 50% { transform:scaleY(1.04) skewX(.6deg); } 100% { transform:scaleY(.98) skewX(-.4deg); } }
 .bridge__sparkle { position:absolute; inset:0; opacity:.5; animation:bridge-shimmer 5s ease-in-out infinite alternate;
   background:
@@ -133,229 +57,253 @@ html[data-dock='c'] .os-root .ck { --ck-dock-clearance:calc(var(--os-dock-space)
 .bridge__ripple { position:absolute; inset:0; opacity:.35;
   background:repeating-linear-gradient(180deg,transparent 0 7px,rgba(190,236,245,.05) 7px 8px);
   -webkit-mask-image:linear-gradient(180deg,#000 10%,transparent 70%); mask-image:linear-gradient(180deg,#000 10%,transparent 70%); }
-/* Komplikationen, Satz, Suche, Leiste: Licht auf dem Wasser – heller Text, kaum Fläche */
-html[data-dock='c'] { --br-glass:rgba(10,34,44,.42); --br-line:rgba(200,240,250,.12); --br-accent:#9feaf0; }
-/* MÔRA schwebt knapp über dem Wasser und spiegelt sich */
-.bridge__heart { top:-84px; }
-.bridge__beam { background:radial-gradient(ellipse at 50% 70%,rgba(140,230,240,.22),transparent 60%); }
-.bridge__mora { -webkit-box-reflect:below -20px linear-gradient(transparent 55%,rgba(255,255,255,.22)); animation:bridge-float 5s ease-in-out infinite; }
-.bridge__mora[data-flying='true'] { -webkit-box-reflect:unset; animation:none; }
-@keyframes bridge-float { 50% { translate:0 -4px; } }
-.bridge__voice { margin-top:0; }
-/* Siri-Glühen + eine Karte neben ihr, nur wenn aktiv */
-.bridge__aura { position:absolute; left:50%; top:8px; width:240px; height:128px; margin-left:-120px; pointer-events:none !important; opacity:0; filter:blur(26px); transition:opacity .6s var(--br-ease); }
+.bridge__plate { position:absolute; z-index:2; left:0; right:0; top:-58px; bottom:0; pointer-events:none;
+  background:linear-gradient(180deg,var(--dw-plate-hi),var(--dw-plate) 30%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%); backdrop-filter:blur(10px) saturate(140%);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 3 C220 8 300 85 720 85 C1140 85 1220 8 1440 3 L1440 300 L0 300Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 3 C220 8 300 85 720 85 C1140 85 1220 8 1440 3 L1440 300 L0 300Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat; }
+
+/* 1 · Tagesleiste genau auf der Welle: Punkte, Beschriftung oben, „Jetzt“ mit Uhrzeit */
+.bridge__day { position:absolute; z-index:4; top:-58px; left:0; right:0; height:calc(100% + 58px); pointer-events:none; }
+.bridge__mark { position:absolute; width:9px; height:9px; min-width:0 !important; min-height:0 !important; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:rgba(238,246,241,.95); box-shadow:0 0 0 3px rgba(238,246,241,.10),0 0 10px rgba(238,246,241,.45); cursor:pointer; pointer-events:auto; }
+.bridge__mark[data-past='true'] { background:rgba(238,246,241,.4); box-shadow:none; }
+.bridge__mark[data-problem='true'] { background:var(--br-amber); box-shadow:0 0 0 3px rgba(242,180,90,.18),0 0 12px var(--br-amber); }
+.bridge__mark-label { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); white-space:nowrap; padding:2px 10px; border-radius:999px; background:rgba(6,18,26,.42); border:1px solid rgba(255,255,255,.08); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); color:var(--br-mute); font:400 12px/16px var(--br-font); }
+.bridge__mark-label b { color:var(--br-text); font-weight:600; margin-right:4px; }
+.bridge__mark[data-past='true'] .bridge__mark-label { opacity:.55; }
+.bridge__mark[data-problem='true'] .bridge__mark-label, .bridge__mark[data-problem='true'] .bridge__mark-label b { color:var(--br-amber); opacity:1; }
+.bridge__mark[data-edge='start'] .bridge__mark-label { left:-4px; transform:none; }
+.bridge__mark[data-edge='end'] .bridge__mark-label { left:auto; right:-4px; transform:none; }
+.bridge__now { position:absolute; width:10px; height:10px; border-radius:50%; transform:translate(-50%,-50%); background:var(--br-accent); box-shadow:0 0 0 4px rgba(159,232,189,.18),0 0 12px var(--br-accent); animation:bridge-breathe 3s ease-in-out infinite; }
+.bridge__now i { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); font:600 11px/16px -apple-system,system-ui,sans-serif; font-style:normal; letter-spacing:.04em; color:var(--br-accent); white-space:nowrap; text-shadow:0 1px 6px rgba(0,0,0,.6); }
+.bridge__now i::before { content:'Jetzt '; font-weight:500; opacity:.8; }
+@keyframes bridge-breathe { 50% { box-shadow:0 0 0 7px rgba(159,232,189,.08),0 0 16px var(--br-accent); } }
+
+/* 2 · Deck: Post · Heute · MÔRA · Team · Als Nächstes. Außen höher, innen tiefer – sie folgen der Welle. */
+.bridge__deck { position:absolute; z-index:5; left:24px; right:24px; top:-26px; bottom:76px; display:grid; grid-template-columns:1fr 1fr 448px 1fr 1fr; gap:12px; pointer-events:none; }
+.bridge__inst { position:relative; display:flex; flex-direction:column; min-width:0; padding:10px 12px 10px; border-radius:20px; pointer-events:auto;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015) 40%),var(--br-glass);
+  -webkit-backdrop-filter:blur(24px) saturate(170%); backdrop-filter:blur(24px) saturate(170%);
+  border:1px solid var(--br-line); box-shadow:inset 0 1px 0 var(--br-glass-hi),0 12px 32px rgba(0,0,0,.26); }
+.bridge__inst[data-col='inner'] { margin-top:56px; }
+.bridge__inst[data-tone='amber'] { border-color:rgba(242,192,106,.32); }
+.bridge__inst[data-tone='red'] { border-color:rgba(245,140,125,.4); }
+.bridge__comp { display:flex; align-items:center; gap:10px; width:100%; min-height:48px; padding:0 2px 8px; border:0; border-bottom:1px solid var(--br-line); background:none; color:var(--br-text); text-align:left; cursor:pointer; pointer-events:auto; }
+.bridge__comp:hover .bridge__chev, .bridge__comp:focus-visible .bridge__chev { transform:translateX(3px); opacity:1; }
+.bridge__chev { flex:none; opacity:.45; transition:transform .3s var(--br-spring),opacity .2s; }
+.bridge__ring { width:36px; height:36px; flex:none; }
+.bridge__ring svg { width:36px; height:36px; display:block; }
+.bridge__ring-track { fill:none; stroke:rgba(255,255,255,.12); stroke-width:3; }
+.bridge__ring-fill { fill:none; stroke:var(--br-accent); stroke-width:3; stroke-linecap:round; transition:stroke-dasharray .8s var(--br-ease); }
+.bridge__pulse { fill:none; stroke:var(--br-accent); stroke-width:1.75; stroke-linejoin:round; stroke-linecap:round; stroke-dasharray:40; animation:bridge-pulse 2.4s linear infinite; }
+@keyframes bridge-pulse { from { stroke-dashoffset:80; } to { stroke-dashoffset:0; } }
+.bridge__inst[data-tone='amber'] .bridge__ring-fill { stroke:var(--br-amber); }
+.bridge__inst[data-tone='red'] .bridge__ring-fill { stroke:var(--br-red); }
+.bridge__comp-text { display:flex; flex-direction:column; flex:1; min-width:0; }
+.bridge__comp-text small { font:600 10px/14px var(--br-font); letter-spacing:.08em; text-transform:uppercase; color:var(--br-mute); }
+.bridge__comp-text strong { font:600 20px/24px var(--br-font); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bridge__comp-text em { font:400 12px/16px var(--br-font); font-style:normal; color:var(--br-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bridge__inst[data-tone='amber'] .bridge__comp-text strong { color:var(--br-amber); }
+.bridge__inst[data-tone='red'] .bridge__comp-text strong { color:var(--br-red); }
+.bridge__inst[data-offline='true'] .bridge__comp-text strong { color:var(--br-mute); font-weight:500; font-size:16px; }
+.bridge__inst-list { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; overflow:hidden; }
+.bridge__inst-list li { display:flex; gap:8px; align-items:baseline; min-width:0; font:400 12px/18px var(--br-font); color:var(--br-text); }
+.bridge__inst-list li b { flex:none; min-width:44px; font-weight:600; color:var(--br-mute); font-variant-numeric:tabular-nums; }
+.bridge__inst-list li span { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bridge__inst-list li[data-tone='amber'] b, .bridge__inst-list li[data-tone='amber'] span { color:var(--br-amber); }
+.bridge__inst-list li[data-tone='muted'] { opacity:.55; }
+.bridge__inst-empty { flex:1; margin:8px 0 0; font:400 12px/17px var(--br-font); color:var(--br-faint); }
+.bridge__inst-actions { display:flex; gap:6px; margin-top:8px; }
+.bridge__inst-actions button, .bridge__field-card button, .bridge__chips button, .bridge__chip {
+  display:inline-flex; align-items:center; gap:6px; height:28px; min-height:0 !important; padding:0 10px; border-radius:10px; border:1px solid var(--br-line);
+  background:rgba(255,255,255,.05); color:var(--br-text); font:500 12px/1 var(--br-font); white-space:nowrap; cursor:pointer; pointer-events:auto;
+  transition:background .2s, border-color .2s, transform .3s var(--br-spring); }
+.bridge__inst-actions button:hover, .bridge__field-card button:hover, .bridge__chips button:hover, .bridge__chip:hover { background:color-mix(in srgb,var(--br-accent) 16%,transparent); border-color:color-mix(in srgb,var(--br-accent) 40%,transparent); }
+.bridge__inst-actions button:first-child { flex:1; justify-content:center; }
+.bridge__inst-actions button[data-ask='true'] { color:var(--br-accent); }
+
+/* 3 · MÔRAs Feld: sie sitzt auf der Welle, darunter ihr Lichtfeld mit Satz, Karte, Frage und Vorschlägen */
+.bridge__heart { position:relative; display:flex; flex-direction:column; align-items:center; min-width:0; pointer-events:none; }
+.bridge__beam { position:absolute; left:40px; right:40px; top:-56px; height:220px; pointer-events:none; background:radial-gradient(ellipse at 50% 60%,color-mix(in srgb,var(--br-accent) 24%,transparent),transparent 62%); }
+.bridge__aura { position:absolute; left:50%; top:-24px; width:240px; height:128px; margin-left:-120px; pointer-events:none; opacity:0; filter:blur(26px); transition:opacity .6s var(--br-ease); }
 .bridge__aura i { position:absolute; left:50%; top:50%; width:120px; height:72px; margin:-36px 0 0 -60px; border-radius:50%; mix-blend-mode:screen; will-change:transform; animation:bridge-flow 7s var(--br-ease) infinite alternate; }
 .bridge__aura i:nth-child(1) { background:#8fe6c0; } .bridge__aura i:nth-child(2) { background:#5fd4d8; animation-duration:9s; animation-delay:-3s; }
 .bridge__aura i:nth-child(3) { background:#a58cff; animation-duration:8s; animation-delay:-5s; } .bridge__aura i:nth-child(4) { background:#f2c06a; width:72px; height:48px; margin:-24px 0 0 -36px; animation-duration:11s; animation-delay:-2s; }
 @keyframes bridge-flow { 0% { transform:translate(-40px,6px) rotate(0); } 50% { transform:translate(32px,-12px) rotate(120deg) scale(1.15); } 100% { transform:translate(8px,16px) rotate(240deg) scale(.9); } }
 .bridge__body[data-active='true'] .bridge__aura { opacity:.85; }
-.bridge__holo { position:absolute; z-index:2; left:calc(50% + 88px); top:16px; width:232px; padding:12px 16px; border-radius:16px; text-align:left; color:var(--br-text);
-  background:linear-gradient(180deg,rgba(159,234,240,.10),rgba(10,34,44,.6)); -webkit-backdrop-filter:blur(24px) saturate(160%); backdrop-filter:blur(24px) saturate(160%);
-  border:1px solid rgba(159,234,240,.26); box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 24px rgba(0,0,0,.3); animation:bridge-materialize .6s var(--br-spring) both; }
-.bridge__holo[data-urgent='true'] { border-color:rgba(242,180,90,.4); background:linear-gradient(180deg,rgba(242,180,90,.10),rgba(10,34,44,.6)); }
-@keyframes bridge-materialize { from { opacity:0; transform:translateX(-8px) scale(.96); filter:blur(4px); } }
-.bridge__holo small { display:block; font:600 10px/16px inherit; font-family:inherit; letter-spacing:.08em; text-transform:uppercase; color:var(--br-mute); }
-.bridge__holo[data-urgent='true'] small { color:var(--br-amber); }
-.bridge__holo strong { display:block; font:600 15px/24px inherit; font-family:inherit; }
-.bridge__holo p { margin:0 0 8px; font:400 12px/16px inherit; font-family:inherit; color:var(--br-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bridge__holo-actions { display:flex; gap:8px; }
-.bridge__holo-actions button { height:24px; min-height:0 !important; padding:0 8px; border-radius:8px; border:1px solid var(--br-line); background:rgba(255,255,255,.06); color:var(--br-text); font:500 11px/22px inherit; font-family:inherit; white-space:nowrap; cursor:pointer; }
-.bridge__holo-actions button[data-primary='true'] { background:rgba(159,234,240,.16); border-color:rgba(159,234,240,.4); }
-@media (max-width:699px) { .bridge__holo { left:8px; right:8px; width:auto; top:-96px; } .bridge__water { top:-20px; height:calc(100% + 20px); } }
-@media (prefers-reduced-motion:reduce) { .bridge__reflect, .bridge__sparkle, .bridge__aura i, .bridge__holo, .bridge__mora { animation:none !important; } }
+.bridge__mora { position:relative; z-index:3; display:grid; place-items:center; width:128px; height:120px; margin-top:-74px; padding:0; border:0; background:none; cursor:pointer; pointer-events:auto;
+  filter:drop-shadow(0 0 16px color-mix(in srgb,var(--br-accent) 45%,transparent)); transition:transform .9s var(--br-spring); will-change:transform;
+  -webkit-box-reflect:below 0px linear-gradient(transparent 35%,rgba(255,255,255,.35)); animation:bridge-float 5s ease-in-out infinite; }
+.bridge__mora .px-mora { image-rendering:pixelated; }
+.bridge__heart[data-mood='thinking'] .bridge__mora, .bridge__heart[data-mood='speaking'] .bridge__mora, .bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 20px rgba(242,192,106,.6)); }
+.bridge__mora[data-flying='true'] { z-index:80; transition-timing-function:var(--br-ease); filter:drop-shadow(0 16px 32px rgba(0,0,0,.45)); -webkit-box-reflect:unset; animation:none; }
+@keyframes bridge-float { 50% { translate:0 -4px; } }
+.bridge__field { position:relative; z-index:2; width:100%; flex:1; min-height:0; margin-top:-30px; padding:52px 18px 12px; border-radius:120px 120px 24px 24px / 48px 48px 24px 24px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; pointer-events:auto;
+  background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--br-accent) 14%,transparent),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(10,34,44,.5));
+  -webkit-backdrop-filter:blur(24px) saturate(170%); backdrop-filter:blur(24px) saturate(170%);
+  border:1px solid color-mix(in srgb,var(--br-accent) 26%,transparent); box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 40px color-mix(in srgb,var(--br-accent) 12%,transparent),0 12px 32px rgba(0,0,0,.28); }
+.bridge__field[data-urgent='true'] { border-color:rgba(242,180,90,.45); background:radial-gradient(120% 90% at 50% 0%,rgba(242,180,90,.16),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(10,34,44,.5)); }
+.bridge__field-eyebrow { font:600 10px/14px var(--br-font); letter-spacing:.1em; text-transform:uppercase; color:var(--br-mute); }
+.bridge__field[data-urgent='true'] .bridge__field-eyebrow { color:var(--br-amber); }
+.bridge__voice { margin:0; max-width:100%; font:500 15px/20px var(--br-font); color:var(--br-text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bridge__field-card { display:flex; align-items:center; justify-content:center; gap:6px; max-width:100%; font:400 12px/16px var(--br-font); color:var(--br-mute); }
+.bridge__field-card span { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-right:4px; }
+.bridge__field-card button { height:24px; padding:0 8px; font-size:11px; }
+.bridge__field-card button[data-primary='true'] { background:color-mix(in srgb,var(--br-accent) 18%,transparent); border-color:color-mix(in srgb,var(--br-accent) 45%,transparent); }
+.bridge__field[data-urgent='true'] .bridge__field-card button[data-primary='true'] { background:rgba(242,180,90,.18); border-color:rgba(242,180,90,.5); }
+.bridge__ask { width:100%; margin-top:auto; }
+.bridge__ask > button { display:flex; align-items:center; gap:8px; width:100%; height:40px; padding:0 14px; border-radius:14px; border:1px solid var(--br-line); background:rgba(4,18,24,.5); color:var(--br-mute); font:400 14px/1 var(--br-font); cursor:text; pointer-events:auto; box-shadow:inset 0 1px 0 rgba(255,255,255,.06); transition:background .2s, box-shadow .2s; }
+.bridge__ask > button span { flex:1; text-align:left; }
+.bridge__ask > button:hover { background:rgba(10,40,48,.62); box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 4px color-mix(in srgb,var(--br-accent) 10%,transparent); }
+.bridge__ask kbd { padding:0 8px; border-radius:6px; border:1px solid var(--br-line); font:500 11px/20px var(--br-font); color:var(--br-mute); }
+.bridge__chips { display:flex; gap:6px; justify-content:center; max-width:100%; overflow:hidden; }
+.bridge__chips button { height:24px; padding:0 9px; border-radius:999px; font-size:11px; font-weight:400; color:var(--br-mute); min-width:0; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; }
 
-/* v6: keep the holo card clear of day-arc labels on its side */
-.bridge__body[data-active] .bridge__mark-label { transition: opacity .3s ease; }
-.bridge__body[data-active] .bridge__mark:nth-last-child(-n+2) .bridge__mark-label { opacity: 0; }
+/* 4 · Statusleiste links/rechts der App-Leiste */
+.bridge__status { position:absolute; z-index:5; bottom:20px; display:flex; align-items:center; gap:8px; pointer-events:none; }
+.bridge__status[data-side='left'] { left:32px; } .bridge__status[data-side='right'] { right:32px; }
+.bridge__status > * { pointer-events:auto; }
+.bridge__clock { display:flex; flex-direction:column; margin-right:6px; line-height:1; }
+.bridge__clock small + small { color:var(--br-faint); font-weight:400; }
+.bridge__clock b { font:300 26px/28px var(--br-font); letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.bridge__clock small { font:500 11px/14px var(--br-font); color:var(--br-mute); }
+.bridge__chip { height:32px; padding:0 12px; border-radius:12px; background:var(--br-glass); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); }
+.bridge__chip small { color:var(--br-mute); font-weight:400; }
+.bridge__chip[data-quiet='true'] { background:none; border-color:transparent; color:var(--br-mute); }
+.bridge__chip[data-on='true'] { color:var(--br-accent); border-color:color-mix(in srgb,var(--br-accent) 45%,transparent); background:color-mix(in srgb,var(--br-accent) 14%,transparent); }
+.bridge__chip[data-tone='amber'] { color:var(--br-amber); border-color:rgba(242,192,106,.4); }
+.bridge__chip[data-tone='red'] { color:var(--br-red); border-color:rgba(245,140,125,.45); }
+.bridge__chip img { image-rendering:pixelated; }
+.bridge__chip:disabled { opacity:.6; cursor:default; }
+.bridge__chip svg[data-spin='true'] { animation:bridge-spin 1s linear infinite; }
+@keyframes bridge-spin { to { transform:rotate(360deg); } }
+.bridge__legacy { color:var(--br-faint); font:11px var(--br-font); text-decoration:none; pointer-events:auto; }
+.bridge__legacy:hover { color:var(--br-text); }
 
-/* v7 · Universe + Wasser: neues Seebild im Glas-Modus, Dock-Wasser setzt den See fort. */
-.ck-universe-unified[data-style='glas'] .ck-space {
-  background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
-  background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
-  background-blend-mode: normal !important;
-  filter: brightness(1.05) saturate(1.05) !important;
-}
-.bridge__reflect { filter: blur(2.5px) saturate(1.1); opacity: .58; }
-.bridge__reflect img { -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 92%); mask-image: linear-gradient(0deg, #000 10%, transparent 92%); }
-.bridge__mora { -webkit-box-reflect: below 0px linear-gradient(transparent 35%, rgba(255,255,255,.5)); }
+@media (max-width:1366px) { .bridge__legacy, .bridge__status [aria-label='Tastenkürzel'] { display:none; } }
 
-/* v8 · Ein Dock, eine Komposition: zwei Widget-Reihen links/rechts von MÔRA,
-   Frag MÔRA als Sockel, Leiste darunter, alles auf einer Glasplatte über dem See.
-   Farben kommen aus der Farbwelt (data-palette) und dem Zeit-Theme (data-phase). */
-html[data-dock='c'] {
-  --dw-top:#0d3140; --dw-mid:#082430; --dw-bot:#03111a; --dw-rim:#bfeaf0; --dw-rim-hi:#e6fbff;
-  --dw-plate:rgba(8,30,40,.34); --dw-plate-hi:rgba(160,230,240,.07); --dw-plate-rim:rgba(200,244,250,.16);
-  --lake-pal:saturate(1.05); --lake-phase:brightness(1.05);
-}
-html[data-palette='1'] {
-  --dw-top:#14274e; --dw-mid:#0c1838; --dw-bot:#050a1e; --dw-rim:#c4cfff; --dw-rim-hi:#eef1ff;
-  --dw-plate:rgba(12,20,52,.36); --dw-plate-hi:rgba(170,186,255,.08); --dw-plate-rim:rgba(196,208,255,.18);
-  --br-glass:rgba(14,22,54,.46); --br-line:rgba(196,208,255,.14); --br-accent:#b4c2ff;
-  --lake-pal:hue-rotate(34deg) saturate(1.1);
-}
-html[data-palette='0'] {
-  --dw-top:#3a2a22; --dw-mid:#241812; --dw-bot:#100a07; --dw-rim:#f0d2b0; --dw-rim-hi:#fff2e2;
-  --dw-plate:rgba(40,26,18,.38); --dw-plate-hi:rgba(255,214,170,.07); --dw-plate-rim:rgba(255,222,190,.16);
-  --br-glass:rgba(44,30,22,.48); --br-line:rgba(255,226,196,.14); --br-accent:#f2c896;
-  --lake-pal:sepia(.55) hue-rotate(-28deg) saturate(.85) brightness(.95);
-}
-html[data-phase='flow']   { --lake-phase:brightness(1.12) saturate(1.05); }
-html[data-phase='build']  { --lake-phase:brightness(1.18) contrast(.98); }
-html[data-phase='lounge'] { --lake-phase:sepia(.22) saturate(1.15) brightness(1.02); }
-html[data-phase='night']  { --lake-phase:brightness(.8) saturate(.85); }
-.ck-universe-unified[data-style='glas'] .ck-space { filter:var(--lake-pal) var(--lake-phase) !important; }
-html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect { filter:blur(2.5px) var(--lake-pal); }
-.bridge__beam { background:radial-gradient(ellipse at 50% 70%,color-mix(in srgb,var(--br-accent) 26%,transparent),transparent 60%); }
+/* 5 · App-Leiste: zentriert, Lupe, Punkt, Tooltips */
+.bridge__pill { position:absolute; z-index:6; left:50%; bottom:12px; transform:translateX(-50%); display:flex; align-items:flex-end; gap:6px; height:58px; padding:6px 8px; border-radius:20px; pointer-events:auto;
+  background:var(--br-glass); -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%); border:1px solid var(--br-line); box-shadow:inset 0 1px 0 var(--br-glass-hi),0 8px 24px rgba(0,0,0,.28); }
+.bridge__app { position:relative; display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:none; color:var(--br-text); cursor:pointer; pointer-events:auto; transform-origin:bottom center; transition:transform .45s var(--br-spring), margin .45s var(--br-spring); }
+.bridge__app-icon { display:grid; place-items:center; width:44px; height:44px; border-radius:13px; background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)); box-shadow:inset 0 1px 0 rgba(255,255,255,.14); color:rgba(238,246,241,.9); }
+.bridge__app[data-active='true'] .bridge__app-icon { color:var(--br-accent); background:linear-gradient(180deg,color-mix(in srgb,var(--br-accent) 22%,transparent),color-mix(in srgb,var(--br-accent) 6%,transparent)); }
+.bridge__app[data-active='true']::after { content:''; position:absolute; bottom:-5px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:var(--br-text); }
+.bridge__app:hover, .bridge__app:focus-visible { transform:scale(1.32); margin:0 8px; z-index:2; }
+.bridge__app:hover + .bridge__app, .bridge__app:has(+ .bridge__app:hover) { transform:scale(1.14); margin:0 3px; }
+.bridge__app::before { content:attr(data-tip); position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%) scale(.76); padding:4px 8px; border-radius:8px; background:rgba(20,30,28,.86); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); border:1px solid var(--br-line); color:var(--br-text); font:500 11px/16px var(--br-font); white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s; }
+.bridge__app:hover::before, .bridge__app:focus-visible::before { opacity:1; }
+.bridge__badge { position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ff5b4f; color:#fff; font:600 11px/18px var(--br-font); text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.35); }
+.bridge__badge[data-alert='true'] { background:#ff3b30; }
 
-.bridge__plate { position:absolute; z-index:2; left:max(24px,calc(50% - 680px)); right:max(24px,calc(50% - 680px)); top:20px; bottom:8px; border-radius:32px; pointer-events:none;
-  background:linear-gradient(180deg,var(--dw-plate-hi),var(--dw-plate) 40%);
-  -webkit-backdrop-filter:blur(10px) saturate(140%); backdrop-filter:blur(10px) saturate(140%);
-  border:1px solid var(--dw-plate-rim); box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 -8px 32px rgba(0,0,0,.18);
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55),#000 30%); mask-image:linear-gradient(180deg,rgba(0,0,0,.55),#000 30%); }
-.bridge__comps { top:30px; }
-.bridge__comps-side { display:grid; grid-template-columns:repeat(2,196px); gap:12px; }
-.bridge__comps-gap { width:440px; }
-.bridge__comp { width:196px; height:52px; }
-.bridge__comp--mini strong { font-size:13px; }
-.bridge__ring--icon { display:grid; place-items:center; border-radius:50%; border:3px solid rgba(255,255,255,.10); color:var(--br-accent); box-sizing:border-box; }
-.bridge__comp--mini[data-tone='amber'] .bridge__ring--icon { color:var(--br-amber); }
-.bridge__comp:hover, .bridge__comp:focus-visible { background:color-mix(in srgb,var(--br-accent) 14%,var(--br-glass)); }
-/* Karte über dem Wasser rechts von MÔRA – verdeckt keine Widgets */
-.bridge__holo { top:-72px; }
-@media (max-width:1180px) and (min-width:700px) { .bridge__comps-side { grid-template-columns:repeat(2,140px); gap:8px; } .bridge__comp { width:140px; } .bridge__comps-gap { width:420px; } }
-@media (max-width:699px) { .bridge__plate { left:6px; right:6px; top:auto; bottom:4px; height:118px; border-radius:24px; } .bridge__holo { top:-150px; } }
+/* Im Gespräch: MÔRA ist über dem See, das Deck tritt zurück, bleibt aber lesbar */
+.bridge__body[data-stage='true'] :is(.bridge__inst,.bridge__field,.bridge__status,.bridge__day) { opacity:.38; filter:saturate(.7); transition:opacity .5s var(--br-ease), filter .5s; }
+.bridge__body[data-stage='true'] .bridge__field { pointer-events:none; }
 
-/* v8b: full widget text, collision-aware holo card, voice beside MÔRA */
-.bridge__comps-side { grid-template-columns:repeat(2,216px); }
-.bridge__comps .bridge__comp { width:216px; height:56px; }
-.bridge__comp-text small { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bridge__comp-text strong { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:16px; font-size:13px; }
-.bridge__holo[data-place='left'] { left:auto; right:calc(50% + 88px); }
-.bridge__holo[data-place='high'] { top:-168px; left:calc(50% + 88px); }
-.bridge__voice { position:absolute; left:calc(50% + 60px); top:76px; width:172px; max-width:172px; height:auto; padding:8px 12px; border-radius:14px 14px 14px 4px; white-space:normal; font:400 12px/16px inherit; font-family:inherit; overflow:visible; text-overflow:clip; z-index:2; }
-.bridge__ask { margin-top:44px; }
+/* Fluganker */
+.mora-anchor { position:absolute; pointer-events:none; width:120px; height:120px; }
+.mora-anchor--planet { right:9%; top:16%; }
+
+/* Breite 1024–1180: schmalere Instrumente, zwei Einträge */
 @media (max-width:1180px) and (min-width:700px) {
-  .bridge__comps-side { grid-template-columns:repeat(2,168px); gap:8px; }
-  .bridge__comps .bridge__comp { width:168px; padding:0 10px 0 8px; }
-  .bridge__comps-gap { width:360px; }
-  .bridge__voice { left:calc(50% + 56px); width:120px; max-width:120px; font-size:11px; line-height:14px; }
+  .bridge__deck { left:16px; right:16px; gap:8px; grid-template-columns:1fr 1fr 380px 1fr 1fr; }
+  .bridge__inst { padding:8px 10px; }
+  .bridge__comp { gap:8px; } .bridge__chev { display:none; }
+  .bridge__comp-text strong { font-size:17px; }
+  .bridge__inst-list li:nth-child(n+3) { display:none; }
+  .bridge__inst-actions button[data-ask='true'] { display:none; }
+  .bridge__app, .bridge__app-icon { width:44px; height:44px; } .bridge__pill { height:58px; }
+  .bridge__clock small { display:none; }
+  .bridge__status .bridge__chip { display:none; } .bridge__status .bridge__chip[aria-pressed] { display:inline-flex; padding:0 9px; } .bridge__status .bridge__chip[aria-pressed] span { display:none; }
+  .bridge__status[data-side='left'] { left:16px; } .bridge__status[data-side='right'] { right:16px; }
 }
-@media (max-width:699px) { .bridge__voice { position:static; width:auto; max-width:calc(100vw - 32px); border-radius:14px; } .bridge__ask { margin-top:8px; } }
-
-/* v8c: plate follows the wave, staggered widgets, refined timeline, card in front, planets */
-.os-dock.bridge { z-index:60; }
-.bridge__holo { z-index:30; }
-.bridge__plate { left:0; right:0; top:-58px; bottom:0; border:0; border-radius:0; box-shadow:none;
-  background:linear-gradient(180deg,var(--dw-plate-hi),var(--dw-plate) 30%);
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 3 C220 8 300 85 720 85 C1140 85 1220 8 1440 3 L1440 300 L0 300Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 300' preserveAspectRatio='none'%3E%3Cpath d='M0 3 C220 8 300 85 720 85 C1140 85 1220 8 1440 3 L1440 300 L0 300Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat; }
-.bridge__comps-side[data-side='left'] > :nth-child(odd), .bridge__comps-side[data-side='right'] > :nth-child(even) { transform:translateY(-40px); }
-.bridge__comps-side[data-side='left'] > :nth-child(odd):hover, .bridge__comps-side[data-side='right'] > :nth-child(even):hover { transform:translateY(-42px); }
-.bridge__hull path:last-of-type { stroke-opacity:.9; filter:drop-shadow(0 0 3px var(--br-accent)); }
-.bridge__mark { width:9px; height:9px; background:rgba(238,246,241,.95); box-shadow:0 0 0 3px rgba(238,246,241,.10),0 0 10px rgba(238,246,241,.45); }
-.bridge__mark[data-past='true'] { background:rgba(238,246,241,.4); box-shadow:none; }
-.bridge__mark[data-problem='true'] { box-shadow:0 0 0 3px rgba(242,180,90,.18),0 0 12px var(--br-amber); }
-.bridge__mark-label { bottom:14px; padding:2px 10px; border-radius:999px; background:rgba(6,18,26,.42); border:1px solid rgba(255,255,255,.08); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); text-shadow:none; }
-.bridge__now { width:10px; height:10px; }
-.bridge__now::after { content:'Jetzt'; position:absolute; top:14px; left:50%; transform:translateX(-50%); font:600 10px/12px -apple-system,system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--br-accent); white-space:nowrap; }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet] { margin-top:-4.5vh; }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+1) canvas { filter:hue-rotate(0deg) saturate(1.35) drop-shadow(0 0 10px rgba(120,200,255,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+2) canvas { filter:hue-rotate(40deg) saturate(1.4) drop-shadow(0 0 10px rgba(140,160,255,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+3) canvas { filter:hue-rotate(-50deg) saturate(1.5) drop-shadow(0 0 10px rgba(120,230,190,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+4) canvas { filter:hue-rotate(110deg) saturate(1.3) drop-shadow(0 0 10px rgba(220,150,230,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+5) canvas { filter:hue-rotate(170deg) saturate(1.3) drop-shadow(0 0 10px rgba(255,190,130,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n+6) canvas { filter:hue-rotate(-90deg) saturate(1.4) drop-shadow(0 0 10px rgba(150,230,140,.35)); }
-.ck-universe-unified[data-style='glas'] [data-uv2-planet]:nth-child(7n) canvas { filter:hue-rotate(75deg) saturate(1.3) drop-shadow(0 0 10px rgba(190,170,255,.35)); }
-@media (max-width:1180px) and (min-width:700px) { .bridge__comps-side[data-side='left'] > :nth-child(odd), .bridge__comps-side[data-side='right'] > :nth-child(even) { transform:translateY(-28px); } }
-@media (max-width:699px) { .bridge__plate { top:-20px; } .bridge__now::after { display:none; } }
-.bridge__holo[data-placed='true'] { animation:none; }
-.ck-universe-unified[data-style='glas'] .ck-planet { translate:0 -4.5vh; }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+1) :is(img,canvas) { filter:hue-rotate(0deg) saturate(1.35) drop-shadow(0 0 10px rgba(120,200,255,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+2) :is(img,canvas) { filter:hue-rotate(40deg) saturate(1.4) drop-shadow(0 0 10px rgba(140,160,255,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+3) :is(img,canvas) { filter:hue-rotate(-50deg) saturate(1.5) drop-shadow(0 0 10px rgba(120,230,190,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+4) :is(img,canvas) { filter:hue-rotate(110deg) saturate(1.3) drop-shadow(0 0 10px rgba(220,150,230,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+5) :is(img,canvas) { filter:hue-rotate(170deg) saturate(1.3) drop-shadow(0 0 10px rgba(255,190,130,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n+6) :is(img,canvas) { filter:hue-rotate(-90deg) saturate(1.4) drop-shadow(0 0 10px rgba(150,230,140,.35)); }
-.ck-universe-unified[data-style='glas'] .ck-planet:nth-child(7n) :is(img,canvas) { filter:hue-rotate(75deg) saturate(1.3) drop-shadow(0 0 10px rgba(190,170,255,.35)); }
-@media (max-width:1180px) and (min-width:700px) { .bridge__comps-side { grid-template-columns:repeat(2,180px); } .bridge__comps .bridge__comp { width:180px; } .bridge__comps-gap { width:330px; } .bridge__comp-text strong { font-size:12px; line-height:15px; } .bridge__now::after { display:none; } }
-
-/* final: one full-width dock composition, clickable everywhere */
-.bridge__pill, .bridge__app, .bridge__comps .bridge__comp, .bridge__holo, .bridge__ask, .bridge__mora { pointer-events:auto; }
-.bridge__comps { left:24px; right:24px; top:-30px; transform:none; display:grid; grid-template-columns:1fr 1fr 420px 1fr 1fr; gap:12px; align-items:start; pointer-events:none; }
-.bridge__comps-gap { width:auto; }
-.bridge__col { display:flex; flex-direction:column; gap:12px; min-width:0; }
-.bridge__col[data-col='outer'] { margin-top:16px; }
-.bridge__col[data-col='inner'] { margin-top:60px; }
-.bridge__comps .bridge__col .bridge__comp { width:100%; height:65px; padding:8px 14px 8px 12px; gap:12px; transform:none; align-items:center; }
-.bridge__comps .bridge__col[data-col='outer'] .bridge__comp { height:87px; }
-.bridge__comps .bridge__col .bridge__comp:hover { transform:translateY(-2px); }
-.bridge__comps .bridge__comp-text { flex:1; gap:1px; }
-.bridge__comps .bridge__comp-text strong { font-size:14px; line-height:18px; -webkit-line-clamp:1; }
-.bridge__comps .bridge__comp-text em { font-style:normal; font-size:12px; line-height:16px; color:var(--br-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bridge__comps [data-col='outer'] .bridge__comp-text em { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-.bridge__comps [data-col='outer'] .bridge__ring { transform:scale(1.2); }
-.bridge__voice { width:140px; max-width:140px; }
-@media (max-width:1180px) and (min-width:700px) {
-  .bridge__comps { grid-template-columns:1fr 1fr 380px 1fr 1fr; left:16px; right:16px; gap:8px; }
-  .bridge__col { gap:8px; } .bridge__comps .bridge__col .bridge__comp { width:100%; padding:6px 10px 6px 8px; gap:8px; }
-  .bridge__ask > button { width:360px; } .bridge__voice { width:112px; max-width:112px; }
+/* 700–1023: je Seite ein Instrument (Post, Als Nächstes), Status nur Uhr und Fokus */
+@media (max-width:1023px) and (min-width:700px) {
+  .bridge__deck { grid-template-columns:1fr 360px 1fr; }
+  .bridge__inst[data-col='inner'] { display:none; }
+  .bridge__status .bridge__chip:not([data-on]) { display:none; } .bridge__status .bridge__chip[aria-pressed] { display:inline-flex; }
+  .bridge__status .bridge__chip[aria-pressed] span { display:none; }
 }
-/* final: one lake behind every OS page (Pixel-Universe keeps its own sky); panels stay above the water */
-html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-space) {
+/* Handy: MÔRA, ihr Satz, Frage, vier Werte in einer Reihe, App-Leiste ohne Scrollen */
+@media (max-width:699px) {
+  html[data-dock='c'] { --os-dock-space:256px; }
+  .bridge__body { height:256px; } .bridge__hull, .bridge__water, .bridge__plate, .bridge__day { top:-20px; height:calc(100% + 20px); }
+  .bridge__plate { bottom:auto; }
+  .bridge__mark-label, .bridge__now i { display:none; } .bridge__mark[data-problem='true'] .bridge__mark-label { display:block; font-size:11px; }
+  .bridge__deck { left:8px; right:8px; top:-72px; bottom:84px; display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:1fr auto; gap:6px; }
+  .bridge__heart { grid-column:1 / -1; grid-row:1; }
+  .bridge__inst { grid-row:2; margin-top:0 !important; padding:6px 8px; border-radius:14px; }
+  .bridge__inst[data-station='post'] { grid-column:1; } .bridge__inst[data-station='today'] { grid-column:2; } .bridge__inst[data-station='team'] { grid-column:3; } .bridge__inst[data-station='next'] { grid-column:4; }
+  .bridge__inst-list, .bridge__inst-empty, .bridge__inst-actions, .bridge__ring, .bridge__chev, .bridge__comp-text em { display:none; }
+  .bridge__comp { min-height:36px; padding:0; border:0; }
+  .bridge__comp-text small { font-size:9px; line-height:12px; letter-spacing:.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bridge__comp-text strong, .bridge__inst[data-offline='true'] .bridge__comp-text strong { font-size:14px; line-height:18px; }
+  .bridge__mora { width:88px; height:84px; margin-top:-36px; }
+  .bridge__field { margin-top:-10px; padding:44px 10px 8px; border-radius:20px; gap:4px; flex:none; }
+  .bridge__field-eyebrow, .bridge__chips, .bridge__field-card span { display:none; }
+  .bridge__voice { font-size:13px; line-height:17px; -webkit-line-clamp:1; }
+  .bridge__ask > button { height:36px; }
+  .bridge__status { display:none; }
+  .bridge__pill { bottom:8px; max-width:calc(100vw - 16px); gap:4px; padding:5px 8px; height:52px; border-radius:18px; }
+  .bridge__app, .bridge__app-icon { width:40px; height:40px; flex:none; } .bridge__app-icon { border-radius:11px; }
+  .bridge__app:hover, .bridge__app:hover + .bridge__app, .bridge__app:has(+ .bridge__app:hover) { transform:none; margin:0; }
+  .bridge__app::before { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .bridge__mora, .bridge__mora *, .bridge__app, .bridge__comp, .bridge__reflect, .bridge__sparkle, .bridge__aura i, .bridge__pulse, .bridge__now, .bridge__chip svg { transition:none !important; animation:none !important; }
+}
+
+/* ── OS um das Dock herum ── */
+html[data-dock='c'] .os-root { --os-dock-space:304px !important; }
+@media (max-width:699px) { html[data-dock='c'] .os-root { --os-dock-space:256px !important; } }
+/* Ein Weg zu MÔRA: sie sitzt im Dock, der Knopf oben ist dort überflüssig */
+html[data-dock='c'] .os-shell__mora-toggle { display:none !important; }
+/* Universe endet über der Welle */
+@media (min-width:700px) { html[data-dock='c'] .os-root .ck-scene--system .ck-sys:not(.ck-sys--strip) { bottom:336px !important; } html[data-dock='c'] .os-root .ck-style-toggle { top:16px !important; bottom:auto !important; left:auto !important; right:160px !important; } }
+html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% - var(--os-dock-space) - 32px); min-height:0; }
+html[data-dock='c'] .os-root .ck { --ck-dock-clearance:calc(var(--os-dock-space) + 88px); }
+/* Ein See hinter jeder OS-Seite (das Pixel-Universe behält seinen Himmel) */
+html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-space), .ck-universe-unified[data-style='glas'] .ck-space {
   background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
   background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
   background-blend-mode: normal !important; filter: var(--lake-pal, saturate(1.05)) var(--lake-phase, brightness(1.05)) !important;
 }
-@media (min-width:700px) { html[data-dock='c'] .ck-panel { max-height: calc(100% - 480px) !important; } }
-.bridge__comps [data-col='outer'] .bridge__comp-text strong { -webkit-line-clamp:2; white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
-.bridge__comps [data-col='outer'] .bridge__comp-text em { -webkit-line-clamp:1; }
+/* Glasplaneten: je Position eine eigene Farbe, leicht über dem Wasser */
+.ck-universe-unified[data-style='glas'] [data-uv2-planet] { margin-top:-4.5vh; }
+.ck-universe-unified[data-style='glas'] .ck-planet { translate:0 -4.5vh; }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+1) canvas, .ck-planet:nth-child(7n+1) :is(img,canvas)) { filter:hue-rotate(0deg) saturate(1.35) drop-shadow(0 0 10px rgba(120,200,255,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+2) canvas, .ck-planet:nth-child(7n+2) :is(img,canvas)) { filter:hue-rotate(40deg) saturate(1.4) drop-shadow(0 0 10px rgba(140,160,255,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+3) canvas, .ck-planet:nth-child(7n+3) :is(img,canvas)) { filter:hue-rotate(-50deg) saturate(1.5) drop-shadow(0 0 10px rgba(120,230,190,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+4) canvas, .ck-planet:nth-child(7n+4) :is(img,canvas)) { filter:hue-rotate(110deg) saturate(1.3) drop-shadow(0 0 10px rgba(220,150,230,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+5) canvas, .ck-planet:nth-child(7n+5) :is(img,canvas)) { filter:hue-rotate(170deg) saturate(1.3) drop-shadow(0 0 10px rgba(255,190,130,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n+6) canvas, .ck-planet:nth-child(7n+6) :is(img,canvas)) { filter:hue-rotate(-90deg) saturate(1.4) drop-shadow(0 0 10px rgba(150,230,140,.35)); }
+.ck-universe-unified[data-style='glas'] :is([data-uv2-planet]:nth-child(7n) canvas, .ck-planet:nth-child(7n) :is(img,canvas)) { filter:hue-rotate(75deg) saturate(1.3) drop-shadow(0 0 10px rgba(190,170,255,.35)); }
+/* Seiten über dem Wasser: Inhalt endet über dem Dock */
 @media (min-width:700px) {
+  html[data-dock='c'] .ck-panel { max-height: calc(100% - 500px) !important; }
   html[data-dock='c'] .os-shell:not([data-place='universe']):not([data-place='home']) .os-shell__content {
-    height: calc(100% - var(--os-dock-space, 264px) - 64px); overflow-y: auto; padding-bottom: 24px !important; box-sizing: border-box;
+    height: calc(100% - var(--os-dock-space, 304px) - 64px); overflow-y: auto; padding-bottom: 24px !important; box-sizing: border-box;
     -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent);
   }
 }
-/* final · phone: universe planets stay above MÔRA and the day line; home strip labels never collide */
 @media (max-width:699px) {
-  .ck-universe-unified .ck-sys:not(.ck-sys--strip) { height: calc(100dvh - 424px) !important; min-height: 300px; translate: 0 24px !important; }
+  .ck-universe-unified .ck-sys:not(.ck-sys--strip) { height: calc(100dvh - 480px) !important; min-height: 280px; translate: 0 24px !important; }
   .ck-sys.ck-sys--strip .ck-planet b { font-size: 8.5px !important; line-height: 1.1 !important; max-width: 48px !important; width: 48px !important; white-space: normal !important; text-align: center; overflow-wrap: normal; letter-spacing: -.01em; }
 }
-
-/* calm B · Home: großer Gruß über dem Himmel, drei ruhige Heute-Zeilen; Dock dezent, MÔRA-Feld */
+/* Home (calm B): großer Gruß über dem Himmel, drei ruhige Heute-Zeilen */
 @media (min-width:700px) {
-  html[data-dock='c'] .ck[data-view='home'] .ck-panel { left:50% !important; right:auto !important; top:120px !important; transform:translateX(-50%); width:min(640px,80vw) !important; background:none !important; border:0 !important; box-shadow:none !important; backdrop-filter:none !important; text-align:center; overflow:visible !important; max-height:none !important; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-panel { left:50% !important; right:auto !important; top:112px !important; transform:translateX(-50%); width:min(640px,80vw) !important; background:none !important; border:0 !important; box-shadow:none !important; backdrop-filter:none !important; text-align:center; overflow:visible !important; max-height:none !important; }
   html[data-dock='c'] .ck[data-view='home'] .ck-panel .ck-h1 { font-size:60px; font-weight:200; letter-spacing:-.02em; text-shadow:0 2px 30px rgba(0,0,0,.35); }
   html[data-dock='c'] .ck[data-view='home'] .ck-panel .ck-sub { font-size:16px; opacity:.65; margin-top:10px; }
   html[data-dock='c'] .ck[data-view='home'] .ck-panel :is(.widget-board,.mr-depts,.ck-calm span) { display:none !important; }
-  html[data-dock='c'] .ck[data-view='home'] .ck-list { margin:44px auto 0; width:440px; text-align:left; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-list { margin:40px auto 0; width:440px; text-align:left; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item { border:0 !important; background:none !important; padding:6px 0 !important; min-height:0; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item:nth-child(n+4) { display:none; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item__t { font-size:17px; font-weight:400; opacity:.85; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item__d { display:none; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item .ck-btn { opacity:0; transition:opacity .2s; }
   html[data-dock='c'] .ck[data-view='home'] .ck-item:hover .ck-btn, html[data-dock='c'] .ck[data-view='home'] .ck-item .ck-btn:focus-visible { opacity:1; }
-  /* Dock dezenter: vier Felder, eine Zeile, keine Zweitzeilen */
-  .bridge__comps { top:auto; bottom:96px; grid-template-columns:1fr 1fr 420px 1fr 1fr; align-items:end; }
-  .bridge__col[data-col] { margin-top:0; }
-  .bridge__comps .bridge__col .bridge__comp, .bridge__comps .bridge__col[data-col='outer'] .bridge__comp { height:48px; background:rgba(12,36,48,.28); border-color:rgba(220,245,250,.08); box-shadow:none; }
-  .bridge__comps .bridge__comp-text em { display:none !important; }
-  .bridge__comps .bridge__comp-text small { display:inline; } .bridge__comps .bridge__comp-text { flex-direction:row; align-items:baseline; gap:8px; }
-  .bridge__comps [data-col] .bridge__comp-text strong { -webkit-line-clamp:1 !important; font-size:14px; }
-  .bridge__comps [data-col='outer'] .bridge__ring { transform:none; }
-  .bridge__pill { opacity:.78; transition:opacity .25s; } .bridge__pill:hover, .bridge__pill:focus-within { opacity:1; }
-  .bridge__mark:nth-child(n+4) { display:none; } .bridge__mark-label { opacity:.6; }
-  .bridge__voice { display:none; }
-  /* MÔRA-Feld: eine Karte, direkt über MÔRA, mit Siri-artiger Aura */
-  .bridge__holo[data-field='mora'] { left:50% !important; right:auto !important; top:auto !important; bottom:calc(100% + 10px); transform:translateX(-50%); width:340px; }
-  .bridge__holo[data-field='mora']::before { content:''; position:absolute; inset:-14px; z-index:-1; border-radius:28px; background:conic-gradient(from 0deg, rgba(120,220,255,.35), rgba(200,140,255,.3), rgba(255,190,120,.3), rgba(120,220,255,.35)); filter:blur(18px); animation:mora-aura 6s linear infinite; }
 }
-@keyframes mora-aura { to { filter:blur(18px) hue-rotate(360deg); } }
-@media (prefers-reduced-motion:reduce) { .bridge__holo[data-field='mora']::before { animation:none; } }
-.bridge__comps .bridge__comp-text small { flex-shrink:0; } .bridge__comps .bridge__comp-text strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block !important; }
 
-/* MÔRA-Chat über der Brücke: das Panel liegt über dem Dock und endet über seiner Kante,
-   damit Eingabefeld und Senden nie verdeckt sind (auch nicht von MÔRA, die über die Kante ragt). */
-html[data-dock='c'] .os-root .os-shell .os-shell__mora { z-index: 65; }
-@media (min-width: 900px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { height: calc(100dvh - 264px); align-self: start; } }
-@media (min-width: 700px) and (max-width: 899px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { bottom: 264px; height: calc(82dvh - 264px); } }
-@media (max-width: 699px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { bottom: 272px; height: calc(86dvh - 272px); } }
+/* Im Gespräch tritt die Seite ganz zurück, nur See, MÔRA und ihre Karten bleiben */
+html[data-mora-stage] .os-shell__content, html[data-mora-stage] .os-shell__topbar { opacity:.08; filter:blur(6px); transition:opacity .5s, filter .5s; pointer-events:none; }

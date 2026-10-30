@@ -202,3 +202,47 @@ export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar
     .slice(0, max)
     .sort((a, b) => a.start - b.start);
 }
+
+/** Eine Zeile in einem Dock-Instrument: echte Einträge aus dem Snapshot, nie aufgefüllt. */
+export type InstrumentLine = { id: string; lead: string; text: string; tone?: 'amber' | 'muted' };
+
+const sender = (from?: string) => {
+  const local = (from ?? '').split('@')[0] ?? '';
+  const first = local.split(/[._-]/)[0] ?? '';
+  return first.length > 1 ? cap(first) : '';
+};
+
+export function instrumentLines(snapshot: TodaySnapshot | null, id: 'post' | 'today' | 'team' | 'next', now: number, max = 3): InstrumentLine[] {
+  if (!snapshot) return [];
+  if (id === 'post') {
+    if (!sourceReady(snapshot.mail)) return [];
+    const items = snapshot.mail.items ?? [];
+    return [...items.filter((m) => m.read !== true), ...items.filter((m) => m.read === true)].slice(0, max)
+      .map((m) => ({ id: m.id, lead: sender(m.from_addr) || 'Mail', text: cleanTitle(m.subject ?? '(ohne Betreff)'), tone: m.read === true ? 'muted' as const : NEEDS_YOU.test(m.subject ?? '') ? 'amber' as const : undefined }));
+  }
+  if (id === 'today') {
+    if (!sourceReady(snapshot.tasks)) return [];
+    const seen = new Set<string>();
+    const list = [...snapshot.tasks.overdue.map((t) => ({ t, late: true })), ...snapshot.tasks.due_today.map((t) => ({ t, late: false })), ...snapshot.tasks.items.filter((t) => t.status !== 'done').map((t) => ({ t, late: false }))];
+    return list.filter(({ t }) => t.status !== 'done' && !seen.has(t.id) && seen.add(t.id)).slice(0, max)
+      .map(({ t, late }) => ({ id: t.id, lead: late ? 'Überfällig' : t.status === 'in_progress' ? 'Läuft' : 'Heute', text: cleanTitle(t.title), tone: late ? 'amber' as const : undefined }));
+  }
+  if (!sourceReady(snapshot.calendar)) return [];
+  if (id === 'team') {
+    const absent = absences(snapshot);
+    const bars = shiftCoverage(snapshot, max);
+    if (bars.length) return bars.map((b) => ({ id: b.id, lead: hhmm(b.start), text: b.absent ? `${b.name || 'Schicht'} · fällt aus` : `${b.name || 'Schicht'} bis ${hhmm(b.end)}`, tone: b.absent ? 'amber' as const : undefined }));
+    return absent.slice(0, max).map((a) => ({ id: `a:${a.name}`, lead: a.shiftTime ?? 'Heute', text: `${a.name} · krank gemeldet`, tone: 'amber' as const }));
+  }
+  return dayMarks(snapshot, now, 12).filter((m) => m.minute >= now).slice(0, max)
+    .map((m) => ({ id: m.id, lead: m.time, text: m.label, tone: m.problem ? 'amber' as const : undefined }));
+}
+
+/** „in 25 min“, „in 2 h 10 min“ – nur für Termine heute, die noch kommen. */
+export function untilText(snapshot: TodaySnapshot | null, now: number): string | null {
+  const next = snapshot && sourceReady(snapshot.calendar) ? dayMarks(snapshot, now, 12).find((m) => m.minute >= now) : undefined;
+  if (!next) return null;
+  const d = next.minute - now;
+  if (d < 1) return 'jetzt';
+  return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)} h${d % 60 ? ` ${d % 60} min` : ''}`;
+}

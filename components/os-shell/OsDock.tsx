@@ -37,6 +37,8 @@ export interface OsDockProps {
   controlOpen?: boolean;
   onNotifications: () => void;
   onMora: () => void;
+  /** Frage direkt an MÔRA stellen (Vorschlag im Dock). */
+  onAsk?: (text: string) => void;
   onMore: () => void;
 }
 
@@ -131,7 +133,7 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
   );
 }
 
-export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
+export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onAsk, onMore, showLegacy = false }: OsDockProps) {
   const variant = useDockVariant();
   const mood = useHubMood();
   usePalette();
@@ -157,7 +159,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
       <span className="os-dock__label" aria-hidden>{m.title}</span>
     </span>
   );
-  if (variant === 'c') return <BridgeConcept items={items} activeId={activeId} onNavigate={onNavigate} onMora={onMora} onMore={onMore} onNotifications={onNotifications} onSearch={onSearch} onControl={onControl} mood={mood} moraOpen={moraOpen} attention={led} phone={phoneW} showLegacy={showLegacy} />;
+  if (variant === 'c') return <BridgeConcept items={items} activeId={activeId} onNavigate={onNavigate} onMora={onMora} onAsk={onAsk} onMore={onMore} onNotifications={onNotifications} onSearch={onSearch} onControl={onControl} mood={mood} moraOpen={moraOpen} attention={led} phone={phoneW} showLegacy={showLegacy} />;
 
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
