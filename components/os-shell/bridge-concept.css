@@ -307,3 +307,8 @@ html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-s
 
 /* Im Gespräch tritt die Seite ganz zurück, nur See, MÔRA und ihre Karten bleiben */
 html[data-mora-stage] .os-shell__content, html[data-mora-stage] .os-shell__topbar { opacity:.08; filter:blur(6px); transition:opacity .5s, filter .5s; pointer-events:none; }
+/* Polish: auf Unterseiten endet der Inhalt über MÔRA, MÔRA sitzt kleiner im Dock */
+@media (min-width:700px) {
+  html[data-dock='c'] .os-shell:not([data-place='universe']):not([data-place='home']) .os-shell__content { height: calc(100% - var(--os-dock-space, 304px) - 112px) !important; }
+  html[data-dock='c'] .os-root:has(.os-shell:not([data-place='universe']):not([data-place='home'])) .bridge .px-mora:not(.px-mora--mark) { scale: .6; transform-origin: 50% 100%; transition: scale .4s ease; }
+}
