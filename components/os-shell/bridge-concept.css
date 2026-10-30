@@ -167,3 +167,14 @@ html[data-dock='c'] { --br-glass:rgba(10,34,44,.42); --br-line:rgba(200,240,250,
 /* v6: keep the holo card clear of day-arc labels on its side */
 .bridge__body[data-active] .bridge__mark-label { transition: opacity .3s ease; }
 .bridge__body[data-active] .bridge__mark:nth-last-child(-n+2) .bridge__mark-label { opacity: 0; }
+
+/* v7 · Universe + Wasser: neues Seebild im Glas-Modus, Dock-Wasser setzt den See fort. */
+.ck-universe-unified[data-style='glas'] .ck-space {
+  background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
+  background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
+  background-blend-mode: normal !important;
+  filter: brightness(1.05) saturate(1.05) !important;
+}
+.bridge__reflect { filter: blur(2.5px) saturate(1.1); opacity: .58; }
+.bridge__reflect img { -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 92%); mask-image: linear-gradient(0deg, #000 10%, transparent 92%); }
+.bridge__mora { -webkit-box-reflect: below 0px linear-gradient(transparent 35%, rgba(255,255,255,.5)); }
