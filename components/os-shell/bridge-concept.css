@@ -97,7 +97,6 @@ html[data-dock='c'] { --os-dock-space:240px; }
 .bridge__dock-item[data-active='true'] .bridge__dock-icon::after { content:''; position:absolute; bottom:-8px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:#cdeed8; box-shadow:0 0 6px #9ff5c0; }
 .bridge__badge[data-alert='true'] { background:#ee8a76; }
 /* Nur eine MÔRA: die große auf dem Hügel bleibt, die Kopie oben im Universe wird ausgeblendet. */
-html[data-dock='c'] .os-root .wd-universe .wd-mora, html[data-dock='c'] .os-root .wd-universe .wd-mora-line { display:none !important; }
 /* Der Hügel verdeckt keinen Planeten: das Universe endet über Hügel und MÔRA. */
 html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% - var(--os-dock-space) - 30px); min-height:0; }
 @media (max-width:699px) {
@@ -108,3 +107,36 @@ html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% -
   .bridge__dock-item:hover .bridge__dock-icon, .bridge__dock-item:hover + .bridge__dock-item .bridge__dock-icon, .bridge__dock-item:has(+ .bridge__dock-item:hover) .bridge__dock-icon { transform:none; }
 }
 @media (prefers-reduced-motion:reduce) { .bridge__dock-icon { transition:none; } }
+
+/* Grok v3: Lage-Instrumente im Hügel, links und rechts von MÔRA */
+.bridge__gauges { position:absolute; top:-58px; left:0; right:0; height:calc(100% + 58px); pointer-events:none; z-index:2; }
+.bridge__gauge { position:absolute; display:flex; align-items:center; gap:10px; transform:translate(-50%,-50%); padding:0; border:0; background:none; color:#dcefe2; cursor:pointer; pointer-events:auto; min-height:0 !important; }
+.bridge__gauge[data-side='right'] { flex-direction:row-reverse; text-align:right; }
+.bridge__ring { position:relative; width:46px; height:46px; flex:none; border-radius:50%; background:radial-gradient(circle at 35% 30%,rgba(190,240,210,.22),rgba(20,70,58,.15) 60%,transparent 72%); box-shadow:inset 0 1px 0 rgba(220,255,235,.25),0 0 18px rgba(120,220,170,.18); }
+.bridge__ring svg { width:46px; height:46px; display:block; }
+.bridge__ring-track { fill:none; stroke:rgba(178,227,188,.16); stroke-width:3; }
+.bridge__ring-fill { fill:none; stroke:#8fe0b0; stroke-width:3; stroke-linecap:round; filter:drop-shadow(0 0 4px rgba(143,224,176,.7)); }
+.bridge__pulse { fill:none; stroke:#8fe0b0; stroke-width:1.8; stroke-linejoin:round; stroke-dasharray:60; animation:bridge-pulse 2.6s linear infinite; filter:drop-shadow(0 0 3px rgba(143,224,176,.8)); }
+@keyframes bridge-pulse { from { stroke-dashoffset:120; } to { stroke-dashoffset:0; } }
+.bridge__ring b { position:absolute; inset:0; display:grid; place-items:center; font:600 14px/1 system-ui; color:#f2fbf5; }
+.bridge__gauge[data-tone='amber'] .bridge__ring-fill, .bridge__gauge[data-tone='amber'] .bridge__pulse { stroke:#f0b95a; filter:drop-shadow(0 0 5px rgba(240,185,90,.8)); }
+.bridge__gauge[data-tone='amber'] .bridge__ring { box-shadow:inset 0 1px 0 rgba(255,235,200,.25),0 0 20px rgba(240,185,90,.28); }
+.bridge__gauge[data-tone='red'] .bridge__ring-fill, .bridge__gauge[data-tone='red'] .bridge__pulse { stroke:#f87171; }
+.bridge__gauge-text { display:flex; flex-direction:column; gap:2px; line-height:1.15; }
+.bridge__gauge-text small { font:10px/1 system-ui; letter-spacing:.12em; text-transform:uppercase; color:rgba(200,230,210,.6); }
+.bridge__gauge-text strong { font:500 13px/1.2 system-ui; color:#e6f4ea; white-space:nowrap; }
+.bridge__gauge[data-tone='amber'] .bridge__gauge-text strong { color:#f3c574; }
+.bridge__gauge:hover .bridge__ring { box-shadow:inset 0 1px 0 rgba(220,255,235,.35),0 0 26px rgba(120,220,170,.35); }
+.bridge__mark-label { font-size:13px; } .bridge__mark-label b { font-weight:700; }
+.bridge__mark[data-row='1'] .bridge__mark-label { bottom:28px; }
+.bridge__day-edge { font-size:12px; }
+@media (max-width:699px) { .bridge__gauges { display:none; } }
+@media (prefers-reduced-motion:reduce) { .bridge__pulse { animation:none; } }
+
+/* Eine MÔRA: sie fliegt per Transform zum Ziel-Anker (useMoraPresence) und zurück. */
+.bridge__mora { transition:transform .9s cubic-bezier(.45,.05,.25,1); will-change:transform; }
+.bridge__mora[data-flying='true'] { z-index:60; filter:drop-shadow(0 18px 30px rgba(0,0,0,.45)); }
+.bridge__mora[data-flying='true'] + .bridge__voice { opacity:0; }
+.mora-anchor { position:absolute; pointer-events:none; width:120px; height:120px; }
+.mora-anchor--planet { right:9%; top:16%; }
+@media (prefers-reduced-motion:reduce) { .bridge__mora { transition:none; } }

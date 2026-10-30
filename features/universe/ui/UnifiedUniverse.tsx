@@ -23,6 +23,7 @@ import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentC
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
 import { useDailyBriefing, formatWarmMoraBriefing } from '@/lib/queries/useDailyBriefing';
 import { mailCounts } from '@/lib/mora/bridgeData';
+import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
@@ -64,7 +65,7 @@ const pixelSize = (size: number, angle: number) =>
  * - Hintergrund: PixelSky
  * - Planeten: PixelPlanet mit planetKind & seedOf aus pixelArt.ts
  * - Mini-Monde: PlanetOrbit mit PixelMoon & Pixel-Sternen
- * - Genau EINE schwebende PixelMora im Zentrum
+ * - Keine eigene MÔRA: die eine Instanz lebt im Dock und fliegt per useMoraPresence
  * - Ruhiges Raster-Layout über layoutOrbits(..., { calm: true })
  */
 function PixelUniverseOverview({
@@ -148,35 +149,7 @@ function PixelUniverseOverview({
           </svg>
         ) : null}
 
-        {/* Schwebende MÔRA oben in der Mitte (wie in HQ main b2f2a99) */}
-        {layout ? (
-          <button
-            type="button"
-            className="wd-mora"
-            data-state="idle"
-            data-spirit="idle"
-            style={{
-              left: Math.round(layout.cx / 2) * 2,
-              top: Math.round(layout.cy / 2) * 2,
-              width: Math.round(layout.mora / 2) * 2,
-              height: Math.round(layout.mora / 2) * 2,
-              zIndex: 10 + Math.round(layout.cy),
-            }}
-            onClick={onMora}
-            aria-label="MÔRA öffnen"
-            data-testid="world-mora"
-          >
-            <span className="wd-mora-glide" data-testid="world-mora-glide">
-              <PixelMora
-                size={phone ? 24 : Math.round(layout.mora * 0.64)}
-                mood="idle"
-                phone={phone}
-                reduced={reduced}
-              />
-            </span>
-          </button>
-        ) : null}
-
+        {/* Keine eigene MÔRA hier: die eine MÔRA lebt im Dock (useMoraPresence). */}
         {/* Planeten im ruhigen Raster mit WorldPlanetSphere-Boxen und PlanetOrbit */}
         {planets.map((planet, i) => {
           const slot = layout.slots[i];
@@ -466,6 +439,14 @@ export function UnifiedUniverse({
     setDeptSheetOpen(false);
   };
 
+  // Die eine MÔRA begleitet in den offenen Planeten und kehrt danach in den Dock zurück.
+  useEffect(() => {
+    const presence = useMoraPresence.getState();
+    if (planetId) presence.goTo('[data-mora-anchor="planet"]', 'planet');
+    else presence.goHome();
+    return () => useMoraPresence.getState().goHome();
+  }, [planetId]);
+
   const handleBackToUniverse = () => {
     setPlanetId(null);
     setMoonId(null);
@@ -701,6 +682,7 @@ export function UnifiedUniverse({
 
       {/* Scene canvas */}
       <div className={`ck-scene ck-scene--${sceneMode}`}>
+        {sceneMode === 'planet' && planet ? <span className="mora-anchor mora-anchor--planet" data-mora-anchor="planet" aria-hidden="true" /> : null}
         {sceneMode === 'planet' && planet ? (
           <OpenPlanet
             planet={planet}

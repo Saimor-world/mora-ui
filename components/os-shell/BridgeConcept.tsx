@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flightOffset, useMoraPresence } from '@/lib/mora/moraPresence';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -9,7 +10,7 @@ import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
 import { Bell, CalendarDays, Grid2X2, Search, Sparkles } from 'lucide-react';
-import { DAY_END, DAY_START, dayMarks, hhmm, mailCounts, moraLine } from '@/lib/mora/bridgeData';
+import { DAY_END, DAY_START, dayMarks, hhmm, mailCounts, moraLine, stations, type Station } from '@/lib/mora/bridgeData';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import Link from 'next/link';
 import './bridge-concept.css';
@@ -34,6 +35,9 @@ function hullY(x:number):number {
   return best;
 }
 const dayX=(minute:number)=>5+(Math.min(DAY_END,Math.max(DAY_START,minute))-DAY_START)/(DAY_END-DAY_START)*90;
+
+const GaugeRing=({station:g}:{station:Station})=>{const r=19,c=2*Math.PI*r;const frac=g.id==='today'?g.progress??0:g.id==='post'&&Number(g.value)>0?Math.min(1,(parseInt(g.detail)||0)/Number(g.value)):g.tone==='calm'?1:1;
+  return <span className="bridge__ring" aria-hidden="true"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r={r} className="bridge__ring-track" />{g.id!=='nightwatch'?<circle cx="23" cy="23" r={r} className="bridge__ring-fill" strokeDasharray={`${frac*c} ${c}`} transform="rotate(-90 23 23)" />:null}{g.id==='nightwatch'?<polyline className="bridge__pulse" points="9,24 16,24 19,17 23,31 27,20 30,24 37,24" />:null}</svg>{g.id==='post'||g.id==='today'?<b>{g.value}</b>:null}</span>;};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
   const { snapshot }=useScopedToday({backgroundRefresh:true});
@@ -45,6 +49,16 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   useEffect(()=>{const timer=setInterval(()=>setNow(berlinNow()),60000);return()=>clearInterval(timer);},[]);
   const marks=useMemo(()=>dayMarks(snapshot, now),[snapshot, now]);
   const line=useMemo(()=>moraLine(snapshot, now, briefingUnread),[snapshot, now, briefingUnread]);
+  const gauges=useMemo(()=>stations(snapshot, briefingUnread),[snapshot, briefingUnread]);
+  const target=useMoraPresence(s=>s.target);
+  const moraRef=useRef<HTMLButtonElement>(null);
+  const [flight,setFlight]=useState<{x:number;y:number}|null>(null);
+  useLayoutEffect(()=>{
+    if(target.kind==='dock'){setFlight(null);return;}
+    const measure=()=>{const el=moraRef.current;if(!el)return;const prev=el.style.transform;el.style.transform='none';const home=el.getBoundingClientRect();el.style.transform=prev;setFlight(flightOffset(home,document.querySelector(target.selector)?.getBoundingClientRect()??null));};
+    const raf=requestAnimationFrame(measure);window.addEventListener('resize',measure);
+    return()=>{cancelAnimationFrame(raf);window.removeEventListener('resize',measure);};
+  },[target]);
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
   const controls = [
     {id:'search',name:'Suche',icon:Search,action:onSearch},
@@ -74,12 +88,15 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
       <div className="bridge__station-wing bridge__station-wing--left">{controls.slice(0,midpoint).map(renderControl)}</div>
       <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
         <span className="bridge__beam" aria-hidden="true" />
-        <button type="button" className="bridge__mora" aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?76:112} mood={mood} /></span></button>
+        <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(.7)`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?76:112} mood={mood} /></span></button>
         <p className="bridge__voice" aria-live="polite">{line}</p>
         <div id={DOCK_ASK_SLOT} className="bridge__ask"><button type="button" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button></div>
       </div>
       <div className="bridge__station-wing bridge__station-wing--right">{controls.slice(midpoint).map(renderControl)}</div>
       {showLegacy ? <Link href="/home?classic=1" className="bridge__legacy" data-testid="legacy-shell-link">Klassische Oberfläche</Link> : null}
+      <section className="bridge__gauges" aria-label="Lage">
+        {gauges.map((g,i)=>{const x=[17,31,69,83][i];const side=x<50?'left':'right';const act=g.id==='post'?()=>onNavigate('post'):g.id==='today'?()=>onNavigate('today'):g.id==='team'?()=>openLegacyApp('calendar'):openNightwatch;return <button key={g.id} type="button" className="bridge__gauge" data-station={g.id} data-tone={g.tone} data-side={side} style={{left:`${x}%`,top:`calc(${hullY(x*14.4)/3}% + 66px)`}} onClick={act} title={`${g.label}: ${g.value} · ${g.detail}`}><GaugeRing station={g} /><span className="bridge__gauge-text"><small>{g.label}</small><strong>{g.id==='nightwatch'||g.id==='team'?g.value:g.detail}</strong></span></button>;})}
+      </section>
       <section className="bridge__day" aria-label="Tagesverlauf 6 bis 22 Uhr">
         <span className="bridge__day-edge" style={{left:`${dayX(DAY_START)}%`,top:`${hullY(dayX(DAY_START)*14.4)/3}%`}}>6 Uhr</span>
         <span className="bridge__day-edge" style={{left:`${dayX(DAY_END)}%`,top:`${hullY(dayX(DAY_END)*14.4)/3}%`}}>22 Uhr</span>
