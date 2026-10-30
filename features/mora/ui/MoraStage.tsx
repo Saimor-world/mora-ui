@@ -110,7 +110,7 @@ export function MoraStage({ navigate, onClose }: { navigate: (featureId: string)
       ) : null}
 
       <div className="mora-stage__center">
-        <p className="mora-stage__question" data-empty={lastUser ? undefined : 'true'}>{lastUser ? `„${lastUser.text}“` : `Frag mich etwas zu ${contextLabel === 'MÔRA' || contextLabel === 'SAIMÔR' ? 'deinem Tag' : contextLabel}.`}</p>
+        <p className="mora-stage__question" data-empty={lastUser ? undefined : 'true'}>{lastUser ? `„${lastUser.text}“` : `Frag mich etwas zu ${['MÔRA', 'SAIMÔR', 'Home', 'Heute'].includes(contextLabel) ? 'deinem Tag' : contextLabel}.`}</p>
         <div className="mora-stage__rings" aria-hidden="true"><i /><i /><i />
           <span className="mora-stage__anchor" data-testid="mora-stage-anchor"><span className="mora-stage__fallback"><PixelMoraMark size={96} active /></span></span>
         </div>

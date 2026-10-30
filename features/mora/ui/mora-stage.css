@@ -105,7 +105,7 @@ html[data-dock='c'] .mora-stage__fallback { display:none; }
   .mora-stage__close span { display:none; } .mora-stage__close kbd { display:none; }
   .mora-stage__center { gap:6px; }
   .mora-stage__question { font-size:17px; line-height:22px; -webkit-line-clamp:2; }
-  .mora-stage__rings { width:112px; height:112px; } .mora-stage__rings i:nth-child(3) { inset:-12px; } .mora-stage__anchor { width:96px; height:96px; }
+  .mora-stage__rings { width:124px; height:124px; margin-bottom:14px; } .mora-stage__rings i:nth-child(3) { inset:-12px; } .mora-stage__anchor { width:104px; height:104px; }
   .mora-stage__state { min-height:0; font-size:12px; }
   .mora-stage__answers { justify-self:stretch; width:auto; align-self:start; }
   .mora-stage__suggest { justify-self:stretch; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:6px; max-width:none; }

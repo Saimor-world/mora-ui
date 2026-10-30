@@ -124,9 +124,18 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const [flight,setFlight]=useState<{x:number;y:number}|null>(null);
   useLayoutEffect(()=>{
     if(target.kind==='dock'){setFlight(null);return;}
-    const measure=()=>{const el=moraRef.current;if(!el)return;const prev=el.style.transform;el.style.transform='none';const home=el.getBoundingClientRect();el.style.transform=prev;setFlight(flightOffset(home,document.querySelector(target.selector)?.getBoundingClientRect()??null));};
+    let flying=false, moved=0;
+    const measure=()=>{const el=moraRef.current;if(!el)return;const prev=el.style.transform;el.style.transform='none';const home=el.getBoundingClientRect();el.style.transform=prev;const next=flightOffset(home,document.querySelector(target.selector)?.getBoundingClientRect()??null);flying=!!next;moved=Date.now();setFlight(next);};
+    // Das Ziel kann sich nach dem Abflug noch setzen (Layout, Schrift). Nachmessen ohne den Flug zu stören:
+    // Translate verschiebt die Mitte genau um den Versatz, also Heimat = aktuelle Mitte − Versatz. Korrigiert wird nur bei echter Abweichung.
+    const settle=window.setInterval(()=>{const el=moraRef.current;const goal=document.querySelector(target.selector)?.getBoundingClientRect();if(!el||!goal||goal.width===0)return;
+      // Noch nicht abgeflogen (Ziel war beim ersten Messen noch nicht da): jetzt starten.
+      if(!flying){measure();return;}
+      if(Date.now()-moved<1100)return; // noch im Flug (0,9 s)
+      setFlight(f=>{if(!f)return f;const r=el.getBoundingClientRect();const hx=r.left+r.width/2-f.x,hy=r.top+r.height/2-f.y;
+        const nx=Math.round(goal.left+goal.width/2-hx),ny=Math.round(goal.top+goal.height/2-hy);if(Math.abs(nx-f.x)<3&&Math.abs(ny-f.y)<3)return f;moved=Date.now();return {x:nx,y:ny};});},400);
     const raf=requestAnimationFrame(measure);window.addEventListener('resize',measure);
-    return()=>{cancelAnimationFrame(raf);window.removeEventListener('resize',measure);};
+    return()=>{cancelAnimationFrame(raf);window.clearInterval(settle);window.removeEventListener('resize',measure);};
   },[target]);
   // Im Gespräch fliegt MÔRA in die Mitte über dem See und wird größer, sonst (Flug zu einem Planeten) kleiner.
   const flightScale=target.kind==='anchor'&&target.reason==='stage'?(phone?1.1:1.3):.7;
