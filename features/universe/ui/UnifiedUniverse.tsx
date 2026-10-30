@@ -318,6 +318,7 @@ export function UnifiedUniverse({
   const [moonId, setMoonId] = useState<string | null>(null);
   const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [mobileBriefingOpen, setMobileBriefingOpen] = useState(false);
 
   // Style state: 'glas' (HQ-Gesamtansicht mit dunklen Glasplaneten) oder 'pixel' (HQ-Pixelansicht mit Mini-Monden)
   // Genau EIN Umschalter (.wd-view links auf halber Höhe)
@@ -578,13 +579,77 @@ export function UnifiedUniverse({
         </div>
       </header>
 
-      {/* Morning Briefing (if data is available) */}
+      {/* Morning Briefing: Desktop linke Seite, Handy als einklappbare Zeile oben (überdeckt nichts) */}
       {!phone && briefings.length > 0 && !planet ? (
         <div
           className="ck-briefing-wrap"
           style={{ position: 'absolute', top: 72, left: 24, zIndex: 12, maxWidth: 360 }}
         >
           <BriefingStack briefings={briefings} />
+        </div>
+      ) : phone && briefings.length > 0 && !planet ? (
+        <div
+          className="ck-briefing-mobile"
+          style={{
+            position: 'absolute',
+            top: 52,
+            left: 12,
+            right: 12,
+            zIndex: 25,
+            maxWidth: 366,
+            margin: '0 auto',
+          }}
+          data-testid="universe-briefing-mobile"
+        >
+          <button
+            type="button"
+            onClick={() => setMobileBriefingOpen((o) => !o)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 12px',
+              borderRadius: 10,
+              background: 'rgba(8, 22, 27, 0.88)',
+              border: '1px solid rgba(184, 212, 202, 0.18)',
+              backdropFilter: 'blur(12px)',
+              color: 'inherit',
+              textAlign: 'left',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+            }}
+            aria-expanded={mobileBriefingOpen}
+            aria-label="Morgen-Briefing umschalten"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--c-jade, 111,199,164))', flexShrink: 0 }} />
+              <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.65)', flexShrink: 0 }}>
+                Briefing
+              </span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {briefings[0]?.title}
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginLeft: 8, flexShrink: 0 }}>
+              {mobileBriefingOpen ? '▲' : '▼'}
+            </span>
+          </button>
+          {mobileBriefingOpen ? (
+            <div
+              style={{
+                marginTop: 6,
+                padding: '12px 14px',
+                borderRadius: 12,
+                background: 'rgba(8, 22, 27, 0.94)',
+                border: '1px solid rgba(184, 212, 202, 0.22)',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              }}
+            >
+              <BriefingStack briefings={briefings} />
+            </div>
+          ) : null}
         </div>
       ) : null}
 

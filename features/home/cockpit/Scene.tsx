@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GlassOrb } from '@/components/world/GlassOrb';
+import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { PixelSphere } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
@@ -218,7 +218,7 @@ export function PlanetSystem({
                 <PixelSphere size={orbSize} lit={0.8} tint={tint} variant="A" seed={i + 1} />
               </div>
             ) : (
-              <GlassOrb size={orbSize} variant={p.glass} />
+              <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
             <b>{cleanTitle}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
             <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>

@@ -12,6 +12,7 @@ import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
+import { GlassOrb, glassVariantFor } from './GlassOrb';
 import { PixelMoon, PixelPlanet, PixelSky, PX } from './PixelPlanet';
 import { planetKind, seedOf, type PlanetKind } from '@/lib/universe/pixelArt';
 import { toneSlot } from '@/lib/universe/matteTone';
@@ -324,9 +325,15 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
                   {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={sz} phone={phone} pixel={pixel ? { kind, light, seed: seedOf(displayName) } : undefined} /> : null}
                   {planet.traits && !pixel ? <PlanetTraitsLayer traits={planet.traits} size={sz} phone={phone} /> : null}
                   {pixel && slot ? <PixelPlanet kind={kind} size={sz} seed={seedOf(displayName)} light={light} folders={tr?.folders} activity={tr?.activity} overdue={tr?.overdue} open={tr?.open} reduced={reduced || hidden} /> : null}
-                  <WorldPlanetSphere light={slot ? light : undefined} tone={planet.tone} className={`wd-tex-${tr?.texture ?? 0}`} size={sz}>
-                    {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
-                  </WorldPlanetSphere>
+                  {pixel ? (
+                    <WorldPlanetSphere light={slot ? light : undefined} tone={planet.tone} className={`wd-tex-${tr?.texture ?? 0}`} size={sz}>
+                      {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
+                    </WorldPlanetSphere>
+                  ) : (
+                    <GlassOrb size={sz} variant={glassVariantFor(planet.name)}>
+                      {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
+                    </GlassOrb>
+                  )}
                 </>
               );
             })()}

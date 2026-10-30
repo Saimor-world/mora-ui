@@ -6,7 +6,7 @@ import type { FeatureSurfaceProps } from '../../types';
 import { readDemoViewer } from '../data/useDemoViewer';
 import { Cockpit } from '../cockpit/Cockpit';
 import { CockpitWindow } from '../cockpit/Window';
-import { LiveCockpit } from '../cockpit/LiveCockpit';
+import { ConnectedCockpit } from '../cockpit/ConnectedCockpit';
 
 const COMPANY = 'Café Morgenrot';
 
@@ -23,11 +23,10 @@ function Shell({ label, children }: { label: string; children: React.ReactNode }
 /** Signed in as a Morgenrot user: Today and the real departments, both from CORE. */
 function Online({ state, navigate, initialView }: { state: Extract<MorgenrotState, { kind: 'online' }>; navigate: FeatureSurfaceProps['navigate']; initialView?: 'home' | 'universe' }) {
   return (
-    <LiveCockpit
+    <ConnectedCockpit
       navigate={navigate}
       initialView={initialView}
       companyName={COMPANY}
-      departments={state.departments}
       snapshot={state.snapshot}
       viewerName={state.viewer.name}
       isDemo={true}

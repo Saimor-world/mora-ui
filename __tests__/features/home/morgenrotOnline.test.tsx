@@ -1,9 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 
 // Fictional demo data only (Café Morgenrot).
 const mockCoreGet = jest.fn();
+const mockUseWorld = jest.fn();
+jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => mockUseWorld() }));
 jest.mock('@/lib/api/http', () => {
   const actual = jest.requireActual('@/lib/api/http');
   return { ...actual, coreGet: (...args: unknown[]) => mockCoreGet(...args) };
@@ -12,6 +14,7 @@ jest.mock('@/lib/api/http', () => {
 import { CoreError } from '@/lib/api/http';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
 import { MorgenrotHome } from '@/features/home/morgenrot/MorgenrotHome';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 
 const meta = (tenant: string) => ({
   source: 'test',
@@ -48,6 +51,13 @@ const navigate = jest.fn();
 
 beforeEach(() => {
   mockCoreGet.mockReset();
+  navigate.mockClear();
+  useUniverseFocus.setState({ target: null });
+  mockUseWorld.mockReturnValue({
+    loading: false, failed: false,
+    planets: tree.departments,
+    finder: tree.departments.map((p) => ({ ...p, kind: 'department', spaces: [], moons: [], stars: [] })),
+  });
   window.history.replaceState(null, '', '/os?firma=morgenrot&als=tarek');
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
     matches: false, media: query, addEventListener: jest.fn(), removeEventListener: jest.fn(),
@@ -59,6 +69,72 @@ afterEach(() => {
 });
 
 describe('Café Morgenrot from CORE', () => {
+  it('opens the shared Universe from the Home planet, carrying the actual CORE department ID', async () => {
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
+    render(<MorgenrotHome navigate={navigate} />);
+    fireEvent.click(await screen.findByTestId('open-d-k'));
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('universe');
+    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k' });
+    expect(screen.queryByTestId('planet-d-k')).toBeNull();
+    expect(screen.queryByTestId('switch-pixel')).toBeNull();
+  });
+
+  it('department buttons and mobile planet strip use the same Universe entry', async () => {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 820px)', media: query, addEventListener: jest.fn(), removeEventListener: jest.fn(),
+    }));
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
+    render(<MorgenrotHome navigate={navigate} />);
+    await waitFor(() => expect(screen.getByTestId('home')).toHaveAttribute('data-phone', '1'));
+    fireEvent.click(screen.getByTestId('open-d-s'));
+    expect(navigate).toHaveBeenLastCalledWith('universe');
+    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-s' });
+    fireEvent.click(screen.getByRole('button', { name: /^Küche$/ }));
+    expect(navigate).toHaveBeenCalledTimes(2);
+    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k' });
+  });
+
+  it('legacy Home deep links hand the real folder to the shared Finder instead of opening the old room', async () => {
+    window.history.replaceState(null, '', '/os?firma=morgenrot&ort=d-k&ordner=f-k');
+    const nested = { departments: [{ id: 'd-k', name: 'Küche', folders: [{ id: 'f-k', name: 'Rezepte' }] }] };
+    mockUseWorld.mockReturnValue({
+      loading: false, failed: false, planets: nested.departments,
+      finder: [{ id: 'd-k', name: 'Küche', kind: 'department', spaces: [], stars: [], moons: [{ id: 'f-k', name: 'Rezepte', count: 0, stars: [] }] }],
+    });
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? nested : new CoreError('unexpected', 404)));
+    const mounted = render(<MorgenrotHome navigate={navigate} />);
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('universe'));
+    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k', moonId: 'f-k' });
+    expect(screen.queryByTestId('planet-d-k')).toBeNull();
+    const query = new URLSearchParams(window.location.search);
+    expect(query.get('firma')).toBe('morgenrot');
+    expect(query.has('ort')).toBe(false);
+    expect(query.has('ordner')).toBe(false);
+    mounted.unmount();
+    navigate.mockClear();
+    render(<MorgenrotHome navigate={navigate} />);
+    await screen.findByTestId('morgenrot-online');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('does not invent a target department or folder for an unknown legacy link', async () => {
+    window.history.replaceState(null, '', '/os?firma=morgenrot&ort=foreign-id&ordner=foreign-folder');
+    useUniverseFocus.getState().show({ planetId: 'previous-company' });
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
+    render(<MorgenrotHome navigate={navigate} />);
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('universe'));
+    expect(useUniverseFocus.getState().target).toBeNull();
+  });
+
   it('online: reads Today and the two real departments of demo-morgenrot, no seed areas, no role switch', async () => {
     serve((path) => (path === '/v3/auth/session' ? session
       : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
