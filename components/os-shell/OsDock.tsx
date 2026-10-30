@@ -157,7 +157,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
       <span className="os-dock__label" aria-hidden>{m.title}</span>
     </span>
   );
-  if (variant === 'c') return <BridgeConcept onNavigate={onNavigate} onMora={onMora} onMore={onMore} mood={mood} moraOpen={moraOpen} attention={led} phone={phoneW} />;
+  if (variant === 'c') return <BridgeConcept items={items} activeId={activeId} onNavigate={onNavigate} onMora={onMora} onMore={onMore} onNotifications={onNotifications} onSearch={onSearch} onControl={onControl} mood={mood} moraOpen={moraOpen} attention={led} phone={phoneW} />;
 
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
