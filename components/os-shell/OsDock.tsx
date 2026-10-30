@@ -156,11 +156,28 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
       <span className="os-dock__label" aria-hidden>{m.title}</span>
     </span>
   );
+  const stationGroups: Array<{ label: string; ids: string[] }> = [
+    { label: 'Kommunikation', ids: ['post'] },
+    { label: 'Navigation', ids: ['universe', 'home', 'today', 'knowledge'] },
+    { label: 'Wache', ids: ['finance'] },
+    { label: 'System', ids: ['settings', 'labs'] },
+  ];
 
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
-      {variant === 'c' ? <BridgeConcept /> : null}
+      {variant === 'c' ? <BridgeConcept onNavigate={onNavigate} /> : null}
       <div className="os-dock__capsule" data-testid="dock">
+        {variant === 'c' ? <div className="bridge-stations" aria-label="Stationen">
+          {stationGroups.map((group) => {
+            const entries = items.filter((item) => group.ids.includes(item.id));
+            if (!entries.length && group.label !== 'Kommunikation') return null;
+            return <section key={group.label} className="bridge-station"><span>{group.label}</span><div>
+              {entries.map((item) => <button key={item.id} type="button" aria-current={activeId === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}>{item.title}</button>)}
+              {group.label === 'Kommunikation' ? <button type="button" onClick={onNotifications}>Mitteilungen</button> : null}
+              {group.label === 'System' && onControl ? <button type="button" onClick={onControl}>Control Center</button> : null}
+            </div></section>;
+          })}
+        </div> : null}
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
