@@ -130,8 +130,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
     expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    // Keine zweite schwebende MÔRA in der Szene (MÔRA lebt ausschließlich im Dock)
-    expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(0);
+    // Schwebende MÔRA im Zentrum des Universe (HQ-Pixelansicht wie in main b2f2a99)
+    expect(universeSurfaceContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
     unmountUniverse();
 
     // 2. Einstieg Home (LiveCockpit mit view="universe")
@@ -143,7 +143,7 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
     expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
-    expect(cockpitUniverseContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(0);
+    expect(cockpitUniverseContainer.querySelectorAll('[data-testid="world-mora"]').length).toBe(1);
     unmountCockpit();
   });
 
@@ -185,9 +185,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     expect(screen.queryByTestId('planet-dept-kueche')).not.toBeInTheDocument();
   });
 
-  it('MÔRA im Dock ist auf Home groß (size 160) und auf Unterseiten kompakt (size 72), um Inhalte nicht zu überdecken', () => {
-    // 1. Auf Home: big = true, data-big="true", PixelMora mit Größe 160
-    const { unmount: unmountHomeDock } = render(
+  it('Dock ist schlank und einzeilig ohne .os-dock__stage, mit freiem Frag-MÔRA-Feld und kompaktem MÔRA-Button', () => {
+    const { unmount } = render(
       <OsDock
         items={mockItems}
         mobileItems={[]}
@@ -202,54 +201,14 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
       />
     );
 
-    const homeStone = screen.getByTestId('dock-mora');
-    expect(homeStone).toHaveAttribute('data-big', 'true');
-    const homePx = within(homeStone).getByTestId('mora-spirit');
-    expect(homePx).toHaveStyle({ width: '240px', height: '240px' });
-    unmountHomeDock();
-
-    // 2. Auf Post (Unterseite): big = false, data-big="false", PixelMora mit Größe 72 (ca. 108px gerendert, halb so groß wie Home)
-    const { unmount: unmountPostDock } = render(
-      <OsDock
-        items={mockItems}
-        mobileItems={[]}
-        activeId="post"
-        moraOpen={false}
-        moreActive={false}
-        onNavigate={jest.fn()}
-        onSearch={jest.fn()}
-        onMora={jest.fn()}
-        onMore={jest.fn()}
-        onNotifications={jest.fn()}
-      />
-    );
-
-    const postStone = screen.getByTestId('dock-mora');
-    expect(postStone).toHaveAttribute('data-big', 'false');
-    const postPx = within(postStone).getByTestId('mora-spirit');
-    expect(postPx).toHaveStyle({ width: '120px', height: '120px' });
-    unmountPostDock();
-
-    // 3. Auf Universe (Unterseite): big = false, data-big="false"
-    const { unmount: unmountUniverseDock } = render(
-      <OsDock
-        items={mockItems}
-        mobileItems={[]}
-        activeId="universe"
-        moraOpen={false}
-        moreActive={false}
-        onNavigate={jest.fn()}
-        onSearch={jest.fn()}
-        onMora={jest.fn()}
-        onMore={jest.fn()}
-        onNotifications={jest.fn()}
-      />
-    );
-
-    const universeStone = screen.getByTestId('dock-mora');
-    expect(universeStone).toHaveAttribute('data-big', 'false');
-    const universePx = within(universeStone).getByTestId('mora-spirit');
-    expect(universePx).toHaveStyle({ width: '120px', height: '120px' });
-    unmountUniverseDock();
+    const stone = screen.getByTestId('dock-mora');
+    expect(stone).toBeInTheDocument();
+    expect(stone.querySelector('.os-dock__stage')).toBeNull();
+    expect(screen.getByTestId('dock-ask-open')).toBeInTheDocument();
+    expect(screen.getByText('Frag MÔRA …')).toBeInTheDocument();
+    expect(screen.getByTestId('dock-active-count')).toBeInTheDocument();
+    expect(screen.getByTestId('dock-attention')).toBeInTheDocument();
+    expect(screen.getByTestId('dock-last-active')).toBeInTheDocument();
+    unmount();
   });
 });

@@ -1,16 +1,15 @@
 'use client';
 import Link from 'next/link';
 import React from 'react';
-import { Bell, LayoutGrid, MoreHorizontal, Search, Shirt, Sparkles } from 'lucide-react';
+import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
 import { useDockVariant } from '@/lib/mora/dockVariant';
 import { usePalette } from '@/lib/mora/palette';
 import { useOsUnread } from '@/components/os-shell/NotificationTray';
 import { useWorld } from '@/lib/lea/useWorld';
 import { navStage, useNavPos } from '@/lib/mora/navPos';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
-import { PixelMora } from '@/components/world/PixelMora';
-import { DOCK_ASK_SLOT, useHubMood } from '@/lib/mora/hubMood';
-import { useReducedMotion } from 'framer-motion';
+import { PixelMoraMark } from '@/components/world/PixelMora';
+import { DOCK_ASK_SLOT } from '@/lib/mora/hubMood';
 import type { FeatureManifest } from '@/features/types';
 import { BridgeConcept } from './BridgeConcept';
 
@@ -19,8 +18,9 @@ import { BridgeConcept } from './BridgeConcept';
  * Aktiv-Zustand kommen direkt aus dem Legacy-Dock (components/mora/Dock.tsx,
  * exportiertes CapsuleDockIcon). Aufbau wie dort: links Werkzeuge, Trenner,
  * Mitte die Orte, rechts der MÔRA-Stein.
- * Homebase: ein durchgehender Streifen unten; MÔRA sitzt direkt an der Eingabe „Frag MÔRA“
- * (im Universe wird MoraAsk hierher portiert, sonst öffnet der Knopf die MÔRA-Konsole).
+ *
+ * Zurück auf HQ (main b2f2a99): schlankes einzeiliges Dock ohne .os-dock__stage
+ * und ohne riesige 160px-MÔRA; klickbare Anzeigen und freies „Frag MÔRA“-Feld.
  */
 export interface OsDockProps {
   items: FeatureManifest[];
@@ -64,7 +64,7 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
       <div className="os-dock__inst" data-testid="dock-instruments">
         <button
           type="button"
-          className="os-dock__gauge os-dock__gauge--btn"
+          className="os-dock__gauge os-dock__gauge--btn" data-testid="dock-active-count"
           onClick={() => onNavigate?.('universe')}
           title="Zur Universe-Übersicht"
           style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
@@ -75,7 +75,7 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
         <button
           type="button"
           className="os-dock__gauge os-dock__gauge--btn"
-          data-warn={led > 0 ? 'true' : undefined}
+          data-testid="dock-attention" data-warn={led > 0 ? 'true' : undefined}
           onClick={() => {
             if (onNotifications) onNotifications();
             else onNavigate?.('notifications');
@@ -93,7 +93,7 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
     return (
       <button
         type="button"
-        className="os-dock__gauge os-dock__gauge--last os-dock__gauge--btn"
+        className="os-dock__gauge os-dock__gauge--last os-dock__gauge--btn" data-testid="dock-last-active"
         onClick={() => {
           if (last?.id) {
             useNavPos.getState().set({ planet: { id: last.id, name: last.name }, open: true, moon: null });
@@ -111,30 +111,31 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
     );
   }
   return (
-      <div className="os-dock__map" aria-label="Positionskarte" data-testid="dock-position">
-        <span className="os-dock__radar" aria-hidden>
-          {planets.slice(0, 12).map((p, i, a) => { const t = (i / Math.max(1, a.length)) * Math.PI * 2 - Math.PI / 2; const r = 38 * (0.55 + 0.4 * ((i % 3) / 2)); return <i key={p.id} data-here={pos.planet?.id === p.id ? 'true' : undefined} style={{ left: `${50 + Math.cos(t) * r}%`, top: `${50 + Math.sin(t) * r}%` }} />; })}
+    <div className="os-dock__map" aria-label="Positionskarte" data-testid="dock-position">
+      <span className="os-dock__radar" aria-hidden>
+        {planets.slice(0, 12).map((p, i, a) => {
+          const t = (i / Math.max(1, a.length)) * Math.PI * 2 - Math.PI / 2;
+          const r = 38 * (0.55 + 0.4 * ((i % 3) / 2));
+          return <i key={p.id} data-here={pos.planet?.id === p.id ? 'true' : undefined} style={{ left: `${50 + Math.cos(t) * r}%`, top: `${50 + Math.sin(t) * r}%` }} />;
+        })}
+      </span>
+      <span className="os-dock__crumbs">
+        <small>{STAGE[stage]}</small>
+        <span>
+          {stage === 'universe' ? <em>Universe</em> : <button type="button" onClick={() => pos.toUniverse?.()} title="Abheben – zurück ins Universe" data-testid="dock-liftoff">Universe</button>}
+          {pos.planet ? <>{' › '}{stage === 'landed' ? <button type="button" onClick={() => pos.toPlanet?.()} title={`Abheben – zurück zu ${pos.planet.name}`}>{pos.planet.name}</button> : <em>{pos.planet.name}</em>}</> : null}
+          {pos.moon ? <>{' › '}<em>{pos.moon.name}</em></> : null}
         </span>
-        <span className="os-dock__crumbs">
-          <small>{STAGE[stage]}</small>
-          <span>
-            {stage === 'universe' ? <em>Universe</em> : <button type="button" onClick={() => pos.toUniverse?.()} title="Abheben – zurück ins Universe" data-testid="dock-liftoff">Universe</button>}
-            {pos.planet ? <>{' › '}{stage === 'landed' ? <button type="button" onClick={() => pos.toPlanet?.()} title={`Abheben – zurück zu ${pos.planet.name}`}>{pos.planet.name}</button> : <em>{pos.planet.name}</em>}</> : null}
-            {pos.moon ? <>{' › '}<em>{pos.moon.name}</em></> : null}
-          </span>
-        </span>
-      </div>
+      </span>
+    </div>
   );
 }
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
-  const mood = useHubMood();
   const variant = useDockVariant();
-  const big = variant !== 'strip' && activeId === 'home';
   usePalette();
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;
-  const reduced = useReducedMotion();
   const [phoneW, setPhoneW] = React.useState(false);
 
   React.useEffect(() => {
@@ -155,6 +156,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
       <span className="os-dock__label" aria-hidden>{m.title}</span>
     </span>
   );
+
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
       {variant === 'c' ? <BridgeConcept /> : null}
@@ -162,32 +164,19 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
-          {variant === 'c' && !phoneW ? <Instruments side="l" led={led} onNavigate={onNavigate} onNotifications={onNotifications} /> : null}
+          {!phoneW ? <Instruments side="l" led={led} onNavigate={onNavigate} onNotifications={onNotifications} /> : null}
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <span className="os-dock__mod" data-led={led > 0 ? 'on' : undefined}>
-            <CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={big ? undefined : unread} onClick={onNotifications} />
+            <CapsuleDockIcon icon={Bell} label="Mitteilungen" description={led ? `${led} neu` : 'Nichts Neues'} isStandardMode={false} badge={unread} onClick={onNotifications} />
           </span>
-          {big ? (
-            <span className="os-dock__mod">
-              <CapsuleDockIcon icon={Shirt} label="Garderobe" description="MÔRA anziehen" isStandardMode={false} onClick={() => { onNavigate('settings'); setTimeout(() => document.querySelector('[data-testid="mora-wardrobe"]')?.scrollIntoView({ block: 'center' }), 400); }} />
-            </span>
-          ) : null}
         </div>
         <div className="os-dock__hub" data-testid="dock-hub">
-          <div className="os-dock__stage">
-            {variant === 'c' && !phoneW ? <Instruments side="map" onNavigate={onNavigate} /> : null}
-            <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood} data-big={big ? 'true' : 'false'}>
-              {big ? <span className="os-dock__cone" aria-hidden /> : null}
-              <span data-testid="mora-mark" className="os-dock__px" style={{ imageRendering: 'pixelated' }}>
-                <PixelMora size={big ? (phoneW ? 96 : 160) : (phoneW ? 56 : 72)} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} />
-              </span>
-            </button>
-            {variant === 'c' && !phoneW ? <Instruments side="last" onNavigate={onNavigate} /> : null}
-          </div>
+          {!phoneW ? <Instruments side="map" onNavigate={onNavigate} /> : null}
           <div id={DOCK_ASK_SLOT} className="os-dock__ask">
             <button type="button" className="os-dock__askbtn" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button>
           </div>
+          {!phoneW ? <Instruments side="last" onNavigate={onNavigate} /> : null}
         </div>
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--apps">
@@ -196,6 +185,9 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
+          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
+            <PixelMoraMark size={34} active={moraOpen} />
+          </button>
         </div>
       </div>
     </nav>

@@ -26,6 +26,7 @@ import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
 import { PlanetOrbit } from '@/components/world/WorldUniverse';
+import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
 import { planetKind, seedOf } from '@/lib/universe/pixelArt';
 import { matteTone, toneSlot } from '@/lib/universe/matteTone';
@@ -71,6 +72,7 @@ function PixelUniverseOverview({
   phone,
   incidentMap,
   onOpenPlanet,
+  onMora,
   tasks = [],
   reduced = false,
 }: {
@@ -79,6 +81,7 @@ function PixelUniverseOverview({
   phone: boolean;
   incidentMap: Map<string, number>;
   onOpenPlanet: (id: string) => void;
+  onMora?: () => void;
   tasks?: Array<{ id: string; title: string; status?: string; is_overdue?: boolean | null; department_id?: string | null }>;
   reduced?: boolean;
 }) {
@@ -117,7 +120,7 @@ function PixelUniverseOverview({
       weights,
       phone,
       calm: true,
-      moraBase: 0,
+      moraBase: phone ? 88 : 150,
       labels,
     });
   }, [size.width, size.height, weights, phone, labels]);
@@ -125,111 +128,166 @@ function PixelUniverseOverview({
   return (
     <div
       ref={containerRef}
-      className="wd-pixel-universe"
-      style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
+      className="wd-universe"
       data-testid="pixel-universe"
+      data-view="pixel"
+      data-phone={phone ? 'true' : 'false'}
+      data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'}
+      style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
     >
+      <PixelSky reduced={reduced} />
 
+      <div className="wd-zoomwrap" data-testid="world-zoomwrap">
+        {layout ? (
+          <svg className="wd-orbits" shapeRendering="crispEdges" width={size.width} height={size.height} aria-hidden>
+            {layout.slots.map((slot, i) => {
+              const pt = placeOnOrbit(layout, slot);
+              return null;
+            })}
+          </svg>
+        ) : null}
 
-      {/* Planeten im ruhigen Raster */}
-      {planets.map((planet, i) => {
-        const slot = layout.slots[i];
-        if (!slot) return null;
-        const pt = placeOnOrbit(layout, slot);
-        const displayName = stripFiktiv(planet.title) || planet.title;
-        const kind = planetKind(displayName, toneSlot(displayName));
-        const seed = seedOf(displayName);
-        const sz = pixelSize(slot.size, slot.angle);
-        const light = { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) };
-        const incCount = incidentMap.get(planet.id) ?? 0;
-
-        return (
+        {/* Schwebende MÔRA oben in der Mitte (wie in HQ main b2f2a99) */}
+        {layout ? (
           <button
-            key={planet.id}
             type="button"
-            className="wd-planet"
+            className="wd-mora"
+            data-state="idle"
+            data-spirit="idle"
             style={{
-              position: 'absolute',
-              left: Math.round(pt.x),
-              top: Math.round(pt.y),
-              transform: 'translate(-50%, -50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'inherit',
+              left: Math.round(layout.cx / 2) * 2,
+              top: Math.round(layout.cy / 2) * 2,
+              width: Math.round(layout.mora / 2) * 2,
+              height: Math.round(layout.mora / 2) * 2,
+              zIndex: 10 + Math.round(layout.cy),
             }}
-            onClick={() => onOpenPlanet(planet.id)}
-            data-testid={`world-planet-${planet.id}`}
-            aria-label={`${displayName} öffnen`}
+            onClick={onMora}
+            aria-label="MÔRA öffnen"
+            data-testid="world-mora"
           >
-            {planet.moons?.length ? (
-              <PlanetOrbit
-                tone={matteTone(displayName).vars}
-                away={slot && Math.cos(slot.angle) < 0 ? -1 : 1}
-                orbit={{
-                  moons: planet.moons.map((m) => ({
-                    id: m.id,
-                    label: stripFiktiv(m.title) || m.title,
-                    stars: (m.files || []).map((f) => ({
-                      id: f.id,
-                      label: f.name,
-                      kind: 'doc' as const,
-                      done: true,
-                      overdue: false,
-                    })),
-                  })),
-                  stars: tasks
-                    .filter((t) => t.department_id === planet.id)
-                    .slice(0, 8)
-                    .map((t) => ({
-                      id: t.id,
-                      label: t.title,
-                      kind: 'task' as const,
-                      done: t.status === 'done',
-                      overdue: Boolean(t.is_overdue),
-                    })),
-                }}
-                size={sz}
+            <span className="wd-mora-glide" data-testid="world-mora-glide">
+              <PixelMora
+                size={phone ? 24 : Math.round(layout.mora * 0.64)}
+                mood="idle"
                 phone={phone}
-                pixel={{ kind, light, seed }}
+                reduced={reduced}
               />
-            ) : null}
-            <PixelPlanet
-              kind={kind}
-              size={sz}
-              seed={seed}
-              light={light}
-              folders={planet.moons?.length ?? 0}
-              activity={attention.has(planet.id) ? 1 : 0}
-              overdue={attention.has(planet.id) || incCount > 0 ? 1 : 0}
-              open={0}
-              reduced={reduced}
-            />
-            <span className="wd-label">
-              <span className="wd-name">{displayName}</span>
-              <span className="wd-meta">
-                {planet.moons?.length ? `${planet.moons.length} Ordner` : 'noch leer'}
-              </span>
-              {incCount > 0 ? (
-                <span
-                  className="ck-incident-tag"
-                  style={{
-                    color: 'var(--rose, #f87171)',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                  }}
-                >
-                  ● Vorfall ({incCount})
-                </span>
-              ) : null}
             </span>
           </button>
-        );
-      })}
+        ) : null}
+
+        {/* Planeten im ruhigen Raster mit WorldPlanetSphere-Boxen und PlanetOrbit */}
+        {planets.map((planet, i) => {
+          const slot = layout.slots[i];
+          if (!slot) return null;
+          const pt = placeOnOrbit(layout, slot);
+          const displayName = stripFiktiv(planet.title) || planet.title;
+          let kind = planetKind(displayName, toneSlot(displayName));
+          // Optik 1:1 wie HQ: Matte Planeten, keine Lava, keine Ringe
+          if (kind === 'lava') kind = 'desert';
+          if (kind === 'gas') kind = 'ocean';
+          const seed = seedOf(displayName);
+          const sz = pixelSize(slot.size, slot.angle);
+          const light = { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) };
+          const incCount = incidentMap.get(planet.id) ?? 0;
+          const half = sz / 2;
+          const sx = Math.round((pt.x - half) / PX) * PX;
+          const sy = Math.round((pt.y - half) / PX) * PX;
+
+          return (
+            <button
+              key={planet.id}
+              type="button"
+              className="wd-planet"
+              data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
+              data-depth={pt.front ? 'front' : 'back'}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                transform: `translate3d(${sx}px, ${sy}px, 0)`,
+                zIndex: pt.z,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'inherit',
+              }}
+              onClick={() => onOpenPlanet(planet.id)}
+              data-testid={`world-planet-${planet.id}`}
+              aria-label={`${displayName} öffnen`}
+            >
+              {planet.moons?.length ? (
+                <PlanetOrbit
+                  tone={matteTone(displayName).vars}
+                  away={slot && Math.cos(slot.angle) < 0 ? -1 : 1}
+                  orbit={{
+                    moons: planet.moons.map((m) => ({
+                      id: m.id,
+                      label: stripFiktiv(m.title) || m.title,
+                      stars: (m.files || []).map((f) => ({
+                        id: f.id,
+                        label: f.name,
+                        kind: 'doc' as const,
+                        done: true,
+                        overdue: false,
+                      })),
+                    })),
+                    stars: tasks
+                      .filter((t) => t.department_id === planet.id)
+                      .slice(0, 8)
+                      .map((t) => ({
+                        id: t.id,
+                        label: t.title,
+                        kind: 'task' as const,
+                        done: t.status === 'done',
+                        overdue: Boolean(t.is_overdue),
+                      })),
+                  }}
+                  size={sz}
+                  phone={phone}
+                  pixel={{ kind, light, seed }}
+                />
+              ) : null}
+              <PixelPlanet
+                kind={kind}
+                size={sz}
+                seed={seed}
+                light={light}
+                folders={0}
+                activity={0}
+                overdue={0}
+                open={0}
+                reduced={reduced}
+              />
+              <WorldPlanetSphere light={light} tone={matteTone(displayName)} className={`wd-tex-${i % 4}`} size={sz}>
+                {planet.moons?.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
+              </WorldPlanetSphere>
+              <span className="wd-label">
+                <span className="wd-name">{displayName}</span>
+                <span className="wd-meta">
+                  {planet.moons?.length ? `${planet.moons.length} Ordner` : 'noch leer'}
+                </span>
+                {incCount > 0 ? (
+                  <span
+                    className="ck-incident-tag"
+                    style={{
+                      color: 'var(--rose, #f87171)',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    ● Vorfall ({incCount})
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -521,7 +579,7 @@ export function UnifiedUniverse({
       </header>
 
       {/* Morning Briefing (if data is available) */}
-      {briefings.length > 0 && !planet ? (
+      {!phone && briefings.length > 0 && !planet ? (
         <div
           className="ck-briefing-wrap"
           style={{ position: 'absolute', top: 72, left: 24, zIndex: 12, maxWidth: 360 }}
@@ -551,6 +609,7 @@ export function UnifiedUniverse({
             phone={phone}
             incidentMap={departmentIncidentMap}
             onOpenPlanet={handleOpenPlanet}
+            onMora={() => { useOsShellStore.getState().setMoraOpen(true); }}
             tasks={snapshot?.tasks?.due_today ?? []}
             reduced={motionReduced}
           />
