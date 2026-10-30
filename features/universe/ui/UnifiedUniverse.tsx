@@ -22,6 +22,7 @@ import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
+import { mailCounts, warmBriefing } from '@/lib/mora/bridgeData';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
@@ -472,20 +473,24 @@ export function UnifiedUniverse({
   const briefings = useMemo<Briefing[]>(() => {
     if (!dailyBriefing) return [];
     const list: Briefing[] = [];
-    if (dailyBriefing.text) {
+    // Eine Mail-Zahl für Briefing und Dock; MÔRA spricht kurz und warm aus denselben Daten.
+    const briefingUnread = dailyBriefing.metrics?.unread_mails ?? null;
+    const mail = mailCounts(snapshot, briefingUnread);
+    const warm = warmBriefing(snapshot, briefingUnread, new Date().getHours());
+    if (warm || dailyBriefing.text) {
       list.push({
         id: 'briefing-main',
         label: 'Morgen-Briefing',
         title: dailyBriefing.date || 'Heute',
-        detail: dailyBriefing.text,
+        detail: warm ?? dailyBriefing.text,
       });
     }
-    if (dailyBriefing.metrics?.unread_mails > 0) {
+    if ((mail.unread ?? 0) > 0) {
       list.push({
         id: 'briefing-mails',
         label: 'Post',
-        title: `${dailyBriefing.metrics.unread_mails} ungelesene Mails`,
-        detail: 'Braucht Aufmerksamkeit',
+        title: `${mail.unread} ungelesene Mails`,
+        detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : 'Wartet auf dich',
       });
     }
     if (dailyBriefing.metrics?.active_incidents > 0) {
@@ -498,7 +503,7 @@ export function UnifiedUniverse({
       });
     }
     return list;
-  }, [dailyBriefing]);
+  }, [dailyBriefing, snapshot]);
 
   // Filter tasks for the selected planet strictly by department_id
   const planetTasks = useMemo(() => {

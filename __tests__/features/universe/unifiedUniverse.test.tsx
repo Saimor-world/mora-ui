@@ -185,7 +185,9 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
   });
 
   it('Dock ist schlank und einzeilig ohne .os-dock__stage, mit freiem Frag-MÔRA-Feld und kompaktem MÔRA-Button', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { unmount } = render(
+      <QueryClientProvider client={qc}>
       <OsDock
         items={mockItems}
         mobileItems={[]}
@@ -198,6 +200,7 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
         onMore={jest.fn()}
         onNotifications={jest.fn()}
       />
+      </QueryClientProvider>
     );
 
     const stone = screen.getByTestId('dock-mora');
