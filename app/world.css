@@ -1080,6 +1080,9 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 .wd-view[aria-pressed='true'] i { background: none; box-shadow: inset 0 0 0 2px currentColor; }
 .wd-view:hover { border-color: rgba(190, 205, 250, .7); }
 .wd-view:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 2px; }
+@media (max-width: 899px) {
+  .wd-view { bottom: calc(var(--os-dock-space, 72px) + 14px) !important; left: 14px !important; height: 30px !important; padding: 0 10px 0 8px !important; font-size: 11px !important; z-index: 50 !important; }
+}
 .wd-universe[data-view='pixel'] .wd-zoom button, .wd-universe[data-view='pixel'] .wd-legend summary { border-radius: 0; border: 2px solid rgba(132, 150, 214, .3); background: #0a0c18; box-shadow: 2px 2px 0 #000; }
 .wd-universe[data-view='pixel'] .wd-counter { border-radius: 0; background: #0a0c18; border: 2px solid rgba(132, 150, 214, .25); }
 @media (prefers-reduced-motion: reduce) { .wd-sky__twinkle { animation: none; } }

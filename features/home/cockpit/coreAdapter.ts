@@ -1,3 +1,4 @@
+import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { DemoFile, DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
@@ -239,13 +240,34 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
  */
 export function deriveLiveAttention(
   snapshot: TodaySnapshot | null | undefined,
-  navigate?: (featureId: string) => void
+  navigate?: (featureId: string) => void,
+  incidents?: NightwatchIncidentItem[]
 ): {
   attention: Set<string>;
   items: LiveAttentionItem[];
 } {
   const attention = new Set<string>();
   const items: LiveAttentionItem[] = [];
+
+  // Incidents take top priority - an open incident prevents "Alles erledigt"
+  if (incidents && incidents.length > 0) {
+    const openIncs = incidents.filter((i) => i.status !== 'resolved');
+    if (openIncs.length > 0) {
+      const firstInc = openIncs[0];
+      const isCritical = firstInc.severity === 'critical' || firstInc.severity === 'fatal';
+      items.push({
+        id: `incident-${firstInc.id}`,
+        title: firstInc.title || `Vorfall: ${firstInc.department_id || 'Infrastruktur'}`,
+        detail: isCritical ? 'Kritischer Vorfall in Nightwatch' : 'Vorfall in Untersuchung',
+        action: 'Vorfall prüfen',
+        primary: true,
+        onAction: () => navigate?.('nightwatch'),
+      });
+      if (firstInc.department_id) {
+        attention.add(firstInc.department_id);
+      }
+    }
+  }
 
   if (!snapshot) {
     return { attention, items };

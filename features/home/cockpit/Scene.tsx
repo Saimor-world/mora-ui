@@ -132,6 +132,7 @@ export function PlanetSystem({
   compact,
   strip,
   style = 'glas',
+  signals,
 }: {
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
@@ -140,6 +141,7 @@ export function PlanetSystem({
   compact?: boolean;
   strip?: boolean;
   style?: 'glas' | 'pixel';
+  signals?: Map<string, { isAlarm: boolean; reason: string }>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number }>({
@@ -220,8 +222,47 @@ export function PlanetSystem({
             ) : (
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
-            <b>{cleanTitle}{attention.has(p.id) ? <i aria-label="braucht dich" /> : null}</b>
+            <b>{cleanTitle}</b>
             <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>
+            {(() => {
+              const sig = signals?.get(p.id) || (attention.has(p.id) ? { isAlarm: false, reason: 'Braucht dich' } : null);
+              if (!sig) return null;
+              return (
+                <span
+                  className="ck-planet__signal"
+                  data-testid={`planet-signal-${p.id}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    marginTop: 3,
+                    fontSize: 11,
+                    lineHeight: 1.2,
+                    color: sig.isAlarm ? '#f87171' : '#fbbf24',
+                    maxWidth: 150,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  <i
+                    style={{
+                      display: 'inline-block',
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: sig.isAlarm ? '#ef4444' : '#f59e0b',
+                      boxShadow: sig.isAlarm ? '0 0 6px rgba(239,68,68,0.7)' : '0 0 6px rgba(245,158,11,0.6)',
+                      flexShrink: 0,
+                    }}
+                    aria-hidden
+                  />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {sig.reason}
+                  </span>
+                </span>
+              );
+            })()}
           </button>
         );
       })}
