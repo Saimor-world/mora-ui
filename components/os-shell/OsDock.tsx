@@ -178,6 +178,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
             </div></section>;
           })}
         </div> : null}
+        {variant === 'c' ? <button type="button" className="os-dock__stone bridge-core" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora"><PixelMoraMark size={34} active={moraOpen} /></button> : null}
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
@@ -202,9 +203,9 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
+          {variant !== 'c' ? <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
             <PixelMoraMark size={34} active={moraOpen} />
-          </button>
+          </button> : null}
         </div>
       </div>
     </nav>
