@@ -8,8 +8,9 @@ import { useOsUnread } from '@/components/os-shell/NotificationTray';
 import { useWorld } from '@/lib/lea/useWorld';
 import { navStage, useNavPos } from '@/lib/mora/navPos';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
-import { PixelMoraMark } from '@/components/world/PixelMora';
-import { DOCK_ASK_SLOT } from '@/lib/mora/hubMood';
+import { PixelMora, PixelMoraMark } from '@/components/world/PixelMora';
+import { DOCK_ASK_SLOT, useHubMood } from '@/lib/mora/hubMood';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureManifest } from '@/features/types';
 import { BridgeConcept } from './BridgeConcept';
 
@@ -133,6 +134,7 @@ function Instruments({ side, led = 0, onNavigate, onNotifications }: { side: 'l'
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const variant = useDockVariant();
+  const mood = useHubMood();
   usePalette();
   const realUnread = useOsUnread();
   const led = unread ?? realUnread;
@@ -163,22 +165,42 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
     { label: 'System', ids: ['settings', 'labs'] },
   ];
 
+  if (variant === 'c') return (
+    <nav className="os-dock bridge" aria-label="SAIMÔR Brücke" data-testid="os-dock" data-variant="c">
+      <div className="bridge__body" data-testid="dock">
+        <div className="bridge__edge" aria-hidden="true" />
+        <div className="bridge__stations" aria-label="Arbeitsbereiche">
+          {stationGroups.map(group => {
+            const entries = items.filter(item => group.ids.includes(item.id));
+            if (!entries.length && group.label !== 'Kommunikation') return null;
+            return <section className="bridge__station" key={group.label}>
+              <span className="bridge__station-title">{group.label}</span>
+              <div className="bridge__station-buttons">
+                {entries.map(item => <button key={item.id} type="button" aria-current={activeId === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}>{item.title}</button>)}
+                {group.label === 'Kommunikation' ? <><button type="button" onClick={onNotifications}>Mitteilungen{led > 0 ? ` · ${led}` : ''}</button><button type="button" onClick={() => openLegacyApp('calendar')}>Kalender</button></> : null}
+                {group.label === 'System' && onControl ? <button type="button" onClick={onControl}>Control Center</button> : null}
+              </div>
+            </section>;
+          })}
+          {items.some(item => !stationGroups.some(group => group.ids.includes(item.id))) ? <section className="bridge__station"><span className="bridge__station-title">Weitere Orte</span><div className="bridge__station-buttons">{items.filter(item => !stationGroups.some(group => group.ids.includes(item.id))).map(item => <button key={item.id} type="button" aria-current={activeId === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}>{item.title}</button>)}</div></section> : null}
+          <div className="bridge__utilities"><button type="button" onClick={onSearch}>Suche · ⌘K</button><button type="button" onClick={onMore}>Weitere Bereiche</button></div>
+        </div>
+        <div className="bridge__heart" data-attention={led > 0 ? 'true' : undefined} data-mood={mood}>
+          <span className="bridge__beam" aria-hidden="true" />
+          <button type="button" className="bridge__mora" aria-pressed={moraOpen} aria-label="MÔRA öffnen" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
+            <PixelMora size={phoneW ? 62 : 84} mood={mood} />
+          </button>
+          <div className="bridge__mora-name">MÔRA <span>{mood === 'thinking' ? 'DENKT' : mood === 'speaking' ? 'SPRICHT' : mood === 'listening' ? 'HÖRT ZU' : led > 0 ? 'BRAUCHT DICH' : 'IST DA'}</span></div>
+          <div id={DOCK_ASK_SLOT} className="bridge__ask"><button type="button" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button></div>
+        </div>
+        <BridgeConcept onNavigate={onNavigate} />
+      </div>
+    </nav>
+  );
+
   return (
     <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock" data-variant={variant}>
-      {variant === 'c' ? <BridgeConcept onNavigate={onNavigate} /> : null}
       <div className="os-dock__capsule" data-testid="dock">
-        {variant === 'c' ? <div className="bridge-stations" aria-label="Stationen">
-          {stationGroups.map((group) => {
-            const entries = items.filter((item) => group.ids.includes(item.id));
-            if (!entries.length && group.label !== 'Kommunikation') return null;
-            return <section key={group.label} className="bridge-station"><span>{group.label}</span><div>
-              {entries.map((item) => <button key={item.id} type="button" aria-current={activeId === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}>{item.title}</button>)}
-              {group.label === 'Kommunikation' ? <button type="button" onClick={onNotifications}>Mitteilungen</button> : null}
-              {group.label === 'System' && onControl ? <button type="button" onClick={onControl}>Control Center</button> : null}
-            </div></section>;
-          })}
-        </div> : null}
-        {variant === 'c' ? <button type="button" className="os-dock__stone bridge-core" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora"><PixelMoraMark size={34} active={moraOpen} /></button> : null}
         <span className="os-dock__grid" aria-hidden />
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
@@ -203,9 +225,9 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
-          {variant !== 'c' ? <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
+          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
             <PixelMoraMark size={34} active={moraOpen} />
-          </button> : null}
+          </button>
         </div>
       </div>
     </nav>

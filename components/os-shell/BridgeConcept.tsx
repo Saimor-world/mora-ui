@@ -30,15 +30,14 @@ export function BridgeConcept({ onNavigate }: { onNavigate: (target: string) => 
   );
   return (
     <section className="bridge-concept" aria-label="Was jetzt zählt">
-      <div className="bridge-concept__arc" aria-hidden="true" />
-      <div className="bridge-concept__heading"><span>DEIN RAUM</span><span>WAS JETZT ZÄHLT</span><span>SAIMÔR OS</span></div>
+      <div className="bridge-concept__heading"><span>DEIN TAG</span><strong>Was ansteht</strong></div>
       <div className="bridge-concept__lights">
         {loading ? <span className="bridge-concept__state">Quellen werden geladen …</span> : loadError || !snapshot ? <span className="bridge-concept__state">Informationen gerade nicht verfügbar</span> : !lights.length ? <span className="bridge-concept__state">{sourcesIncomplete ? 'Einige Quellen sind nicht verfügbar' : 'Keine datierten Einträge verfügbar'}</span> : lights.map((light) => (
           <button key={`${light.kind}:${light.id}`} type="button" className="bridge-concept__light" onClick={() => {
             if (light.target === 'calendar') openLegacyApp('calendar');
             else onNavigate(light.target);
           }} title={`${light.kind}: ${light.label} · ${light.date}`}>
-            <span className="bridge-concept__dot" aria-hidden="true" /><small>{light.kind} · {light.date.slice(0, 16)}</small><b>{light.label}</b>
+            <small>{light.kind} · {light.date.slice(0, 16).replace('T', ' ')}</small><b>{light.label}</b>
           </button>
         ))}
         {!loading && !loadError && lights.length > 0 && sourcesIncomplete ? <span className="bridge-concept__state">Einige Quellen sind nicht verfügbar</span> : null}
