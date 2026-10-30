@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json(
-        { success: true, destination: '/home' },
+        { success: true, destination: '/os' },
         { headers: { 'cache-control': 'no-store' } },
     );
     // Append every cookie independently. In production the response crosses the

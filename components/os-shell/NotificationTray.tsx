@@ -16,8 +16,13 @@ export function dayNotices(day: LiveDay): { id: string; title: string; body?: st
   return out;
 }
 
+/** Ungelesene Hinweise + dringende Tages-Hinweise (echte Daten), auch für die LED im Dock. */
+export function useOsUnread(): number {
+  return useOsNotifications((s) => s.items.filter((i) => !i.read).length) + dayNotices(useWorld().day).filter((n) => n.urgent).length;
+}
+
 export function NotificationButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const unread = useOsNotifications((s) => s.items.filter((i) => !i.read).length) + dayNotices(useWorld().day).filter((n) => n.urgent).length;
+  const unread = useOsUnread();
   return (
     <Button variant="ghost" iconOnly aria-expanded={open} aria-label={unread ? `Hinweise (${unread} neu)` : 'Hinweise'} icon={<span className="relative"><Bell size={16} />{unread ? <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full" style={{ background: 'var(--os-accent)' }} /> : null}</span>} onClick={onToggle} />
   );
@@ -40,7 +45,7 @@ export function NotificationTray({ onClose }: { onClose: () => void }) {
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown); };
   }, [onClose]);
   return (
-    <div ref={ref} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))]" data-testid="notification-tray">
+    <div ref={ref} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))] max-h-[calc(100vh-80px)] overflow-y-auto shadow-2xl" data-testid="notification-tray">
     <Surface variant="strong" padding={4} aria-label="Hinweise" style={{ background: 'var(--os-canvas-raised)' }}>
       <Stack direction="row" justify="space-between" align="center">
         <Text variant="eyebrow">Hinweise</Text>

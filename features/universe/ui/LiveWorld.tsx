@@ -1,8 +1,10 @@
 'use client';
+import { useMoraPresence } from '@/lib/mora/moraPresence';
+/** @deprecated Abgelöst durch UnifiedUniverse (ein kanonisches Universe). Nicht mehr aktiv im Shell-Routing eingebunden. */
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
+import { Button, Loading, StateView, Text } from '@/components/os-kit';
 import { FOCUS_RESERVE, HORIZON_RESERVE, WorldUniverse } from '@/components/world/WorldUniverse';
 import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
@@ -18,7 +20,7 @@ import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
-import { planetCounts, type Star } from '@/lib/lea/finder';
+import { COLLECT_PLANET, planetCounts, type Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useMoraLive } from '../data/useMoraLive';
@@ -27,6 +29,9 @@ import { planetForTarget } from '@/lib/mora/liveRun';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
+import { MORGENROT } from '@/lib/demo/morgenrot/online';
+import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
 
 /** Universe mit Sitzung: die Abteilungen des Betriebs aus CORE, nichts aus Vorlagen. */
 export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora: (text: string) => void; onAddDepartment?: () => void; navigate?: (target: string) => void }) {
@@ -53,10 +58,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const dayActions = useDayActions(world.companyId);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
-  // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
-  const placeIds = useMemo(() => new Set(world.planets.map((p) => p.id)), [world.planets]);
-  const finderPlanets = useMemo(() => world.finder.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
-  const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
+  // Nur Orte (echte Abteilungen, nie „Ohne Abteilung“) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
+  const placeIds = useMemo(() => new Set(world.planets.filter((p) => p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim())).map((p) => p.id)), [world.planets]);
+  const finderPlanets = useMemo(() => world.finder.filter((p) => p.kind === 'department' && placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
+  const worldPlanets = useMemo(() => world.planets.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.planets, placeIds]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const reduced = !!useReducedMotion();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -80,22 +85,44 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   useEffect(() => { if (seenMail.current !== undefined && mailId && mailId !== seenMail.current) fly('mail'); seenMail.current = mailId; }, [mailId, fly]);
   // Live MÔRA: real run steps from CORE (owner SSE). Desktop only; phone is the companion.
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const sessionTenant = useSessionStore((s) => s.user?.tenant_id);
+  const sessionIsDemo = useSessionStore((s) => Boolean((s.user as { is_demo?: boolean } | null)?.is_demo || s.user?.role === 'demo'));
+  const sessionCompanyName = useSessionStore((s) => (s.user as { active_company_name?: string | null } | null)?.active_company_name ?? '');
+  const activeCompanyIsDemo = useActiveCompanyIsDemo();
+  const isDemo = Boolean(
+    sessionIsDemo ||
+    activeCompanyIsDemo ||
+    sessionTenant === MORGENROT.tenantId ||
+    sessionTenant === 'tenant-demo' ||
+    world.companyId === MORGENROT.companyId ||
+    hasFiktivMarker(sessionCompanyName) ||
+    world.tasks.some((t) => hasFiktivMarker(t.title)) ||
+    world.events.some((e) => hasFiktivMarker(e.title)) ||
+    (horizon.mail?.status === 'ok' && horizon.mail.items.some((m) => hasFiktivMarker(m.subject)))
+  );
   const live = useMoraLive(!phone && hasSession && companyView);
   const livePlanet = live.active || live.done ? planetForTarget(live.target, worldPlanets) : null;
+  const guideTo = livePlanet ?? flyTo;
+  // MÔRA führt: die eine Dock-MÔRA fliegt zum Planeten, über den sie gerade spricht.
+  useEffect(() => {
+    if (guideTo) useMoraPresence.getState().goTo(`[data-planet-id="${guideTo}"]`, 'guide');
+    else useMoraPresence.getState().goHome();
+  }, [guideTo]);
+
   const liveCaption = live.active || live.done ? live.label : null;
   const spiritMood: SpiritMood = live.active ? (livePlanet ? 'flying' : 'thinking') : live.done ? 'done' : outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
     : flyTo ? 'flying' : outcome === 'done' ? 'done' : listening ? 'listening' : night ? 'night' : 'idle';
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
   const close = useCallback(() => { setOpenId(null); setInitial(null); setZoomTo(null); }, []);
-  /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
+  /** Kamerafahrt: erst kurz auf den Planeten zoomen, dann den Finder öffnen. */
   const openPlanet = useCallback((id: string) => {
     clearTimeout(zoomTimer.current);
     if (id === world.tasksPlanetId) { setSelectedId(null); setTaskSheet(true); return; }
     setActiveId(id); setSelectedId(id);
     if (reduced) { setOpenId(id); return; }
     setZoomTo(id);
-    zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 520);
+    zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 180);
   }, [reduced, world.tasksPlanetId]);
   useEffect(() => () => clearTimeout(zoomTimer.current), []);
   /** Erster Klick wählt (Fokus-Panel), zweiter Klick auf denselben Planeten zoomt hinein. */
@@ -211,7 +238,6 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-loading">
         <div className="flex flex-col items-center gap-4">
-          <MoraStone size={phone ? 88 : 120} thinking />
           <Text variant="meta">MÔRA liest deine Abteilungen …</Text>
           <div className="w-48"><Loading lines={2} label="Abteilungen werden geladen" /></div>
         </div>
@@ -225,7 +251,6 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     return (
       <div className="wd-universe grid place-items-center" data-testid="world-empty">
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-          <MoraStone size={phone ? 88 : 120} halo />
           <Text tone="default">Noch keine Abteilungen angelegt. Jede Abteilung wird hier ein Planet.</Text>
           {onAddDepartment ? <Button size="sm" onClick={onAddDepartment}>Abteilung hinzufügen</Button> : null}
         </div>
@@ -238,6 +263,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       <WorldUniverse
         planets={worldPlanets}
         phone={phone}
+        moraInScene={false}
+        isDemo={isDemo}
         sources={companyView && !phone ? horizon.sources : null}
         onOpenSource={() => openLegacyApp('settings')}
         hidden={Boolean(open)}
@@ -255,10 +282,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         counts={counts}
         comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
       {calendarNotice ? <p role="status">{calendarNotice}</p> : null}
-      {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
+      {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={stripFiktiv(world.day.sentence) || world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
       {selected ? (
         <PlanetFocus
           planet={selected}
@@ -279,18 +305,18 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <p className="fv-eyebrow">Dein Horizont</p>
           <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-calendar">
             <span>Kalender</span>
-            <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
+            <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${stripFiktiv(world.day.running.title) || world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${stripFiktiv(world.day.next.title) || world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
             <span>Aufgaben</span>
-            <b>{world.day.taskLine}</b>
+            <b>{stripFiktiv(world.day.taskLine) || world.day.taskLine}</b>
           </button>
           <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />
           {companyView ? (
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
-                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? (stripFiktiv(horizon.mail.items[0].subject) || horizon.mail.items[0].subject) : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>
               {/* Feed-Zeile entfernt (24.10.2026): allgemeine RSS-Einträge waren Rauschen; der Feed bleibt unter Post. */}
             </>
@@ -300,9 +326,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           {finderPlanets.map((p) => {
             const n = planetCounts(p).items;
             const max = Math.max(1, ...finderPlanets.map((q) => planetCounts(q).items));
+            const pName = stripFiktiv(p.name) || p.name;
             return (
               <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => setSelectedId(p.id)} data-testid={`horizon-bar-${p.id}`}>
-                <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b title={`${n} Einträge in ${p.moons.length} Ordnern`}>{n}</b>
+                <span>{pName}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b title={`${n} Einträge in ${p.moons.length} Ordnern`}>{n}</b>
               </button>
             );
           })}
@@ -317,6 +344,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         <FinderVerse
           key={open.id}
           planet={open}
+          isDemo={isDemo}
           initialMoonId={initial?.moonId}
           initialStarId={initial?.starId}
           phone={phone}

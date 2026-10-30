@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
 import { CoreError } from '@/lib/api/http';
-import { useDemoStore } from '@/lib/demo/demoStore';
-import { useNavStore } from '@/lib/store/navStore';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 
 export type TodayLoadError = 'unauthorized' | 'forbidden' | 'unavailable' | null;
@@ -20,6 +19,7 @@ export function invalidateToday(): void {
 
 type ScopedTodayOptions = {
   backgroundRefresh?: boolean;
+  enabled?: boolean;
 };
 
 type SnapshotState = {
@@ -27,10 +27,8 @@ type SnapshotState = {
   data: TodaySnapshot;
 };
 
-export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions = {}) {
-  const navCompanyId = useNavStore((state) => state.activeCompanyId);
-  const demoCompanyId = useDemoStore((state) => state.demoCompanyId);
-  const activeCompanyId = demoCompanyId || navCompanyId;
+export function useScopedToday({ backgroundRefresh = false, enabled = true }: ScopedTodayOptions = {}) {
+  const activeCompanyId = useScopeCompanyId();
   const user = useSessionStore((state) => state.user);
   const sessionGeneration = useSessionStore((state) => state.sessionGeneration);
   const userId = user?.id ?? null;
@@ -82,6 +80,11 @@ export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions
   }, [activeCompanyId, contextKey, userId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return undefined;
+    }
     requestGenerationRef.current += 1;
     setSnapshotState(null);
     setLoadError(null);
@@ -114,7 +117,7 @@ export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions
         document.removeEventListener('visibilitychange', refreshIfUseful);
       }
     };
-  }, [backgroundRefresh, refresh]);
+  }, [backgroundRefresh, enabled, refresh]);
 
   return {
     snapshot,

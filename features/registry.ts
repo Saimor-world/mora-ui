@@ -1,4 +1,5 @@
 import type { FeatureManifest, FeatureVisibilityContext } from './types';
+import { homeManifest } from './home/manifest';
 import { todayManifest } from './today/manifest';
 import { moraManifest } from './mora/manifest';
 import { financeManifest } from './finance/manifest';
@@ -13,6 +14,7 @@ import { universeManifest } from './universe/manifest';
  * adding a folder with a manifest and listing it here; the shell never changes.
  */
 export const FEATURE_MANIFESTS: FeatureManifest[] = [
+  homeManifest,
   todayManifest,
   moraManifest,
   financeManifest,
@@ -23,11 +25,12 @@ export const FEATURE_MANIFESTS: FeatureManifest[] = [
   labsManifest,
 ];
 
-export const DEFAULT_FEATURE_ID = 'today';
+export const DEFAULT_FEATURE_ID = 'home';
 
 export function isFeatureVisible(manifest: FeatureManifest, ctx: FeatureVisibilityContext): boolean {
   if (manifest.flag && !ctx.flags.has(manifest.flag)) return false;
   if (!ctx.preview && manifest.permissions && (!ctx.role || !manifest.permissions.includes(ctx.role))) return false;
+  // Internal-only features (Finance, Labs) are never shown to customer users
   if (!ctx.preview && manifest.internalOnly && ctx.internal !== true) return false;
   return true;
 }
@@ -50,7 +53,12 @@ export function getFeature(id: string, manifests: FeatureManifest[] = FEATURE_MA
   return manifests.find((m) => m.id === id);
 }
 
-export function resolveFeatureId(candidate: string | null | undefined, ctx: FeatureVisibilityContext): string {
-  const match = candidate ? getFeature(candidate) : undefined;
-  return match && isFeatureVisible(match, ctx) ? match.id : DEFAULT_FEATURE_ID;
+export function resolveFeatureId(
+  candidate: string | null | undefined,
+  ctx: FeatureVisibilityContext,
+  manifests: FeatureManifest[] = FEATURE_MANIFESTS
+): string {
+  const visible = new Set(visibleFeatures(ctx, manifests).map((m) => m.id));
+  if (candidate && visible.has(candidate)) return candidate;
+  return DEFAULT_FEATURE_ID;
 }

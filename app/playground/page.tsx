@@ -40,7 +40,7 @@ export default function PlaygroundPage() {
 
             const destination = nodeId
                 ? `/home?open_node=${encodeURIComponent(nodeId)}`
-                : '/home';
+                : '/os';
             router.push(destination);
             return;
         }
@@ -84,7 +84,7 @@ export default function PlaygroundPage() {
                 toast.success('Website-HQ erfolgreich geladen. Myzel-Struktur wird gestartet...');
 
                 // Redirect to home
-                router.push('/home');
+                router.push('/os');
             } else {
                 throw new Error('No session token returned');
             }

@@ -78,6 +78,7 @@ export interface UserProfile {
     tenant_id: string;
     scope?: string;
     demo_mode?: boolean;
+    is_demo?: boolean;
     // Session operational contract (Core e2fa9d1+)
     operational_state?: OperationalState;
     setup_required?: boolean;

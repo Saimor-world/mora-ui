@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface PulseRingProps {
-    pulse: 'low' | 'medium' | 'high';
+    pulse: 'low' | 'medium' | 'high' | 'unknown';
 }
 
 export const PulseRing: React.FC<PulseRingProps> = ({ pulse }) => {
@@ -13,6 +13,7 @@ export const PulseRing: React.FC<PulseRingProps> = ({ pulse }) => {
         high: { scale: [1, 1.25, 1], opacity: [0.3, 0.6, 0.3], duration: 1.5 }
     };
 
+    if (pulse === 'unknown') return null;
     const activeConfig = config[pulse] || config.low;
 
     return (

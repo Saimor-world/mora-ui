@@ -45,6 +45,12 @@ export type TodayCalendarEvent = {
   time?: string;
   duration?: number;
   location?: string;
+  status?: string;
+  absence?: boolean | string | null;
+  is_absent?: boolean | null;
+  is_open?: boolean | null;
+  open?: boolean | null;
+  phase?: string;
 };
 
 export type TodayTask = {
@@ -53,6 +59,10 @@ export type TodayTask = {
   status: 'backlog' | 'in_progress' | 'done';
   priority?: 'low' | 'medium' | 'high' | null;
   due_date?: string | null;
+  department_id?: string | null;
+  folder_id?: string | null;
+  completed_at?: string | null;
+  is_overdue?: boolean | null;
 };
 
 export type TodayIncident = {

@@ -3,18 +3,18 @@ import { coreGet } from '@/lib/api/coreClient';
 
 // Types
 export interface PulseData {
-    pulse: 'low' | 'medium' | 'high';
+    pulse: 'unknown' | 'low' | 'medium' | 'high';
     hotspots: Array<{ node_id: string; score: number }>;
     insights: Array<{ type: string; summary: string }>;
     orbStateSuggestion?: string;
 }
 
 // Fallback Data
-const MOCK_PULSE_LOW: PulseData = {
-    pulse: 'low',
+const UNKNOWN_PULSE: PulseData = {
+    pulse: 'unknown',
     hotspots: [],
     insights: [],
-    orbStateSuggestion: 'idle'
+    orbStateSuggestion: 'unknown'
 };
 
 // Polling configuration with backoff
@@ -24,7 +24,7 @@ const MAX_INTERVAL = 180000; // 3 minutes maximum when backend is down
 const BACKOFF_MULTIPLIER = 1.5;
 
 export const useIntelligencePulse = () => {
-    const [data, setData] = useState<PulseData>(MOCK_PULSE_LOW);
+    const [data, setData] = useState<PulseData>(UNKNOWN_PULSE);
     const [lastFetch, setLastFetch] = useState<number>(0);
     const intervalRef = useRef<number>(MIN_INTERVAL);
     const failureCountRef = useRef<number>(0);
@@ -47,7 +47,7 @@ export const useIntelligencePulse = () => {
             // Skip fetch entirely if no token - prevents browser 401 errors
             if (!hasToken) {
                 if (isMounted) {
-                    setData(MOCK_PULSE_LOW);
+                    setData(UNKNOWN_PULSE);
                     setLastFetch(Date.now());
                 }
                 // Still schedule next check but with longer interval
@@ -60,14 +60,14 @@ export const useIntelligencePulse = () => {
                 const jsonData = await coreGet('/v3/mindloop/synthesis', { isOptional: true });
 
                 if (isMounted) {
-                    if (jsonData) {
+                    if (jsonData && ['low', 'medium', 'high'].includes(jsonData.pulse) && Array.isArray(jsonData.hotspots) && Array.isArray(jsonData.insights)) {
                         setData(jsonData);
                         // Success - reset backoff
                         failureCountRef.current = 0;
                         intervalRef.current = MIN_INTERVAL;
                     } else {
                         // Backend returned null (offline/error) - apply backoff
-                        setData(MOCK_PULSE_LOW);
+                        setData(UNKNOWN_PULSE);
                         failureCountRef.current++;
                         intervalRef.current = Math.min(
                             intervalRef.current * BACKOFF_MULTIPLIER,
@@ -78,7 +78,7 @@ export const useIntelligencePulse = () => {
                 }
             } catch (error) {
                 if (isMounted) {
-                    setData(MOCK_PULSE_LOW);
+                    setData(UNKNOWN_PULSE);
                     setLastFetch(Date.now());
                     // Apply backoff on error
                     failureCountRef.current++;

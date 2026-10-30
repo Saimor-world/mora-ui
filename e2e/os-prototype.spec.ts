@@ -225,7 +225,7 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('shortcuts-overlay')).toHaveCount(0);
     await page.keyboard.press('m');
-    await expect(page.getByTestId('mora-console-panel')).toBeVisible();
+    await expect(page.getByTestId('mora-stage')).toBeVisible();
   });
 
   test('V1.4: Lagebild → planet focus → glass detail → Wissen', async ({ page }) => {

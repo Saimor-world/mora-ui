@@ -10,7 +10,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
 import { buildLiveDay, calendarMeta } from './live';
 import { isCalendarDept, planetTraits, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
-import { buildFinder, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
+import { buildFinder, COLLECT_PLANET, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
 import { matteTone, toneSlots } from '@/lib/universe/matteTone';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
@@ -121,16 +121,16 @@ export function useWorld() {
   // Live: was Lea heute tut („ist da“, abgeschlossen), steht sofort am Termin-Planeten.
   const places = useMemo(() => {
     const depts = tree.data?.departments ?? [];
-    // Grammatik des Universe: Planeten sind nur Abteilungen (Orte). Aufgaben ohne Ordner und Termine sind
-    // keine Orte – sie stehen im Horizont und bei MÔRA. Eine reine Termin-Abteilung ohne Ordner ist eine Quelle.
-    return finder.filter((p) => p.kind !== 'tasks' && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
+    // Grammatik des Universe: Planeten sind nur echte Abteilungen (Orte). „Ohne Abteilung“ (collect),
+    // Aufgaben ohne Ordner und reine Termin-Abteilungen ohne Ordner sind keine Planeten für Kunden.
+    return finder.filter((p) => p.kind === 'department' && p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim()) && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
   }, [finder, tree.data]);
   // Ton je Ort fest aus dem Namen, Nachbarn auf der Bahn entzerrt – derselbe Ton im Universe und im Finder.
   const toneById = useMemo(() => {
     const slots = toneSlots(places.map((p) => p.name));
     return new Map(places.map((p, i) => [p.id, matteTone(p.name, {}, slots[i])]));
   }, [places]);
-  const finderToned: FPlanet[] = useMemo(() => finder.map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
+  const finderToned: FPlanet[] = useMemo(() => finder.filter((p) => p.kind !== 'collect' && p.id !== COLLECT_PLANET && !/^ohne[\s-]*abteilung$/i.test(p.name.trim())).map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
   const planets: WorldPlanet[] = useMemo(() => {
     const live = calendarMeta(day, 'Europe/Berlin');
     const depts = tree.data?.departments ?? [];

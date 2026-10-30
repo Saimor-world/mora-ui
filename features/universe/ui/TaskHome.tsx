@@ -6,6 +6,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { shortDate, type WorldTask } from '@/lib/lea/world';
 import type { useDayActions } from '@/lib/lea/useDayActions';
+import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 
 export type TaskHomePlanet = { id: string; name: string; moons: { id: string; name: string }[] };
 type Actions = ReturnType<typeof useDayActions>;
@@ -14,11 +15,17 @@ function PlacePicker({ planets, value, onChange, label, testid }: { planets: Tas
   return (
     <select className="th-place" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} data-testid={testid}>
       <option value="">Bereich wählen</option>
-      {planets.filter((p) => p.moons.length).map((p) => (
-        <optgroup key={p.id} label={p.name}>
-          {p.moons.map((m) => <option key={m.id} value={m.id}>{p.name} › {m.name}</option>)}
-        </optgroup>
-      ))}
+      {planets.filter((p) => p.moons.length).map((p) => {
+        const pName = stripFiktiv(p.name) || p.name;
+        return (
+          <optgroup key={p.id} label={pName}>
+            {p.moons.map((m) => {
+              const mName = stripFiktiv(m.name) || m.name;
+              return <option key={m.id} value={m.id}>{pName} › {mName}</option>;
+            })}
+          </optgroup>
+        );
+      })}
     </select>
   );
 }
@@ -42,7 +49,14 @@ export function TaskHomeSheet({ tasks, planets, actions, readOnly, onClose, phon
   const [note, setNote] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState<string | null>(null);
   React.useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
-  const nameOf = (fid: string) => { for (const p of planets) for (const m of p.moons) if (m.id === fid) return `${p.name} › ${m.name}`; return 'Bereich'; };
+  const nameOf = (fid: string) => {
+    for (const p of planets) {
+      for (const m of p.moons) {
+        if (m.id === fid) return `${stripFiktiv(p.name) || p.name} › ${stripFiktiv(m.name) || m.name}`;
+      }
+    }
+    return 'Bereich';
+  };
   if (typeof document === 'undefined') return null;
   // Portal: das Blatt liegt über Dock und Kopfzeile, nicht im Stapel des Universums.
   return createPortal(
@@ -61,15 +75,18 @@ export function TaskHomeSheet({ tasks, planets, actions, readOnly, onClose, phon
         ) : null}
         {note ? <p className="th-note" role="status">{note}</p> : null}
         <ul className="th-list">
-          {loose.length ? loose.map((t) => (
-            <li key={t.id} className="th-item">
-              <span className="th-title">{t.title}{t.due_date ? <small> · {shortDate(t.due_date.slice(0, 10))}</small> : null}</span>
-              {!readOnly ? (
-                <PlacePicker planets={planets} value="" label={`Bereich für ${t.title}`} testid={`taskhome-assign-${t.id}`}
-                  onChange={async (fid) => { if (!fid) return; setBusy(t.id); const ok = await actions.assignFolder(t, fid); setBusy(null); setNote(ok ? `„${t.title}“ liegt jetzt in ${nameOf(fid)}` : 'Zuordnen hat nicht geklappt – CORE nimmt den Bereich noch nicht an.'); }} />
-              ) : null}
-            </li>
-          )) : <li className="th-empty">Alle Aufgaben sind zugeordnet.</li>}
+          {loose.length ? loose.map((t) => {
+            const cleanTitle = stripFiktiv(t.title) || t.title;
+            return (
+              <li key={t.id} className="th-item">
+                <span className="th-title">{cleanTitle}{t.due_date ? <small> · {shortDate(t.due_date.slice(0, 10))}</small> : null}</span>
+                {!readOnly ? (
+                  <PlacePicker planets={planets} value="" label={`Bereich für ${cleanTitle}`} testid={`taskhome-assign-${t.id}`}
+                    onChange={async (fid) => { if (!fid) return; setBusy(t.id); const ok = await actions.assignFolder(t, fid); setBusy(null); setNote(ok ? `„${cleanTitle}“ liegt jetzt in ${nameOf(fid)}` : 'Zuordnen hat nicht geklappt – CORE nimmt den Bereich noch nicht an.'); }} />
+                ) : null}
+              </li>
+            );
+          }) : <li className="th-empty">Alle Aufgaben sind zugeordnet.</li>}
         </ul>
       </section>
     </div>,

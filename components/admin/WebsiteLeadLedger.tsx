@@ -148,7 +148,7 @@ export const WebsiteLeadLedger: React.FC = () => {
             }
 
             toast.success('Kunden-Vorschau geöffnet. Der Rückweg zu Saimôr HQ ist gesichert.', { id: toastId });
-            window.location.href = '/home';
+            window.location.href = '/os';
         } catch (err: any) {
             console.error('[handleEnterPreview] Failed:', err);
             toast.error(`Fehler beim Betreten: ${err.message || err}`, { id: toastId });

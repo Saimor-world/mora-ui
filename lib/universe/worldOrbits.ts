@@ -313,7 +313,7 @@ export function layoutOverlap(layout: OrbitLayout, opts: { width: number; height
   const mora = moraRect(layout);
   let total = 0;
   feet.forEach((f, i) => {
-    f.forEach((r) => { total += overlap(r, mora, pad) + outside(r, opts.width, opts.height); });
+    f.forEach((r) => { total += (mora ? overlap(r, mora, pad) : 0) + outside(r, opts.width, opts.height); });
     for (let j = i + 1; j < feet.length; j++) for (const a of f) for (const b of feet[j]) total += overlap(a, b, pad);
   });
   return total;
@@ -327,7 +327,7 @@ function resolveCollisions(layout: OrbitLayout, opts: { width: number; height: n
     const f = planetFootprint(layout, slot, opts.labels?.[i], opts.phone);
     let c = 0;
     for (const r of f) {
-      c += overlap(r, mora) + outside(r, opts.width, opts.height);
+      c += (mora ? overlap(r, mora) : 0) + outside(r, opts.width, opts.height);
       for (let j = 0; j < n; j++) if (j !== i) for (const b of feet[j]) c += overlap(r, b);
     }
     return c;
