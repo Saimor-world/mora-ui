@@ -59,3 +59,16 @@ html[data-dock='c'] { --os-dock-space:240px; }
 .bridge__beam { top:-135px; background:radial-gradient(ellipse at 50% 78%,rgba(99,224,160,.30),transparent 42%),linear-gradient(90deg,transparent 25%,rgba(116,212,161,.04) 50%,transparent 75%); }
 @media (min-width:1101px) { .bridge__station-wing--left .bridge__dock-item:nth-child(-n+2),.bridge__station-wing--right .bridge__dock-item:nth-last-child(-n+2) { transform:translateY(-9px); } .bridge__station-wing--left .bridge__dock-item:nth-child(n+5),.bridge__station-wing--right .bridge__dock-item:nth-child(-n+2) { transform:translateY(7px); } }
 @media (max-width:699px) { .bridge__station-wing {padding:4px 2px}.bridge__station-wing::before {border-radius:20px;transform:none}.bridge__dock-status {display:none} }
+.bridge__legacy { position:absolute; right:14px; bottom:4px; color:rgba(210,225,210,.7); font:9px system-ui; text-decoration:none; }
+.bridge__legacy:focus-visible { outline:2px solid #b5efc6; }
+/* Ein durchgehender Cockpitrumpf trägt die Navigation, ohne separate Kapseln. */
+.bridge__body { background:transparent; border:0; border-radius:0; box-shadow:none; }
+.bridge__hull { position:absolute; z-index:0; left:0; right:0; top:-58px; width:100%; height:calc(100% + 58px); overflow:visible; pointer-events:none; filter:drop-shadow(0 -10px 24px rgba(0,0,0,.28)); }
+.bridge__rim,.bridge__station-wing::before,.bridge__station-wing::after { display:none; }
+.bridge__station-wing { z-index:2; top:74px; bottom:25px; padding:8px 12px; }
+.bridge__dock-icon { border-color:transparent; background:transparent; box-shadow:none; color:#d6ebdc; }
+.bridge__dock-item:hover .bridge__dock-icon,.bridge__dock-item:focus-visible .bridge__dock-icon { border-color:rgba(191,227,183,.45); background:rgba(72,143,107,.18); }
+.bridge__dock-item[data-active='true'] .bridge__dock-icon { background:radial-gradient(circle,rgba(80,169,116,.25),rgba(6,37,27,.1)); border-color:rgba(171,223,175,.52); }
+.bridge__dock-item { color:#e0eee2; font-size:11px; }
+.bridge__heart { top:-73px; }
+@media(max-width:699px){ .bridge__hull {top:-20px;height:calc(100% + 20px)}.bridge__station-wing {top:56px;padding:4px 2px} }

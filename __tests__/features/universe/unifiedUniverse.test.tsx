@@ -205,9 +205,9 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     expect(stone.querySelector('.os-dock__stage')).toBeNull();
     expect(screen.getByTestId('dock-ask-open')).toBeInTheDocument();
     expect(screen.getByText('Frag MÔRA …')).toBeInTheDocument();
-    expect(screen.getByTestId('dock-active-count')).toBeInTheDocument();
-    expect(screen.getByTestId('dock-attention')).toBeInTheDocument();
-    expect(screen.getByTestId('dock-last-active')).toBeInTheDocument();
+    expect(screen.queryByTestId('dock-active-count')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('dock-attention')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('dock-last-active')).not.toBeInTheDocument();
     unmount();
   });
 });
