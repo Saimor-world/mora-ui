@@ -142,8 +142,8 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     return <button type="button" key={control.id} className="bridge__app" data-feature={control.id} data-tip={tip} data-active={control.id===activeId?'true':undefined} onClick={control.action} aria-label={tip} aria-current={control.id===activeId?'page':undefined}><span className="bridge__app-icon"><Icon size={22} strokeWidth={1.5} /></span>{typeof count==='number' && count>0 ? <b className="bridge__badge" data-alert={control.id==='notifications' && incidents>0 ? 'true' : undefined}>{count>99?'99+':count}</b> : null}</button>;
   };
   const holoRef=useRef<HTMLElement|null>(null);
-  const [holoPos,setHoloPos]=useState<{left:number;top:number}|null>(null);
-  const showHolo=Boolean(active&&card&&!phone&&(activeId==='home'||activeId==='universe'));
+  const [,setHoloPos]=useState<{left:number;top:number}|null>(null);
+  const showHolo=Boolean(active&&card?.urgent&&!phone);
   useEffect(()=>{
     if(!showHolo)return;
     /** Kollisionsfrei: nächstgelegene freie Stelle über dem Wasser, Planeten und Tageslabels bleiben frei. */
@@ -187,16 +187,16 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
       </section>
       <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__comps" aria-label="Lage">
-        <div className="bridge__col" data-col="outer" data-side="left">{complication(gauges[0])}{widget(widgets[0])}</div>
-        <div className="bridge__col" data-col="inner" data-side="left">{complication(gauges[1])}{widget(widgets[1])}</div>
+        <div className="bridge__col" data-col="outer" data-side="left">{complication(gauges[0])}</div>
+        <div className="bridge__col" data-col="inner" data-side="left">{complication(gauges[1])}</div>
         <div className="bridge__comps-gap" aria-hidden="true" />
-        <div className="bridge__col" data-col="inner" data-side="right">{complication(gauges[2])}{widget(widgets[2])}</div>
-        <div className="bridge__col" data-col="outer" data-side="right">{complication(gauges[3])}{widget(widgets[3])}</div>
+        <div className="bridge__col" data-col="inner" data-side="right">{complication(gauges[3]?.tone!=='calm'?gauges[3]:gauges[2])}</div>
+        <div className="bridge__col" data-col="outer" data-side="right">{widget(widgets[0])}</div>
       </section>
       <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
         <span className="bridge__beam" aria-hidden="true" />
         <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
-        {showHolo && card ? <article ref={holoRef} className="bridge__holo" style={holoPos?{left:holoPos.left,top:holoPos.top,right:"auto"}:undefined} data-placed={holoPos?"true":undefined} data-kind={card.kind} data-urgent={card.urgent?'true':undefined} aria-live="polite">
+        {showHolo && card ? <article ref={holoRef} className="bridge__holo" data-field="mora" data-kind={card.kind} data-urgent={card.urgent?'true':undefined} aria-live="polite">
           <small>{card.eyebrow}</small><strong>{card.title}</strong><p>{card.detail}</p>
           <div className="bridge__holo-actions"><button type="button" data-primary="true" onClick={()=>openTarget(card.primary.target)}>{card.primary.label}</button>{card.urgent?<button type="button" onClick={later}>Später</button>:null}</div>
         </article> : null}

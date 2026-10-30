@@ -320,3 +320,34 @@ html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-s
   .ck-universe-unified .ck-sys:not(.ck-sys--strip) { height: calc(100dvh - 424px) !important; min-height: 300px; translate: 0 24px !important; }
   .ck-sys.ck-sys--strip .ck-planet b { font-size: 8.5px !important; line-height: 1.1 !important; max-width: 48px !important; width: 48px !important; white-space: normal !important; text-align: center; overflow-wrap: normal; letter-spacing: -.01em; }
 }
+
+/* calm B · Home: großer Gruß über dem Himmel, drei ruhige Heute-Zeilen; Dock dezent, MÔRA-Feld */
+@media (min-width:700px) {
+  html[data-dock='c'] .ck[data-view='home'] .ck-panel { left:50% !important; right:auto !important; top:120px !important; transform:translateX(-50%); width:min(640px,80vw) !important; background:none !important; border:0 !important; box-shadow:none !important; backdrop-filter:none !important; text-align:center; overflow:visible !important; max-height:none !important; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-panel .ck-h1 { font-size:60px; font-weight:200; letter-spacing:-.02em; text-shadow:0 2px 30px rgba(0,0,0,.35); }
+  html[data-dock='c'] .ck[data-view='home'] .ck-panel .ck-sub { font-size:16px; opacity:.65; margin-top:10px; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-panel :is(.widget-board,.mr-depts,.ck-calm span) { display:none !important; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-list { margin:44px auto 0; width:440px; text-align:left; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item { border:0 !important; background:none !important; padding:6px 0 !important; min-height:0; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item:nth-child(n+4) { display:none; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item__t { font-size:17px; font-weight:400; opacity:.85; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item__d { display:none; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item .ck-btn { opacity:0; transition:opacity .2s; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-item:hover .ck-btn, html[data-dock='c'] .ck[data-view='home'] .ck-item .ck-btn:focus-visible { opacity:1; }
+  /* Dock dezenter: vier Felder, eine Zeile, keine Zweitzeilen */
+  .bridge__comps { top:auto; bottom:96px; grid-template-columns:1fr 1fr 420px 1fr 1fr; align-items:end; }
+  .bridge__col[data-col] { margin-top:0; }
+  .bridge__comps .bridge__col .bridge__comp, .bridge__comps .bridge__col[data-col='outer'] .bridge__comp { height:48px; background:rgba(12,36,48,.28); border-color:rgba(220,245,250,.08); box-shadow:none; }
+  .bridge__comps .bridge__comp-text em { display:none !important; }
+  .bridge__comps .bridge__comp-text small { display:inline; } .bridge__comps .bridge__comp-text { flex-direction:row; align-items:baseline; gap:8px; }
+  .bridge__comps [data-col] .bridge__comp-text strong { -webkit-line-clamp:1 !important; font-size:14px; }
+  .bridge__comps [data-col='outer'] .bridge__ring { transform:none; }
+  .bridge__pill { opacity:.78; transition:opacity .25s; } .bridge__pill:hover, .bridge__pill:focus-within { opacity:1; }
+  .bridge__mark:nth-child(n+4) { display:none; } .bridge__mark-label { opacity:.6; }
+  .bridge__voice { display:none; }
+  /* MÔRA-Feld: eine Karte, direkt über MÔRA, mit Siri-artiger Aura */
+  .bridge__holo[data-field='mora'] { left:50% !important; right:auto !important; top:auto !important; bottom:calc(100% + 10px); transform:translateX(-50%); width:340px; }
+  .bridge__holo[data-field='mora']::before { content:''; position:absolute; inset:-14px; z-index:-1; border-radius:28px; background:conic-gradient(from 0deg, rgba(120,220,255,.35), rgba(200,140,255,.3), rgba(255,190,120,.3), rgba(120,220,255,.35)); filter:blur(18px); animation:mora-aura 6s linear infinite; }
+}
+@keyframes mora-aura { to { filter:blur(18px) hue-rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .bridge__holo[data-field='mora']::before { animation:none; } }
