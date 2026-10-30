@@ -1,4 +1,5 @@
 'use client';
+import { PixelMoraMark } from './PixelMora';
 import React, { useEffect, useRef } from 'react';
 
 /** MÔRA-Status, nur aus echten Ereignissen abgeleitet (siehe LiveWorld). */
@@ -165,18 +166,7 @@ export function MoraSpirit({ size, mood, target, phone = false, reduced = false 
 }
 
 /** Kleines MÔRA-Lichtzeichen (Dock): Elfenbein/Gold mit Jade-Punkt, passend zur Figur. */
+/** Small MÔRA mark (top bar, Heute, older surfaces): the current pixel MÔRA, never the retired drawn sign. */
 export function MoraMark({ size = 28, active = false }: { size?: number; active?: boolean }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden data-testid="mora-mark" className="os-mora-mark" data-active={active ? 'true' : 'false'}>
-      <defs>
-        <radialGradient id="mm-halo"><stop offset="0" stopColor="#F7E9CB" stopOpacity={active ? 0.5 : 0.3} /><stop offset="1" stopColor="#E9B967" stopOpacity="0" /></radialGradient>
-        <radialGradient id="mm-body" cx=".42" cy=".38"><stop offset="0" stopColor="#FFFBF2" /><stop offset=".65" stopColor="#F7E9CB" /><stop offset="1" stopColor="#E9B967" /></radialGradient>
-      </defs>
-      <circle cx="16" cy="16" r="15" fill="url(#mm-halo)" />
-      <path d="M13.2 9.6c.8-2.6 3.6-3.2 4.2-6 1.6 2.2.8 4.6-.6 6z" fill="#F7E9CB" opacity=".75" />
-      <path d="M16 9.4c3.4 0 5.6 2.4 5.6 5.4 0 2.4-1.5 3.9-3 5.1-1 .8-1.4 2.6-2.4 4.8-1-2.2-1.4-4-2.4-4.8-1.5-1.2-3.4-2.7-3.4-5.1 0-3 2.2-5.4 5.6-5.4z" fill="url(#mm-body)" />
-      <ellipse cx="16" cy="18" rx="10.5" ry="3" fill="none" stroke="#E9B967" strokeOpacity=".55" strokeWidth=".7" transform="rotate(-16 16 18)" />
-      <circle cx="25.4" cy="15.2" r="2.3" fill="#367E66" stroke="#E9B967" strokeWidth=".5" />
-    </svg>
-  );
+  return <PixelMoraMark size={size} active={active} />;
 }

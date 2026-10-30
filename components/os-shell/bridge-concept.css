@@ -352,3 +352,10 @@ html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-s
 @keyframes mora-aura { to { filter:blur(18px) hue-rotate(360deg); } }
 @media (prefers-reduced-motion:reduce) { .bridge__holo[data-field='mora']::before { animation:none; } }
 .bridge__comps .bridge__comp-text small { flex-shrink:0; } .bridge__comps .bridge__comp-text strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block !important; }
+
+/* MÔRA-Chat über der Brücke: das Panel liegt über dem Dock und endet über seiner Kante,
+   damit Eingabefeld und Senden nie verdeckt sind (auch nicht von MÔRA, die über die Kante ragt). */
+html[data-dock='c'] .os-root .os-shell .os-shell__mora { z-index: 65; }
+@media (min-width: 900px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { height: calc(100dvh - 264px); align-self: start; } }
+@media (min-width: 700px) and (max-width: 899px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { bottom: 264px; height: calc(82dvh - 264px); } }
+@media (max-width: 699px) { html[data-dock='c'] .os-root .os-shell .os-shell__mora { bottom: 272px; height: calc(86dvh - 272px); } }
