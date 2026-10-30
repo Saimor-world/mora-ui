@@ -1,41 +1,31 @@
-/* Brücke: drei räumliche Zonen, verbunden durch MÔRAs Licht. */
-html[data-dock='c'] { --os-dock-space: 280px; }
+/* Die Brücke ist eine einzige, geschwungene Glasfläche. */
+html[data-dock='c'] { --os-dock-space:240px; }
 .os-dock.bridge { z-index:50; padding:0 !important; }
-.bridge__body { position:relative; display:grid; grid-template-columns:minmax(300px,1fr) minmax(230px,.65fr) minmax(280px,.8fr); gap:clamp(16px,3vw,48px); align-items:end; width:100%; min-height:270px; padding:34px clamp(24px,4vw,64px) 24px; color:#eef7ed; border-top:1px solid rgba(166,221,189,.5); border-radius:48% 48% 0 0 / 26px 26px 0 0; background:linear-gradient(180deg,rgba(14,50,43,.97),rgba(4,22,21,.99) 55%,#04100f); box-shadow:0 -15px 45px rgba(0,0,0,.4), inset 0 1px 0 rgba(222,246,221,.2); }
-.bridge__edge { position:absolute; top:8px; left:5%; right:5%; height:1px; background:linear-gradient(90deg,transparent,rgba(160,223,191,.35),transparent); pointer-events:none; }
-.bridge__stations { display:flex; flex-wrap:wrap; align-content:flex-start; gap:14px 24px; min-width:0; max-height:190px; overflow:auto; scrollbar-width:thin; }
-.bridge__station { min-width:130px; flex:1 1 160px; }
-.bridge__station-title,.bridge-concept__heading span { display:block; color:#c7b98e; font:600 10px/1.3 system-ui; letter-spacing:.16em; text-transform:uppercase; }
-.bridge__station-buttons,.bridge__utilities { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
-.bridge__station button,.bridge__utilities button { min-height:35px; padding:7px 10px; border:1px solid rgba(167,211,187,.25); border-radius:9px; background:linear-gradient(160deg,rgba(44,87,74,.6),rgba(10,32,29,.9)); color:#e7f5eb; font:500 12px/1.2 system-ui; cursor:pointer; }
-.bridge__station button[aria-current='page'] { border-color:#92d9b0; color:#b6f1ca; box-shadow:inset 0 0 14px rgba(89,191,136,.13); }
-.bridge__utilities { flex-basis:100%; margin:0; }
-.bridge__heart { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; min-width:0; z-index:2; }
-.bridge__beam { position:absolute; inset:-30px -40px 8px; pointer-events:none; background:radial-gradient(ellipse at 50% 40%,rgba(89,201,147,.25),transparent 52%); }
-.bridge__mora { position:relative; z-index:1; display:grid; place-items:center; width:152px; height:152px; overflow:visible; padding:0; border:1px solid rgba(165,230,187,.55); border-radius:50%; background:radial-gradient(circle at 50% 42%,rgba(43,116,81,.8),rgba(4,23,20,.96) 72%); box-shadow:0 0 0 8px rgba(102,201,147,.07),0 0 40px rgba(78,198,137,.24),inset 0 0 30px rgba(75,176,119,.17); cursor:pointer; }
+.bridge__body { position:relative; width:100%; height:235px; color:#edf7ee; background:radial-gradient(ellipse at 50% 0,rgba(39,105,79,.38),transparent 40%),linear-gradient(180deg,rgba(15,47,41,.98),rgba(4,18,18,.99)); border-top:1px solid rgba(213,188,127,.55); border-radius:50% 50% 0 0 / 40px 40px 0 0; box-shadow:0 -15px 60px rgba(0,0,0,.52),inset 0 2px 0 rgba(181,224,190,.12),inset 0 25px 50px rgba(38,112,77,.12); }
+.bridge__rim { position:absolute; inset:11px 3% auto; height:45px; border-top:1px solid rgba(228,197,125,.28); border-radius:50% 50% 0 0 / 35px 35px 0 0; pointer-events:none; }
+.bridge__station-wing { position:absolute; top:75px; bottom:30px; display:flex; gap:14px; align-items:stretch; width:33%; }
+.bridge__station-wing--left { left:3%; }.bridge__station-wing--right { right:3%; }
+.bridge__instrument { position:relative; flex:1 1 0; min-width:0; padding:18px 12px; overflow:hidden; border:0; border-left:1px solid rgba(201,190,140,.26); border-right:1px solid rgba(141,205,165,.12); border-radius:12px 12px 5px 5px; background:linear-gradient(145deg,rgba(53,105,84,.5),rgba(4,29,26,.65) 62%,rgba(2,15,15,.8)); box-shadow:inset 0 1px rgba(216,234,204,.14),0 8px 20px rgba(0,0,0,.18); color:#edf7ed; text-align:left; cursor:pointer; }
+.bridge__instrument small { display:block; color:#c7b782; font:600 10px/1.2 system-ui; letter-spacing:.15em; text-transform:uppercase; }
+.bridge__instrument strong { display:block; margin-top:12px; color:#ecf7ef; font:500 14px/1.3 system-ui; overflow-wrap:anywhere; }
+.bridge__instrument:hover,.bridge__instrument:focus-visible { background:linear-gradient(145deg,rgba(75,148,112,.62),rgba(7,42,35,.9)); outline:1px solid rgba(157,231,178,.6); }
+.bridge__more { border-radius:50%; flex:0 0 100px; height:100px; align-self:center; text-align:center; border:1px solid rgba(207,193,139,.36); }
+.bridge__heart { position:absolute; z-index:5; left:50%; top:-112px; width:280px; height:300px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+.bridge__beam { position:absolute; left:-50px; right:-50px; top:-100px; bottom:12px; pointer-events:none; background:radial-gradient(ellipse at 50% 80%,rgba(94,213,145,.28),transparent 45%); }
+.bridge__mora { position:relative; z-index:1; display:grid; place-items:center; width:200px; height:200px; padding:0; border:0; background:none; overflow:visible; cursor:pointer; filter:drop-shadow(0 0 16px rgba(91,222,147,.55)); }
 .bridge__mora .px-mora { image-rendering:pixelated; }
-.bridge__heart[data-mood='thinking'] .bridge__mora,.bridge__heart[data-mood='speaking'] .bridge__mora,.bridge__heart[data-attention='true'] .bridge__mora { border-color:#f0cb7a; box-shadow:0 0 0 8px rgba(228,184,96,.1),0 0 45px rgba(236,188,92,.35); }
-.bridge__mora-name { position:relative; margin-top:8px; color:#edf6eb; font:700 11px/1.2 system-ui; letter-spacing:.18em; }
-.bridge__mora-name span { color:#a8d6ba; font-size:9px; margin-left:4px; }
-.bridge__ask { position:relative; width:min(100%,290px); margin-top:9px; }
-.bridge__ask > button { width:100%; min-height:42px; padding:0 14px; border:1px solid rgba(158,207,178,.38); border-radius:12px; background:rgba(2,18,17,.8); color:#d7e8dd; text-align:left; cursor:pointer; }
-.bridge-concept { align-self:stretch; min-width:0; padding:16px 18px; border:1px solid rgba(157,211,181,.2); border-radius:18px; background:linear-gradient(155deg,rgba(27,66,55,.7),rgba(3,23,21,.8)); box-shadow:inset 0 1px rgba(229,248,223,.08); }
-.bridge-concept__heading strong { display:block; margin-top:5px; color:#f1f7ed; font:500 18px/1.2 Georgia,serif; }
-.bridge-concept__lights { display:flex; flex-direction:column; gap:4px; max-height:145px; margin-top:9px; overflow-y:auto; scrollbar-width:thin; }
-.bridge-concept__light { display:flex; flex-direction:column; gap:3px; flex:none; padding:7px 3px; border:0; border-top:1px solid rgba(188,224,199,.13); background:transparent; color:#eaf5ed; text-align:left; cursor:pointer; }
-.bridge-concept__light small { color:#a8cdb6; font-size:10px; }.bridge-concept__light b { font:500 12px/1.3 system-ui; overflow-wrap:anywhere; }
-.bridge-concept__state { color:#c5d9cb; font-size:12px; }
-.bridge button:focus-visible { outline:2px solid #b6f1ca; outline-offset:2px; }
-@media (max-width:1100px) and (min-width:700px) { .bridge__body { grid-template-columns:minmax(230px,1fr) 200px minmax(220px,.8fr); gap:16px; padding-inline:22px; }.bridge__mora { width:130px; height:130px; } }
-@media (max-width:699px) {
-  html[data-dock='c'] { --os-dock-space: 300px; }
-  .bridge__body { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; min-height:288px; padding:16px 12px calc(12px + env(safe-area-inset-bottom,0px)); border-radius:26px 26px 0 0; }
-  .bridge__heart { grid-column:1; grid-row:1; align-self:start; }
-  .bridge__mora { width:104px; height:104px; }.bridge__beam { inset:-10px -15px 0; }
-  .bridge__mora-name { margin-top:3px; }.bridge__ask { margin-top:5px; }.bridge__ask > button { min-height:38px; }
-  .bridge-concept { grid-column:2; grid-row:1; min-height:164px; max-height:164px; padding:11px; }.bridge-concept__heading strong { font-size:16px; }.bridge-concept__lights { max-height:100px; }
-  .bridge__stations { grid-column:1 / -1; grid-row:2; display:flex; flex-wrap:nowrap; overflow-x:auto; max-height:none; padding:4px 0 2px; gap:15px; }
-  .bridge__station { flex:0 0 165px; }.bridge__station-buttons { flex-wrap:wrap; }.bridge__station button,.bridge__utilities button { font-size:11px; min-height:32px; }
-  .bridge__utilities { flex:0 0 145px; align-content:start; }
-}
-@media (prefers-reduced-motion:reduce) { .bridge__mora *, .bridge__mora { animation:none !important; transition:none !important; } }
+.bridge__heart[data-mood='thinking'] .bridge__mora,.bridge__heart[data-mood='speaking'] .bridge__mora,.bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 22px rgba(240,192,91,.78)); }
+.bridge__ask { position:relative; z-index:2; width:100%; margin-top:-3px; border-bottom:1px solid rgba(207,192,139,.55); background:linear-gradient(90deg,transparent,rgba(5,31,27,.85),transparent); }
+.bridge__ask > button { width:100%; min-height:42px; border:0; background:none; color:#dcefe2; text-align:center; font-size:14px; cursor:pointer; }
+.bridge__day { position:absolute; z-index:3; top:-32px; left:4%; right:4%; height:65px; pointer-events:none; }
+.bridge__day svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }.bridge__day path { fill:none; stroke:rgba(166,232,191,.55); stroke-width:1; vector-effect:non-scaling-stroke; }
+.bridge__day-start,.bridge__day-end { position:absolute; top:68%; color:#a6c7b3; font:10px system-ui; }.bridge__day-start {left:0}.bridge__day-end {right:0}
+.bridge__day-dot,.bridge__now { position:absolute; width:9px; height:9px; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:#f1cb79; box-shadow:0 0 10px #d8ad57; pointer-events:auto; cursor:pointer; }
+.bridge__now { width:11px; height:11px; background:#96f4ba; box-shadow:0 0 15px #85eeb0; pointer-events:none; }
+.bridge__tooltip { display:none; position:absolute; left:50%; bottom:16px; transform:translateX(-50%); width:max-content; max-width:220px; padding:8px 10px; border:1px solid rgba(188,221,192,.35); border-radius:8px; background:#071e1a; color:#f3faf3; font:12px/1.3 system-ui; white-space:normal; }
+.bridge__day-dot:hover .bridge__tooltip,.bridge__day-dot:focus-visible .bridge__tooltip { display:block; }.bridge button:focus-visible { outline:2px solid #b5efc6; outline-offset:2px; }
+/* Nur die verfügbare Bühne verkleinern; Planetendarstellung bleibt unangetastet. */
+@media (min-width:700px) { html[data-dock='c'] .os-root .ck-scene--system .ck-sys:not(.ck-sys--strip) { bottom:245px !important; } html[data-dock='c'] .os-root .ck-style-toggle { top:18px !important; bottom:auto !important; left:auto !important; right:160px !important; } }
+@media (max-width:1000px) { .bridge__station-wing { width:32%; gap:5px; }.bridge__instrument { padding:12px 6px; }.bridge__instrument strong {font-size:12px}.bridge__more {flex-basis:75px;height:75px}.bridge__heart {transform:translateX(-50%) scale(.85);transform-origin:bottom center;} }
+@media (max-width:699px) { html[data-dock='c'] {--os-dock-space:190px}.bridge__body {height:190px}.bridge__station-wing {top:60px;bottom:15px;width:34%;gap:2px}.bridge__instrument {padding:6px 3px}.bridge__instrument small {font-size:7px;letter-spacing:0}.bridge__instrument strong {font-size:9px;line-height:1.2}.bridge__more {flex-basis:40px;height:40px}.bridge__heart {top:-115px;transform:translateX(-50%) scale(.65)}.bridge__day {top:-25px}.bridge__day-dot{width:7px;height:7px} }
+@media (prefers-reduced-motion:reduce) { .bridge__mora *, .bridge__mora {animation:none !important;transition:none !important;} }
