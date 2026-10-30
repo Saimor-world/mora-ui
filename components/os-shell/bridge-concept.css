@@ -29,3 +29,7 @@ html[data-dock='c'] { --os-dock-space:240px; }
 @media (max-width:1000px) { .bridge__station-wing { width:32%; gap:5px; }.bridge__instrument { padding:12px 6px; }.bridge__instrument strong {font-size:12px}.bridge__more {flex-basis:75px;height:75px}.bridge__heart {transform:translateX(-50%) scale(.85);transform-origin:bottom center;} }
 @media (max-width:699px) { html[data-dock='c'] {--os-dock-space:190px}.bridge__body {height:190px}.bridge__station-wing {top:60px;bottom:15px;width:34%;gap:2px}.bridge__instrument {padding:6px 3px}.bridge__instrument small {font-size:7px;letter-spacing:0}.bridge__instrument strong {font-size:9px;line-height:1.2}.bridge__more {flex-basis:40px;height:40px}.bridge__heart {top:-115px;transform:translateX(-50%) scale(.65)}.bridge__day {top:-25px}.bridge__day-dot{width:7px;height:7px} }
 @media (prefers-reduced-motion:reduce) { .bridge__mora *, .bridge__mora {animation:none !important;transition:none !important;} }
+/* Tiefes, transparentes Glas lässt das Universe in der Brücke weiterleben. */
+.bridge__body { background:radial-gradient(ellipse at 50% 0,rgba(46,125,90,.24),transparent 43%),linear-gradient(180deg,rgba(13,50,43,.82),rgba(4,25,23,.91)); }
+.bridge__instrument:not(.bridge__more) { border-radius:32px 15px 8px 8px / 18px 14px 8px 8px; background:linear-gradient(145deg,rgba(62,128,99,.36),rgba(5,34,30,.46) 62%,rgba(2,18,17,.65)); }
+.bridge__heart { top:-73px; }
