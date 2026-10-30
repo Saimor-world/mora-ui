@@ -1,112 +1,110 @@
-/* Brücke: flache Glaskonsole – Tagesbogen, MÔRA, vier ruhige Stationen, ein echtes App-Dock. */
-html[data-dock='c'] { --os-dock-space:236px; --bridge-h:236px; }
+/* Die Brücke ist eine einzige, geschwungene Glasfläche. */
+html[data-dock='c'] { --os-dock-space:240px; }
 .os-dock.bridge { z-index:50; padding:0 !important; }
-.bridge__body { position:relative; width:100%; height:var(--bridge-h); color:#edf7ee; font-family:system-ui,sans-serif; }
-.bridge__glass { position:absolute; inset:58px 0 0; pointer-events:none; border-top:1px solid rgba(213,188,127,.28); border-radius:50% 50% 0 0 / 14px 14px 0 0;
-  background:radial-gradient(ellipse 40% 90% at 50% 0,rgba(70,160,118,.16),transparent 70%),linear-gradient(180deg,rgba(8,36,33,.55),rgba(3,20,19,.9) 55%,rgba(2,14,14,.97));
-  box-shadow:0 -12px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(200,236,210,.10); backdrop-filter:blur(10px); }
-.bridge button:focus-visible { outline:2px solid #b5efc6; outline-offset:2px; }
-
-/* Tagesbogen 6–22 Uhr */
-.bridge__day { position:absolute; z-index:3; left:12%; right:12%; top:14px; height:44px; }
-.bridge__day svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
-.bridge__day path { fill:none; stroke:rgba(166,232,191,.22); stroke-width:1; vector-effect:non-scaling-stroke; }
-.bridge__day path.bridge__day-past { stroke:rgba(166,232,191,.6); }
-.bridge__day-edge { position:absolute; bottom:-14px; color:#8fb39f; font-size:10px; letter-spacing:.04em; }
-.bridge__day-edge--start { left:0; } .bridge__day-edge--end { right:0; }
-.bridge__mark { position:absolute; width:8px; height:8px; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:#d9efe0; box-shadow:0 0 8px rgba(160,240,190,.6); cursor:pointer; min-width:0 !important; min-height:0 !important; max-height:8px; }
+.bridge__body { position:relative; width:100%; height:235px; color:#edf7ee; background:radial-gradient(ellipse at 50% 0,rgba(39,105,79,.38),transparent 40%),linear-gradient(180deg,rgba(15,47,41,.98),rgba(4,18,18,.99)); border-top:1px solid rgba(213,188,127,.55); border-radius:50% 50% 0 0 / 40px 40px 0 0; box-shadow:0 -15px 60px rgba(0,0,0,.52),inset 0 2px 0 rgba(181,224,190,.12),inset 0 25px 50px rgba(38,112,77,.12); }
+.bridge__rim { position:absolute; inset:11px 3% auto; height:45px; border-top:1px solid rgba(228,197,125,.28); border-radius:50% 50% 0 0 / 35px 35px 0 0; pointer-events:none; }
+.bridge__station-wing { position:absolute; top:75px; bottom:30px; display:flex; gap:14px; align-items:stretch; width:33%; }
+.bridge__station-wing--left { left:3%; }.bridge__station-wing--right { right:3%; }
+.bridge__instrument { position:relative; flex:1 1 0; min-width:0; padding:18px 12px; overflow:hidden; border:0; border-left:1px solid rgba(201,190,140,.26); border-right:1px solid rgba(141,205,165,.12); border-radius:12px 12px 5px 5px; background:linear-gradient(145deg,rgba(53,105,84,.5),rgba(4,29,26,.65) 62%,rgba(2,15,15,.8)); box-shadow:inset 0 1px rgba(216,234,204,.14),0 8px 20px rgba(0,0,0,.18); color:#edf7ed; text-align:left; cursor:pointer; }
+.bridge__instrument small { display:block; color:#c7b782; font:600 10px/1.2 system-ui; letter-spacing:.15em; text-transform:uppercase; }
+.bridge__instrument strong { display:block; margin-top:12px; color:#ecf7ef; font:500 14px/1.3 system-ui; overflow-wrap:anywhere; }
+.bridge__instrument:hover,.bridge__instrument:focus-visible { background:linear-gradient(145deg,rgba(75,148,112,.62),rgba(7,42,35,.9)); outline:1px solid rgba(157,231,178,.6); }
+.bridge__more { border-radius:50%; flex:0 0 100px; height:100px; align-self:center; text-align:center; border:1px solid rgba(207,193,139,.36); }
+.bridge__heart { position:absolute; z-index:5; left:50%; top:-112px; width:280px; height:300px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+.bridge__beam { position:absolute; left:-50px; right:-50px; top:-100px; bottom:12px; pointer-events:none; background:radial-gradient(ellipse at 50% 80%,rgba(94,213,145,.28),transparent 45%); }
+.bridge__mora { position:relative; z-index:1; display:grid; place-items:center; width:200px; height:200px; padding:0; border:0; background:none; overflow:visible; cursor:pointer; filter:drop-shadow(0 0 16px rgba(91,222,147,.55)); }
+.bridge__mora .px-mora { image-rendering:pixelated; }
+.bridge__heart[data-mood='thinking'] .bridge__mora,.bridge__heart[data-mood='speaking'] .bridge__mora,.bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 22px rgba(240,192,91,.78)); }
+.bridge__ask { position:relative; z-index:2; width:100%; margin-top:-3px; border-bottom:1px solid rgba(207,192,139,.55); background:linear-gradient(90deg,transparent,rgba(5,31,27,.85),transparent); }
+.bridge__ask > button { width:100%; min-height:42px; border:0; background:none; color:#dcefe2; text-align:center; font-size:14px; cursor:pointer; }
+.bridge__day { position:absolute; z-index:3; top:-32px; left:4%; right:4%; height:65px; pointer-events:none; }
+.bridge__day svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }.bridge__day path { fill:none; stroke:rgba(166,232,191,.55); stroke-width:1; vector-effect:non-scaling-stroke; }
+.bridge__day-start,.bridge__day-end { position:absolute; top:68%; color:#a6c7b3; font:10px system-ui; }.bridge__day-start {left:0}.bridge__day-end {right:0}
+.bridge__day-dot,.bridge__now { position:absolute; width:9px; height:9px; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:#f1cb79; box-shadow:0 0 10px #d8ad57; pointer-events:auto; cursor:pointer; }
+.bridge__now { width:11px; height:11px; background:#96f4ba; box-shadow:0 0 15px #85eeb0; pointer-events:none; }
+.bridge__tooltip { display:none; position:absolute; left:50%; bottom:16px; transform:translateX(-50%); width:max-content; max-width:220px; padding:8px 10px; border:1px solid rgba(188,221,192,.35); border-radius:8px; background:#071e1a; color:#f3faf3; font:12px/1.3 system-ui; white-space:normal; }
+.bridge__day-dot:hover .bridge__tooltip,.bridge__day-dot:focus-visible .bridge__tooltip { display:block; }.bridge button:focus-visible { outline:2px solid #b5efc6; outline-offset:2px; }
+/* Nur die verfügbare Bühne verkleinern; Planetendarstellung bleibt unangetastet. */
+@media (min-width:700px) { html[data-dock='c'] .os-root .ck-scene--system .ck-sys:not(.ck-sys--strip) { bottom:245px !important; } html[data-dock='c'] .os-root .ck-style-toggle { top:18px !important; bottom:auto !important; left:auto !important; right:160px !important; } }
+@media (max-width:1000px) { .bridge__station-wing { width:32%; gap:5px; }.bridge__instrument { padding:12px 6px; }.bridge__instrument strong {font-size:12px}.bridge__more {flex-basis:75px;height:75px}.bridge__heart {transform:translateX(-50%) scale(.85);transform-origin:bottom center;} }
+@media (max-width:699px) { html[data-dock='c'] {--os-dock-space:190px}.bridge__body {height:190px}.bridge__station-wing {top:60px;bottom:15px;width:34%;gap:2px}.bridge__instrument {padding:6px 3px}.bridge__instrument small {font-size:7px;letter-spacing:0}.bridge__instrument strong {font-size:9px;line-height:1.2}.bridge__more {flex-basis:40px;height:40px}.bridge__heart {top:-115px;transform:translateX(-50%) scale(.65)}.bridge__day {top:-25px}.bridge__day-dot{width:7px;height:7px} }
+@media (prefers-reduced-motion:reduce) { .bridge__mora *, .bridge__mora {animation:none !important;transition:none !important;} }
+/* Tiefes, transparentes Glas lässt das Universe in der Brücke weiterleben. */
+.bridge__body { background:radial-gradient(ellipse at 50% 0,rgba(46,125,90,.24),transparent 43%),linear-gradient(180deg,rgba(13,50,43,.82),rgba(4,25,23,.91)); }
+.bridge__instrument:not(.bridge__more) { border-radius:32px 15px 8px 8px / 18px 14px 8px 8px; background:linear-gradient(145deg,rgba(62,128,99,.36),rgba(5,34,30,.46) 62%,rgba(2,18,17,.65)); }
+.bridge__heart { top:-73px; }
+/* Dauerhaftes Dock: die Instrumente sind zugleich Navigation. */
+.bridge__station-wing { top:83px; bottom:24px; width:38%; gap:5px; align-items:center; justify-content:space-evenly; }
+.bridge__station-wing--left { left:2%; }.bridge__station-wing--right { right:2%; }
+.bridge__dock-item { display:flex; flex:1 1 0; min-width:0; max-width:90px; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:6px 2px; border:0; background:transparent; color:#d9e9df; font:500 10px/1.2 system-ui; cursor:pointer; text-align:center; overflow-wrap:anywhere; }
+.bridge__dock-icon { position:relative; display:grid; place-items:center; width:46px; height:46px; border:1px solid rgba(197,206,157,.28); border-radius:16px 13px 17px 12px; background:linear-gradient(145deg,rgba(86,157,119,.34),rgba(5,31,27,.72)); box-shadow:inset 0 1px rgba(230,246,215,.16),0 6px 15px rgba(0,0,0,.23); transition:transform .18s,opacity .18s; }
+.bridge__dock-item:hover .bridge__dock-icon,.bridge__dock-item:focus-visible .bridge__dock-icon { transform:translateY(-3px); border-color:rgba(177,234,194,.8); }
+.bridge__dock-item[data-active='true'] .bridge__dock-icon { border-color:#94dfad; color:#baf4ce; box-shadow:0 0 18px rgba(90,209,137,.22),inset 0 1px rgba(230,246,215,.22); }
+.bridge__badge { position:absolute; top:-5px; right:-5px; min-width:17px; padding:2px 4px; border-radius:10px; background:#e5bd70; color:#102a20; font:700 9px/1.2 system-ui; }
+.bridge__source-state { position:absolute; top:-17px; right:5%; color:#bfd3c3; font:10px system-ui; }
+@media (max-width:1100px) and (min-width:700px) { .bridge__station-wing {width:39%; gap:2px}.bridge__dock-item {font-size:9px}.bridge__dock-icon {width:39px;height:39px} }
+@media (max-width:699px) { .bridge__station-wing {width:42%;top:60px;bottom:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:end;gap:4px}.bridge__dock-item {font-size:9px;gap:2px;padding:2px 0}.bridge__dock-icon {width:34px;height:34px;border-radius:11px}.bridge__dock-icon svg {width:16px;height:16px}.bridge__source-state {top:-15px;font-size:8px} }
+@media (prefers-reduced-motion:reduce) { .bridge__dock-icon {transition:none} }
+/* Zwei geschwungene Glasflügel tragen das Dock in den Raum hinein. */
+.bridge__body { border-radius:48% 48% 0 0 / 46px 46px 0 0; background:radial-gradient(ellipse 35% 85% at 50% 12%,rgba(54,135,103,.20),transparent 75%),radial-gradient(ellipse 60% 100% at 8% 20%,rgba(22,85,79,.35),transparent 75%),radial-gradient(ellipse 60% 100% at 92% 20%,rgba(33,73,91,.28),transparent 75%),linear-gradient(180deg,rgba(6,31,29,.75),rgba(2,16,18,.93)); box-shadow:0 -18px 50px rgba(1,12,14,.35),inset 0 1px rgba(216,237,195,.18); }
+.bridge__station-wing { isolation:isolate; top:63px; bottom:22px; padding:16px 8px 8px; }
+.bridge__station-wing::before,.bridge__station-wing::after { content:''; position:absolute; z-index:-1; pointer-events:none; }
+.bridge__station-wing::before { inset:0; border:1px solid rgba(194,217,164,.22); background:linear-gradient(155deg,rgba(99,184,148,.19),rgba(8,42,38,.30) 40%,rgba(2,18,20,.62)),radial-gradient(ellipse at 50% 0,rgba(172,222,189,.13),transparent 65%); box-shadow:inset 0 1px 0 rgba(238,244,211,.17),0 14px 30px rgba(0,0,0,.25); }
+.bridge__station-wing--left::before { border-radius:65% 14% 34% 16% / 48% 24% 42% 20%; transform:skewY(3deg); }
+.bridge__station-wing--right::before { border-radius:14% 65% 16% 34% / 24% 48% 20% 42%; transform:skewY(-3deg); }
+.bridge__station-wing::after { top:12px; left:7%; right:7%; height:25px; border-top:1px solid rgba(226,202,139,.32); border-radius:50%; }
+.bridge__dock-item { position:relative; z-index:1; gap:5px; color:#d7e9db; text-shadow:0 1px 4px #071b19; }
+.bridge__dock-icon { border-radius:50%; background:radial-gradient(circle at 35% 25%,rgba(144,218,178,.31),rgba(17,65,51,.45) 54%,rgba(3,25,22,.74)); border-color:rgba(186,220,173,.35); box-shadow:inset 0 1px 2px rgba(241,250,222,.28),inset 0 -7px 14px rgba(0,0,0,.25),0 6px 16px rgba(1,18,16,.3); }
+.bridge__dock-status { color:#add7bc; font:9px/1.1 system-ui; }
+.bridge__beam { top:-135px; background:radial-gradient(ellipse at 50% 78%,rgba(99,224,160,.30),transparent 42%),linear-gradient(90deg,transparent 25%,rgba(116,212,161,.04) 50%,transparent 75%); }
+@media (min-width:1101px) { .bridge__station-wing--left .bridge__dock-item:nth-child(-n+2),.bridge__station-wing--right .bridge__dock-item:nth-last-child(-n+2) { transform:translateY(-9px); } .bridge__station-wing--left .bridge__dock-item:nth-child(n+5),.bridge__station-wing--right .bridge__dock-item:nth-child(-n+2) { transform:translateY(7px); } }
+@media (max-width:699px) { .bridge__station-wing {padding:4px 2px}.bridge__station-wing::before {border-radius:20px;transform:none}.bridge__dock-status {display:none} }
+.bridge__legacy { position:absolute; right:14px; bottom:4px; color:rgba(210,225,210,.7); font:9px system-ui; text-decoration:none; }
+.bridge__legacy:focus-visible { outline:2px solid #b5efc6; }
+/* Ein durchgehender Cockpitrumpf trägt die Navigation, ohne separate Kapseln. */
+.bridge__body { background:transparent; border:0; border-radius:0; box-shadow:none; }
+.bridge__hull { position:absolute; z-index:0; left:0; right:0; top:-58px; width:100%; height:calc(100% + 58px); overflow:visible; pointer-events:none; filter:drop-shadow(0 -10px 24px rgba(0,0,0,.28)); }
+.bridge__rim,.bridge__station-wing::before,.bridge__station-wing::after { display:none; }
+.bridge__station-wing { z-index:2; top:74px; bottom:25px; padding:8px 12px; }
+.bridge__dock-icon { border-color:transparent; background:transparent; box-shadow:none; color:#d6ebdc; }
+.bridge__dock-item:hover .bridge__dock-icon,.bridge__dock-item:focus-visible .bridge__dock-icon { border-color:rgba(191,227,183,.45); background:rgba(72,143,107,.18); }
+.bridge__dock-item[data-active='true'] .bridge__dock-icon { background:radial-gradient(circle,rgba(80,169,116,.25),rgba(6,37,27,.1)); border-color:rgba(171,223,175,.52); }
+.bridge__dock-item { color:#e0eee2; font-size:11px; }
+.bridge__heart { top:-73px; }
+@media(max-width:699px){ .bridge__hull {top:-20px;height:calc(100% + 20px)}.bridge__station-wing {top:56px;padding:4px 2px} }
+.bridge__dock-item > span:not(.bridge__dock-icon) { white-space:nowrap; font-size:9px; }
+/* ===== Grok v2: Tagesleiste auf der Rumpfkante, MÔRAs Satz, Mac-Dock-Reihe ===== */
+.bridge__day { top:-58px; left:0; right:0; height:calc(100% + 58px); z-index:4; }
+.bridge__day-edge { position:absolute; transform:translate(-50%,6px); color:#8fb39f; font:10px system-ui; white-space:nowrap; pointer-events:none; }
+.bridge__mark { position:absolute; width:8px; height:8px; min-width:0 !important; min-height:0 !important; max-height:8px; padding:0; border:0; border-radius:50%; transform:translate(-50%,-50%); background:#e3f4e8; box-shadow:0 0 8px rgba(160,240,190,.7); cursor:pointer; pointer-events:auto; }
 .bridge__mark[data-past='true'] { background:#6f9682; box-shadow:none; }
 .bridge__mark[data-problem='true'] { background:#f0b95a; box-shadow:0 0 10px #e3a640; }
-.bridge__mark-label { position:absolute; left:50%; bottom:11px; transform:translateX(-50%); white-space:nowrap; color:#cfe4d6; font-size:11px; line-height:1; text-shadow:0 1px 6px #021210; }
-.bridge__mark-label b { font-weight:600; color:#f1f8f2; margin-right:2px; }
-.bridge__mark[data-low='true'] .bridge__mark-label { bottom:auto; top:11px; }
+.bridge__mark-label { position:absolute; left:50%; bottom:10px; transform:translateX(-50%); white-space:nowrap; color:#d3e6d9; font:11px/1 system-ui; text-shadow:0 1px 6px #021210; }
+.bridge__mark[data-row='1'] .bridge__mark-label { bottom:24px; }
+.bridge__mark-label b { color:#f3faf4; font-weight:600; }
 .bridge__mark[data-past='true'] .bridge__mark-label { opacity:.6; }
 .bridge__mark[data-problem='true'] .bridge__mark-label, .bridge__mark[data-problem='true'] .bridge__mark-label b { color:#f3c574; opacity:1; }
-.bridge__now { position:absolute; width:2px; height:20px; transform:translate(-50%,-50%); background:#9ff5c0; box-shadow:0 0 10px #7fecaa; border-radius:2px; }
-.bridge__now span { position:absolute; top:-14px; left:6px; color:#9ff5c0; font-size:10px; font-weight:600; letter-spacing:.08em; }
-
-/* MÔRA schwebt mit ihrem Satz */
-.bridge__heart { position:absolute; z-index:4; left:50%; top:84px; width:340px; transform:translateX(-50%); display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; align-items:center; column-gap:8px; row-gap:6px; justify-items:center; }
-.bridge__heart > .bridge__voice, .bridge__heart > .bridge__ask { grid-column:2; }
-.bridge__heart > .bridge__mora { grid-row:1 / span 2; }
-html:has(.wd-universe:not([data-hidden='true']) .wd-mora) .bridge__heart { grid-template-columns:1fr; }
-html:has(.wd-universe:not([data-hidden='true']) .wd-mora) .bridge__heart > * { grid-column:1; }
-.bridge__mora { display:grid; place-items:center; width:56px; height:56px; padding:0; border:0; background:none; cursor:pointer; filter:drop-shadow(0 0 10px rgba(110,225,160,.32)); animation:bridge-float 5.5s ease-in-out infinite; }
-.bridge__mora .px-mora { image-rendering:pixelated; }
-.bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 12px rgba(240,192,91,.45)); }
-@keyframes bridge-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
-.bridge__voice { margin:0; max-width:340px; text-align:center; color:#e8f3ea; font:italic 13px/1.3 Georgia,serif; text-shadow:0 1px 8px #021210; }
-.bridge__ask { width:210px; }
-.bridge__ask > button { width:100%; min-height:28px; border:1px solid rgba(190,220,190,.22); border-radius:14px; background:rgba(8,40,34,.55); color:#bcd8c6; font-size:12px; cursor:pointer; }
-.bridge__ask > button:hover { border-color:rgba(190,235,200,.5); color:#e6f4ea; }
-
-/* Vier Stationen */
-.bridge__stations { position:absolute; z-index:3; top:78px; display:flex; gap:12px; }
-.bridge__stations--left { right:calc(50% + 190px); } .bridge__stations--right { left:calc(50% + 190px); }
-.bridge__station { width:150px; height:76px; padding:9px 13px; text-align:left; border:1px solid rgba(190,220,190,.14); border-radius:14px; background:linear-gradient(160deg,rgba(60,120,95,.18),rgba(4,26,24,.35)); color:inherit; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; }
-.bridge__station:hover { border-color:rgba(190,235,200,.4); background:linear-gradient(160deg,rgba(70,140,110,.26),rgba(4,26,24,.45)); }
-.bridge__station small { color:#b8ab7c; font-size:9.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; }
-.bridge__station-row { display:flex; align-items:center; gap:8px; }
-.bridge__station strong { font-size:22px; font-weight:500; line-height:1; color:#f0f8f1; white-space:nowrap; }
-.bridge__station em { font-style:normal; font-size:11px; color:#a9c8b5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bridge__station[data-tone='amber'] em, .bridge__station[data-tone='amber'] strong { color:#f3c574; }
-.bridge__station[data-tone='amber'] { border-color:rgba(240,185,90,.3); }
-.bridge__station[data-tone='red'] em { color:#f39a8a; }
-.bridge__ring { width:22px; height:22px; transform:rotate(-90deg); }
-.bridge__ring circle { fill:none; stroke:rgba(166,232,191,.18); stroke-width:3.5; }
-.bridge__ring .bridge__ring-fill { stroke:#8fe6b0; stroke-linecap:round; }
-.bridge__pulse { width:40px; height:14px; }
-.bridge__pulse path { fill:none; stroke:#8fe6b0; stroke-width:1.4; stroke-dasharray:90; animation:bridge-pulse 3s linear infinite; }
-@keyframes bridge-pulse { from { stroke-dashoffset:90; } to { stroke-dashoffset:-90; } }
-
-/* App-Dock: eine Reihe, gleiche Höhe, Lupe beim Hover, Punkt unter der aktiven App */
-.bridge__dock { position:absolute; z-index:5; left:50%; bottom:10px; transform:translateX(-50%); display:flex; align-items:flex-end; gap:6px; height:62px; padding:7px 12px 9px; border:1px solid rgba(200,230,205,.16); border-radius:20px; background:rgba(10,40,36,.5); backdrop-filter:blur(16px); box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(220,245,225,.08); }
-.bridge__app { position:relative; display:flex; flex-direction:column; align-items:center; padding:0; border:0; background:none; color:#dcebe0; cursor:pointer; }
-.bridge__app-icon { position:relative; display:grid; place-items:center; width:44px; height:44px; border-radius:12px; border:1px solid rgba(200,235,210,.18); background:linear-gradient(160deg,rgba(120,190,155,.28),rgba(14,56,46,.55) 60%,rgba(5,30,26,.75)); box-shadow:inset 0 1px 0 rgba(240,255,240,.18),0 4px 10px rgba(0,0,0,.25); transform-origin:bottom center; transition:transform .16s ease, margin .16s ease; }
-.bridge__app:hover .bridge__app-icon, .bridge__app:focus-visible .bridge__app-icon { transform:scale(1.32); margin:0 8px; }
-.bridge__app:hover + .bridge__app .bridge__app-icon, .bridge__app:has(+ .bridge__app:hover) .bridge__app-icon { transform:scale(1.14); margin:0 3px; }
-.bridge__app-name { position:absolute; bottom:72px; left:50%; transform:translateX(-50%); padding:3px 8px; border-radius:6px; background:rgba(4,22,20,.92); border:1px solid rgba(200,230,205,.18); font-size:11px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s; }
-.bridge__app:hover .bridge__app-name, .bridge__app:focus-visible .bridge__app-name { opacity:1; }
-.bridge__app[data-active='true']::after { content:''; position:absolute; bottom:-7px; width:4px; height:4px; border-radius:50%; background:#cdeed8; box-shadow:0 0 6px #9ff5c0; }
-.bridge__badge { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#e5bd70; color:#102a20; font:700 10px/18px system-ui; text-align:center; }
+.bridge__now { position:absolute; width:2px; height:22px; transform:translate(-50%,-50%); border-radius:2px; background:#9ff5c0; box-shadow:0 0 10px #7fecaa; pointer-events:none; }
+.bridge__now span { position:absolute; top:22px; left:50%; transform:translateX(-50%); color:#9ff5c0; font:600 10px system-ui; letter-spacing:.08em; }
+.bridge__voice { position:relative; z-index:2; margin:-6px 0 4px; max-width:300px; text-align:center; color:#eaf5ec; font:italic 13px/1.3 Georgia,serif; text-shadow:0 1px 8px #021210; }
+.bridge__heart { z-index:6; }
+/* Eine gerade Reihe: kein Versatz mehr, Lupe wie am Mac, Punkt unter der aktiven App. */
+.bridge__station-wing .bridge__dock-item { transform:none !important; justify-content:flex-start; }
+.bridge__station-wing { align-items:flex-start; }
+.bridge__dock-icon { transform-origin:bottom center; transition:transform .16s ease, margin .16s ease; }
+.bridge__dock-item:hover .bridge__dock-icon, .bridge__dock-item:focus-visible .bridge__dock-icon { transform:scale(1.35) translateY(-4px); }
+.bridge__dock-item:hover + .bridge__dock-item .bridge__dock-icon, .bridge__dock-item:has(+ .bridge__dock-item:hover) .bridge__dock-icon { transform:scale(1.15) translateY(-2px); }
+.bridge__dock-item[data-active='true'] .bridge__dock-icon::after { content:''; position:absolute; bottom:-8px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:#cdeed8; box-shadow:0 0 6px #9ff5c0; }
 .bridge__badge[data-alert='true'] { background:#ee8a76; }
-.bridge__legacy { position:absolute; right:14px; bottom:6px; color:rgba(210,225,210,.55); font-size:9px; text-decoration:none; }
-
-/* Planeten oberhalb der Konsole halten (7 Abteilungen passen in die verbleibende Bühne). */
-html[data-dock='c'] .os-root .ck-scene--system .ck-sys:not(.ck-sys--strip) { bottom:calc(var(--bridge-h) + 18px) !important; }
-/* Das Universe misst seine eigene Höhe: endet es über der Konsole, legt es alle Planeten (auch 7) darüber. */
-html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% - var(--bridge-h) + 40px); min-height:0; }
-/* Nur eine MÔRA: steht sie schon im Universe, trägt die Konsole nur ihre Stimme. */
-html:has(.wd-universe:not([data-hidden='true']) .wd-mora) .bridge__mora { display:none; }
-@media (min-width:700px) { html[data-dock='c'] .os-root .ck-style-toggle { top:18px !important; bottom:auto !important; left:auto !important; right:160px !important; } }
-
-@media (max-width:1200px) and (min-width:700px) {
-  .bridge__station { width:118px; padding:8px 10px; } .bridge__station strong { font-size:18px; }
-  .bridge__stations { gap:8px; } .bridge__stations--left { right:calc(50% + 175px); } .bridge__stations--right { left:calc(50% + 175px); }
-  .bridge__heart { width:310px; } .bridge__app-icon { width:38px; height:38px; } .bridge__dock { height:56px; }
-}
-
-/* Telefon: Bogen, MÔRA mit Satz, 4 Stationen als Reihe, Dock als wischbare Reihe */
+/* Nur eine MÔRA: die große auf dem Hügel bleibt, die Kopie oben im Universe wird ausgeblendet. */
+html[data-dock='c'] .os-root .wd-universe .wd-mora, html[data-dock='c'] .os-root .wd-universe .wd-mora-line { display:none !important; }
+/* Der Hügel verdeckt keinen Planeten: das Universe endet über Hügel und MÔRA. */
+html[data-dock='c'] .os-root .ck-scene--system .wd-universe { height:calc(100% - var(--os-dock-space) - 30px); min-height:0; }
 @media (max-width:699px) {
-  html[data-dock='c'] { --os-dock-space:262px; --bridge-h:262px; }
-  .bridge__glass { inset:44px 0 0; }
-  .bridge__day { left:8%; right:8%; top:4px; height:30px; }
   .bridge__mark-label { font-size:9px; } .bridge__mark-label b { display:block; text-align:center; }
-  .bridge__mark:not([data-problem='true']):not(:first-of-type) .bridge__mark-label { display:none; }
-  .bridge__day-edge { font-size:8px; bottom:-11px; }
-  .bridge__heart { top:50px; width:100%; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:0 6px; padding:0 10px; }
-  .bridge__mora { width:44px; height:44px; }
-  .bridge__voice { flex:1 1 0; max-width:260px; text-align:left; font-size:12px; margin:0; }
-  .bridge__ask { width:100%; } .bridge__ask > button { min-height:30px !important; height:30px; font-size:11px; }
-  .bridge__station { min-height:0 !important; }
-  .bridge__stations { top:124px; gap:4px; } .bridge__stations--left { left:8px; right:auto; width:calc(50% - 10px); } .bridge__stations--right { right:8px; left:auto; width:calc(50% - 10px); }
-  .bridge__station { flex:1 1 0; width:auto; min-width:0; height:56px; padding:5px 7px; border-radius:10px; }
-  .bridge__station small { font-size:7.5px; letter-spacing:.06em; } .bridge__station strong { font-size:15px; } .bridge__station em { font-size:9px; }
-  .bridge__ring { width:14px; height:14px; } .bridge__pulse { display:none; }
-  .bridge__dock { left:6px; right:6px; transform:none; bottom:8px; height:54px; gap:4px; padding:6px 8px 8px; overflow-x:auto; scrollbar-width:none; border-radius:16px; }
-  .bridge__app-icon { width:36px; height:36px; border-radius:10px; flex:none; }
-  .bridge__app:hover .bridge__app-icon, .bridge__app:has(+ .bridge__app:hover) .bridge__app-icon, .bridge__app:hover + .bridge__app .bridge__app-icon { transform:none; margin:0; }
-  .bridge__badge { top:-3px; right:-3px; min-width:15px; height:15px; font-size:9px; line-height:15px; }
-  .bridge__app[data-active='true']::after { bottom:-6px; }
+  .bridge__mark:not([data-problem='true']) .bridge__mark-label { display:none; }
+  .bridge__mark[data-problem='true'] .bridge__mark-label { left:-6px; transform:none; } .bridge__mark[data-problem='true'] .bridge__mark-label b { text-align:left; }
+  .bridge__voice { font-size:11px; max-width:220px; margin:-4px 0 2px; }
+  .bridge__dock-item:hover .bridge__dock-icon, .bridge__dock-item:hover + .bridge__dock-item .bridge__dock-icon, .bridge__dock-item:has(+ .bridge__dock-item:hover) .bridge__dock-icon { transform:none; }
 }
-@media (prefers-reduced-motion:reduce) { .bridge__mora, .bridge__pulse path, .bridge__app-icon { animation:none !important; transition:none !important; } }
+@media (prefers-reduced-motion:reduce) { .bridge__dock-icon { transition:none; } }
