@@ -178,3 +178,49 @@ html[data-dock='c'] { --br-glass:rgba(10,34,44,.42); --br-line:rgba(200,240,250,
 .bridge__reflect { filter: blur(2.5px) saturate(1.1); opacity: .58; }
 .bridge__reflect img { -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 92%); mask-image: linear-gradient(0deg, #000 10%, transparent 92%); }
 .bridge__mora { -webkit-box-reflect: below 0px linear-gradient(transparent 35%, rgba(255,255,255,.5)); }
+
+/* v8 · Ein Dock, eine Komposition: zwei Widget-Reihen links/rechts von MÔRA,
+   Frag MÔRA als Sockel, Leiste darunter, alles auf einer Glasplatte über dem See.
+   Farben kommen aus der Farbwelt (data-palette) und dem Zeit-Theme (data-phase). */
+html[data-dock='c'] {
+  --dw-top:#0d3140; --dw-mid:#082430; --dw-bot:#03111a; --dw-rim:#bfeaf0; --dw-rim-hi:#e6fbff;
+  --dw-plate:rgba(8,30,40,.34); --dw-plate-hi:rgba(160,230,240,.07); --dw-plate-rim:rgba(200,244,250,.16);
+  --lake-pal:saturate(1.05); --lake-phase:brightness(1.05);
+}
+html[data-palette='1'] {
+  --dw-top:#14274e; --dw-mid:#0c1838; --dw-bot:#050a1e; --dw-rim:#c4cfff; --dw-rim-hi:#eef1ff;
+  --dw-plate:rgba(12,20,52,.36); --dw-plate-hi:rgba(170,186,255,.08); --dw-plate-rim:rgba(196,208,255,.18);
+  --br-glass:rgba(14,22,54,.46); --br-line:rgba(196,208,255,.14); --br-accent:#b4c2ff;
+  --lake-pal:hue-rotate(34deg) saturate(1.1);
+}
+html[data-palette='0'] {
+  --dw-top:#3a2a22; --dw-mid:#241812; --dw-bot:#100a07; --dw-rim:#f0d2b0; --dw-rim-hi:#fff2e2;
+  --dw-plate:rgba(40,26,18,.38); --dw-plate-hi:rgba(255,214,170,.07); --dw-plate-rim:rgba(255,222,190,.16);
+  --br-glass:rgba(44,30,22,.48); --br-line:rgba(255,226,196,.14); --br-accent:#f2c896;
+  --lake-pal:sepia(.55) hue-rotate(-28deg) saturate(.85) brightness(.95);
+}
+html[data-phase='flow']   { --lake-phase:brightness(1.12) saturate(1.05); }
+html[data-phase='build']  { --lake-phase:brightness(1.18) contrast(.98); }
+html[data-phase='lounge'] { --lake-phase:sepia(.22) saturate(1.15) brightness(1.02); }
+html[data-phase='night']  { --lake-phase:brightness(.8) saturate(.85); }
+.ck-universe-unified[data-style='glas'] .ck-space { filter:var(--lake-pal) var(--lake-phase) !important; }
+html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect { filter:blur(2.5px) var(--lake-pal); }
+.bridge__beam { background:radial-gradient(ellipse at 50% 70%,color-mix(in srgb,var(--br-accent) 26%,transparent),transparent 60%); }
+
+.bridge__plate { position:absolute; z-index:2; left:max(24px,calc(50% - 680px)); right:max(24px,calc(50% - 680px)); top:20px; bottom:8px; border-radius:32px; pointer-events:none;
+  background:linear-gradient(180deg,var(--dw-plate-hi),var(--dw-plate) 40%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%); backdrop-filter:blur(10px) saturate(140%);
+  border:1px solid var(--dw-plate-rim); box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 -8px 32px rgba(0,0,0,.18);
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55),#000 30%); mask-image:linear-gradient(180deg,rgba(0,0,0,.55),#000 30%); }
+.bridge__comps { top:30px; }
+.bridge__comps-side { display:grid; grid-template-columns:repeat(2,196px); gap:12px; }
+.bridge__comps-gap { width:440px; }
+.bridge__comp { width:196px; height:52px; }
+.bridge__comp--mini strong { font-size:13px; }
+.bridge__ring--icon { display:grid; place-items:center; border-radius:50%; border:3px solid rgba(255,255,255,.10); color:var(--br-accent); box-sizing:border-box; }
+.bridge__comp--mini[data-tone='amber'] .bridge__ring--icon { color:var(--br-amber); }
+.bridge__comp:hover, .bridge__comp:focus-visible { background:color-mix(in srgb,var(--br-accent) 14%,var(--br-glass)); }
+/* Karte über dem Wasser rechts von MÔRA – verdeckt keine Widgets */
+.bridge__holo { top:-72px; }
+@media (max-width:1180px) and (min-width:700px) { .bridge__comps-side { grid-template-columns:repeat(2,140px); gap:8px; } .bridge__comp { width:140px; } .bridge__comps-gap { width:420px; } }
+@media (max-width:699px) { .bridge__plate { left:6px; right:6px; top:auto; bottom:4px; height:118px; border-radius:24px; } .bridge__holo { top:-150px; } }

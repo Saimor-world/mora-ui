@@ -9,7 +9,8 @@ import { PixelMora } from '@/components/world/PixelMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
-import { Bell, CalendarDays, Grid2X2, Search, Sparkles } from 'lucide-react';
+import { AlarmClock, Bell, CalendarClock, CalendarDays, Grid2X2, Search, Sparkles, SunMoon } from 'lucide-react';
+import { SCENES, sceneFor, type SceneId } from '@/lib/os-prototype/scene';
 import { DAY_END, DAY_START, dayMarks, hhmm, mailCounts, moraLine, stageCard, stations, type Station } from '@/lib/mora/bridgeData';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import Link from 'next/link';
@@ -55,6 +56,22 @@ function useOrbReflections(water:React.RefObject<HTMLDivElement|null>):Orb[]{
   },[water]);
   return orbs;
 }
+/** Zusatz-Widgets: nur echte Snapshot-Werte; fehlt die Quelle, steht dort „Offline“. */
+type Widget={id:string;label:string;value:string;tone:'calm'|'amber'|'red';icon:typeof CalendarClock;target:'calendar'|'today'|'control'};
+export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):Widget[]{
+  const cal=snapshot&&available(snapshot.calendar)?snapshot.calendar:null;
+  const tasks=snapshot&&available(snapshot.tasks)?snapshot.tasks:null;
+  const next=cal?.next_event;
+  const overdue=tasks?(tasks.counts.overdue??tasks.overdue.length):null;
+  const count=cal?(cal.count??cal.events.filter(e=>e.date===snapshot?.date).length):null;
+  const scene=phase?SCENES.find(x=>x.id===phase):null;
+  return [
+    {id:'next',label:'Nächster Termin',value:!cal?'Offline':next?`${next.time?`${next.time} `:''}${next.title.replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim()}`:'Heute frei',tone:'calm',icon:CalendarClock,target:'calendar'},
+    {id:'overdue',label:'Überfällig',value:overdue===null?'Offline':overdue?`${overdue} ${overdue===1?'Aufgabe':'Aufgaben'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
+    {id:'events',label:'Termine heute',value:count===null?'Offline':String(count),tone:'calm',icon:CalendarDays,target:'calendar'},
+    {id:'phase',label:'Zeit-Theme',value:scene?`${scene.label} · ${scene.range.split(' · ')[0]}`:'…',tone:'calm',icon:SunMoon,target:'control'},
+  ];
+}
 const complicationText=(g:Station)=>g.id==='team'||g.id==='nightwatch'?g.value:g.detail;
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 const DISMISS_KEY='mora.bridge.dismissed';
@@ -75,6 +92,10 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const [asking,setAsking]=useState(false);
   // Aktiv: etwas Dringendes (bis „Später“) oder Frag MÔRA ist offen/fokussiert.
   const active=!!card && (moraOpen || asking || (card.urgent && dismissed!==card.id));
+  const phaseOverride=useOsShellStore(s=>s.phaseOverride);
+  const [phase,setPhase]=useState<SceneId|null>(null);
+  useEffect(()=>{const p=phaseOverride??sceneFor(new Date()).id;setPhase(p);document.documentElement.dataset.phase=p;},[phaseOverride,now]);
+  const widgets=useMemo(()=>bridgeWidgets(snapshot,phase),[snapshot,phase]);
   const waterRef=useRef<HTMLDivElement>(null);
   const orbs=useOrbReflections(waterRef);
   const target=useMoraPresence(s=>s.target);
@@ -107,6 +128,8 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   };
   const act=(g:Station)=>g.id==='post'?()=>onNavigate('post'):g.id==='today'?()=>onNavigate('today'):g.id==='team'?()=>openLegacyApp('calendar'):openNightwatch;
   const complication=(g:Station)=><button key={g.id} type="button" className="bridge__comp" data-station={g.id} data-tone={g.tone} onClick={act(g)} title={`${g.label}: ${g.value} · ${g.detail}`}><Ring station={g} /><span className="bridge__comp-text"><small>{g.label}</small><strong>{complicationText(g)}</strong></span></button>;
+  const widget=(w:Widget)=>{const Icon=w.icon;const go=w.target==='calendar'?()=>openLegacyApp('calendar'):w.target==='today'?()=>onNavigate('today'):(onControl??onMore);
+    return <button key={w.id} type="button" className="bridge__comp bridge__comp--mini" data-station={w.id} data-tone={w.tone} onClick={go} title={`${w.label}: ${w.value}`}><span className="bridge__ring bridge__ring--icon" aria-hidden="true"><Icon size={16} strokeWidth={1.6} /></span><span className="bridge__comp-text"><small>{w.label}</small><strong>{w.value}</strong></span></button>;};
   // Tagesbogen: höchstens 4 Beschriftungen, alle oberhalb, keine im MÔRA-Bereich.
   const arc=marks.map(m=>({...m,x:dayX(m.minute)})).filter(m=>Math.abs(m.x-50)>=11)
     .reduce<(typeof marks[number]&{x:number})[]>((kept,m)=>kept.length<4 && kept.every(k=>Math.abs(k.x-m.x)>=16) ? [...kept,m] : kept,[])
@@ -114,7 +137,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   return <nav className="os-dock bridge" data-variant="c" aria-label="Hauptnavigation" data-testid="os-dock">
     <div className="bridge__body" data-testid="dock" data-active={active?'true':undefined}>
       <svg className="bridge__hull" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
-        <defs><linearGradient id="bridge-glass" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#0d3140" stopOpacity=".38" /><stop offset=".35" stopColor="#082430" stopOpacity=".7" /><stop offset="1" stopColor="#03111a" stopOpacity=".95" /></linearGradient><linearGradient id="bridge-edge" x1="0" y1="0" x2="1" y2="0"><stop stopColor="#bfeaf0" stopOpacity=".12" /><stop offset=".5" stopColor="#e6fbff" stopOpacity=".7" /><stop offset="1" stopColor="#bfeaf0" stopOpacity=".12" /></linearGradient></defs>
+        <defs><linearGradient id="bridge-glass" x1="0" y1="0" x2="0" y2="1"><stop style={{stopColor:'var(--dw-top)'}} stopOpacity=".38" /><stop offset=".35" style={{stopColor:'var(--dw-mid)'}} stopOpacity=".7" /><stop offset="1" style={{stopColor:'var(--dw-bot)'}} stopOpacity=".95" /></linearGradient><linearGradient id="bridge-edge" x1="0" y1="0" x2="1" y2="0"><stop style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /><stop offset=".5" style={{stopColor:'var(--dw-rim-hi)'}} stopOpacity=".7" /><stop offset="1" style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /></linearGradient></defs>
         <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0 L1440 300 L0 300 Z" fill="url(#bridge-glass)" />
         <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0" fill="none" stroke="url(#bridge-edge)" strokeWidth="6" strokeOpacity=".18" vectorEffect="non-scaling-stroke" /><path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0" fill="none" stroke="url(#bridge-edge)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
       </svg>
@@ -129,10 +152,11 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
         {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
         {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" style={{left:`${dayX(now)}%`,top:`${hullY(dayX(now)*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`} /> : null}
       </section>
+      <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__comps" aria-label="Lage">
-        <div className="bridge__comps-side">{gauges.slice(0,2).map(complication)}</div>
+        <div className="bridge__comps-side" data-side="left">{gauges.slice(0,2).map(complication)}{widgets.slice(0,2).map(widget)}</div>
         <div className="bridge__comps-gap" aria-hidden="true" />
-        <div className="bridge__comps-side">{gauges.slice(2,4).map(complication)}</div>
+        <div className="bridge__comps-side" data-side="right">{gauges.slice(2,4).map(complication)}{widgets.slice(2,4).map(widget)}</div>
       </section>
       <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
         <span className="bridge__beam" aria-hidden="true" />
