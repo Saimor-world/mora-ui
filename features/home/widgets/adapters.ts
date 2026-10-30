@@ -1,3 +1,10 @@
+function isEventAbsenceOrOpen(e?: { absence?: any; is_absent?: any; is_open?: any; open?: any; status?: string; phase?: string } | null): boolean {
+  if (!e) return false;
+  if (e.absence || e.is_absent || e.is_open || e.open) return true;
+  const st = String(e.status || e.phase || '').toLowerCase();
+  return st === 'open' || st === 'offen' || st === 'absent' || st === 'sick' || st === 'abwesend' || st === 'krank';
+}
+
 function formatGermanPriority(p?: string | null): string | undefined {
   if (!p) return undefined;
   const s = p.trim().toLowerCase();
@@ -74,11 +81,16 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
         ...meta(snapshot.calendar, 'Kalender', isFiktiv),
         content: {
           type: 'appointments',
-          items: evs.map((e) => ({
-            id: e.id,
-            title: stripFiktiv(e.title) || e.title,
-            detail: e.time ? `${e.time} Uhr` : undefined,
-          })),
+          items: evs.map((e) => {
+            const open = isEventAbsenceOrOpen(e);
+            return {
+              id: e.id,
+              title: stripFiktiv(e.title) || e.title,
+              detail: open
+                ? `${e.time ? `${e.time} Uhr · ` : ''}Offen`
+                : e.time ? `${e.time} Uhr` : undefined,
+            };
+          }),
         },
       });
     } else {

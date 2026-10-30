@@ -12,6 +12,7 @@ import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { firstName } from '@/lib/auth/displayName';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
@@ -21,7 +22,7 @@ import { useNavPos } from '@/lib/mora/navPos';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels } from '@/lib/openflow/nightwatch';
-import { useDailyBriefing, formatWarmMoraBriefing } from '@/lib/queries/useDailyBriefing';
+import { useDailyBriefing, buildMoraBriefing } from '@/lib/queries/useDailyBriefing';
 import { BriefingStack, type Briefing } from '@/components/home/BriefingStack';
 import { PixelMoon, PixelPlanet, PixelSky } from '@/components/world/PixelPlanet';
 import { PixelMora } from '@/components/world/PixelMora';
@@ -494,15 +495,16 @@ export function UnifiedUniverse({
   const briefings = useMemo<Briefing[]>(() => {
     if (!dailyBriefing) return [];
     const list: Briefing[] = [];
-    if (dailyBriefing.text) {
+    const briefingText = buildMoraBriefing(dailyBriefing, firstName(user));
+    if (briefingText) {
       list.push({
         id: 'briefing-main',
         label: 'Morgen-Briefing',
         title: dailyBriefing.date || 'Heute',
-        detail: formatWarmMoraBriefing(dailyBriefing.text, dailyBriefing.metrics, companyName.includes('Morgenrot') ? 'Marius' : undefined),
+        detail: briefingText,
       });
     }
-    if (dailyBriefing.metrics?.unread_mails > 0) {
+    if (dailyBriefing.metrics?.unread_mails && dailyBriefing.metrics.unread_mails > 0) {
       list.push({
         id: 'briefing-mails',
         label: 'Post',
@@ -510,7 +512,7 @@ export function UnifiedUniverse({
         detail: 'Braucht Aufmerksamkeit',
       });
     }
-    if (dailyBriefing.metrics?.active_incidents > 0) {
+    if (dailyBriefing.metrics?.active_incidents && dailyBriefing.metrics.active_incidents > 0) {
       list.push({
         id: 'briefing-incidents',
         label: 'Nightwatch',
@@ -520,7 +522,7 @@ export function UnifiedUniverse({
       });
     }
     return list;
-  }, [dailyBriefing]);
+  }, [dailyBriefing, user]);
 
   // Filter tasks for the selected planet strictly by department_id
   const planetTasks = useMemo(() => {

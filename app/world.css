@@ -1064,7 +1064,11 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 .wd-universe[data-view='pixel'] .wd-label { padding: 4px 6px 5px; background: rgba(6, 8, 18, .9); border: 2px solid rgba(132, 150, 214, .26); box-shadow: 3px 3px 0 rgba(0, 0, 0, .65); }
 .wd-universe[data-view='pixel'] .wd-name { text-shadow: none; }
 .wd-universe[data-view='pixel'] .wd-moonlabel { padding: 1px 6px; background: rgba(6, 8, 18, .88); border: 2px solid rgba(132, 150, 214, .2); text-shadow: none; }
-.wd-universe[data-view='pixel'] .wd-badge, .wd-badge { border-radius: 999px !important; min-width: 20px; height: 20px; padding: 0 5px; background: rgba(18, 24, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.wd-universe[data-view='pixel'] .wd-badge { border-radius: 0; background: #0a0c18; border: 2px solid rgba(160, 180, 240, .5); box-shadow: 2px 2px 0 #000; }
+.ck-universe-unified[data-style='glas'] .wd-badge,
+.ck-sys .wd-badge,
+.glass-orb .wd-badge,
+.wd-universe[data-view='glas'] .wd-badge { border-radius: 999px; min-width: 20px; height: 20px; padding: 0 5px; background: rgba(18, 24, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .wd-universe[data-view='pixel'] .wd-orbits ellipse { stroke: rgba(150, 170, 230, .24); stroke-width: 2; stroke-dasharray: 2 10; }
 .wd-universe[data-view='pixel'] .wd-link { stroke: rgba(170, 190, 240, .3); stroke-width: 2; stroke-dasharray: 2 6; filter: none; }
 .wd-universe[data-view='pixel'] .wd-link--active { stroke: rgba(226, 212, 170, .6); stroke-width: 2; stroke-dasharray: 6 4; filter: none; }

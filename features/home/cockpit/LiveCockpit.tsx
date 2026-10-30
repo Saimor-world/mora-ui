@@ -72,22 +72,9 @@ export function LiveCockpit({
     snapshot?.requested_scope?.tenant_id === 'tenant-demo-morgenrot' ||
     /morgenrot/i.test(rawCompanyName);
 
-  // Compute user first name for honest personalized greeting
+  // Compute user first name for honest personalized greeting from session
   const cleanViewerName = propViewerName ? stripFiktiv(propViewerName) : null;
-  let first = cleanViewerName?.split(/\s+/)[0] || firstName(user);
-  const userRole = (user?.role || '').toLowerCase();
-  const userEmail = (user?.email || '').toLowerCase();
-  if (
-    !first ||
-    first.toLowerCase() === 'inhaber' ||
-    first.toLowerCase() === 'owner' ||
-    userRole === 'owner' ||
-    userEmail.startsWith('inhaber@')
-  ) {
-    if (companyName.includes('Morgenrot')) {
-      first = 'Marius';
-    }
-  }
+  const first = cleanViewerName?.split(/\s+/)[0] || firstName(user);
 
   const h = new Date().getHours();
   const hello = h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
@@ -285,7 +272,7 @@ export function LiveCockpit({
                     <li key={it.id} className="ck-item">
                       <div className="ck-item__txt">
                         <div className="ck-item__t">{it.title}</div>
-                        <div className="ck-item__d">{it.detail}</div>
+                        <div className="ck-item__d" style={it.isWarning ? { color: 'var(--amber, #f59e0b)' } : undefined}>{it.detail}</div>
                       </div>
                       <button
                         type="button"

@@ -1,32 +1,71 @@
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 
-export interface DailyBriefingData {
-    date: string;
-    text: string;
-    metrics: {
-        unread_mails: number;
-        health_score: number;
-        active_incidents: number;
-    };
+export interface DailyBriefingMetrics {
+    unread_mails?: number | null;
+    mails_needing_response?: number | null;
+    needs_response?: number | null;
+    health_score?: number | null;
+    active_incidents?: number | null;
+    nightwatch_quiet?: boolean | null;
 }
 
-/** Formats briefing text in warm, concise MÔRA tone (max 2 sentences). */
-export function formatWarmMoraBriefing(
-    rawText?: string | null,
-    metrics?: { unread_mails?: number; active_incidents?: number },
-    name = 'Marius'
+export interface DailyBriefingData {
+    date: string;
+    text?: string;
+    metrics?: DailyBriefingMetrics;
+}
+
+/**
+ * Builds warm, honest MÔRA briefing sentence dynamically from real numbers.
+ * - Never invents numbers: If data is missing, says honestly "Ich komme gerade nicht an deine Daten."
+ * - Personal salutation uses first name from session; falls back to "Guten Morgen." if none.
+ * - "Brauchen dich" counts emails that need a response.
+ * - "Die Nacht war ruhig" only when Nightwatch reports 0 incidents or nightwatch_quiet.
+ */
+export function buildMoraBriefing(
+    data?: DailyBriefingData | null,
+    firstName?: string | null
 ): string {
-    if (!rawText || rawText.includes('stabile Situation') || rawText.includes('Normalbetrieb')) {
-        const mails = metrics?.unread_mails ?? 9;
-        const needYou = metrics?.active_incidents ?? 2;
-        return `Guten Morgen, ${name}. ${mails} Mails warten, ${needYou} brauchen dich. Die Nacht war ruhig.`;
+    if (!data || !data.metrics) {
+        return 'Ich komme gerade nicht an deine Daten.';
     }
-    const sentences = rawText.split(/(?<=[.!?])\s+/);
-    if (sentences.length > 2) {
-        return sentences.slice(0, 2).join(' ');
+
+    const name = firstName?.trim();
+    const salutation = name ? `Guten Morgen, ${name}.` : 'Guten Morgen.';
+    const parts: string[] = [];
+
+    const unread = typeof data.metrics.unread_mails === 'number' ? data.metrics.unread_mails : null;
+    const needYou = typeof data.metrics.mails_needing_response === 'number'
+        ? data.metrics.mails_needing_response
+        : typeof data.metrics.needs_response === 'number'
+        ? data.metrics.needs_response
+        : null;
+
+    if (unread !== null && unread > 0) {
+        if (needYou !== null && needYou > 0) {
+            parts.push(`${unread} ${unread === 1 ? 'Mail wartet' : 'Mails warten'}, ${needYou} ${needYou === 1 ? 'braucht' : 'brauchen'} dich.`);
+        } else {
+            parts.push(`${unread} ${unread === 1 ? 'Mail wartet' : 'Mails warten'}.`);
+        }
+    } else if (needYou !== null && needYou > 0) {
+        parts.push(`${needYou} ${needYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich.`);
     }
-    return rawText;
+
+    if (data.metrics.active_incidents === 0 || data.metrics.nightwatch_quiet === true) {
+        parts.push('Die Nacht war ruhig.');
+    } else if (typeof data.metrics.active_incidents === 'number' && data.metrics.active_incidents > 0) {
+        parts.push(`Nightwatch meldet ${data.metrics.active_incidents} ${data.metrics.active_incidents === 1 ? 'Vorfall' : 'Vorfälle'}.`);
+    }
+
+    if (parts.length === 0) {
+        if (data.text && !data.text.includes('Normalbetrieb') && !data.text.includes('stabile Situation')) {
+            return data.text;
+        }
+        return `${salutation} Alles ist bereit.`;
+    }
+
+    return `${salutation} ${parts.join(' ')}`;
 }
 
 export function useDailyBriefing() {
@@ -39,12 +78,8 @@ export function useDailyBriefing() {
             } catch {
                 return {
                     date: 'Heute',
-                    text: 'Guten Morgen, Marius. 9 Mails warten, 2 brauchen dich. Die Nacht war ruhig.',
-                    metrics: {
-                        unread_mails: 9,
-                        health_score: 100,
-                        active_incidents: 2,
-                    },
+                    text: 'Ich komme gerade nicht an deine Daten.',
+                    metrics: undefined,
                 };
             }
         },
