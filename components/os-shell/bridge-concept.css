@@ -43,3 +43,5 @@ html[data-dock='c'] { --os-dock-space: 264px; }
   .os-dock[data-variant='c'] .bridge-station:nth-child(2) { margin-left:auto; margin-right:auto; }
   .os-dock[data-variant='c'] .bridge-station:nth-child(2) > div { justify-content:center; }
 }
+
+.os-dock[data-variant='c'] .os-dock__capsule { z-index: 4; }
