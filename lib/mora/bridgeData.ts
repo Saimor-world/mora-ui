@@ -153,3 +153,52 @@ export function warmBriefing(snapshot: TodaySnapshot | null, briefingUnread?: nu
   const first = parts.length ? `${greet} ${parts[0]}.` : greet;
   return second ? `${first} ${second}` : first;
 }
+
+/** Die eine Hologramm-Karte, die MÔRA auf der Bühne zeigt – nur aus echten Daten, mit echten Aktionen. */
+export type StageCard = {
+  id: string;
+  kind: 'shift' | 'mail' | 'nightwatch' | 'next';
+  urgent: boolean;
+  eyebrow: string;
+  title: string;
+  detail: string;
+  primary: { label: string; target: 'calendar' | 'post' | 'nightwatch' };
+};
+export function stageCard(snapshot: TodaySnapshot | null, now: number, briefingUnread?: number | null): StageCard | null {
+  if (!snapshot) return null;
+  const absent = absences(snapshot)[0];
+  if (absent) return {
+    id: `shift:${absent.shiftId ?? absent.name}`, kind: 'shift', urgent: true, eyebrow: 'Team · Ausfall',
+    title: absent.shiftTime ? `Schicht ${absent.shiftTime} offen` : `${absent.name} fällt aus`,
+    detail: absent.shiftTime ? `${absent.name} ist krank gemeldet.` : 'Krankmeldung in der Post.',
+    primary: { label: 'Schicht öffnen', target: 'calendar' },
+  };
+  if (sourceReady(snapshot.nightwatch)) {
+    const n = snapshot.nightwatch.open_incidents ?? snapshot.nightwatch.incidents.length;
+    if (n) return { id: `nw:${n}`, kind: 'nightwatch', urgent: true, eyebrow: 'Betrieb · Nachtwache', title: `${n} ${n === 1 ? 'Vorfall' : 'Vorfälle'} offen`, detail: snapshot.nightwatch.incidents[0]?.title ?? 'Bitte ansehen.', primary: { label: 'Ansehen', target: 'nightwatch' } };
+  }
+  const mail = mailCounts(snapshot, briefingUnread);
+  if (mail.needsYou) return { id: `mail:${mail.needsYou}`, kind: 'mail', urgent: true, eyebrow: 'Kommunikation · Post', title: `${mail.needsYou} ${mail.needsYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich`, detail: 'Antwort oder Entscheidung nötig.', primary: { label: 'Zur Post', target: 'post' } };
+  const next = dayMarks(snapshot, now, 10).find((m) => m.minute >= now);
+  if (next) return { id: `next:${next.id}`, kind: 'next', urgent: false, eyebrow: 'Als Nächstes', title: `${next.time} ${next.label}`, detail: 'Heute im Kalender.', primary: { label: 'Im Kalender', target: 'calendar' } };
+  return null;
+}
+
+/** Besetzung heute: Schichten als Balken 6–22 Uhr, Ausfälle markiert. Höchstens `max` Zeilen. */
+export type ShiftBar = { id: string; name: string; start: number; end: number; absent: boolean };
+export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar[] {
+  if (!snapshot || !sourceReady(snapshot.calendar)) return [];
+  const absent = absences(snapshot);
+  return snapshot.calendar.events
+    .filter((e) => e.date === snapshot.date && /schicht/i.test(e.title))
+    .map((e) => {
+      const start = toMinute(e.time);
+      if (start === null) return null;
+      const name = cleanTitle(e.title).replace(/^schicht\s*/i, '').split(/\s+/)[0] ?? '';
+      return { id: e.id, name, start, end: Math.min(DAY_END, start + (e.duration ?? 480)), absent: absent.some((a) => a.shiftId === e.id) };
+    })
+    .filter((x): x is ShiftBar => x !== null)
+    .sort((a, b) => Number(b.absent) - Number(a.absent) || a.start - b.start)
+    .slice(0, max)
+    .sort((a, b) => a.start - b.start);
+}

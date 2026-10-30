@@ -9,8 +9,8 @@ import { PixelMora } from '@/components/world/PixelMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
-import { Bell, CalendarDays, Grid2X2, Search, Sparkles } from 'lucide-react';
-import { DAY_END, DAY_START, dayMarks, hhmm, mailCounts, moraLine, stations, type Station } from '@/lib/mora/bridgeData';
+import { Bell, CalendarDays, Grid2X2, MessageCircle, Search, Sparkles } from 'lucide-react';
+import { DAY_END, DAY_START, dayMarks, hhmm, mailCounts, moraLine, shiftCoverage, stageCard, stations, type Station } from '@/lib/mora/bridgeData';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import Link from 'next/link';
 import './bridge-concept.css';
@@ -28,19 +28,16 @@ function berlinNow():number {
   const parts = new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
   return Number(parts.find(x=>x.type==='hour')?.value ?? 0)*60+Number(parts.find(x=>x.type==='minute')?.value ?? 0);
 }
-/** y (viewBox 1440×300) der Rumpfkante bei x – die Tagesleiste liegt genau auf dieser Kurve. */
-function hullY(x:number):number {
-  const half=x<=720; const X=half?x:1440-x; let best=0, d=1e9;
-  for(let i=0;i<=200;i++){const t=i/200,u=1-t;const bx=3*u*u*t*220+3*u*t*t*300+t*t*t*720;const by=3*u*u*t*5+3*u*t*t*82+t*t*t*82;if(Math.abs(bx-X)<d){d=Math.abs(bx-X);best=by;}}
-  return best;
-}
-const dayX=(minute:number)=>5+(Math.min(DAY_END,Math.max(DAY_START,minute))-DAY_START)/(DAY_END-DAY_START)*90;
+const dayFrac=(minute:number)=>(Math.min(DAY_END,Math.max(DAY_START,minute))-DAY_START)/(DAY_END-DAY_START);
+/** Punkt auf der vorderen Hälfte des Tagesrings (links 6 Uhr → vorne → rechts 22 Uhr), in % der Ringbox. */
+const ringPoint=(minute:number)=>{const a=Math.PI*(1-dayFrac(minute));return {x:50+50*Math.cos(a),y:50+50*Math.sin(a)};};
 
-const Ring=({station:g}:{station:Station})=>{const r=13,c=2*Math.PI*r;const frac=g.id==='today'?g.progress??0:g.id==='post'&&Number(g.value)>0?Math.min(1,(parseInt(g.detail)||0)/Number(g.value)):1;
-  return <span className="bridge__ring" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r={r} className="bridge__ring-track" />{g.id==='nightwatch'?<polyline className="bridge__pulse" points="6,16 11,16 13,11 16,22 19,13 21,16 26,16" />:<circle cx="16" cy="16" r={r} className="bridge__ring-fill" strokeDasharray={`${frac*c} ${c}`} transform="rotate(-90 16 16)" />}</svg></span>;};
-/** Text der Komplikation: nie dieselbe Zahl wie das Badge am Icon. */
-const complicationText=(g:Station)=>g.id==='team'||g.id==='nightwatch'?g.value:g.detail;
+/** Ein Instrument: dieselbe Komponente an beiden Wänden. */
+const Gauge=({station:g}:{station:Station})=>{const r=13,c=2*Math.PI*r;const frac=g.id==='today'?g.progress??0:1;
+  return <span className="bridge__gauge" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r={r} className="bridge__gauge-track" />{g.id==='nightwatch'?<polyline className="bridge__pulse" points="6,16 11,16 13,11 16,22 19,13 21,16 26,16" />:<circle cx="16" cy="16" r={r} className="bridge__gauge-fill" strokeDasharray={`${frac*c} ${c}`} transform="rotate(-90 16 16)" />}</svg></span>;};
+type Instrument={id:string; label:string; value:string; detail:string; tone:Station['tone']; station?:Station; icon?:React.ReactNode; action:()=>void};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
+const DISMISS_KEY='mora.bridge.dismissed';
 export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
   const { snapshot }=useScopedToday({backgroundRefresh:true});
   const { data: briefing } = useDailyBriefing();
@@ -52,6 +49,13 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const marks=useMemo(()=>dayMarks(snapshot, now, 8),[snapshot, now]);
   const line=useMemo(()=>moraLine(snapshot, now, briefingUnread),[snapshot, now, briefingUnread]);
   const gauges=useMemo(()=>stations(snapshot, briefingUnread),[snapshot, briefingUnread]);
+  const card=useMemo(()=>stageCard(snapshot, now, briefingUnread),[snapshot, now, briefingUnread]);
+  const shifts=useMemo(()=>shiftCoverage(snapshot),[snapshot]);
+  const [dismissed,setDismissed]=useState<string|null>(null);
+  useEffect(()=>{try{setDismissed(sessionStorage.getItem(DISMISS_KEY));}catch{/* privat */}},[]);
+  const [asking,setAsking]=useState(false);
+  // Aktiv: MÔRA hat etwas Dringendes (bis „Später“) oder du sprichst mit ihr.
+  const active=!!card && (moraOpen || asking || (card.urgent && dismissed!==card.id));
   const target=useMoraPresence(s=>s.target);
   const moraRef=useRef<HTMLButtonElement>(null);
   const [flight,setFlight]=useState<{x:number;y:number}|null>(null);
@@ -62,6 +66,8 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     return()=>{cancelAnimationFrame(raf);window.removeEventListener('resize',measure);};
   },[target]);
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
+  const openTarget=(t:'calendar'|'post'|'nightwatch')=>t==='calendar'?openLegacyApp('calendar'):t==='post'?onNavigate('post'):openNightwatch();
+  const later=()=>{if(!card)return;setDismissed(card.id);setAsking(false);try{sessionStorage.setItem(DISMISS_KEY,card.id);}catch{/* privat */}};
   const controls = [
     {id:'search',name:'Suche',icon:Search,action:onSearch},
     ...items.map(item=>({id:item.id,name:item.title,icon:item.icon,action:()=>onNavigate(item.id)})),
@@ -76,35 +82,47 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     const next=snapshot?.calendar.next_event;
     const status=control.id==='calendar' && available(snapshot?.calendar) && next?.time ? `Heute ${next.time}` : null;
     const tip=status ? `${control.name} · ${status}` : control.name;
-    return <button type="button" key={control.id} className="bridge__app" data-feature={control.id} data-tip={tip} data-active={control.id===activeId?'true':undefined} onClick={control.action} aria-label={tip} aria-current={control.id===activeId?'page':undefined}><span className="bridge__app-icon"><Icon size={22} strokeWidth={1.5} /></span>{typeof count==='number' && count>0 ? <b className="bridge__badge" data-alert={control.id==='notifications' && incidents>0 ? 'true' : undefined}>{count>99?'99+':count}</b> : null}</button>;
+    return <button type="button" key={control.id} className="bridge__app" data-feature={control.id} data-tip={tip} data-active={control.id===activeId?'true':undefined} onClick={control.action} aria-label={tip} aria-current={control.id===activeId?'page':undefined}><span className="bridge__app-icon"><Icon size={20} strokeWidth={1.5} /></span>{typeof count==='number' && count>0 ? <b className="bridge__badge" data-alert={control.id==='notifications' && incidents>0 ? 'true' : undefined}>{count>99?'99+':count}</b> : null}</button>;
   };
-  const act=(g:Station)=>g.id==='post'?()=>onNavigate('post'):g.id==='today'?()=>onNavigate('today'):g.id==='team'?()=>openLegacyApp('calendar'):openNightwatch;
-  const complication=(g:Station)=><button key={g.id} type="button" className="bridge__comp" data-station={g.id} data-tone={g.tone} onClick={act(g)} title={`${g.label}: ${g.value} · ${g.detail}`}><Ring station={g} /><span className="bridge__comp-text"><small>{g.label}</small><strong>{complicationText(g)}</strong></span></button>;
-  // Tagesbogen: höchstens 4 Beschriftungen, alle oberhalb, keine im MÔRA-Bereich.
-  const arc=marks.map(m=>({...m,x:dayX(m.minute)})).filter(m=>Math.abs(m.x-50)>=11)
-    .reduce<(typeof marks[number]&{x:number})[]>((kept,m)=>kept.length<4 && kept.every(k=>Math.abs(k.x-m.x)>=16) ? [...kept,m] : kept,[])
+  const [post,today,team,night]=gauges;
+  const needs=post && mail.unread!==null ? {id:'needs',label:'Braucht dich',value:mail.needsYou?`${mail.needsYou} ${mail.needsYou===1?'braucht':'brauchen'} dich`:'Niemand wartet',detail:mail.needsYou?'Antwort nötig':'Alles beantwortet',tone:(mail.needsYou?'amber':'calm') as Station['tone'],icon:<MessageCircle size={16} strokeWidth={1.75} />,action:()=>onNavigate('post')} : null;
+  const left:Instrument[]=[
+    ...(post?[{id:'post',label:'Post',value:post.value==='Offline'?'Offline':`${post.value} ungelesen`,detail:post.value==='Offline'?post.detail:'Posteingang',tone:'calm' as const,icon:<span className="bridge__num">{post.value==='Offline'?'–':post.value}</span>,action:()=>onNavigate('post')}]:[]),
+    ...(needs?[needs]:[]),
+  ];
+  const right:Instrument[]=[today,team,night].filter((g):g is Station=>!!g).map(g=>({id:g.id,label:g.label,value:g.id==='today'&&g.value!=='Offline'?`${g.value} offen`:g.value,detail:g.detail,tone:g.tone,station:g,action:g.id==='today'?()=>onNavigate('today'):g.id==='team'?()=>openLegacyApp('calendar'):openNightwatch}));
+  const instrument=(i:Instrument)=><button key={i.id} type="button" className="bridge__inst" data-station={i.id} data-tone={i.tone} onClick={i.action} title={`${i.label}: ${i.value} · ${i.detail}`}>
+    <span className="bridge__inst-dial">{i.station?<Gauge station={i.station} />:i.icon}</span>
+    <span className="bridge__inst-text"><small>{i.label}</small><strong>{i.value}</strong></span>
+    <span className="bridge__inst-detail">{i.detail}</span></button>;
+  // Tagesring: höchstens 4 echte Termine, Probleme zuerst, nicht direkt vor MÔRA.
+  const ring=marks.map(m=>({...m,...ringPoint(m.minute)})).filter(m=>Math.abs(m.x-50)>=14)
+    .sort((a,b)=>Number(b.problem)-Number(a.problem))
+    .reduce<(typeof marks[number]&{x:number;y:number})[]>((kept,m)=>kept.length<4 && kept.every(k=>Math.hypot(k.x-m.x,(k.y-m.y)*.3)>=18) ? [...kept,m] : kept,[])
     .sort((a,b)=>a.x-b.x);
+  const nowPt=now>=DAY_START && now<=DAY_END ? ringPoint(now) : null;
   return <nav className="os-dock bridge" data-variant="c" aria-label="Hauptnavigation" data-testid="os-dock">
-    <div className="bridge__body" data-testid="dock">
-      <svg className="bridge__hull" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
-        <defs><linearGradient id="bridge-glass" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#1f463d" stopOpacity=".78" /><stop offset=".35" stopColor="#082a27" stopOpacity=".92" /><stop offset="1" stopColor="#021412" stopOpacity=".98" /></linearGradient><linearGradient id="bridge-edge" x1="0" y1="0" x2="1" y2="0"><stop stopColor="#9fdcb6" stopOpacity=".15" /><stop offset=".5" stopColor="#e5d29a" stopOpacity=".55" /><stop offset="1" stopColor="#9fdcb6" stopOpacity=".15" /></linearGradient></defs>
-        <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0 L1440 300 L0 300 Z" fill="url(#bridge-glass)" />
-        <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0" fill="none" stroke="url(#bridge-edge)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <section className="bridge__day" aria-label="Tagesverlauf 6 bis 22 Uhr">
-        {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
-        {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" style={{left:`${dayX(now)}%`,top:`${hullY(dayX(now)*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`} /> : null}
-      </section>
-      <section className="bridge__comps" aria-label="Lage">
-        <div className="bridge__comps-side">{gauges.slice(0,2).map(complication)}</div>
-        <div className="bridge__comps-gap" aria-hidden="true" />
-        <div className="bridge__comps-side">{gauges.slice(2,4).map(complication)}</div>
-      </section>
-      <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
-        <span className="bridge__beam" aria-hidden="true" />
-        <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(.7)`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?76:104} mood={mood} /></span></button>
-        <p className="bridge__voice" aria-live="polite">{line}</p>
-        <div id={DOCK_ASK_SLOT} className="bridge__ask"><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>Frag MÔRA …</span><kbd>M</kbd></button></div>
+    <div className="bridge__body bridge__room" data-testid="dock" data-active={active?'true':undefined}>
+      <section className="bridge__wall bridge__wall--left" aria-label="Kommunikation"><h2 className="bridge__zone">Kommunikation</h2>{left.map(instrument)}</section>
+      <section className="bridge__wall bridge__wall--right" aria-label="Betrieb"><h2 className="bridge__zone">Betrieb</h2>{right.map(instrument)}</section>
+      <div className="bridge__stage" data-mood={mood} data-attention={attention>0?'true':undefined}>
+        <span className="bridge__grid" aria-hidden="true" />
+        <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
+        <section className="bridge__ring" aria-label="Tagesring 6 bis 22 Uhr" aria-hidden={active?'true':undefined}>
+          {ring.map(m=><button key={m.id} type="button" tabIndex={active?-1:0} className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-side={m.x<50?'start':'end'} style={{left:`${m.x}%`,top:`${m.y}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b><span>{m.label}</span></span></button>)}
+          {nowPt ? <span className="bridge__now" style={{left:`${nowPt.x}%`,top:`${nowPt.y}%`}} title={`Jetzt ${hhmm(now)}`} /> : null}
+        </section>
+        {active && card ? <article className="bridge__holo bridge__holo--card" data-kind={card.kind} data-urgent={card.urgent?'true':undefined} aria-live="polite">
+          <small>{card.eyebrow}</small><strong>{card.title}</strong><p>{card.detail}</p>
+          <div className="bridge__holo-actions"><button type="button" data-primary="true" onClick={()=>openTarget(card.primary.target)}>{card.primary.label}</button>{card.urgent?<button type="button" onClick={later}>Später</button>:null}</div>
+        </article> : null}
+        {active && card?.kind==='shift' && shifts.length ? <button type="button" className="bridge__holo bridge__holo--viz" onClick={()=>openLegacyApp('calendar')} aria-label="Besetzung heute im Kalender öffnen">
+          <small>Besetzung heute</small>
+          <span className="bridge__shifts">{shifts.map(s=><span key={s.id} className="bridge__shift" data-absent={s.absent?'true':undefined}><em>{s.name}</em><span><i style={{left:`${dayFrac(s.start)*100}%`,width:`${(dayFrac(s.end)-dayFrac(s.start))*100}%`}} /></span></span>)}</span>
+          <span className="bridge__shift-axis" aria-hidden="true"><span>6</span><span>14</span><span>22</span></span>
+        </button> : null}
+        <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(.7)`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" aria-description={line} title={line} onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?72:96} mood={mood} /></span></button>
+        <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>{active||!card?'Frag MÔRA …':line}</span><kbd>M</kbd></button></div>
       </div>
       <div className="bridge__pill" role="toolbar" aria-label="Apps">{controls.map(renderControl)}</div>
       {showLegacy ? <Link href="/home?classic=1" className="bridge__legacy" data-testid="legacy-shell-link">Klassische Oberfläche</Link> : null}
