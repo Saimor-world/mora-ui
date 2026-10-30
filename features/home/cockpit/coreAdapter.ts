@@ -299,17 +299,16 @@ export function deriveLiveAttention(
   }
 
   if (snapshot.calendar?.events?.length) {
-    const validEvents = snapshot.calendar.events.filter(
-      (e) => !e.title.toLowerCase().includes('tarek')
-    );
-    const nextEv = validEvents[0];
-    items.push({
-      id: 'live-cal',
-      title: stripFiktiv(nextEv.title) || nextEv.title,
-      detail: `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
-      action: 'Kalender ansehen',
-      onAction: () => navigate?.('calendar'),
-    });
+    const nextEv = snapshot.calendar.events[0];
+    if (nextEv) {
+      items.push({
+        id: 'live-cal',
+        title: stripFiktiv(nextEv.title) || nextEv.title,
+        detail: `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
+        action: 'Kalender ansehen',
+        onAction: () => navigate?.('calendar'),
+      });
+    }
   }
 
   if (snapshot.tasks?.due_today?.length) {

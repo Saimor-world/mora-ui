@@ -65,9 +65,7 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
 
   // 2. Termine / Kalender
   if (readable(snapshot.calendar)) {
-    const evs = (snapshot.calendar.events ?? []).filter(
-      (e) => !e.title.toLowerCase().includes('tarek')
-    );
+    const evs = snapshot.calendar.events ?? [];
     if (evs.length > 0) {
       const isFiktiv = evs.some((e) => hasFiktivMarker(e.title));
       out.push({
