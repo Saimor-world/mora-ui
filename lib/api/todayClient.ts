@@ -75,6 +75,13 @@ export type TodayIncident = {
   host?: string | null;
 };
 
+export type TodayMailUnderstanding = {
+  waiting: number;
+  counts: { needs_you: number; fyi: number; automated: number };
+  headline: string;
+  items: Array<{ id?: string | null; subject: string; summary: string; category: 'needs_you' | 'fyi' | 'automated'; action_items: string[] }>;
+};
+
 export type TodaySnapshot = {
   status: TodayStatus;
   date: string;
@@ -92,6 +99,8 @@ export type TodaySnapshot = {
     total?: number | null;
     sample_limit: number;
     items: TodayMailItem[];
+    /** MÔRA versteht Post (CORE): "9 Mails warten, 2 davon brauchen dich". Fehlt bei älteren CORE-Ständen. */
+    understanding?: TodayMailUnderstanding | null;
   };
   calendar: TodaySourceMeta & {
     date: string;

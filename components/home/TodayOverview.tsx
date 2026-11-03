@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { CalendarContinuity } from './CalendarContinuity';
 import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type LucideIcon } from 'lucide-react';
-import type { TodaySourceStatus } from '@/lib/api/todayClient';
+import type { TodayMailUnderstanding, TodaySourceStatus } from '@/lib/api/todayClient';
 import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
@@ -22,9 +22,10 @@ type TodayCardProps = {
   /** The source is not connected (or its access expired): tapping opens Integrationen. */
   reconnect?: boolean | undefined;
   onReconnect?: (() => void) | undefined;
+  lines?: string[] | undefined;
 };
 
-function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, attention, reconnect, onReconnect }: TodayCardProps) {
+function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, attention, reconnect, onReconnect, lines }: TodayCardProps) {
   return (
     <button
       type="button"
@@ -46,11 +47,33 @@ function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, a
         <ArrowUpRight size={13} className="mt-1 shrink-0 text-white/16 transition-colors group-hover:text-white/48" />
       </div>
       <p className="mt-3 line-clamp-2 min-h-[2.5rem] text-[10px] leading-5 text-white/31">{detail}</p>
+      <QuietLines lines={lines} className="mt-1 space-y-0.5 text-[10px] leading-5 text-white/44" />
     </button>
   );
 }
 
-type TodayCopy = { value: string; detail: string; unavailable?: boolean; attention?: boolean; reconnect?: boolean };
+type TodayCopy = { value: string; detail: string; unavailable?: boolean; attention?: boolean; reconnect?: boolean; lines?: string[] };
+
+/** MÔRAs Lesart der Post: Überschrift plus höchstens drei ruhige "braucht dich"-Zeilen. */
+export function mailUnderstandingCopy(u: TodayMailUnderstanding | null | undefined): { value: string; lines: string[] } | null {
+  if (!u || typeof u.headline !== 'string' || !u.headline) return null;
+  const lines = (Array.isArray(u.items) ? u.items : [])
+    .filter((i) => i && i.category === 'needs_you' && i.summary)
+    .slice(0, 3)
+    .map((i) => i.summary);
+  return { value: u.headline, lines };
+}
+
+function QuietLines({ lines, className }: { lines?: string[] | undefined; className: string }) {
+  if (!lines || lines.length === 0) return null;
+  return (
+    <ul className={className} data-testid="today-mail-needs-you">
+      {lines.map((line, i) => (
+        <li key={i} className="truncate">· {line}</li>
+      ))}
+    </ul>
+  );
+}
 
 /** "um 09:42" bzw. "am 21.10. um 09:42" – Uhrzeit des letzten Abgleichs, Europe/Berlin. */
 export function syncTimeLabel(iso?: string | null, now: Date = new Date()): string | null {
@@ -200,6 +223,15 @@ export function TodayOverview() {
     if (snapshot.mail.status !== 'ok') return sourceStateCopy('Mail', snapshot.mail.status, false, snapshot.mail.last_synced_at);
     if (typeof snapshot.mail.inbox_loaded !== 'number') return sourceStateCopy('Mail', 'unavailable');
 
+    const understood = mailUnderstandingCopy(snapshot.mail.understanding);
+    if (understood) {
+      return {
+        value: understood.value,
+        detail: mailCountDetail(snapshot.mail.unread_count, snapshot.mail.total),
+        lines: understood.lines,
+        attention: understood.lines.length > 0,
+      };
+    }
     const latest = snapshot.mail.items[0];
     if (!latest) {
       return { value: 'Post', detail: mailCountDetail(snapshot.mail.unread_count, snapshot.mail.total) };
@@ -301,6 +333,7 @@ export function TodayOverview() {
                 </span>
                 <span className="uv2-widget__value">{x.copy.value}</span>
                 {x.copy.detail && <span className="uv2-widget__detail">{x.copy.detail}</span>}
+                <QuietLines lines={x.copy.lines} className="uv2-widget__detail mt-1 space-y-0.5 opacity-80" />
               </button>
             );
           })}
