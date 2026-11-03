@@ -281,3 +281,22 @@ export function focusCards(snapshot: TodaySnapshot | null, briefingUnread?: numb
   }
   return out.slice(0, max);
 }
+
+/** Als-Nächstes-Dock: eine Liste kommender Termine – Zahl und Zeilen kommen beide daraus. Heute nur Uhrzeit, sonst „Do 05.11. 14:00“. */
+export type UpcomingEvent = { id: string; when: string; label: string };
+const WEEKDAY = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+export function upcomingEvents(snapshot: TodaySnapshot | null, now: number): UpcomingEvent[] {
+  if (!snapshot || !sourceReady(snapshot.calendar)) return [];
+  const today = snapshot.date;
+  return snapshot.calendar.events
+    .filter((e) => e.title && e.date && /^\d{4}-\d{2}-\d{2}/.test(e.date))
+    .map((e) => ({ e, minute: toMinute(e.time) }))
+    .filter(({ e, minute }) => e.date > today || (e.date === today && (minute === null || minute >= now)))
+    .sort((a, b) => a.e.date.localeCompare(b.e.date) || (a.minute ?? -1) - (b.minute ?? -1))
+    .map(({ e, minute }) => {
+      const time = minute === null ? '' : hhmm(minute);
+      const [y, mo, d] = e.date.slice(0, 10).split('-').map(Number);
+      const day = `${WEEKDAY[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]} ${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')}.`;
+      return { id: e.id, when: e.date === today ? time || 'Heute' : [day, time].filter(Boolean).join(' '), label: shorten(e.title) };
+    });
+}
