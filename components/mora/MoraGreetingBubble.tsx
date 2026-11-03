@@ -108,8 +108,7 @@ export const MoraGreetingBubble: React.FC = () => {
                                 Mora
                             </div>
                             <div className="mt-1 text-[13px] leading-snug text-white/86">
-                                {firstName ? `Hi ${firstName}, ich bin Mora.` : 'Hi, ich bin Mora.'}
-                                {' '}Frag mich was über deinen Tag.
+                                {firstName ? `${firstName}` : 'MÔRA'}
                             </div>
                         </div>
                         <button

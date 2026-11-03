@@ -130,14 +130,14 @@ export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number
 
 /** Ein Satz von MÔRA, nur aus echten Daten. */
 export function moraLine(snapshot: TodaySnapshot | null, now: number, briefingUnread?: number | null): string {
-  if (!snapshot) return 'Ich sammle gerade deinen Tag.';
+  if (!snapshot) return '';
   const absent = absences(snapshot)[0];
   if (absent) return absent.shiftTime ? `${absent.name} fällt heute aus, die Schicht um ${absent.shiftTime} ist offen.` : `${absent.name} hat sich heute krankgemeldet.`;
   const mail = mailCounts(snapshot, briefingUnread);
   if (mail.needsYou) return `${mail.needsYou} ${mail.needsYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich.`;
   const next = dayMarks(snapshot, now, 10).find((m) => m.minute >= now);
   if (next) return `Als Nächstes: ${next.time} ${next.label}.`;
-  return 'Alles ruhig. Ich behalte den Tag im Blick.';
+  return '';
 }
 
 /** Morgen-Briefing: warm, kurz, höchstens zwei Sätze, Mail-Zahl aus derselben Quelle wie das Dock. */

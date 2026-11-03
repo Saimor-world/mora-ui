@@ -105,7 +105,13 @@ html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect
 .bridge__comp-text em { font:400 12px/16px var(--br-font); font-style:normal; color:var(--br-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bridge__inst[data-tone='amber'] .bridge__comp-text strong { color:var(--br-amber); }
 .bridge__inst[data-tone='red'] .bridge__comp-text strong { color:var(--br-red); }
-.bridge__inst[data-offline='true'] .bridge__comp-text strong { color:var(--br-mute); font-weight:500; font-size:16px; }
+/* Unverbundene Quelle: dunkle, transluzente Bucht nur mit Kanal-Symbol. Verbundene Instrumente glimmen sanft, wenn Daten da sind. */
+.bridge__inst[data-offline='true'] { background:rgba(0,0,0,.18); border-color:rgba(255,255,255,.05); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); align-items:center; justify-content:center; }
+.bridge__bay { display:grid; place-items:center; width:100%; height:100%; min-height:72px; border:0; background:none; color:var(--br-faint); opacity:.45; cursor:pointer; transition:opacity .4s var(--br-ease); }
+.bridge__bay:hover, .bridge__bay:focus-visible { opacity:.85; }
+.bridge__inst[data-live='true'] { animation:bridge-glow 4.8s var(--br-ease) infinite; }
+@keyframes bridge-glow { 50% { box-shadow:inset 0 1px 0 var(--br-glass-hi),0 12px 32px rgba(0,0,0,.26),0 0 18px -6px var(--br-accent); } }
+@media (prefers-reduced-motion: reduce) { .bridge__inst[data-live='true'] { animation:none; } }
 .bridge__inst-list { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; overflow:hidden; }
 .bridge__inst-list li { display:flex; gap:8px; align-items:baseline; min-width:0; font:400 12px/18px var(--br-font); color:var(--br-text); }
 .bridge__inst-list li b { flex:none; min-width:44px; font-weight:600; color:var(--br-mute); font-variant-numeric:tabular-nums; }

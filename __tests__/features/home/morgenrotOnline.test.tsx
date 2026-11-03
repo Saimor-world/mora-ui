@@ -142,7 +142,7 @@ describe('Café Morgenrot from CORE', () => {
     render(<MorgenrotHome navigate={navigate} />);
     expect(await screen.findByTestId('morgenrot-online')).toBeInTheDocument();
     expect(screen.getAllByTestId('morgenrot-department').map((d) => d.textContent)).toEqual(['Küche', 'Service']);
-    expect(screen.getByText(/Guten (Morgen|Tag|Abend), Lena\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Guten (Morgen|Tag|Abend)/)).not.toBeInTheDocument();
     expect(screen.getAllByText('Reservierung 12 Pers. 12:30 eindecken')[0]).toBeInTheDocument();
     // The old seed shows four areas (Service, Küche, Theke, Verwaltung) and a local role switch.
     expect(screen.queryByText('Theke')).toBeNull();

@@ -136,7 +136,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
       </div>
 
       <form className="mt-4 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); submit(draft); }}>
-        <Input label="Nachricht an MÔRA" placeholder="MÔRA fragen…" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <Input label="Nachricht an MÔRA" placeholder="MÔRA" value={draft} onChange={(e) => setDraft(e.target.value)} />
         <Button type="submit" variant="primary" iconOnly aria-label="Senden" icon={<ArrowUp size={16} />} disabled={!draft.trim() || send.isPending} />
       </form>
 

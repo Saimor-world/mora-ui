@@ -151,7 +151,7 @@ export function MoraStage({ navigate, onClose }: { navigate: (featureId: string)
       </div>
 
       <form className="mora-stage__input" onSubmit={(e) => { e.preventDefault(); submit(draft); }}>
-        <input ref={inputRef} aria-label="Nachricht an MÔRA" placeholder={lastUser ? 'Frag weiter …' : 'Frag MÔRA …'} value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" />
+        <input ref={inputRef} aria-label="Nachricht an MÔRA" placeholder="MÔRA" value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" />
         <button type="submit" aria-label="Senden" disabled={!draft.trim() || send.isPending} className={cx(draft.trim() ? 'is-ready' : '')}><ArrowUp size={16} aria-hidden="true" /></button>
       </form>
 

@@ -335,7 +335,7 @@ export function MorgenOverlay() {
         <form data-testid="uv2-ask" className="group relative pointer-events-auto" style={{ animation: `uv2in .6s ${ease} ${delay + 0.8}s both` }}
           onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return; space.ask(q, mode); setAsk(''); }}>
           <label className="flex h-11 items-center gap-3" style={{ borderBottom: `0.5px solid ${askFocus ? 'rgba(214,168,72,0.6)' : UV.c(0.16)}`, transition: 'border-color .4s' }}>
-            <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setTimeout(() => setAskFocus(false), 200)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
+            <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setTimeout(() => setAskFocus(false), 200)} aria-label="MÔRA fragen" placeholder="MÔRA"
               className="min-w-0 flex-1 bg-transparent text-center placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ ...TYPE.text, color: UV.cream }} />
             
           </label>

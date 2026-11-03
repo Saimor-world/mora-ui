@@ -76,10 +76,6 @@ export function LiveCockpit({
   const cleanViewerName = propViewerName ? stripFiktiv(propViewerName) : null;
   const first = cleanViewerName?.split(/\s+/)[0] || firstName(user);
 
-  const h = new Date().getHours();
-  const hello = h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
-  const greeting = `${hello}${first ? `, ${first}` : ''}.`;
-
   // Real company departments: from props (e.g. Morgenrot) or from useWorld().finder (same source as Universe)
   const rawDepts = useMemo(() => {
     return propDepartments && propDepartments.length > 0 ? propDepartments : [];
@@ -176,14 +172,6 @@ export function LiveCockpit({
     navigate('universe');
   }, [initialView, navigate, planets, finderLoading]);
 
-  const subline = liveLoading && propSnapshot === undefined
-    ? 'Quellen werden geladen …'
-    : loadError && propSnapshot === undefined && !liveLoading
-    ? 'Quellen sind derzeit nicht verfügbar.'
-    : items.length
-    ? `${items.length === 1 ? 'Ein Ding braucht' : items.length === 2 ? 'Zwei Dinge brauchen' : 'Drei Dinge brauchen'} dich.`
-    : 'Keine offenen Hinweise aus den verfügbaren Quellen.';
-
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
       navigate('tasks');
@@ -246,8 +234,6 @@ export function LiveCockpit({
         <section className="ck-panel" aria-label="Home">
           <div data-testid="morgenrot-online">
             <HomeOverview
-              greeting={greeting}
-              subline={subline}
               titleClass="ck-h1"
               sublineClass="ck-sub"
               widgets={widgetsFromToday(snapshot)}
@@ -284,14 +270,7 @@ export function LiveCockpit({
                     </li>
                   ))}
                 </ol>
-              ) : (
-                <div className="ck-calm" data-testid="home-done">
-                  <div>
-                    <b>Alles erledigt.</b>
-                    <span>Keine offenen Hinweise aus den verfügbaren Quellen.</span>
-                  </div>
-                </div>
-              )}
+              ) : null}
 
               {/* Department pills for direct access and testing */}
               <div className="mr-depts" aria-label="Abteilungen">
@@ -309,7 +288,7 @@ export function LiveCockpit({
                     </button>
                   ))
                 ) : (
-                  <span className="mr-note">{finderLoading ? 'Abteilungen werden geladen …' : finderFailed ? 'Abteilungen gerade nicht lesbar.' : 'Noch keine Abteilungen in CORE.'}</span>
+                  null
                 )}
               </div>
             </HomeOverview>

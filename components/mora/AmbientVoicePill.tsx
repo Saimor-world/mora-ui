@@ -8,7 +8,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 
 export function AmbientVoicePill() {
     const [isListening, setIsListening] = useState(false);
-    const [ambientMessage, setAmbientMessage] = useState<string | null>("MÔRA ist wach und hört zu...");
+    const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
     const openPane = usePaneStore((s) => s.openPane);
 
     useEffect(() => {

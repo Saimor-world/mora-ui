@@ -12,8 +12,8 @@ export function HomeOverview({
   widgets,
   onOpenWidget,
 }: {
-  greeting: string;
-  subline: string;
+  greeting?: string;
+  subline?: string;
   titleClass: string;
   sublineClass: string;
   children: React.ReactNode;
@@ -22,8 +22,9 @@ export function HomeOverview({
 }) {
   return (
     <>
-      <h1 className={titleClass}>{greeting}</h1>
-      <p className={sublineClass}>{subline}</p>
+      {/* „Visuelles spricht, Text schweigt“: no greeting or explanatory subline unless a caller passes one. */}
+      {greeting ? <h1 className={titleClass}>{greeting}</h1> : null}
+      {subline ? <p className={sublineClass}>{subline}</p> : null}
       {children}
       <WidgetBoard widgets={widgets} onOpen={onOpenWidget} />
     </>

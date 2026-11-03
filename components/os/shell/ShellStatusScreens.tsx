@@ -21,9 +21,6 @@ export const LoadingScreen: React.FC<{ name?: string | null; role?: string | nul
                 <span className="text-emerald-400/60 text-xs font-medium tracking-[0.4em] uppercase">
                     SAIMÔR OS
                 </span>
-                <span className="text-white/20 text-[10px] tracking-[0.2em]">
-                    Môra hört zu...
-                </span>
             </div>
             {/* Loading bar */}
             <div className="w-32 h-[2px] rounded-full bg-white/5 overflow-hidden">
