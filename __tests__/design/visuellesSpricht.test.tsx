@@ -39,6 +39,8 @@ const BANNED = [
   /Ich behalte den Tag im Blick/,
   /Frag mich was/i,
   /Frag MÔRA …|Frag weiter …|MÔRA fragen…/,
+  /Noch kein Stand/,
+  /MÔRA\$\{scene|MÔRA · (Morgen|Mittag|Nachmittag|Abend|Nacht)/,
 ];
 
 describe('Visuelles spricht, Text schweigt', () => {
