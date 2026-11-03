@@ -9,7 +9,6 @@ import { PixelMora } from '@/components/world/PixelMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
-import { getFeature } from '@/features/registry';
 import { AlarmClock, Bell, CalendarClock, CalendarDays, ChevronRight, ListChecks, Mail, Users, Grid2X2, Keyboard, RefreshCw, Search, Sparkles, SunMoon, Timer } from 'lucide-react';
 import { SCENES, sceneFor, type SceneId } from '@/lib/os-prototype/scene';
 import { DAY_END, DAY_START, dayMarks, hhmm, instrumentLines, mailCounts, moraLine, stageCard, stations, untilText, upcomingEvents, countLabel, type InstrumentLine, type Station } from '@/lib/mora/bridgeData';
@@ -90,11 +89,11 @@ export function tileSub(id:string, snapshot:TodaySnapshot|null):string{
 }
 /** Ein Instrument im Dock: Kopf (Wert), bis zu drei echte Einträge, zwei echte Aktionen. */
 const CHANNEL_ICON={post:Mail,today:ListChecks,team:Users,next:CalendarClock} as const;
-type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];empty:string;offline:boolean;open:()=>void;openLabel:string;ask:string};
+type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];offline:boolean;open:()=>void;openLabel:string};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onAsk?:(text:string)=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 const DISMISS_KEY='mora.bridge.dismissed';
 const PHONE_APPS=4;
-export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
+export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
   const { snapshot, refresh, refreshing }=useScopedToday({backgroundRefresh:true});
   const { data: briefing } = useDailyBriefing();
   const briefingUnread = briefing?.metrics?.unread_mails ?? null;
@@ -143,7 +142,6 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
   const openTarget=(t:'calendar'|'post'|'nightwatch')=>t==='calendar'?openLegacyApp('calendar'):t==='post'?onNavigate('post'):openNightwatch();
   const later=()=>{if(!card)return;setDismissed(card.id);setAsking(false);try{sessionStorage.setItem(DISMISS_KEY,card.id);}catch{/* privat */}};
-  const ask=(text:string)=>onAsk?onAsk(text):onMora();
   const controls = [
     {id:'search',name:'Suche',icon:Search,action:onSearch},
     ...items.map(item=>({id:item.id,name:item.title,icon:item.icon,action:()=>onNavigate(item.id)})).slice(0,phone?PHONE_APPS:undefined),
@@ -169,10 +167,10 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const until=untilText(snapshot,now);
   const readFrac=mail.unread!==null&&snapshot?.mail.items.length?1-Math.min(1,mail.unread/Math.max(snapshot.mail.items.length,mail.unread)):mail.unread===0?1:0;
   const instruments:Instrument[]=[
-    {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),empty:'Keine Mails im Eingang.',offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach',ask:'Was ist in meinem Postfach wichtig?'},
-    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),empty:'Keine offenen Aufgaben.',offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben',ask:'Was ist heute wichtig?'},
-    {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),empty:'Heute keine Schichten im Plan.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan',ask:'Wer arbeitet heute?'},
-    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:upcoming.slice(1,4).map(u=>({id:u.id,lead:u.when,text:u.label})),empty:'',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
+    {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach'},
+    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben'},
+    {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan'},
+    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:upcoming.slice(1,4).map(u=>({id:u.id,lead:u.when,text:u.label})),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender'},
   ];
   // Unverbundene Quelle: dunkle, transluzente Dock-Bucht nur mit Kanal-Symbol. Kein Text, kein „Offline“.
   const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
@@ -185,13 +183,11 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
       <ChevronRight className="bridge__chev" size={16} strokeWidth={1.75} aria-hidden="true" />
     </button>
     {g.lines.length ? <ul className="bridge__inst-list">{g.lines.map(l=><li key={l.id} data-tone={l.tone}><b>{l.lead}</b><span>{l.text}</span></li>)}</ul>
-        : <p className="bridge__inst-empty">{g.empty}</p>}
+        : null}
     <div className="bridge__inst-actions">
       <button type="button" onClick={g.open}>{g.openLabel}</button>
-      <button type="button" data-ask="true" onClick={()=>ask(g.ask)}>MÔRA fragen</button>
     </div>
   </article>;
-  const suggestions=(getFeature(activeId)?.mora.suggestions ?? getFeature('home')?.mora.suggestions ?? []).slice(0,3);
   const asOf=snapshot?.generated_at?new Date(snapshot.generated_at):null;
   const stand=asOf&&!isNaN(asOf.getTime())?asOf.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:snapshot?.timezone||'Europe/Berlin'}):null;
   const dateText=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Berlin'}).format(new Date());
@@ -233,7 +229,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>
             {shownCard ? <div className="bridge__field-card"><span>{shownCard.detail}</span><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
             <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>MÔRA</span><kbd>M</kbd></button></div>
-            {suggestions.length ? <div className="bridge__chips" aria-label="Vorschläge">{suggestions.map(s=><button key={s} type="button" onClick={()=>ask(s)}>{s}</button>)}</div> : null}
+            
           </div>
         </div>
         {instrument(instruments[2])}{instrument(instruments[3])}

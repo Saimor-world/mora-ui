@@ -331,3 +331,84 @@ html[data-mora-stage] .os-shell__content, html[data-mora-stage] .os-shell__topba
 .ck-planet--active > :first-child { filter:drop-shadow(0 0 14px var(--br-accent, rgba(214,168,72,.55))); animation:ck-planet-pulse 4.8s ease-in-out infinite; }
 @keyframes ck-planet-pulse { 50% { filter:drop-shadow(0 0 24px var(--br-accent, rgba(214,168,72,.75))) brightness(1.12); } }
 @media (prefers-reduced-motion: reduce) { .ck-planet--active > :first-child { animation:none; } }
+
+/* Runde 4 · Premium: ein Material, eine Typo-Skala, 8pt-Raster, ruhige Tiefe.
+   Hintergrund (JPG) → Planeten → Glas-Deck → Karten. Weniger Glühen, feinere Kanten. */
+html[data-dock='c'] {
+  --br-glass:rgba(8,26,34,.38);
+  --br-glass-hi:rgba(255,255,255,.14);
+  --br-line:rgba(255,255,255,.09);
+  --br-mute:rgba(226,238,232,.58); --br-faint:rgba(226,238,232,.36);
+  --br-ease:cubic-bezier(.22,1,.36,1);
+  --pm-r:24px;
+  --pm-shadow:0 1px 1px rgba(0,0,0,.10),0 4px 8px rgba(0,0,0,.10),0 16px 40px -8px rgba(0,0,0,.36);
+  --pm-inner:inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.02);
+}
+/* Wasser: weniger Funkeln und Linien */
+.bridge__sparkle { opacity:.22; }
+.bridge__ripple { opacity:.16; }
+.bridge__hull path:last-of-type { stroke-opacity:.45; filter:none; }
+.bridge__beam { opacity:.55; }
+/* Instrumente: echtes Glas, gleiche Kanten, 8pt-Innenraum */
+.bridge__deck { gap:16px; }
+.bridge__inst { padding:16px 16px 12px; border-radius:var(--pm-r);
+  background:linear-gradient(180deg,rgba(255,255,255,.075) 0%,rgba(255,255,255,.02) 48%,rgba(255,255,255,0) 100%),var(--br-glass);
+  -webkit-backdrop-filter:blur(28px) saturate(160%); backdrop-filter:blur(28px) saturate(160%);
+  border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow);
+  transition:transform .5s var(--br-ease),box-shadow .5s var(--br-ease),background .3s; }
+.bridge__inst[data-col='inner'] { margin-top:48px; }
+.bridge__inst:hover { transform:translateY(-2px); box-shadow:var(--pm-inner),0 2px 4px rgba(0,0,0,.12),0 24px 48px -8px rgba(0,0,0,.42); }
+.bridge__inst[data-live='true'] { animation:none; }
+.bridge__inst[data-tone='amber'] { border-color:rgba(242,192,106,.22); }
+.bridge__comp { gap:12px; min-height:48px; padding:0 0 12px; border-bottom:.5px solid var(--br-line); }
+.bridge__ring, .bridge__ring svg { width:32px; height:32px; }
+.bridge__ring-track { stroke:rgba(255,255,255,.08); stroke-width:2.5; }
+.bridge__ring-fill { stroke-width:2.5; }
+.bridge__comp-text { gap:2px; }
+.bridge__comp-text small { font:600 11px/16px var(--br-font); letter-spacing:.06em; color:var(--br-faint); }
+.bridge__comp-text strong { font:600 22px/28px var(--br-font); letter-spacing:-.022em; font-variant-numeric:tabular-nums; }
+.bridge__comp-text em { font:400 13px/16px var(--br-font); color:var(--br-mute); }
+.bridge__inst-list { margin-top:12px; gap:8px; }
+.bridge__inst-list li { font:400 13px/16px var(--br-font); color:rgba(238,246,241,.82); }
+.bridge__inst-list li b { min-width:48px; font-weight:500; color:var(--br-faint); }
+.bridge__inst-actions { margin-top:auto; padding-top:8px; }
+.bridge__inst-actions button { height:32px; border-radius:12px; border:.5px solid var(--br-line); background:rgba(255,255,255,.04); color:rgba(238,246,241,.86); font:500 13px/1 var(--br-font); }
+/* MÔRAs Feld: ruhiger Schein statt Rand-Glühen */
+.bridge__field { padding:56px 24px 16px; gap:8px;
+  background:radial-gradient(100% 80% at 50% 0%,color-mix(in srgb,var(--br-accent) 9%,transparent),transparent 62%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(8,26,34,.46));
+  border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow); }
+.bridge__mora { filter:drop-shadow(0 8px 16px rgba(0,0,0,.35)) drop-shadow(0 0 12px color-mix(in srgb,var(--br-accent) 28%,transparent)); }
+.bridge__ask > button { height:44px; border-radius:16px; border:.5px solid rgba(255,255,255,.12); background:rgba(2,14,20,.42); font:400 15px/1 var(--br-font); }
+/* Status und App-Leiste */
+.bridge__clock b { font:200 28px/32px var(--br-font); }
+.bridge__chip { height:32px; border-radius:16px; border:.5px solid var(--br-line); font-weight:500; }
+.bridge__pill { gap:8px; padding:8px 12px; height:64px; border-radius:24px; border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow); }
+.bridge__app-icon { border-radius:12px; background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); box-shadow:inset 0 .5px 0 rgba(255,255,255,.18); }
+.bridge__badge { font-weight:600; letter-spacing:-.01em; box-shadow:0 0 0 2px rgba(8,26,34,.9); }
+/* Heute-Karten: schwebendes Glas über dem Himmel */
+.ck-focus { gap:16px; }
+.ck-focus__card { gap:8px; min-width:200px; padding:16px 24px 16px 20px; border-radius:20px;
+  border:.5px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)),rgba(8,26,34,.34);
+  -webkit-backdrop-filter:blur(24px) saturate(160%); backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:var(--pm-inner),var(--pm-shadow); transition:transform .5s var(--br-ease),box-shadow .5s var(--br-ease),border-color .3s; }
+.ck-focus__card:hover, .ck-focus__card:focus-visible { transform:translateY(-2px); border-color:rgba(255,255,255,.24); background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04)),rgba(8,26,34,.34); }
+.ck-focus__card span { font:600 11px/16px var(--br-font,system-ui); letter-spacing:.06em; text-transform:uppercase; opacity:1; color:rgba(226,238,232,.56); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ck-focus__card b { font:600 22px/28px var(--br-font,system-ui); letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:#f3f8f5; }
+.ck-focus__card[data-tone='amber'] b { color:#f2c06a; }
+.ck-focus__card[data-tone='red'] b { color:#f58c7d; }
+/* Planeten: ruhigerer Puls */
+.ck-planet--active > :first-child { animation-duration:6s; animation-timing-function:var(--br-ease,ease-in-out); }
+@media (max-width:699px) {
+  .bridge__deck { gap:8px; }
+  .bridge__inst { padding:8px 8px; border-radius:16px; }
+  .bridge__comp { padding:0; border:0; }
+  .bridge__comp-text strong { font-size:13px; line-height:18px; letter-spacing:-.03em; }
+  .bridge__field { padding:44px 12px 8px; border-radius:20px; }
+  .bridge__pill { height:56px; padding:6px 8px; border-radius:20px; }
+  .ck-focus { gap:8px; } .ck-focus__card { min-width:0; padding:12px 16px; } .ck-focus__card b { font-size:17px; line-height:22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bridge__inst, .ck-focus__card { transition:none; }
+  .bridge__inst:hover, .ck-focus__card:hover, .ck-focus__card:focus-visible { transform:none; }
+}
