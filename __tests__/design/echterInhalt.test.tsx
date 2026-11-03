@@ -118,3 +118,14 @@ describe('keine erfundenen Fristen im Produktivcode', () => {
     }
   });
 });
+
+describe('HQ-Hintergrund', () => {
+  it('der See hinter dem HQ nutzt nur Dateiendungen, die die Middleware öffentlich ausliefert', () => {
+    const css = fs.readFileSync('components/os-shell/bridge-concept.css', 'utf8');
+    const mw = fs.readFileSync('middleware.ts', 'utf8');
+    const exts = /\\\.\(([a-z0-9|]+)\)\$/.exec(mw)![1].split('|');
+    const lake = [...css.matchAll(/url\('(\/universe\/universe-lake\.[a-z]+)'\)/g)].map((m) => m[1]);
+    expect(lake.length).toBeGreaterThan(0);
+    for (const u of lake) expect(exts).toContain(u.split('.').pop());
+  });
+});

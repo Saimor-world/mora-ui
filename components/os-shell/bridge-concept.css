@@ -271,7 +271,6 @@ html[data-dock='c'] .os-root .ck { --ck-dock-clearance:calc(var(--os-dock-space)
 /* Ein See hinter jeder OS-Seite (das Pixel-Universe behält seinen Himmel) */
 html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-space), .ck-universe-unified[data-style='glas'] .ck-space {
   background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
-  background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
   background-blend-mode: normal !important; filter: var(--lake-pal, saturate(1.05)) var(--lake-phase, brightness(1.05)) !important;
 }
 /* Glasplaneten: je Position eine eigene Farbe, leicht über dem Wasser */

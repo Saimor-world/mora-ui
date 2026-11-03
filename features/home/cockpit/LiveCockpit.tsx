@@ -17,7 +17,9 @@ import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from '
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
-import { focusCards } from '@/lib/mora/bridgeData';
+import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -179,6 +181,13 @@ export function LiveCockpit({
 
   const focus = useMemo(() => focusCards(snapshot ?? null), [snapshot]);
 
+  const openFocus = (target: FocusCard['target']) => {
+    if (target === 'post') navigate('post');
+    else if (target === 'tasks') navigate('today');
+    else if (target === 'calendar') openLegacyApp('calendar');
+    else useOsShellStore.getState().setNightwatchOpen(true);
+  };
+
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
       navigate('tasks');
@@ -259,7 +268,7 @@ export function LiveCockpit({
                 </div>
               ) : null}
 
-              <HomeFocus cards={focus} onOpen={navigate} />
+              <HomeFocus cards={focus} onOpen={openFocus} />
 
               {items.length ? (
                 <ol className="ck-list">

@@ -268,4 +268,19 @@ describe('Demo-Tenant: fiktiv-badge in Home UND Universe + stripFiktiv erst in d
     expect(finderContainer.textContent).not.toContain('(FIKTIV)');
     unmountFinder();
   }, 60000);
+
+  it('Heute-Karte mit Frist öffnet die Aufgaben (Feature „today“), nicht ins Leere', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const navigate = jest.fn();
+    render(
+      <QueryClientProvider client={qc}>
+        <LiveCockpit navigate={navigate} initialView="home" finderPlanets={demoFinder} snapshot={makeSnapshot()} />
+      </QueryClientProvider>
+    );
+    const card = screen.getAllByTestId('home-focus-card').find((c) => /Frist|überfällig/.test(c.textContent ?? ''))!;
+    card.click();
+    expect(navigate).toHaveBeenCalledWith('today');
+    expect(navigate).not.toHaveBeenCalledWith('tasks');
+  });
 });
+
