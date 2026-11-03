@@ -276,7 +276,7 @@ export function LiveCockpit({
                     <li key={it.id} className="ck-item">
                       <div className="ck-item__txt">
                         <div className="ck-item__t">{it.title}</div>
-                        <div className="ck-item__d" style={it.isWarning ? { color: 'var(--amber, #f59e0b)' } : undefined}>{it.detail}</div>
+                        {it.detail ? <div className="ck-item__d" style={it.isWarning ? { color: 'var(--amber, #f59e0b)' } : undefined}>{it.detail}</div> : null}
                       </div>
                       <button
                         type="button"

@@ -403,7 +403,14 @@ html[data-dock='c'] {
   .bridge__deck { gap:8px; }
   .bridge__inst { padding:8px 8px; border-radius:16px; }
   .bridge__comp { padding:0; border:0; }
-  .bridge__comp-text strong { font-size:13px; line-height:18px; letter-spacing:-.03em; }
+  .bridge__comp-text strong { font-size:15px; line-height:20px; letter-spacing:-.02em; overflow:visible; text-overflow:clip; }
+  /* Handy: Dock als 2×2-Raster, Werte stehen voll da */
+  html[data-dock='c'], html[data-dock='c'] .os-root { --os-dock-space:304px !important; }
+  .bridge__body { height:304px; }
+  .bridge__deck { grid-template-columns:repeat(2,1fr); grid-template-rows:1fr auto auto; }
+  .bridge__inst[data-station='post'] { grid-column:1; grid-row:2; } .bridge__inst[data-station='today'] { grid-column:2; grid-row:2; }
+  .bridge__inst[data-station='team'] { grid-column:1; grid-row:3; } .bridge__inst[data-station='next'] { grid-column:2; grid-row:3; }
+  .bridge__comp { min-height:32px; }
   .bridge__field { padding:44px 12px 8px; border-radius:20px; }
   .bridge__pill { height:56px; padding:6px 8px; border-radius:20px; }
   .ck-focus { gap:8px; } .ck-focus__card { min-width:0; padding:12px 16px; } .ck-focus__card b { font-size:17px; line-height:22px; }
