@@ -929,7 +929,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     className="flex items-center justify-center gap-2"
                                 >
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
-                                    <span className="text-[10px] text-mora-gold/70 tracking-widest font-medium">Môra hört zu</span>
+                                    <span className="sr-only">MÔRA</span>
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
                                 </motion.div>
                             </div>

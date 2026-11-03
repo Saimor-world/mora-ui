@@ -207,7 +207,7 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     expect(stone).toBeInTheDocument();
     expect(stone.querySelector('.os-dock__stage')).toBeNull();
     expect(screen.getByTestId('dock-ask-open')).toBeInTheDocument();
-    expect(screen.getByText('Frag MÔRA …')).toBeInTheDocument();
+    expect(within(screen.getByTestId('dock-ask-open')).getByText('MÔRA')).toBeInTheDocument();
     expect(screen.queryByTestId('dock-active-count')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dock-attention')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dock-last-active')).not.toBeInTheDocument();

@@ -10,7 +10,7 @@ import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
 import { getFeature } from '@/features/registry';
-import { AlarmClock, Bell, CalendarClock, CalendarDays, ChevronRight, Grid2X2, Keyboard, RefreshCw, Search, Sparkles, SunMoon, Timer } from 'lucide-react';
+import { AlarmClock, Bell, CalendarClock, CalendarDays, ChevronRight, ListChecks, Mail, Users, Grid2X2, Keyboard, RefreshCw, Search, Sparkles, SunMoon, Timer } from 'lucide-react';
 import { SCENES, sceneFor, type SceneId } from '@/lib/os-prototype/scene';
 import { DAY_END, DAY_START, dayMarks, hhmm, instrumentLines, mailCounts, moraLine, stageCard, stations, untilText, type InstrumentLine, type Station } from '@/lib/mora/bridgeData';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
@@ -57,7 +57,7 @@ function useOrbReflections(water:React.RefObject<HTMLDivElement|null>):Orb[]{
   },[water]);
   return orbs;
 }
-/** Zusatz-Widgets: nur echte Snapshot-Werte; fehlt die Quelle, steht dort „Offline“. */
+/** Zusatz-Widgets: nur echte Snapshot-Werte; fehlt die Quelle, bleibt der Wert leer (—). */
 type Widget={id:string;label:string;value:string;tone:'calm'|'amber'|'red';icon:typeof CalendarClock;sub?:string;target:'calendar'|'today'|'control'};
 export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):Widget[]{
   const cal=snapshot&&available(snapshot.calendar)?snapshot.calendar:null;
@@ -67,9 +67,9 @@ export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):W
   const count=cal?(cal.count??cal.events.filter(e=>e.date===snapshot?.date).length):null;
   const scene=phase?SCENES.find(x=>x.id===phase):null;
   return [
-    {id:'next',label:'Als Nächstes',value:!cal?'Offline':next?`${next.time?`${next.time} `:''}${next.title.replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim()}`:'Heute frei',tone:'calm',icon:CalendarClock,target:'calendar'},
-    {id:'overdue',label:'Überfällig',value:overdue===null?'Offline':overdue?`${overdue} ${overdue===1?'Aufgabe':'Aufgaben'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
-    {id:'events',label:'Termine',value:count===null?'Offline':String(count),tone:'calm',icon:CalendarDays,target:'calendar'},
+    {id:'next',label:'Als Nächstes',value:!cal?'—':next?`${next.time?`${next.time} `:''}${next.title.replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim()}`:'Heute frei',tone:'calm',icon:CalendarClock,target:'calendar'},
+    {id:'overdue',label:'Überfällig',value:overdue===null?'—':overdue?`${overdue} ${overdue===1?'Aufgabe':'Aufgaben'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
+    {id:'events',label:'Termine',value:count===null?'—':String(count),tone:'calm',icon:CalendarDays,target:'calendar'},
     {id:'phase',label:'Zeit-Theme',value:scene?scene.label:'…',sub:scene?scene.range:undefined,tone:'calm',icon:SunMoon,target:'control'},
   ];
 }
@@ -89,6 +89,7 @@ export function tileSub(id:string, snapshot:TodaySnapshot|null):string{
   }
 }
 /** Ein Instrument im Dock: Kopf (Wert), bis zu drei echte Einträge, zwei echte Aktionen. */
+const CHANNEL_ICON={post:Mail,today:ListChecks,team:Users,next:CalendarClock} as const;
 type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];empty:string;offline:boolean;open:()=>void;openLabel:string;ask:string};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onAsk?:(text:string)=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 const DISMISS_KEY='mora.bridge.dismissed';
@@ -170,19 +171,22 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
     {id:'post',col:'outer',label:'Post',value:post.value,detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),empty:'Keine Mails im Eingang.',offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach',ask:'Was ist in meinem Postfach wichtig?'},
     {id:'today',col:'inner',label:'Heute',value:today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),empty:'Keine offenen Aufgaben.',offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben',ask:'Was ist heute wichtig?'},
     {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),empty:'Heute keine Schichten im Plan.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan',ask:'Wer arbeitet heute?'},
-    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'Offline':nextMark?nextMark.time:'Frei',detail:!cal?'Kalender nicht verbunden':nextMark?`${nextMark.label}${until?` · ${until}`:''}`:'Heute kein Termin mehr',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now).slice(1),empty:nextMark?'Danach ist der Tag frei.':'Der Rest des Tages ist frei.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
+    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':nextMark?nextMark.time:'Frei',detail:!cal?'Kalender nicht verbunden':nextMark?`${nextMark.label}${until?` · ${until}`:''}`:'Heute kein Termin mehr',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now).slice(1),empty:nextMark?'Danach ist der Tag frei.':'Der Rest des Tages ist frei.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
   ];
-  const instrument=(g:Instrument)=><article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-offline={g.offline?'true':undefined}>
-    <button type="button" className="bridge__comp" data-station={g.id} onClick={g.offline?()=>onNavigate('settings'):g.open} aria-label={`${g.label}: ${g.value} · ${g.detail}`} title={`${g.label}: ${g.value} · ${g.detail}`}>
+  // Unverbundene Quelle: dunkle, transluzente Dock-Bucht nur mit Kanal-Symbol. Kein Text, kein „Offline“.
+  const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
+    <button type="button" className="bridge__bay" onClick={()=>onNavigate('settings')} aria-label={`${g.label} verbinden`}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></button>
+  </article>;};
+  const instrument=(g:Instrument)=>g.offline?bay(g):<article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-live={g.lines.length?'true':undefined}>
+    <button type="button" className="bridge__comp" data-station={g.id} onClick={g.open} aria-label={`${g.label}: ${g.value} · ${g.detail}`} title={`${g.label}: ${g.value} · ${g.detail}`}>
       <Ring frac={g.frac} />
       <span className="bridge__comp-text"><small>{g.label}</small><strong>{g.value}</strong><em>{g.detail}</em></span>
       <ChevronRight className="bridge__chev" size={16} strokeWidth={1.75} aria-hidden="true" />
     </button>
-    {g.offline ? <p className="bridge__inst-empty">Diese Quelle ist noch nicht angedockt. In den Einstellungen verbindest du sie.</p>
-      : g.lines.length ? <ul className="bridge__inst-list">{g.lines.map(l=><li key={l.id} data-tone={l.tone}><b>{l.lead}</b><span>{l.text}</span></li>)}</ul>
+    {g.lines.length ? <ul className="bridge__inst-list">{g.lines.map(l=><li key={l.id} data-tone={l.tone}><b>{l.lead}</b><span>{l.text}</span></li>)}</ul>
         : <p className="bridge__inst-empty">{g.empty}</p>}
     <div className="bridge__inst-actions">
-      {g.offline ? <button type="button" onClick={()=>onNavigate('settings')}>Quelle verbinden</button> : <button type="button" onClick={g.open}>{g.openLabel}</button>}
+      <button type="button" onClick={g.open}>{g.openLabel}</button>
       <button type="button" data-ask="true" onClick={()=>ask(g.ask)}>MÔRA fragen</button>
     </div>
   </article>;
@@ -227,7 +231,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
             <small className="bridge__field-eyebrow">{shownCard?.eyebrow ?? `MÔRA${scene?` · ${scene.label}`:''}`}</small>
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>
             {shownCard ? <div className="bridge__field-card"><span>{shownCard.detail}</span><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
-            <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>Frag MÔRA …</span><kbd>M</kbd></button></div>
+            <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>MÔRA</span><kbd>M</kbd></button></div>
             {suggestions.length ? <div className="bridge__chips" aria-label="Vorschläge">{suggestions.map(s=><button key={s} type="button" onClick={()=>ask(s)}>{s}</button>)}</div> : null}
           </div>
         </div>

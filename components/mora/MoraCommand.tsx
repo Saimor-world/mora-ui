@@ -136,7 +136,7 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask Môra..."
+                placeholder="MÔRA"
                 className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-2 pr-10 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-light"
                 disabled={thinking}
             />
