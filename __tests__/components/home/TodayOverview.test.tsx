@@ -243,3 +243,38 @@ describe('TodayOverview scope and auth boundaries', () => {
     expect(screen.queryByText('Nicht verbunden')).not.toBeInTheDocument();
   });
 });
+
+describe('TodayOverview: MÔRA versteht Post', () => {
+  const understanding = {
+    waiting: 9,
+    counts: { needs_you: 2, fyi: 4, automated: 3 },
+    headline: '9 Mails warten, 2 davon brauchen dich.',
+    items: [
+      { id: 'a', subject: 'Lieferung', summary: 'Lieferung Freitag: Menge bis Donnerstag bestätigen?', category: 'needs_you' as const, action_items: [] },
+      { id: 'b', subject: 'Fotos', summary: 'Fotos vom Samstag', category: 'fyi' as const, action_items: [] },
+      { id: 'c', subject: 'Rechnung', summary: 'Rechnung Oktober: 312,40 EUR fällig', category: 'needs_you' as const, action_items: [] },
+    ],
+  };
+
+  it.each([true, false])('zeigt Überschrift und nur die braucht-dich-Zeilen (v2=%s)', async (v2) => {
+    mockUniverseV2 = v2;
+    mockCalendarUnavailable = false;
+    const snap = snapshotFor('company-a', 'Alte Betreffzeile');
+    (snap.mail as TodaySnapshot['mail']).understanding = understanding;
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snap);
+    render(<TodayOverview />);
+    expect(await screen.findByText('9 Mails warten, 2 davon brauchen dich.')).toBeInTheDocument();
+    const lines = screen.getByTestId('today-mail-needs-you');
+    expect(lines).toHaveTextContent('Lieferung Freitag');
+    expect(lines).toHaveTextContent('Rechnung Oktober');
+    expect(lines).not.toHaveTextContent('Fotos vom Samstag');
+  });
+
+  it('ohne Verständnis bleibt die bisherige Ansicht', async () => {
+    mockUniverseV2 = false;
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snapshotFor('company-a', 'Alte Betreffzeile'));
+    render(<TodayOverview />);
+    expect(await screen.findByText('Alte Betreffzeile')).toBeInTheDocument();
+    expect(screen.queryByTestId('today-mail-needs-you')).not.toBeInTheDocument();
+  });
+});
