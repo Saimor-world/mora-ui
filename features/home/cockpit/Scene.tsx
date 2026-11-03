@@ -190,12 +190,14 @@ export function PlanetSystem({
         const orbSize = strip ? 48 : compact ? Math.round(s.size * 0.9) : s.size;
         const tint = tintForGlass(p.glass);
         const cleanTitle = stripFiktiv(p.title) || p.title;
+        const active = !!(signals?.get(p.id) || attention.has(p.id));
 
         return (
           <button
             key={p.id}
             type="button"
-            className="ck-planet"
+            className={active ? 'ck-planet ck-planet--active' : 'ck-planet'}
+            data-active={active ? 'true' : undefined}
             style={{
               left: `${s.x}px`,
               top: `${s.y}px`,

@@ -12,7 +12,7 @@ import type { FeatureManifest } from '@/features/types';
 import { getFeature } from '@/features/registry';
 import { AlarmClock, Bell, CalendarClock, CalendarDays, ChevronRight, ListChecks, Mail, Users, Grid2X2, Keyboard, RefreshCw, Search, Sparkles, SunMoon, Timer } from 'lucide-react';
 import { SCENES, sceneFor, type SceneId } from '@/lib/os-prototype/scene';
-import { DAY_END, DAY_START, dayMarks, hhmm, instrumentLines, mailCounts, moraLine, stageCard, stations, untilText, type InstrumentLine, type Station } from '@/lib/mora/bridgeData';
+import { DAY_END, DAY_START, dayMarks, hhmm, instrumentLines, mailCounts, moraLine, stageCard, stations, untilText, countLabel, type InstrumentLine, type Station } from '@/lib/mora/bridgeData';
 import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import Link from 'next/link';
 import './bridge-concept.css';
@@ -165,13 +165,14 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const tasks=snapshot&&available(snapshot.tasks)?snapshot.tasks:null;
   const cal=snapshot&&available(snapshot.calendar)?snapshot.calendar:null;
   const nextMark=marks.find(m=>m.minute>=now)??null;
+  const todayEvents=cal?cal.events.filter(e=>e.date===snapshot?.date).length:0;
   const until=untilText(snapshot,now);
   const readFrac=mail.unread!==null&&snapshot?.mail.items.length?1-Math.min(1,mail.unread/Math.max(snapshot.mail.items.length,mail.unread)):mail.unread===0?1:0;
   const instruments:Instrument[]=[
-    {id:'post',col:'outer',label:'Post',value:post.value,detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),empty:'Keine Mails im Eingang.',offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach',ask:'Was ist in meinem Postfach wichtig?'},
-    {id:'today',col:'inner',label:'Heute',value:today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),empty:'Keine offenen Aufgaben.',offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben',ask:'Was ist heute wichtig?'},
+    {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),empty:'Keine Mails im Eingang.',offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach',ask:'Was ist in meinem Postfach wichtig?'},
+    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),empty:'Keine offenen Aufgaben.',offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben',ask:'Was ist heute wichtig?'},
     {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),empty:'Heute keine Schichten im Plan.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan',ask:'Wer arbeitet heute?'},
-    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':nextMark?nextMark.time:'Frei',detail:!cal?'Kalender nicht verbunden':nextMark?`${nextMark.label}${until?` · ${until}`:''}`:'Heute kein Termin mehr',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now).slice(1),empty:nextMark?'Danach ist der Tag frei.':'Der Rest des Tages ist frei.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
+    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':todayEvents?countLabel(todayEvents,'Termin','Termine'):'Frei',detail:!cal?'Kalender nicht verbunden':nextMark?`${nextMark.time} ${nextMark.label}${until?` · ${until}`:''}`:'Heute kein Termin mehr',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now).slice(1),empty:nextMark?'Danach ist der Tag frei.':'Der Rest des Tages ist frei.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
   ];
   // Unverbundene Quelle: dunkle, transluzente Dock-Bucht nur mit Kanal-Symbol. Kein Text, kein „Offline“.
   const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
