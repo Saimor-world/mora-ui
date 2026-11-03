@@ -271,7 +271,6 @@ html[data-dock='c'] .os-root .ck { --ck-dock-clearance:calc(var(--os-dock-space)
 /* Ein See hinter jeder OS-Seite (das Pixel-Universe behält seinen Himmel) */
 html[data-dock='c'] .ck-space:not(.ck-universe-unified[data-style='pixel'] .ck-space), .ck-universe-unified[data-style='glas'] .ck-space {
   background: #03111a url('/universe/universe-lake.jpg') center 58% / cover no-repeat !important;
-  background-image: image-set(url('/universe/universe-lake.webp') type('image/webp'), url('/universe/universe-lake.jpg') type('image/jpeg')) !important;
   background-blend-mode: normal !important; filter: var(--lake-pal, saturate(1.05)) var(--lake-phase, brightness(1.05)) !important;
 }
 /* Glasplaneten: je Position eine eigene Farbe, leicht über dem Wasser */
@@ -318,3 +317,17 @@ html[data-mora-stage] .os-shell__content, html[data-mora-stage] .os-shell__topba
   html[data-dock='c'] .os-shell:not([data-place='universe']):not([data-place='home']) .os-shell__content { height: calc(100% - var(--os-dock-space, 304px) - 112px) !important; }
   html[data-dock='c'] .os-root:has(.os-shell:not([data-place='universe']):not([data-place='home'])) .bridge .px-mora:not(.px-mora--mark) { scale: .6; transform-origin: 50% 100%; transition: scale .4s ease; }
 }
+
+/* Runde 3: Heute-Karten in der Kosmos-Mitte – nur Name + Zahl/Datum */
+.ck-focus { list-style:none; margin:0; padding:0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.ck-focus__card { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:150px; padding:14px 18px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); box-shadow:inset 0 1px 0 var(--br-glass-hi, rgba(255,255,255,.08)); backdrop-filter:blur(10px); color:inherit; font:inherit; cursor:pointer; text-align:left; transition:background .2s, border-color .2s; }
+.ck-focus__card:hover, .ck-focus__card:focus-visible { background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16); }
+.ck-focus__card span { font-size:12px; letter-spacing:.04em; opacity:.6; }
+.ck-focus__card b { font-size:17px; font-weight:500; }
+.ck-focus__card[data-tone='amber'] b { color:var(--amber, #f59e0b); }
+.ck-focus__card[data-tone='red'] b { color:#f87171; }
+@media (min-width:700px) { html[data-dock='c'] .ck[data-view='home'] .ck-panel:has(.ck-focus) .ck-list { display:none; } }
+/* Planet mit Aktivität: sanftes Pulsieren, bei reduzierter Bewegung nur heller */
+.ck-planet--active > :first-child { filter:drop-shadow(0 0 14px var(--br-accent, rgba(214,168,72,.55))); animation:ck-planet-pulse 4.8s ease-in-out infinite; }
+@keyframes ck-planet-pulse { 50% { filter:drop-shadow(0 0 24px var(--br-accent, rgba(214,168,72,.75))) brightness(1.12); } }
+@media (prefers-reduced-motion: reduce) { .ck-planet--active > :first-child { animation:none; } }

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
 import { PlanetSystem } from './Scene';
 import { HomeOverview } from '../widgets/HomeOverview';
+import { HomeFocus } from '../widgets/HomeFocus';
 import { widgetsFromToday } from '../widgets/adapters';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
@@ -16,6 +17,9 @@ import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from '
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
+import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -123,6 +127,9 @@ export function LiveCockpit({
       if (attention.has(p.id)) {
         map.set(p.id, { isAlarm: false, reason: 'Braucht dich' });
       }
+      if (map.has(p.id)) return;
+      const open = (snapshot?.tasks?.items ?? []).filter((t) => t.department_id === p.id && t.status !== 'done');
+      if (open.length > 0) map.set(p.id, { isAlarm: false, reason: `${open.length} offen` });
     });
     return map;
   }, [planets, nightwatchIncidents, snapshot?.tasks, attention]);
@@ -171,6 +178,15 @@ export function LiveCockpit({
     }
     navigate('universe');
   }, [initialView, navigate, planets, finderLoading]);
+
+  const focus = useMemo(() => focusCards(snapshot ?? null), [snapshot]);
+
+  const openFocus = (target: FocusCard['target']) => {
+    if (target === 'post') navigate('post');
+    else if (target === 'tasks') navigate('today');
+    else if (target === 'calendar') openLegacyApp('calendar');
+    else useOsShellStore.getState().setNightwatchOpen(true);
+  };
 
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
@@ -251,6 +267,8 @@ export function LiveCockpit({
                   />
                 </div>
               ) : null}
+
+              <HomeFocus cards={focus} onOpen={openFocus} />
 
               {items.length ? (
                 <ol className="ck-list">

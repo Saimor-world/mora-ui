@@ -246,3 +246,57 @@ export function untilText(snapshot: TodaySnapshot | null, now: number): string |
   if (d < 1) return 'jetzt';
   return d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)} h${d % 60 ? ` ${d % 60} min` : ''}`;
 }
+
+/** „1 Mail“, „9 Mails“ – Zahl plus Einheit, sonst nichts. */
+export const countLabel = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const ddmm = (iso?: string | null) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  return m ? `${m[3]}.${m[2]}.` : null;
+};
+
+/** Was heute wirklich zählt: höchstens `max` Karten, jede nur Name + Zahl/Datum, alles aus dem Snapshot. */
+export type FocusCard = { id: string; label: string; value: string; tone: 'calm' | 'amber' | 'red'; target: 'post' | 'tasks' | 'calendar' | 'nightwatch' };
+export function focusCards(snapshot: TodaySnapshot | null, briefingUnread?: number | null, max = 3): FocusCard[] {
+  if (!snapshot) return [];
+  const out: FocusCard[] = [];
+  if (sourceReady(snapshot.nightwatch)) {
+    const n = snapshot.nightwatch.open_incidents ?? snapshot.nightwatch.incidents.length;
+    const critical = snapshot.nightwatch.incidents.some((i) => /critical|fatal/i.test(String(i.severity ?? '')));
+    if (n) out.push({ id: 'nightwatch', label: 'Nachtwache', value: `${n} offen`, tone: critical ? 'red' : 'amber', target: 'nightwatch' });
+  }
+  for (const a of absences(snapshot)) out.push({ id: `absent:${a.name}`, label: a.name, value: a.shiftTime ? `Schicht ${a.shiftTime} offen` : 'fällt aus', tone: 'amber', target: 'calendar' });
+  const mail = mailCounts(snapshot, briefingUnread);
+  if (mail.needsYou) out.push({ id: 'post', label: 'Post', value: `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich`, tone: 'amber', target: 'post' });
+  if (sourceReady(snapshot.tasks)) {
+    const overdueIds = new Set(snapshot.tasks.overdue.map((t) => t.id));
+    const seen = new Set<string>();
+    [...snapshot.tasks.overdue, ...snapshot.tasks.due_today, ...snapshot.tasks.items]
+      .filter((t) => t.status !== 'done' && ddmm(t.due_date) && !seen.has(t.id) && seen.add(t.id))
+      .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+      .forEach((t) => {
+        const late = overdueIds.has(t.id) || t.is_overdue === true;
+        out.push({ id: `task:${t.id}`, label: shorten(t.title, 20), value: `${late ? 'überfällig' : 'Frist'} ${ddmm(t.due_date)}`, tone: late ? 'amber' : 'calm', target: 'tasks' });
+      });
+  }
+  return out.slice(0, max);
+}
+
+/** Als-Nächstes-Dock: eine Liste kommender Termine – Zahl und Zeilen kommen beide daraus. Heute nur Uhrzeit, sonst „Do 05.11. 14:00“. */
+export type UpcomingEvent = { id: string; when: string; label: string };
+const WEEKDAY = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+export function upcomingEvents(snapshot: TodaySnapshot | null, now: number): UpcomingEvent[] {
+  if (!snapshot || !sourceReady(snapshot.calendar)) return [];
+  const today = snapshot.date;
+  return snapshot.calendar.events
+    .filter((e) => e.title && e.date && /^\d{4}-\d{2}-\d{2}/.test(e.date))
+    .map((e) => ({ e, minute: toMinute(e.time) }))
+    .filter(({ e, minute }) => e.date > today || (e.date === today && (minute === null || minute >= now)))
+    .sort((a, b) => a.e.date.localeCompare(b.e.date) || (a.minute ?? -1) - (b.minute ?? -1))
+    .map(({ e, minute }) => {
+      const time = minute === null ? '' : hhmm(minute);
+      const [y, mo, d] = e.date.slice(0, 10).split('-').map(Number);
+      const day = `${WEEKDAY[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]} ${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')}.`;
+      return { id: e.id, when: e.date === today ? time || 'Heute' : [day, time].filter(Boolean).join(' '), label: shorten(e.title) };
+    });
+}
