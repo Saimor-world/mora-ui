@@ -5,7 +5,7 @@ import { useScopedToday } from '@/lib/os/useScopedToday';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { DOCK_ASK_SLOT } from '@/lib/mora/hubMood';
-import { PixelMora } from '@/components/world/PixelMora';
+import { JadeMora } from '@/components/world/JadeMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
@@ -220,7 +220,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
         <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
           <span className="bridge__beam" aria-hidden="true" />
           <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
-          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?76:104} mood={mood} /></span></button>
+          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><JadeMora size={phone?112:172} mood={mood} /></span></button>
           <div className="bridge__field" data-field="mora" data-kind={shownCard?.kind} data-urgent={shownCard?.urgent?'true':undefined}>
             {shownCard?.eyebrow ? <small className="bridge__field-eyebrow">{shownCard.eyebrow}</small> : null}
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>

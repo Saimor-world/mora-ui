@@ -239,9 +239,6 @@ function PixelUniverseOverview({
               </WorldPlanetSphere>
               <span className="wd-label">
                 <span className="wd-name">{displayName}</span>
-                <span className="wd-meta">
-                  {planet.moons?.length ? `${planet.moons.length} Ordner` : 'noch leer'}
-                </span>
                 {incCount > 0 ? (
                   <span
                     className="ck-incident-tag"
@@ -494,7 +491,7 @@ export function UnifiedUniverse({
         id: 'briefing-mails',
         label: 'Post',
         title: `${mail.unread} ungelesene Mails`,
-        detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : 'Wartet auf dich',
+        detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : '',
       });
     }
     if (dailyBriefing.metrics?.active_incidents && dailyBriefing.metrics.active_incidents > 0) {
@@ -535,7 +532,7 @@ export function UnifiedUniverse({
       {planetStyle === 'pixel' ? (
         <PixelSky reduced={motionReduced} />
       ) : (
-        <div className="ck-space" aria-hidden />
+        <><div className="ck-space" aria-hidden /><div className="ck-mist" aria-hidden><i /><i /><i /></div></>
       )}
 
 

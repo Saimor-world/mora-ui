@@ -210,6 +210,7 @@ export function LiveCockpit({
       data-folder="0"
     >
       <div className="ck-space" aria-hidden />
+      <div className="ck-mist" aria-hidden><i /><i /><i /></div>
 
       {/* 3D Scene canvas */}
       <div className="ck-scene ck-scene--system ck-scene--behind">

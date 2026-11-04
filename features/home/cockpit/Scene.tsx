@@ -1,4 +1,6 @@
 'use client';
+import { activityScale } from '@/lib/universe/planetActivity';
+import { skyLayout } from '@/lib/universe/skyLayout';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { PixelSphere } from '@/components/universe/PlanetSphere';
@@ -173,6 +175,13 @@ export function PlanetSystem({
     });
   }, [planets, size.width, size.height, compact]);
 
+  // Desktop-Home: ganzer Himmel, Tiefe nach echter Aktivität (Signal > Aufmerksamkeit > Ordner).
+  const skySlots = useMemo(() => {
+    if (!compact || strip || size.width < 600) return null;
+    const weights = planets.map((p) => (signals?.get(p.id) ? 2 : 0) + (attention.has(p.id) ? 1 : 0) + Math.min(8, p.moons?.length ?? 0) / 8);
+    return skyLayout(weights, size.width, size.height);
+  }, [planets, signals, attention, compact, strip, size.width, size.height]);
+
   return (
     <div
       ref={containerRef}
@@ -185,12 +194,13 @@ export function PlanetSystem({
       </svg>
       <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>
       {planets.map((p, i) => {
-        const s = slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
+        const sky = skySlots?.[i];
+        const s = sky ?? slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
         const folderCount = p.moons?.length ?? 0;
-        const orbSize = strip ? 48 : compact ? Math.round(s.size * 0.9) : s.size;
         const tint = tintForGlass(p.glass);
         const cleanTitle = stripFiktiv(p.title) || p.title;
         const active = !!(signals?.get(p.id) || attention.has(p.id));
+        const orbSize = strip ? 48 : sky ? sky.size : Math.round((compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active));
 
         return (
           <button
@@ -198,10 +208,13 @@ export function PlanetSystem({
             type="button"
             className={active ? 'ck-planet ck-planet--active' : 'ck-planet'}
             data-active={active ? 'true' : undefined}
+            data-depth={sky ? (sky.depth >= 0.5 ? 'near' : 'far') : undefined}
             style={{
               left: `${s.x}px`,
               top: `${s.y}px`,
               ['--strip-x' as string]: `${((i + 0.5) / planets.length) * 100}%`,
+              ['--drift' as string]: `${-(i * 2.7).toFixed(1)}s`,
+              ...(sky ? { zIndex: 1 + Math.round(sky.depth * 10), opacity: 0.74 + 0.26 * sky.depth } : null),
             }}
             onClick={() => onOpen(p.id)}
             data-testid={`open-${p.id}`}
@@ -225,9 +238,8 @@ export function PlanetSystem({
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
             <b>{cleanTitle}</b>
-            <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>
             {(() => {
-              const sig = signals?.get(p.id) || (attention.has(p.id) ? { isAlarm: false, reason: 'Braucht dich' } : null);
+              const sig = signals?.get(p.id) ?? null;
               if (!sig) return null;
               return (
                 <span

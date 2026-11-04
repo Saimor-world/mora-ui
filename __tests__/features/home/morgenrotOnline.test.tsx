@@ -94,7 +94,7 @@ describe('Café Morgenrot from CORE', () => {
     fireEvent.click(screen.getByTestId('open-d-s'));
     expect(navigate).toHaveBeenLastCalledWith('universe');
     expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-s' });
-    fireEvent.click(screen.getByRole('button', { name: /^Küche$/ }));
+    fireEvent.click(screen.getAllByRole('button', { name: /^Küche$/ }).find((b) => !b.classList.contains('ck-planet'))!);
     expect(navigate).toHaveBeenCalledTimes(2);
     expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k' });
   });
