@@ -8,6 +8,7 @@ import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
 import { PixelPlanet, PixelMoon } from '@/components/world/PixelPlanet';
+import type { DayMoon } from '@/lib/universe/dayMoons';
 import { planetKind, seedOf } from '@/lib/universe/pixelArt';
 import { toneSlot } from '@/lib/universe/matteTone';
 
@@ -135,7 +136,13 @@ export function PlanetSystem({
   strip,
   style = 'glas',
   signals,
+  moons,
+  onTaskDone,
+  onMoonOpen,
 }: {
+  moons?: Map<string, DayMoon[]>;
+  onTaskDone?: (taskId: string) => void;
+  onMoonOpen?: (kind: DayMoon['kind']) => void;
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
   attention: Set<string>;
@@ -202,9 +209,11 @@ export function PlanetSystem({
         const active = !!(signals?.get(p.id) || attention.has(p.id));
         const orbSize = strip ? 48 : sky ? sky.size : Math.round((compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active));
 
+        const pm = !strip ? moons?.get(p.id) : undefined;
         return (
+          <React.Fragment key={p.id}>
+          {pm?.length ? <DayMoons moons={pm} x={s.x} y={s.y} r={orbSize / 2 + 16} onTaskDone={onTaskDone} onOpen={onMoonOpen} /> : null}
           <button
-            key={p.id}
             type="button"
             className={active ? 'ck-planet ck-planet--active' : 'ck-planet'}
             data-active={active ? 'true' : undefined}
@@ -278,6 +287,44 @@ export function PlanetSystem({
               );
             })()}
           </button>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
+
+/** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [done, setDone] = useState<Set<string>>(() => new Set());
+  return (
+    <div className="ck-daymoons" style={{ left: x, top: y }} data-testid="day-moons">
+      {moons.map((m, i) => {
+        const a = -Math.PI / 2 + Math.PI * 0.32 + (i * Math.PI * 0.36);
+        const isDone = done.has(m.id);
+        const isOpen = open === m.id;
+        return (
+          <div key={m.id} className="ck-daymoon" data-kind={m.kind} data-open={isOpen ? 'true' : undefined} data-done={isDone ? 'true' : undefined}
+            style={{ ['--mx' as string]: `${Math.cos(a) * r}px`, ['--my' as string]: `${Math.sin(a) * r}px`, ['--md' as string]: `${-i * 1.3}s` }}>
+            <button type="button" className="ck-daymoon__orb" aria-label={m.title} aria-expanded={isOpen}
+              data-testid={`day-moon-${m.id}`} onClick={() => setOpen(isOpen ? null : m.id)} />
+            {isOpen ? (
+              <div className="ck-daymoon__card" data-testid={`day-moon-card-${m.id}`}>
+                <span aria-hidden>{MOON_ICON[m.kind]}</span>
+                <b>{m.title}</b>
+                {m.when ? <time>{m.when}</time> : null}
+                {m.kind === 'task' && m.taskId ? (
+                  <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
+                    onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                ) : onOpen ? (
+                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>

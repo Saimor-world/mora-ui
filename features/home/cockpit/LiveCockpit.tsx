@@ -4,6 +4,9 @@ import '../cockpit.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
 import { PlanetSystem } from './Scene';
+import { dayMoonsFor } from '@/lib/universe/dayMoons';
+import { corePost } from '@/lib/api/http';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { HomeFocus } from '../widgets/HomeFocus';
 import { widgetsFromToday } from '../widgets/adapters';
@@ -104,6 +107,11 @@ export function LiveCockpit({
     () => deriveLiveAttention(snapshot, navigate, nightwatchIncidents),
     [snapshot, navigate, nightwatchIncidents]
   );
+
+  const scopeCompanyId = useScopeCompanyId();
+  const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
+  // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
+  const onTaskDone = useCallback((id: string) => { if (!effectiveIsDemo && !scopeCompanyId?.startsWith('demo-')) void corePost(`/v3/tasks/${encodeURIComponent(id)}`, { status: 'done' }).catch(() => null); }, [effectiveIsDemo, scopeCompanyId]);
 
   const planetSignals = useMemo(() => {
     const map = new Map<string, { isAlarm: boolean; reason: string }>();
@@ -225,6 +233,8 @@ export function LiveCockpit({
             signals={planetSignals}
             company={companyName}
             compact
+            moons={dayMoons}
+            onTaskDone={onTaskDone}
             onOpen={openDepartment}
           />
         ) : null}

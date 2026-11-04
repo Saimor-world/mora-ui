@@ -269,3 +269,20 @@
   .ck-fict { font-size: 10px; padding: 2px 6px; }
   .ck-panel { left: 10px; right: 10px; top: 52px; width: auto; max-height: calc(100% - 52px - var(--ck-dock-clearance, 90px)); }
 }
+/* Tagesmonde */
+.ck-daymoons{position:absolute;width:0;height:0;z-index:30;pointer-events:none}
+.ck-daymoon{position:absolute;left:0;top:0;transform:translate(calc(var(--mx) - 50%),calc(var(--my) - 50%));pointer-events:auto;animation:ck-moonfloat 7s ease-in-out infinite;animation-delay:var(--md)}
+.ck-daymoon__orb{width:13px;height:13px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 35% 30%,#d9f5ea,#5fb8a0 55%,#1f5a50);box-shadow:0 0 10px rgba(95,184,160,.45);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.ck-daymoon[data-kind='mail'] .ck-daymoon__orb{background:radial-gradient(circle at 35% 30%,#e6f1f7,#7fb3c9 55%,#24506a)}
+.ck-daymoon[data-kind='event'] .ck-daymoon__orb{background:radial-gradient(circle at 35% 30%,#f2f0dc,#b8c58a 55%,#4d5a2a)}
+.ck-daymoon__orb:hover,.ck-daymoon[data-open] .ck-daymoon__orb{transform:scale(1.45)}
+.ck-daymoon[data-done] .ck-daymoon__orb{opacity:.35;transform:scale(.8)}
+.ck-daymoon[data-open]{z-index:5;animation-play-state:paused}
+.ck-daymoon__card{position:absolute;left:18px;top:-10px;display:flex;align-items:center;gap:8px;min-width:170px;max-width:240px;padding:8px 10px;border-radius:14px;background:rgba(10,32,30,.82);border:1px solid rgba(120,200,180,.22);backdrop-filter:blur(10px);color:rgba(236,244,240,.92);font-size:12px;animation:ck-moonopen .38s cubic-bezier(.34,1.56,.64,1)}
+.ck-daymoon__card b{font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ck-daymoon__card time{opacity:.6;font-variant-numeric:tabular-nums}
+.ck-daymoon__act{border:1px solid rgba(120,200,180,.4);background:rgba(95,184,160,.15);color:inherit;border-radius:50%;width:22px;height:22px;cursor:pointer}
+.ck-daymoon__act[aria-pressed='true']{background:#5fb8a0;color:#0a201e}
+@keyframes ck-moonfloat{50%{translate:0 -3px}}
+@keyframes ck-moonopen{from{opacity:0;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){.ck-daymoon,.ck-daymoon__card{animation:none}.ck-daymoon__orb{transition:none}}
