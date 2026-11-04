@@ -95,6 +95,7 @@ function buildDemoTrialContext(search: string): DemoTrialContext | null {
  */
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated }) => {
     const moraFloatRef = useMoraFloat<HTMLImageElement>();
+    const cardMoraRef = useMoraFloat<HTMLImageElement>();
     const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select' | 'forgot-password' | 'forgot-success'>('welcome');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -800,7 +801,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             className={`fixed inset-0 bg-[#dcefe3] flex items-center justify-center z-critical overflow-hidden ${starCentralStyles.light}`}
         >
             {/* Star Central – zentrale Szene (nur Präsentation) */}
-            <StarCentral mode="login" showMora={false} firm={websiteEntryContext?.companyName ?? demoTrialContext?.companyName ?? null} />
+            <StarCentral mode="login" showMora={false} focus={mode !== 'welcome'} firm={websiteEntryContext?.companyName ?? demoTrialContext?.companyName ?? null} />
 
             {/* Noise Texture Overlay for Organic Feel */}
             {/* Noise texture removed - asset not available */}
@@ -1249,18 +1250,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.1 }}
-                        className="relative z-10 w-full max-w-md px-6"
+                        className="relative z-10 flex justify-center px-4"
                     >
                         {/* Glass Form Container */}
-                        <div className="relative group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-transparent to-emerald-500/5 rounded-2xl blur-2xl opacity-60" />
-                            <div className="relative bg-[#050d0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-[0_8px_32px_0_rgba(16,185,129,0.15)]">
-                                {/* Inner Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent rounded-2xl pointer-events-none" />
+                        <div className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Pixel-Sprite */}
+                            <img ref={cardMoraRef} src="/star-central/mora.png" alt="" aria-hidden="true" width={132} height={132} className={starCentralStyles.cardMora} draggable={false} />
+                            <div className={starCentralStyles.card} data-star-central-card>
 
                                 <div className="relative z-10">
-                                    <h2 className="text-3xl font-extralight tracking-[0.25em] text-emerald-50 mb-8 text-center drop-shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                        ANMELDEN
+                                    <h2 className={starCentralStyles.cardName}>
+                                        {websiteEntryContext?.companyName ?? demoTrialContext?.companyName ?? 'Anmelden'}
                                     </h2>
 
                                     <div className="space-y-5">

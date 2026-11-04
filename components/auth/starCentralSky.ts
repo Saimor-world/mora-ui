@@ -83,14 +83,14 @@ export function startSky(canvas: HTMLCanvasElement, opts: SkyOptions = {}) {
 
     const stars: Star[] = [];
     const LAYERS = [
-        { n: 160, rMin: 3, rMax: 6, vMax: 0.62, depth: 4 },
-        { n: 60, rMin: 9, rMax: 18, vMax: 0.58, depth: 10 },
-        { n: 14, rMin: 70, rMax: 140, vMax: 0.5, depth: 18 },
+        { n: 240, rMin: 3, rMax: 7, vMax: 0.66, depth: 4 },
+        { n: 90, rMin: 10, rMax: 24, vMax: 0.62, depth: 10 },
+        { n: 20, rMin: 90, rMax: 180, vMax: 0.55, depth: 18 },
     ];
     LAYERS.forEach((L, layer) => {
         for (let i = 0; i < L.n; i++) stars.push({ u: R(), v: R() * L.vMax, r: L.rMin + R() * (L.rMax - L.rMin), p: R() * 6.283, f: 0.2 + R() * 0.5, layer });
     });
-    const motes = Array.from({ length: 46 }, () => ({ u: R(), v: R(), s: 0.012 + R() * 0.02, sw: 10 + R() * 30, ph: R() * 6.28, r: 7 + R() * 10 }));
+    const motes = Array.from({ length: 96 }, () => ({ u: R(), v: R(), s: 0.012 + R() * 0.022, sw: 10 + R() * 34, ph: R() * 6.28, r: 8 + R() * 16 }));
 
     let W = 0, H = 0, K = 1;
     const resize = () => {

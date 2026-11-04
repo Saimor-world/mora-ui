@@ -13,6 +13,8 @@ interface StarCentralProps {
     className?: string;
     /** MÔRA in der Szene zeigen (Login platziert MÔRA selbst im Layout). */
     showMora?: boolean;
+    /** Weicher Lichthof in der Mitte (z. B. hinter dem Login-Formular). */
+    focus?: boolean;
 }
 
 /** Weiche MÔRA-Bewegung: Sinus-Schweben + gelegentlicher, gefederter Hüpfer. Sub-Pixel, keine Rundung. */
@@ -39,7 +41,7 @@ export function starAlpha(tSec: number, f: number, p: number) {
  * Star Central – reine Präsentationsszene (Login, Lock, Pause, Bildschirmschoner).
  * Enthält keine Auth-Logik; Formulare werden von außen darübergelegt.
  */
-export function StarCentral({ mode = 'login', firm, className, showMora = true }: StarCentralProps) {
+export function StarCentral({ mode = 'login', firm, className, showMora = true, focus = false }: StarCentralProps) {
     const sky = useRef<HTMLCanvasElement>(null);
     const mora = useRef<HTMLImageElement>(null);
     const par = useRef<HTMLDivElement>(null);
@@ -99,6 +101,7 @@ export function StarCentral({ mode = 'login', firm, className, showMora = true }
             <div className={`${s.L} ${s.mist} ${s.mistB}`} />
             <div className={`${s.L} ${s.mist} ${s.mistC}`} />
             <div className={`${s.L} ${s.haze}`} />
+            {focus && <div className={`${s.L} ${s.focus}`} />}
             {showMora && <div className={`${s.L} ${s.glow}`} />}
             {showMora && <>{/* eslint-disable-next-line @next/next/no-img-element -- Pixel-Sprite, bewusst ohne Next-Optimierung */}
             <img ref={mora} className={s.mora} src="/star-central/mora.png" alt="" width={92} height={92} draggable={false} /></>}
