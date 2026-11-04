@@ -79,7 +79,8 @@ export function useWorld() {
   });
   const events = useQuery({
     queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
-    enabled,
+    // Demo-Bühne: nie einen echten Kalender lesen.
+    enabled: enabled && !String(companyId ?? '').startsWith('demo-'),
     staleTime: 30_000,
     refetchInterval: 30_000,
     retry: false,

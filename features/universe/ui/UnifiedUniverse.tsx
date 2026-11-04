@@ -1,4 +1,5 @@
 'use client';
+import { demoCompanyName, useDemoStore } from '@/lib/demo/demoStore';
 
 import '@/features/home/cockpit.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -338,7 +339,9 @@ export function UnifiedUniverse({
 
   // Demo detection and company name
   const activeCompanyIsDemo = useActiveCompanyIsDemo();
+  const demoNameId = useDemoStore((s) => s.demoCompanyId);
   const rawCompanyName =
+    demoCompanyName(demoNameId) ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
     'Dein Unternehmen';
   const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';

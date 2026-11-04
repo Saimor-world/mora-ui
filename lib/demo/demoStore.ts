@@ -41,3 +41,9 @@ export function useScopeCompanyId(): string | null {
   const session = useSessionStore((s) => (s.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
   return resolveScopeCompany(demo, session, nav);
 }
+
+const DEMO_COMPANY_NAMES: Record<string, string> = { 'demo-morgenrot': 'Café Morgenrot' };
+/** Anzeigename der fiktiven Demo-Firma (oben in Home/Universe). */
+export function demoCompanyName(id: string | null | undefined): string | null {
+  return id ? DEMO_COMPANY_NAMES[id] ?? null : null;
+}

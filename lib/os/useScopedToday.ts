@@ -5,6 +5,21 @@ import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
 import { CoreError } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
+
+const CACHE_PREFIX = 'saimor.today.last.v1:';
+/** Letzter echter Stand je Mandant/Person/Firma: Kacheln werden nie leer, wenn CORE kurz nicht antwortet. */
+export function readCachedToday(key: string): TodaySnapshot | null {
+  try { const raw = localStorage.getItem(CACHE_PREFIX + key); return raw ? (JSON.parse(raw) as TodaySnapshot) : null; } catch { return null; }
+}
+function writeCachedToday(key: string, data: TodaySnapshot): void {
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data)); } catch { /* privat */ }
+}
+/** Ersatzstand: Demo-Scope bekommt den fiktiven Datensatz, eigener Scope den letzten echten Stand. */
+export function fallbackToday(cacheKey: string, companyId: string | null, userId: string | null, tenantId: string | null): TodaySnapshot | null {
+  if (companyId?.startsWith('demo-')) return demoTodaySnapshot(companyId, userId ?? 'demo', tenantId ?? 'tenant-demo');
+  return readCachedToday(cacheKey);
+}
 
 export type TodayLoadError = 'unauthorized' | 'forbidden' | 'unavailable' | null;
 
@@ -35,6 +50,7 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
   const tenantId = user?.tenant_id ?? null;
   const contextKey = `${tenantId ?? 'tenant-unknown'}:${userId ?? 'anonymous'}:${sessionGeneration}:${activeCompanyId ?? 'tenant'}`;
 
+  const cacheKey = `${tenantId ?? 'tenant-unknown'}:${userId ?? 'anonymous'}:${activeCompanyId ?? 'tenant'}`;
   const [snapshotState, setSnapshotState] = useState<SnapshotState | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,10 +71,12 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
 
       if (data) {
         setSnapshotState({ key: contextKey, data });
+        if (!activeCompanyId?.startsWith('demo-')) writeCachedToday(cacheKey, data);
         setLoadError(null);
         lastSuccessfulRefreshRef.current = Date.now();
       } else {
-        setSnapshotState(null);
+        const fb = userId ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
+        setSnapshotState(fb ? { key: contextKey, data: fb } : null);
         setLoadError('unavailable');
       }
     } catch (error) {
@@ -69,6 +87,8 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
       } else if (error instanceof CoreError && error.status === 403) {
         setLoadError('forbidden');
       } else {
+        const fb = userId ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
+        if (fb) setSnapshotState({ key: contextKey, data: fb });
         setLoadError('unavailable');
       }
     } finally {
@@ -77,7 +97,7 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
         setRefreshing(false);
       }
     }
-  }, [activeCompanyId, contextKey, userId]);
+  }, [activeCompanyId, cacheKey, contextKey, tenantId, userId]);
 
   useEffect(() => {
     if (!enabled) {
@@ -86,7 +106,9 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
       return undefined;
     }
     requestGenerationRef.current += 1;
-    setSnapshotState(null);
+    // Sofort mit dem letzten Stand füllen statt leer zu starten; der Live-Abruf ersetzt ihn.
+    const seed = userId ? (activeCompanyId?.startsWith('demo-') ? null : readCachedToday(cacheKey)) : null;
+    setSnapshotState(seed ? { key: contextKey, data: seed } : null);
     setLoadError(null);
     setLoading(true);
     setRefreshing(false);
@@ -117,6 +139,7 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
         document.removeEventListener('visibilitychange', refreshIfUseful);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundRefresh, enabled, refresh]);
 
   return {

@@ -1,4 +1,5 @@
 'use client';
+import { demoCompanyName, useDemoStore } from '@/lib/demo/demoStore';
 import '../cockpit.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
@@ -59,6 +60,7 @@ export function LiveCockpit({
   isDemo = false,
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
+  const demoId = useDemoStore((s) => s.demoCompanyId);
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
@@ -66,11 +68,13 @@ export function LiveCockpit({
   // Compute company name: strip literal [FIKTIV]/(FIKTIV), show badge via effectiveIsDemo
   const rawCompanyName =
     propCompanyName ||
+    demoCompanyName(demoId) ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
     'Dein Unternehmen';
   const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';
   const effectiveIsDemo =
     isDemo ||
+    !!demoCompanyName(demoId) ||
     hasFiktivMarker(rawCompanyName) ||
     user?.tenant_id === 'tenant-demo-morgenrot' ||
     snapshot?.requested_scope?.tenant_id === 'tenant-demo-morgenrot' ||
