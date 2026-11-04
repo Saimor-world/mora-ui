@@ -146,7 +146,7 @@ export function PlanetSystem({
   threads?: MyceliumThread[];
   moons?: Map<string, DayMoon[]>;
   onTaskDone?: (taskId: string) => void;
-  onMoonOpen?: (kind: DayMoon['kind']) => void;
+  onMoonOpen?: (moon: DayMoon) => void;
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
   attention: Set<string>;
@@ -309,7 +309,7 @@ export function PlanetSystem({
 const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
 
 /** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
-export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void }) {
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (moon: DayMoon) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
   return (
@@ -331,8 +331,9 @@ export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoo
                 {m.kind === 'task' && m.taskId ? (
                   <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
                     onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
-                ) : onOpen ? (
-                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>
+                ) : null}
+                {onOpen && m.objectId ? (
+                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m)}>→</button>
                 ) : null}
               </div>
             ) : null}

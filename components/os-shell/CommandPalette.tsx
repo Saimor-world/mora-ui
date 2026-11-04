@@ -13,6 +13,8 @@ import type { FeatureManifest } from '@/features/types';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { searchGlobal } from '@/lib/api/searchClient';
 import { useWorld } from '@/lib/lea/useWorld';
+import { objectNavigationScope } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
 import { CalendarDays, CheckCircle2, Folder } from 'lucide-react';
 
 interface Item {
@@ -60,6 +62,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
   });
 
   const world = useWorld();
+  const objectScope = objectNavigationScope();
   const items = useMemo<Item[]>(() => {
     const n = norm(trimmed);
     const match = (...values: Array<string | undefined>) => !n || values.some((v) => v && norm(v).includes(n));
@@ -82,10 +85,10 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         }
       }
       for (const t of world.day.open) {
-        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
+        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => { openOsObject('task', t.task.id, navigate, objectScope); } });
       }
       for (const e of world.events) {
-        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${formatDeDate(e.date)}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });
+        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${formatDeDate(e.date)}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => { openOsObject('event', e.id, navigate, objectScope); } });
       }
     }
     if (trimmed) {
@@ -103,7 +106,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       out.push({ id: `s-${nodeId || title}`, group: 'Inhalte', label: String(title), hint: r?.type, icon: <FileText size={15} />, run: () => nodeId && openLegacyApp('document', { nodeId }) });
     }
     return out;
-  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy, world.finder, world.day.open, world.events, world.tasksPlanetId]);
+  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy, world.finder, world.day.open, world.events, objectScope]);
 
   useEffect(() => { setIndex(0); }, [trimmed]);
   if (!open) return null;
