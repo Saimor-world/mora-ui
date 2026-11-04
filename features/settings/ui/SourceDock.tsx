@@ -1,5 +1,5 @@
 'use client';
-import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, Orbit, ShieldCheck } from 'lucide-react';
@@ -80,11 +80,13 @@ function ConnectFields({ entry, busy, onSubmit }: { entry: SourceEntry; busy: bo
 export function SourceDock({ live, compact = false, navigate }: { live: boolean; compact?: boolean; navigate?: (id: string) => void }) {
   const qc = useQueryClient();
   const look = useOsShellStore((s) => s.look);
-  const sources = useSources(live);
-  const list = sources.data?.connections || [];
+  const demo = useDemoScopeActive();
+  // Demo mode must not read or render the presenter's personal connections.
+  const sources = useSources(live && !demo);
+  const list = demo ? [] : (sources.data?.connections || []);
   const boundary = live && sources.isSuccess && !list.length;
-  const sample = !live || boundary;
-  const planets = usePlanets(live, sample);
+  const sample = demo || !live || boundary;
+  const planets = usePlanets(live && !demo, sample);
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
   const [showAll, setShowAll] = useState(false);
@@ -131,15 +133,15 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
 
   const briefing = useQuery({
     queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
-    enabled: !isDemoScopeActive() && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
+    enabled: !demo && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
   const select = (s: DockStation) => {
-    if (s.sample) return;
+    if (demo || s.sample) return;
     setFocus({ kind: s.status === 'connected' ? 'info' : s.status === 'setup_required' ? 'admin' : 'consent', id: s.id });
   };
   const approve = async (s: DockStation) => {
-    if (!local || !s.entry?.action) return;
+    if (demo || !local || !s.entry?.action) return;
     if (s.entry.action.kind !== 'oauth') { setFocus({ kind: 'form', id: s.id }); return; }
     setFocus({ kind: 'busy', id: s.id });
     try {
@@ -152,7 +154,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     }
   };
   const submit = async (s: DockStation, values: Record<string, string>) => {
-    if (!local) return;
+    if (demo || !local) return;
     setFocus({ kind: 'busy', id: s.id });
     try {
       const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
@@ -231,7 +233,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             ) : null}
             <div className="os-station-signal" data-testid="dock-first-signal">
               <span className="os-station-signal__label">Erstes Signal</span>
-              {mail ? <MailSummaryView enabled={live} variant="signal" />
+              {mail ? <MailSummaryView enabled={live && !demo} variant="signal" />
                 : briefing.isLoading ? <p>MÔRA liest …</p> : text ? <p>{text.length > 220 ? `${text.slice(0, 217)} …` : text}</p> : <p>Kommt mit dem ersten Abgleich.</p>}
             </div>
             <div className="os-station-actions">
@@ -269,7 +271,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             <p className="os-station-line mt-2"><MoraStone size={22} />{s?.label} speist {targetName(s)}.</p>
             {s?.entry?.detail ? <Text variant="meta" className="mt-2" data-testid="dock-info-detail">{s.entry.detail}</Text> : null}
             {s?.entry?.account_hint ? <Text variant="meta" className="mt-1">{s.entry.account_hint}</Text> : null}
-            {s?.group === 'mail' ? <div className="os-station-signal"><span className="os-station-signal__label">Letztes Signal</span><MailSummaryView enabled={live} variant="signal" /></div> : null}
+            {s?.group === 'mail' ? <div className="os-station-signal"><span className="os-station-signal__label">Letztes Signal</span><MailSummaryView enabled={live && !demo} variant="signal" /></div> : null}
             <div className="os-station-actions"><Button variant="ghost" size="sm" onClick={back}>Zurück</Button></div>
           </div>
         );
