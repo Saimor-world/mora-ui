@@ -40,17 +40,17 @@ interface Briefing { status?: string; text?: string }
 
 const STARS: Point[] = Array.from({ length: 34 }, (_, i) => ({ x: (i * 211 + 37) % SCENE.w, y: (i * 97 + 53) % SCENE.h }));
 
-function usePlanets(live: boolean, sample: boolean): DockPlanet[] {
+function usePlanets(live: boolean, sample: boolean, demo: boolean): DockPlanet[] {
   const companyId = useSessionStore((s) => s.user?.active_company_id ?? null);
   const depts = useDepartments(live && !sample ? companyId : null);
   return useMemo(() => {
     // Eigene Abteilungen aus dem Onboarding (nur lokal) haben Vorrang vor dem Demo-Paket.
-    const own = readLocalOrg().departments.slice(0, 6).map((n, i) => ({ id: `local-${i}`, name: n, color: PLANET_COLORS[i % PLANET_COLORS.length] }));
+    const own = (demo ? [] : readLocalOrg().departments).slice(0, 6).map((n, i) => ({ id: `local-${i}`, name: n, color: PLANET_COLORS[i % PLANET_COLORS.length] }));
     const real = !sample && Array.isArray(depts.data) ? depts.data : [];
     if (real.length) return real.slice(0, 6).map((d, i) => ({ id: d.id, name: d.name, color: d.color || PLANET_COLORS[i % PLANET_COLORS.length] }));
     if (own.length) return own;
     return [];
-  }, [sample, depts.data]);
+  }, [sample, demo, depts.data]);
 }
 
 function ConnectFields({ entry, busy, onSubmit }: { entry: SourceEntry; busy: boolean; onSubmit: (values: Record<string, string>) => void }) {
@@ -86,7 +86,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
   const list = demo ? [] : (sources.data?.connections || []);
   const boundary = live && sources.isSuccess && !list.length;
   const sample = demo || !live || boundary;
-  const planets = usePlanets(live && !demo, sample);
+  const planets = usePlanets(live && !demo, sample, demo);
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
   const [showAll, setShowAll] = useState(false);
