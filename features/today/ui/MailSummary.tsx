@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { MoraStone, Stack, Status, Text } from '@/components/os-kit';
 import { newestRef, senderName, useMailSummary, type MailRef } from '@/lib/os-prototype/mailSummary';
 
@@ -24,8 +25,10 @@ function Ref({ r }: { r: MailRef }) {
 }
 
 export function MailSummaryView({ enabled, variant = 'full' }: { enabled: boolean; variant?: 'full' | 'signal' }) {
-  const q = useMailSummary(enabled);
-  if (!enabled) return null;
+  // Shared mail summary views cannot query personal mailbox data while presenting a demo.
+  const demo = useDemoScopeActive();
+  const q = useMailSummary(enabled && !demo);
+  if (!enabled || demo) return null;
   if (q.isLoading) {
     return <p className="os-station-line" data-testid="mail-summary-loading"><MoraStone size={20} thinking /> MÔRA liest die gespeicherten Nachrichten …</p>;
   }

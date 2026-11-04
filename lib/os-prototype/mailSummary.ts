@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 
 /**
  * V1.8 MÔRA-Mail-Zusammenfassung aus CORE (`GET /v3/connections/mail/summary`).
@@ -54,11 +55,19 @@ export function senderName(from: string): string {
 }
 
 export function useMailSummary(enabled: boolean) {
-  return useQuery({
-    queryKey: ['os', 'mail-summary'],
-    queryFn: async () => (await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true })) as MailSummary | null,
-    enabled,
+  const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
+  const query = useQuery({
+    queryKey: ['os', 'mail-summary', identity, demo],
+    queryFn: async () => {
+      const current = capturePersonalSourceScope(identity);
+      if (!current()) return null;
+      const data = await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true, dedupeScope: identity }) as MailSummary | null;
+      return current() ? data : null;
+    },
+    enabled: enabled && !demo,
     staleTime: 30_000,
     retry: false,
   });
+  return { ...query, data: enabled && !demo ? query.data : undefined };
 }
