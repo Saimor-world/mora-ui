@@ -224,7 +224,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
           <div className="bridge__field" data-field="mora" data-kind={shownCard?.kind} data-urgent={shownCard?.urgent?'true':undefined}>
             
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>
-            {shownCard ? <div className="bridge__field-card"><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
+            {shownCard ? <>{shownCard.facts?.length ? <ul className="bridge__facts" data-testid="stage-facts">{shownCard.facts.map(f=><li key={f}>{f}</li>)}</ul> : null}<div className="bridge__field-card"><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div></> : null}
             <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>MÔRA</span><kbd>M</kbd></button></div>
             
           </div>

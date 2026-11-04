@@ -581,3 +581,12 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 /* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
 .bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
 .bridge__day .bridge__mark:hover .bridge__mark-label, .bridge__day .bridge__mark:focus-visible .bridge__mark-label { opacity:1 !important; }
+
+/* q1 Dock: leichteres Glas, gleiche Höhen, ruhiger Kern */
+.bridge__inst[data-col='inner'] { margin-top:0 !important; }
+.bridge__inst { background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(200,235,225,.035)) !important; backdrop-filter:blur(22px) saturate(1.25); -webkit-backdrop-filter:blur(22px) saturate(1.25); border-color:rgba(210,245,232,.14) !important; }
+.bridge__field { flex:0 0 auto; justify-content:center; padding:40px 18px 14px; gap:8px; }
+.bridge__facts { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; font:400 12.5px/16px var(--br-font); color:rgba(226,242,236,.78); }
+.bridge__facts li { white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+.bridge__mora { -webkit-box-reflect: below -6px linear-gradient(transparent 62%, rgba(255,255,255,.3));
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.3)) drop-shadow(-2px -3px 6px rgba(190,236,220,.22)) drop-shadow(0 0 14px color-mix(in srgb,var(--br-accent) 24%,transparent)); }

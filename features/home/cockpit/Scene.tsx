@@ -3,7 +3,7 @@ import { activityScale } from '@/lib/universe/planetActivity';
 import { skyLayout } from '@/lib/universe/skyLayout';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
-import { PixelSphere } from '@/components/universe/PlanetSphere';
+import { PixelSphere, JewelSphere, areaHue } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
@@ -192,6 +192,7 @@ export function PlanetSystem({
   return (
     <div
       ref={containerRef}
+      onPointerMove={skySlots ? (e) => { const el = e.currentTarget, r = el.getBoundingClientRect(); el.style.setProperty('--px', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3)); el.style.setProperty('--py', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3)); } : undefined}
       className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}`}
       data-testid="planet-system"
     >
@@ -199,7 +200,7 @@ export function PlanetSystem({
         <ellipse cx="50" cy="49" rx="33" ry="28" />
         <ellipse className="ck-sys__orbit2" cx="50" cy="49" rx="44" ry="37" />
       </svg>
-      <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>
+      {skySlots ? null : <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>}
       {planets.map((p, i) => {
         const sky = skySlots?.[i];
         const s = sky ?? slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
@@ -223,7 +224,7 @@ export function PlanetSystem({
               top: `${s.y}px`,
               ['--strip-x' as string]: `${((i + 0.5) / planets.length) * 100}%`,
               ['--drift' as string]: `${-(i * 2.7).toFixed(1)}s`,
-              ...(sky ? { zIndex: 1 + Math.round(sky.depth * 10), opacity: 0.74 + 0.26 * sky.depth } : null),
+              ...(sky ? { zIndex: 1 + Math.round(sky.depth * 10), ['--pd' as string]: (3 + 9 * sky.depth).toFixed(1) } : null),
             }}
             onClick={() => onOpen(p.id)}
             data-testid={`open-${p.id}`}
@@ -243,6 +244,10 @@ export function PlanetSystem({
               >
                 <PixelSphere size={orbSize} lit={0.8} tint={tint} variant="A" seed={i + 1} />
               </div>
+            ) : sky ? (
+              <span className="ck-cover" data-testid="planet-cover" style={{ width: orbSize, height: orbSize }}>
+                <JewelSphere size={orbSize} lit={-2.2} hue={areaHue(cleanTitle)} matte={false} seed={i + 1} quiet={false} />
+              </span>
             ) : (
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
