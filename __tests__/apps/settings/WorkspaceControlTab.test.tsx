@@ -29,7 +29,7 @@ describe('WorkspaceControlTab', () => {
       isFetching: false,
       refetch: jest.fn(),
     });
-    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'os_workspace_monthly', product: 'os', label: 'Saimôr OS Workspace', interval: 'month', price: { amount_minor: 19900, currency: 'EUR' }, included_seats: 5, trial_days: 14, checkout_ready: true }] } });
+    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'os_workspace_monthly', product: 'os', label: 'Saimôr OS Workspace', interval: 'month', price: { amount_minor: 19900, currency: 'EUR' }, included_seats: 5, trial_days: 30, checkout_ready: true }] } });
     mockCheckoutConfigured.mockReturnValue(true);
     mockCreateCheckout.mockResolvedValue({ id: 'checkout-1', product: 'desk', plan_key: 'desk_control_monthly', seats: 3, expires_at: 'later', paddle_checkout: { items: [{ priceId: 'pri_1', quantity: 1 }], custom_data: { saimor_tenant_id: 't1' } } });
     mockOpenCheckout.mockResolvedValue(true);
@@ -50,6 +50,12 @@ describe('WorkspaceControlTab', () => {
     expect(screen.getByText(/^3 von 4 Schritten erledigt – offen: /)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Dienste verbinden/i }));
     expect(openIntegrations).toHaveBeenCalledTimes(1);
+  });
+
+  it('advertises the 30-day trial', () => {
+    render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
+    expect(screen.getByText('30 Tage testen')).toBeInTheDocument();
+    expect(screen.queryByText('14 Tage testen')).not.toBeInTheDocument();
   });
 
   it('does not present missing CORE data as healthy', () => {
@@ -76,7 +82,7 @@ describe('WorkspaceControlTab', () => {
       data: { access: { products: [], capabilities: [], entitlements: [], tenant_id: 't1' }, onboarding: { state: 'complete', completed_steps: [], tenant_id: 't1' }, billing: { subscriptions: [] } },
       isLoading: false, isFetching: false, refetch: jest.fn(),
     });
-    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'desk_control_monthly', product: 'desk', label: 'Saimôr Desk Control', interval: 'month', price: { amount_minor: 7900, currency: 'EUR' }, included_seats: 3, trial_days: 14, checkout_ready: true }] } });
+    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'desk_control_monthly', product: 'desk', label: 'Saimôr Desk Control', interval: 'month', price: { amount_minor: 7900, currency: 'EUR' }, included_seats: 3, trial_days: 30, checkout_ready: true }] } });
     render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Auswählen' }));
     expect(mockCreateCheckout).toHaveBeenCalledWith({ plan_key: 'desk_control_monthly', seats: 3 });
