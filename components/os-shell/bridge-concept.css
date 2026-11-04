@@ -419,3 +419,30 @@ html[data-dock='c'] {
   .bridge__inst, .ck-focus__card { transition:none; }
   .bridge__inst:hover, .ck-focus__card:hover, .ck-focus__card:focus-visible { transform:none; }
 }
+
+/* Runde 5 · Feinschliff: gleiche Elemente, gleiche Anordnung – nur feineres Handwerk. */
+@media (min-width:700px) {
+  .bridge__inst { border:.5px solid rgba(255,255,255,.13); border-radius:22px;
+    background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.02) 38%,rgba(255,255,255,.01)),var(--br-glass);
+    -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%);
+    box-shadow:inset 0 .5px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.03),0 1px 2px rgba(0,0,0,.18),0 8px 16px -4px rgba(0,0,0,.22),0 28px 56px -12px rgba(0,0,0,.42); }
+  .bridge__comp-text strong { font-size:clamp(17px,1.55vw,22px); font-weight:620; font-variant-numeric:tabular-nums; }
+  .bridge__comp-text small { color:rgba(238,246,241,.56); }
+  .bridge__comp-text em { color:rgba(238,246,241,.66); }
+  .bridge__inst-list li span { color:rgba(238,246,241,.84); }
+  .bridge__inst-actions button { border-radius:999px; border:.5px solid rgba(255,255,255,.14); background:rgba(255,255,255,.045); box-shadow:inset 0 .5px 0 rgba(255,255,255,.12); }
+  .bridge__inst-actions button:hover { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.22); }
+  .bridge__pill { gap:8px; border:.5px solid rgba(255,255,255,.14); }
+}
+.bridge__ring-track { stroke:rgba(255,255,255,.09); stroke-width:2.5; }
+.bridge__ring-fill { stroke-width:2.5; filter:drop-shadow(0 0 3px color-mix(in srgb,var(--br-accent) 45%,transparent)); }
+.bridge__app { width:44px; height:44px; }
+.bridge__badge { font-variant-numeric:tabular-nums; min-width:18px; height:18px; line-height:18px; top:-3px; right:-3px; }
+.bridge__comp:focus-visible, .bridge__inst-actions button:focus-visible, .bridge__chip:focus-visible, .bridge__ask > button:focus-visible { outline:2px solid color-mix(in srgb,var(--br-accent) 80%,white); outline-offset:2px; }
+.bridge__app:focus-visible .bridge__app-icon { box-shadow:0 0 0 2px color-mix(in srgb,var(--br-accent) 80%,white); }
+@media (prefers-reduced-motion: reduce) { .bridge__inst-actions button, .bridge__ring-fill { transition:none; } }
+@media (min-width:700px) and (max-width:1180px) {
+  .bridge__inst .bridge__chev { display:none; }
+  .bridge__comp { gap:8px; }
+  .bridge__comp-text strong { font-size:16px; letter-spacing:-.025em; }
+}
