@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet, getCoreBaseUrl } from '@/lib/api/http';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 
 /**
  * V1.6 Quellen aus CORE (`GET /v3/connections`).
@@ -23,13 +24,21 @@ export const STATUS_LABEL: Record<string, string> = {
 };
 
 export function useSources(enabled: boolean) {
-  return useQuery({
-    queryKey: ['os', 'sources'],
-    queryFn: async () => (await coreGet('/v3/connections', { throwAuthErrors: true })) as SourcesResponse,
-    enabled,
+  const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
+  const query = useQuery({
+    queryKey: ['os', 'sources', identity, demo],
+    queryFn: async () => {
+      const current = capturePersonalSourceScope(identity);
+      if (!current()) return null;
+      const data = await coreGet('/v3/connections', { throwAuthErrors: true }) as SourcesResponse;
+      return current() ? data : null;
+    },
+    enabled: enabled && !demo,
     staleTime: 60_000,
     retry: false,
   });
+  return { ...query, data: enabled && !demo ? query.data : undefined };
 }
 
 export function connectedSources(list: SourceEntry[] | undefined): SourceEntry[] {

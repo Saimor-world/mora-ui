@@ -1,6 +1,6 @@
 "use client";
 
-import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { capturePersonalSourceScope, personalSourceKey, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
 import { normalizeList } from "@/lib/api/http";
@@ -152,6 +152,10 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
     calendarStatus: LiveSourceStatus;
 } {
     const activeCompanyId = useNavStore((state) => state.activeCompanyId);
+    const demo = useDemoScopeActive();
+    const identity = usePersonalSourceKey();
+    const dataScopeKey = JSON.stringify([activeCompanyId, identity]);
+    const [loadedScopeKey, setLoadedScopeKey] = useState<string | null>(null);
     const [mailPreview, setMailPreview] = useState<MailPreviewItem[]>([]);
     const [calendarPreview, setCalendarPreview] = useState<CalendarPreviewItem[]>([]);
     const [feedPreview, setFeedPreview] = useState<FeedPreviewItem[]>([]);
@@ -173,17 +177,21 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
         setCalendarPreview([]);
         setFeedPreview([]);
         setCloudPreview([]);
-        if (autoLoad) {
-            setIsLoading(true);
-            setMailStatus('loading');
-            setCalendarStatus('loading');
-        }
-    }, [activeCompanyId, autoLoad]);
+        setLoadedScopeKey(null);
+        setIsLoading(autoLoad && !demo);
+        setMailStatus(demo ? 'unavailable' : autoLoad ? 'loading' : 'idle');
+        setCalendarStatus(demo ? 'unavailable' : autoLoad ? 'loading' : 'idle');
+        return () => { scopeVersionRef.current += 1; inFlightRef.current = null; };
+    }, [activeCompanyId, autoLoad, demo, identity]);
 
     const refreshData = useCallback(async (options?: { background?: boolean }) => {
         const background = Boolean(options?.background);
         const now = Date.now();
         const scopeVersion = scopeVersionRef.current;
+        const personalScope = capturePersonalSourceScope(identity);
+        const current = () => personalScope() && scopeVersion === scopeVersionRef.current
+            && activeCompanyId === useNavStore.getState().activeCompanyId && identity === personalSourceKey();
+        if (!current()) return;
 
         if (background && hasLoadedRef.current && now - lastBackgroundRefreshRef.current < 1200) {
             return;
@@ -198,8 +206,9 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
             setIsLoading(true);
         }
 
-        const request = (async () => {
+        const request: Promise<void> = Promise.resolve().then(async () => {
             try {
+                if (!current()) return;
                 const start = new Date();
                 const end = new Date();
                 end.setDate(end.getDate() + 14);
@@ -210,8 +219,8 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const scopedTail = companyQuery ? `&${companyQuery}` : "";
 
                 const [mailData, calendarData, feedData, myContentData] = await Promise.all([
-                    isDemoScopeActive() ? Promise.resolve(null) : coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
-                    isDemoScopeActive() ? Promise.resolve(null) : coreGet(
+                    coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
+                    coreGet(
                         `/v3/calendar/events?start_date=${toIsoDate(start)}&end_date=${toIsoDate(end)}${scopedTail}`,
                         { isOptional: true }
                     ),
@@ -223,7 +232,8 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const calendarItems = normalizeList<any>(calendarData, ["events", "appointments", "calendar", "data"]);
                 const feedItems = normalizeList<any>(feedData, ["items", "feeds", "data"]);
 
-                if (scopeVersion !== scopeVersionRef.current) return;
+                if (!current()) return;
+                setLoadedScopeKey(dataScopeKey);
 
                 // coreGet(isOptional) returns null when the source failed - that is not an empty inbox.
                 setMailStatus(mailData == null ? 'unavailable' : 'ok');
@@ -298,7 +308,7 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                             })) as CloudPreviewItem[];
                         })
                     );
-                    if (scopeVersion !== scopeVersionRef.current) return;
+                    if (!current()) return;
                     setCloudPreview(connectorResults.flat().slice(0, 6));
                 }
                 hasLoadedRef.current = true;
@@ -306,16 +316,17 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                     lastBackgroundRefreshRef.current = now;
                 }
             } finally {
-                if (scopeVersion === scopeVersionRef.current) {
+                // An obsolete response must not clear a newer request's ownership.
+                if (inFlightRef.current === request) {
                     inFlightRef.current = null;
                     if (shouldShowLoading) setIsLoading(false);
                 }
             }
-        })();
+        });
 
         inFlightRef.current = request;
         await request;
-    }, [activeCompanyId]);
+    }, [activeCompanyId, dataScopeKey, identity]);
 
     const refresh = useCallback(async () => {
         await refreshData();
@@ -336,7 +347,6 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
         const onVisibilityChange = () => {
             if (typeof document === "undefined" || document.visibilityState !== "visible") return;
             const now = Date.now();
-        const scopeVersion = scopeVersionRef.current;
             if (now - lastVisibilitySyncRef.current < 15000) return;
             lastVisibilitySyncRef.current = now;
             void refreshData({ background: true });
@@ -361,15 +371,15 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
 
     return useMemo(
         () => ({
-            mailPreview,
-            calendarPreview,
-            feedPreview,
-            cloudPreview,
-            mailStatus,
-            calendarStatus,
-            isLoading,
+            mailPreview: !demo && loadedScopeKey === dataScopeKey ? mailPreview : [],
+            calendarPreview: !demo && loadedScopeKey === dataScopeKey ? calendarPreview : [],
+            feedPreview: !demo && loadedScopeKey === dataScopeKey ? feedPreview : [],
+            cloudPreview: !demo && loadedScopeKey === dataScopeKey ? cloudPreview : [],
+            mailStatus: demo ? 'unavailable' : loadedScopeKey === dataScopeKey ? mailStatus : autoLoad ? 'loading' : 'idle',
+            calendarStatus: demo ? 'unavailable' : loadedScopeKey === dataScopeKey ? calendarStatus : autoLoad ? 'loading' : 'idle',
+            isLoading: !demo && isLoading,
             refresh,
         }),
-        [calendarPreview, calendarStatus, cloudPreview, feedPreview, isLoading, mailPreview, mailStatus, refresh]
+        [calendarPreview, calendarStatus, cloudPreview, feedPreview, isLoading, mailPreview, mailStatus, refresh, demo, loadedScopeKey, dataScopeKey, autoLoad]
     );
 }

@@ -1,4 +1,4 @@
-import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 
@@ -71,15 +71,19 @@ export function buildMoraBriefing(
 
 export function useDailyBriefing() {
     const demo = useDemoScopeActive();
-    return useQuery<DailyBriefingData>({
+    const identity = usePersonalSourceKey();
+    const query = useQuery<DailyBriefingData | null>({
         // Demo-Bühne: das Briefing kommt aus dem echten Postfach der Sitzung → in der Demo nie laden.
-        queryKey: ['daily-briefing', demo ? 'demo' : 'own'],
+        queryKey: ['daily-briefing', demo ? 'demo' : 'own', identity],
         enabled: !demo,
         queryFn: async () => {
+            const current = capturePersonalSourceScope(identity);
+            if (!current()) return null;
             try {
                 const res = (await coreGet('/v3/briefing')) as DailyBriefingData;
-                return res;
+                return current() ? res : null;
             } catch {
+                if (!current()) return null;
                 return {
                     date: 'Heute',
                     text: 'Ich komme gerade nicht an deine Daten.',
@@ -89,4 +93,5 @@ export function useDailyBriefing() {
         },
         staleTime: 60 * 1000,
     });
+    return { ...query, data: demo ? undefined : query.data };
 }

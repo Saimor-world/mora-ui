@@ -11,7 +11,7 @@ import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
-import { isDemoScopeActive, useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { isDemoScopeActive, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -38,6 +38,7 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
 export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
   const openPersonalApp = (id: 'mail' | 'calendar') => {
     if (!isDemoScopeActive()) openLegacyApp(id);
   };
@@ -60,7 +61,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       </header>
       <div className="os-post-grid">
         <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" variant="ghost" disabled={demo} onClick={() => openPersonalApp('mail')}>Im Postfach öffnen</Button>}>
-          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} />} />
+          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient key={identity} items={items} />} />
         </Column>
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" disabled={demo} onClick={() => openPersonalApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine anstehenden Termine im Kalender." render={(items) => (
