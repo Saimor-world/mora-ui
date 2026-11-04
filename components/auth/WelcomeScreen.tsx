@@ -18,6 +18,8 @@ import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
 import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
+import { StarCentral, useMoraFloat } from './StarCentral';
+import starCentralStyles from './StarCentral.module.css';
 import { fetchWorkspaceAccess } from '@/lib/api/workspaceClient';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
@@ -92,6 +94,7 @@ function buildDemoTrialContext(search: string): DemoTrialContext | null {
  * - Real backend authentication
  */
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated }) => {
+    const moraFloatRef = useMoraFloat<HTMLImageElement>();
     const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select' | 'forgot-password' | 'forgot-success'>('welcome');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -794,47 +797,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-[#0d0921] flex items-center justify-center z-critical overflow-hidden"
+            className={`fixed inset-0 bg-[#dcefe3] flex items-center justify-center z-critical overflow-hidden ${starCentralStyles.light}`}
         >
-            {/* Layered Ambient Background - Breathing Effect */}
-            <motion.div
-                animate={ambientMotionEnabled ? {
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.5, 0.3],
-                } : { scale: 1, opacity: 0.28 }}
-                transition={ambientMotionEnabled ? {
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                } : { duration: 0.4 }}
-                className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-emerald-500/20 rounded-full blur-[150px] pointer-events-none"
-            />
-            <motion.div
-                animate={ambientMotionEnabled ? {
-                    scale: [1.2, 1, 1.2],
-                    opacity: [0.2, 0.4, 0.2],
-                } : { scale: 1.06, opacity: 0.2 }}
-                transition={ambientMotionEnabled ? {
-                    duration: 10,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 1
-                } : { duration: 0.4 }}
-                className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-mora-gold/20 rounded-full blur-[120px] pointer-events-none"
-            />
-            <motion.div
-                animate={ambientMotionEnabled ? {
-                    scale: [1, 1.3, 1],
-                    opacity: [0.15, 0.25, 0.15],
-                } : { scale: 1, opacity: 0.14 }}
-                transition={ambientMotionEnabled ? {
-                    duration: 12,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 2
-                } : { duration: 0.4 }}
-                className="absolute top-1/2 right-1/4 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-[100px] pointer-events-none"
-            />
+            {/* Star Central – zentrale Szene (nur Präsentation) */}
+            <StarCentral mode="login" showMora={false} firm={websiteEntryContext?.companyName ?? demoTrialContext?.companyName ?? null} />
 
             {/* Noise Texture Overlay for Organic Feel */}
             {/* Noise texture removed - asset not available */}
@@ -856,7 +822,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             className="flex flex-col items-center gap-8"
                         >
                             {/* Orb with Pulsing Rings - Decorative only, no MoraOrb component */}
-                            <div className="relative w-20 h-20">
+                            <div className="relative w-20 h-20" data-legacy-orb>
                                 <motion.div
                                     animate={ambientMotionEnabled ? {
                                         scale: [1, 1.3, 1],
@@ -885,6 +851,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-radial from-emerald-400/30 to-emerald-600/5 blur-md" />
                                 <motion.div
+                                    data-mora-slot
                                     className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20"
                                     animate={ambientMotionEnabled ? {
                                         scale: [1, 1.04, 1],
@@ -896,7 +863,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     } : { duration: 0.4 }}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset, loaded eagerly on the first screen */}
-                                    <img src="/brand/mora-stone-v1.png" alt="MÔRA" width={80} height={80} className="h-full w-full select-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]" draggable={false} />
+                                    <img ref={moraFloatRef} src="/star-central/mora.png" alt="MÔRA" width={80} height={80} className="h-full w-full select-none will-change-transform" draggable={false} />
                                 </motion.div>
                             </div>
 

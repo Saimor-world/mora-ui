@@ -1,0 +1,37 @@
+@font-face{font-family:"SC Cormorant";src:url(/star-central/cormorant.woff2) format("woff2");font-weight:300 700;font-display:swap}
+.root{position:fixed;inset:0;overflow:hidden;background:#dcefe3;pointer-events:none}
+.L{position:absolute;pointer-events:none;will-change:transform}
+.bg{inset:-4%;background:url(/star-central/bg.jpg) center 45%/cover}
+.sky{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.rays{left:50%;top:38%;width:180vmax;height:180vmax;margin:-90vmax;background:url(/star-central/rays.webp) center/100% 100%;opacity:.8;animation:rot 120s linear infinite}
+.aur{inset:-10%;background:url(/star-central/aur.webp) center/100% 100%;opacity:.8;animation:aur 28s ease-in-out infinite alternate}
+.mist{inset:-6% -14%;background:url(/star-central/mist-a.webp) center bottom/100% 100% no-repeat;opacity:.9;animation:drift 46s ease-in-out infinite alternate}
+.mistB{opacity:.7;background-image:url(/star-central/mist-b.webp);animation-duration:70s;animation-direction:alternate-reverse}
+.mistC{opacity:.55;inset:-30% -20% 20%;background-image:url(/star-central/mist-c.webp);animation-duration:64s}
+.haze{inset:-10%;background:url(/star-central/haze.webp) center/100% 100%;opacity:.7;animation:drift 42s ease-in-out infinite alternate}
+.glow{left:50%;top:calc(21% + 46px);width:220px;height:220px;margin:-110px;background:url(/star-central/glow.webp) center/100%}
+.mora{position:absolute;left:50%;top:21%;width:92px;margin-left:-46px;image-rendering:pixelated;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden;user-select:none}
+.calm .mora{width:56px;margin-left:-28px;top:calc(46% - 28px)}
+.calm .glow{top:46%;width:140px;height:140px;margin:-70px}
+.time{position:absolute;left:0;right:0;top:calc(46% + 70px);text-align:center;font:400 54px "SC Cormorant",Georgia,serif;color:#0d3a2e;text-shadow:0 1px 18px rgba(240,255,246,.9)}
+.firm{position:absolute;left:24px;top:22px;display:flex;align-items:center;gap:10px;font-size:13.5px;color:#0d3a2e;background:rgba(248,255,250,.78);padding:5px 12px 5px 5px;border-radius:999px}
+.firm i{width:28px;height:28px;border-radius:50%;border:.5px solid #10B981;color:#065F46;display:grid;place-items:center;font-style:normal;font-weight:600;font-size:11px}
+.overlay{position:fixed;inset:0;z-index:9999;pointer-events:auto;cursor:default;animation:fadeIn 1.6s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes drift{to{transform:translate3d(7%,0,0)}}
+@keyframes rot{to{transform:rotate(20deg)}}
+@keyframes aur{0%{transform:translate3d(-4%,0,0) skewY(-3deg);opacity:.55}100%{transform:translate3d(4%,0,0) skewY(3deg);opacity:.9}}
+@media (prefers-reduced-motion:reduce){.rays,.aur,.mist,.haze,.overlay{animation:none}}
+/* Helles Star-Central-Theme für die bestehenden Login-Inhalte (nur Präsentation) */
+.light [data-legacy-orb]>:not([data-mora-slot]){display:none}
+.light [data-mora-slot] img{image-rendering:pixelated;filter:none!important}
+.light :global(.text-white),.light :global(.text-emerald-50),.light :global(.text-emerald-100),.light :global(.text-emerald-100\/70),.light :global(.hover\:text-white:hover){color:#0d3a2e!important}
+.light :global(.text-emerald-400),.light :global(.hover\:text-emerald-400:hover){color:#065F46!important}
+.light :global(.text-emerald-300\/40),.light :global(.text-emerald-300\/60),.light :global(.text-emerald-500\/30),.light :global(.text-emerald-500\/40),.light :global(.text-emerald-500\/50),.light :global(.text-emerald-500\/60),.light :global(.text-emerald-500\/70){color:#2f5e4e!important}
+.light :global(.text-mora-gold),.light :global(.text-mora-gold\/70){color:#065F46!important}
+.light [class*="bg-[#050d0a]"],.light [class*="bg-[#0a1a14]"],.light [class*="bg-black/"]{background-color:rgba(248,255,250,.86)!important}
+.light :global(.border-white\/10),.light :global(.border-white\/5){border-color:rgba(6,95,70,.18)!important}
+.light :global(input::placeholder){color:#6b9484!important}
+.light input{color:#12302a!important}
+.light h1,.light h2{text-shadow:0 1px 16px rgba(240,255,246,.9)}
+.light [class*="text-emerald-100"],.light [class*="text-emerald-200"],.light [class*="text-emerald-300"]{color:#2f5e4e!important}
