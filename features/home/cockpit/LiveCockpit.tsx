@@ -190,17 +190,18 @@ export function LiveCockpit({
   const openFocus = (target: FocusCard['target']) => {
     if (target === 'post') navigate('post');
     else if (target === 'tasks') navigate('today');
-    else if (target === 'calendar') openLegacyApp('calendar');
+    else if (target === 'calendar') { if (effectiveIsDemo) navigate('post'); else openLegacyApp('calendar'); }
     else useOsShellStore.getState().setNightwatchOpen(true);
   };
 
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
-      navigate('tasks');
+      navigate('today');
     } else if (widgetId === 'calendar') {
-      navigate('calendar');
+      // In demo mode only the guarded Post surface may display calendar data.
+      if (effectiveIsDemo) navigate('post'); else openLegacyApp('calendar');
     } else if (widgetId === 'mail') {
-      navigate('mora');
+      navigate('post');
     } else {
       navigate('universe');
     }
