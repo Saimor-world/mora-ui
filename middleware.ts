@@ -42,6 +42,7 @@ const PUBLIC_PREFIXES = [
     "/api/core",
     "/oauth/calendar",
     "/oauth/cloud",
+    "/star-central/", // statische Login-Szene (Bilder/Font), vor Anmeldung nötig
 ];
 
 const PUBLIC_FILES = [
