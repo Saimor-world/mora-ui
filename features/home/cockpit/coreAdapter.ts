@@ -299,7 +299,7 @@ export function deriveLiveAttention(
     items.push({
       id: 'live-mail',
       title: `${snapshot.mail.unread_count} neue ${snapshot.mail.unread_count === 1 ? 'E-Mail' : 'E-Mails'}`,
-      detail: 'Im gemeinsamen Posteingang aus CORE eingetroffen.',
+      detail: '',
       action: 'Post öffnen',
       primary: true,
       onAction: () => navigate?.('mora'),
@@ -314,8 +314,8 @@ export function deriveLiveAttention(
         id: 'live-cal',
         title: stripFiktiv(nextEv.title) || nextEv.title,
         detail: open
-          ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen (Krankmeldung / Abwesenheit)`
-          : `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Aus dem CORE-Firmenkalender`,
+          ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen`
+          : nextEv.time ? `${nextEv.time} Uhr` : '',
         action: open ? 'Schicht besetzen' : 'Kalender ansehen',
         isWarning: open,
         onAction: () => navigate?.('calendar'),
@@ -328,7 +328,7 @@ export function deriveLiveAttention(
     items.push({
       id: 'live-task',
       title: stripFiktiv(nextTask.title) || nextTask.title,
-      detail: 'Heute zur Erledigung fällig.',
+      detail: 'Heute',
       action: 'Aufgabe erledigen',
       onAction: () => navigate?.('tasks'),
     });

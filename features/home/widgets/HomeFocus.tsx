@@ -2,7 +2,11 @@ import React from 'react';
 import type { FocusCard } from '@/lib/mora/bridgeData';
 
 /** Kosmos-Mitte: was heute zählt, als Name + Zahl/Datum. Keine Karten → nichts, kein Platzhalter. */
-export function HomeFocus({ cards, onOpen }: { cards: FocusCard[]; onOpen: (target: FocusCard['target']) => void }) {
+/** Handy: mehr als zwei Karten laufen in MÔRA hinein. */
+export const PHONE_FOCUS_MAX = 2;
+
+export function HomeFocus({ cards: all, onOpen, phone = false }: { cards: FocusCard[]; onOpen: (target: FocusCard['target']) => void; phone?: boolean }) {
+  const cards = phone ? all.slice(0, PHONE_FOCUS_MAX) : all;
   if (!cards.length) return null;
   return (
     <ul className="ck-focus" data-testid="home-focus" aria-label="Heute">

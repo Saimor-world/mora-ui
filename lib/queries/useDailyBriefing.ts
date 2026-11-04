@@ -1,3 +1,4 @@
+import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 
@@ -69,8 +70,11 @@ export function buildMoraBriefing(
 }
 
 export function useDailyBriefing() {
+    const demo = useDemoScopeActive();
     return useQuery<DailyBriefingData>({
-        queryKey: ['daily-briefing'],
+        // Demo-Bühne: das Briefing kommt aus dem echten Postfach der Sitzung → in der Demo nie laden.
+        queryKey: ['daily-briefing', demo ? 'demo' : 'own'],
+        enabled: !demo,
         queryFn: async () => {
             try {
                 const res = (await coreGet('/v3/briefing')) as DailyBriefingData;

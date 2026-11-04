@@ -157,6 +157,8 @@ export function warmBriefing(snapshot: TodaySnapshot | null, briefingUnread?: nu
 /** Die eine Hologramm-Karte, die MÔRA auf der Bühne zeigt – nur aus echten Daten, mit echten Aktionen. */
 export type StageCard = {
   id: string;
+  /** Echte Fakten statt Erklärung, z. B. die Absender. */
+  facts?: string[];
   kind: 'shift' | 'mail' | 'nightwatch' | 'next';
   urgent: boolean;
   eyebrow: string;
@@ -178,7 +180,7 @@ export function stageCard(snapshot: TodaySnapshot | null, now: number, briefingU
     if (n) return { id: `nw:${n}`, kind: 'nightwatch', urgent: true, eyebrow: 'Betrieb · Nachtwache', title: `${n} ${n === 1 ? 'Vorfall' : 'Vorfälle'} offen`, detail: snapshot.nightwatch.incidents[0]?.title ?? 'Bitte ansehen.', primary: { label: 'Ansehen', target: 'nightwatch' } };
   }
   const mail = mailCounts(snapshot, briefingUnread);
-  if (mail.needsYou) return { id: `mail:${mail.needsYou}`, kind: 'mail', urgent: true, eyebrow: 'Kommunikation · Post', title: `${mail.needsYou} ${mail.needsYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich`, detail: 'Antwort oder Entscheidung nötig.', primary: { label: 'Zur Post', target: 'post' } };
+  if (mail.needsYou) return { id: `mail:${mail.needsYou}`, facts: mailSenders(snapshot, mail.needsYou), kind: 'mail', urgent: true, eyebrow: 'Kommunikation · Post', title: `${mail.needsYou} ${mail.needsYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich`, detail: 'Antwort oder Entscheidung nötig.', primary: { label: 'Zur Post', target: 'post' } };
   const next = dayMarks(snapshot, now, 10).find((m) => m.minute >= now);
   if (next) return { id: `next:${next.id}`, kind: 'next', urgent: false, eyebrow: 'Als Nächstes', title: `${next.time} ${next.label}`, detail: 'Heute im Kalender.', primary: { label: 'Im Kalender', target: 'calendar' } };
   return null;
@@ -299,4 +301,16 @@ export function upcomingEvents(snapshot: TodaySnapshot | null, now: number): Upc
       const day = `${WEEKDAY[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]} ${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')}.`;
       return { id: e.id, when: e.date === today ? time || 'Heute' : [day, time].filter(Boolean).join(' '), label: shorten(e.title) };
     });
+}
+
+/** Anzeigename aus „Name <a@b>“ oder der Adresse. */
+export function senderName(from?: string | null): string | null {
+  const f = (from ?? '').trim(); if (!f) return null;
+  const m = f.match(/^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/); if (m) return m[1].trim();
+  const local = f.replace(/^<|>$/g, '').split('@')[0]; return local ? local.replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : null;
+}
+export function mailSenders(snapshot: TodaySnapshot, n: number): string[] {
+  const names: string[] = [];
+  for (const it of (snapshot.mail?.items ?? []).filter((m) => m.read !== true && NEEDS_YOU.test(`${m.subject ?? ''}`))) { const s = senderName(it.from_addr); if (s && !names.includes(s)) names.push(s); if (names.length >= Math.min(3, n)) break; }
+  return names;
 }

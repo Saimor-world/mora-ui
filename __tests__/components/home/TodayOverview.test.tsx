@@ -122,6 +122,7 @@ function snapshotFor(companyId: string, mailSubject: string): TodaySnapshot {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   jest.clearAllMocks();
   mockActiveCompanyId = 'company-a';
   mockUserId = 'user-a';

@@ -1,4 +1,5 @@
 'use client';
+import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, Orbit, ShieldCheck } from 'lucide-react';
@@ -130,7 +131,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
 
   const briefing = useQuery({
     queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
-    enabled: live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
+    enabled: !isDemoScopeActive() && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
   const select = (s: DockStation) => {

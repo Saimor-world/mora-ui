@@ -5,11 +5,10 @@ import { useScopedToday } from '@/lib/os/useScopedToday';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { DOCK_ASK_SLOT } from '@/lib/mora/hubMood';
-import { PixelMora } from '@/components/world/PixelMora';
+import { JadeMora } from '@/components/world/JadeMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import type { FeatureManifest } from '@/features/types';
-import { getFeature } from '@/features/registry';
 import { AlarmClock, Bell, CalendarClock, CalendarDays, ChevronRight, ListChecks, Mail, Users, Grid2X2, Keyboard, RefreshCw, Search, Sparkles, SunMoon, Timer } from 'lucide-react';
 import { SCENES, sceneFor, type SceneId } from '@/lib/os-prototype/scene';
 import { DAY_END, DAY_START, dayMarks, hhmm, instrumentLines, mailCounts, moraLine, stageCard, stations, untilText, upcomingEvents, countLabel, type InstrumentLine, type Station } from '@/lib/mora/bridgeData';
@@ -90,11 +89,11 @@ export function tileSub(id:string, snapshot:TodaySnapshot|null):string{
 }
 /** Ein Instrument im Dock: Kopf (Wert), bis zu drei echte Einträge, zwei echte Aktionen. */
 const CHANNEL_ICON={post:Mail,today:ListChecks,team:Users,next:CalendarClock} as const;
-type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];empty:string;offline:boolean;open:()=>void;openLabel:string;ask:string};
+type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];offline:boolean;open:()=>void;openLabel:string};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onAsk?:(text:string)=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 const DISMISS_KEY='mora.bridge.dismissed';
 const PHONE_APPS=4;
-export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
+export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
   const { snapshot, refresh, refreshing }=useScopedToday({backgroundRefresh:true});
   const { data: briefing } = useDailyBriefing();
   const briefingUnread = briefing?.metrics?.unread_mails ?? null;
@@ -143,7 +142,6 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
   const openTarget=(t:'calendar'|'post'|'nightwatch')=>t==='calendar'?openLegacyApp('calendar'):t==='post'?onNavigate('post'):openNightwatch();
   const later=()=>{if(!card)return;setDismissed(card.id);setAsking(false);try{sessionStorage.setItem(DISMISS_KEY,card.id);}catch{/* privat */}};
-  const ask=(text:string)=>onAsk?onAsk(text):onMora();
   const controls = [
     {id:'search',name:'Suche',icon:Search,action:onSearch},
     ...items.map(item=>({id:item.id,name:item.title,icon:item.icon,action:()=>onNavigate(item.id)})).slice(0,phone?PHONE_APPS:undefined),
@@ -169,29 +167,25 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   const until=untilText(snapshot,now);
   const readFrac=mail.unread!==null&&snapshot?.mail.items.length?1-Math.min(1,mail.unread/Math.max(snapshot.mail.items.length,mail.unread)):mail.unread===0?1:0;
   const instruments:Instrument[]=[
-    {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),empty:'Keine Mails im Eingang.',offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach',ask:'Was ist in meinem Postfach wichtig?'},
-    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),empty:'Keine offenen Aufgaben.',offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben',ask:'Was ist heute wichtig?'},
-    {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),empty:'Heute keine Schichten im Plan.',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan',ask:'Wer arbeitet heute?'},
-    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:upcoming.slice(1,4).map(u=>({id:u.id,lead:u.when,text:u.label})),empty:'',offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender',ask:'Was steht heute an?'},
+    {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach'},
+    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben'},
+    {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan'},
+    {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender'},
   ];
   // Unverbundene Quelle: dunkle, transluzente Dock-Bucht nur mit Kanal-Symbol. Kein Text, kein „Offline“.
   const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
     <button type="button" className="bridge__bay" onClick={()=>onNavigate('settings')} aria-label={`${g.label} verbinden`}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></button>
   </article>;};
-  const instrument=(g:Instrument)=>g.offline?bay(g):<article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-live={g.lines.length?'true':undefined}>
-    <button type="button" className="bridge__comp" data-station={g.id} onClick={g.open} aria-label={`${g.label}: ${g.value} · ${g.detail}`} title={`${g.label}: ${g.value} · ${g.detail}`}>
+  // Bühne: ganze Fläche ist der Klick. Eine große Zahl, ein kurzes Nomen, ein Zustand. Keine Vorschauzeilen.
+  const instrument=(g:Instrument)=>{ if(g.offline) return bay(g); const Icon=CHANNEL_ICON[g.id]; const m=/^(\d[\d.]*\+?)\s+(.+)$/.exec(g.value);
+    return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-stage="true">
+    <button type="button" className="bridge__comp bridge__stage" data-station={g.id} data-bare={g.lines.length?undefined:'true'} onClick={g.open} aria-label={`${g.label}: ${g.value}${g.detail?` · ${g.detail}`:''}`} title={g.detail||undefined}>
+      <span className="bridge__stage-top"><span className="bridge__stage-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.6} /></span><small>{g.label}</small>{g.tone==='amber'||g.tone==='red'?<i className="bridge__stage-dot" aria-hidden="true" />:null}</span>
+      {g.lines.length ? <span className="bridge__stage-lines" data-testid={`dock-lines-${g.id}`}>{g.lines.slice(0,2).map(l=><span key={l.id} data-tone={l.tone}><b>{l.lead}</b>{l.text}</span>)}</span> : null}
+      <span className="bridge__stage-hero">{m?<><strong>{m[1]}</strong><span>{m[2]}</span></>:<strong>{g.value}</strong>}</span>
       <Ring frac={g.frac} />
-      <span className="bridge__comp-text"><small>{g.label}</small><strong>{g.value}</strong><em>{g.detail}</em></span>
-      <ChevronRight className="bridge__chev" size={16} strokeWidth={1.75} aria-hidden="true" />
     </button>
-    {g.lines.length ? <ul className="bridge__inst-list">{g.lines.map(l=><li key={l.id} data-tone={l.tone}><b>{l.lead}</b><span>{l.text}</span></li>)}</ul>
-        : <p className="bridge__inst-empty">{g.empty}</p>}
-    <div className="bridge__inst-actions">
-      <button type="button" onClick={g.open}>{g.openLabel}</button>
-      <button type="button" data-ask="true" onClick={()=>ask(g.ask)}>MÔRA fragen</button>
-    </div>
-  </article>;
-  const suggestions=(getFeature(activeId)?.mora.suggestions ?? getFeature('home')?.mora.suggestions ?? []).slice(0,3);
+  </article>;};
   const asOf=snapshot?.generated_at?new Date(snapshot.generated_at):null;
   const stand=asOf&&!isNaN(asOf.getTime())?asOf.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:snapshot?.timezone||'Europe/Berlin'}):null;
   const dateText=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Berlin'}).format(new Date());
@@ -206,7 +200,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
   return <nav className="os-dock bridge" data-variant="c" aria-label="Hauptnavigation" data-testid="os-dock">
     <div className="bridge__body" data-testid="dock" data-active={active?'true':undefined} data-stage={moraOpen?'true':undefined}>
       <svg className="bridge__hull" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
-        <defs><linearGradient id="bridge-glass" x1="0" y1="0" x2="0" y2="1"><stop style={{stopColor:'var(--dw-top)'}} stopOpacity=".38" /><stop offset=".35" style={{stopColor:'var(--dw-mid)'}} stopOpacity=".7" /><stop offset="1" style={{stopColor:'var(--dw-bot)'}} stopOpacity=".95" /></linearGradient><linearGradient id="bridge-edge" x1="0" y1="0" x2="1" y2="0"><stop style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /><stop offset=".5" style={{stopColor:'var(--dw-rim-hi)'}} stopOpacity=".7" /><stop offset="1" style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /></linearGradient></defs>
+        <defs><linearGradient id="bridge-glass" x1="0" y1="0" x2="0" y2="1"><stop style={{stopColor:'var(--dw-top)'}} stopOpacity=".38" /><stop offset=".35" style={{stopColor:'var(--dw-mid)'}} stopOpacity=".7" /><stop offset="1" style={{stopColor:'var(--dw-bot)'}} stopOpacity=".95" /></linearGradient><linearGradient id="bridge-edge" x1="0" y1="0" x2="1" y2="0"><stop style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /><stop offset=".3" style={{stopColor:'var(--dw-rim-hi)'}} stopOpacity=".6" /><stop offset=".5" style={{stopColor:'var(--dw-rim-hi)'}} stopOpacity="0" /><stop offset=".7" style={{stopColor:'var(--dw-rim-hi)'}} stopOpacity=".6" /><stop offset="1" style={{stopColor:'var(--dw-rim)'}} stopOpacity=".12" /></linearGradient></defs>
         <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0 L1440 300 L0 300 Z" fill="url(#bridge-glass)" />
         <path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0" fill="none" stroke="url(#bridge-edge)" strokeWidth="6" strokeOpacity=".18" vectorEffect="non-scaling-stroke" /><path d="M0 0 C220 5 300 82 720 82 C1140 82 1220 5 1440 0" fill="none" stroke="url(#bridge-edge)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
       </svg>
@@ -220,20 +214,20 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onAsk,onMore,onN
       <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__day" aria-label="Tagesverlauf 6 bis 22 Uhr">
         {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
-        {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
+        {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" data-center={Math.abs(nowX-50)<12?'true':undefined} style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
       </section>
       <section className="bridge__deck" aria-label="Lage">
         {instrument(instruments[0])}{instrument(instruments[1])}
         <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
           <span className="bridge__beam" aria-hidden="true" />
           <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
-          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><PixelMora size={phone?76:104} mood={mood} /></span></button>
+          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><JadeMora size={phone?84:130} mood={mood} /></span>{phone?null:<span className="bridge__mora-reflect" data-testid="mora-reflection" aria-hidden="true">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/mora/jade-01.png" alt="" width={100} height={130} draggable={false} /></span>}</button>
           <div className="bridge__field" data-field="mora" data-kind={shownCard?.kind} data-urgent={shownCard?.urgent?'true':undefined}>
-            {shownCard?.eyebrow ? <small className="bridge__field-eyebrow">{shownCard.eyebrow}</small> : null}
+            
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>
-            {shownCard ? <div className="bridge__field-card"><span>{shownCard.detail}</span><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
+            {shownCard ? <>{shownCard.facts?.length ? <ul className="bridge__facts" data-testid="stage-facts">{shownCard.facts.map(f=><li key={f}>{f}</li>)}</ul> : null}<div className="bridge__field-card"><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div></> : null}
             <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>MÔRA</span><kbd>M</kbd></button></div>
-            {suggestions.length ? <div className="bridge__chips" aria-label="Vorschläge">{suggestions.map(s=><button key={s} type="button" onClick={()=>ask(s)}>{s}</button>)}</div> : null}
+            
           </div>
         </div>
         {instrument(instruments[2])}{instrument(instruments[3])}

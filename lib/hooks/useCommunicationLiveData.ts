@@ -1,5 +1,6 @@
 "use client";
 
+import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
 import { normalizeList } from "@/lib/api/http";
@@ -209,8 +210,8 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const scopedTail = companyQuery ? `&${companyQuery}` : "";
 
                 const [mailData, calendarData, feedData, myContentData] = await Promise.all([
-                    coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
-                    coreGet(
+                    isDemoScopeActive() ? Promise.resolve(null) : coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
+                    isDemoScopeActive() ? Promise.resolve(null) : coreGet(
                         `/v3/calendar/events?start_date=${toIsoDate(start)}&end_date=${toIsoDate(end)}${scopedTail}`,
                         { isOptional: true }
                     ),

@@ -168,7 +168,8 @@ body:not(.standard-mode) [data-testid='mora-dock'] {
   bottom: 18px !important;
 }
 
-body:not(.standard-mode) [data-testid='dock'] {
+/* Nur das alte Dock; die Brücke (.bridge__body) trägt ihr eigenes Glas über dem See. */
+body:not(.standard-mode) [data-testid='dock']:not(.bridge__body) {
   padding: 7px 10px !important;
   gap: 4px !important;
   border: 1px solid rgba(255,255,255,.075) !important;

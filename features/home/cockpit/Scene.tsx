@@ -1,4 +1,8 @@
 'use client';
+import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
+import type { MyceliumThread } from '@/lib/universe/homeMycelium';
+import { activityScale } from '@/lib/universe/planetActivity';
+import { skyLayout } from '@/lib/universe/skyLayout';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { PixelSphere } from '@/components/universe/PlanetSphere';
@@ -6,6 +10,7 @@ import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
 import { PixelPlanet, PixelMoon } from '@/components/world/PixelPlanet';
+import type { DayMoon } from '@/lib/universe/dayMoons';
 import { planetKind, seedOf } from '@/lib/universe/pixelArt';
 import { toneSlot } from '@/lib/universe/matteTone';
 
@@ -133,7 +138,15 @@ export function PlanetSystem({
   strip,
   style = 'glas',
   signals,
+  moons,
+  onTaskDone,
+  onMoonOpen,
+  threads,
 }: {
+  threads?: MyceliumThread[];
+  moons?: Map<string, DayMoon[]>;
+  onTaskDone?: (taskId: string) => void;
+  onMoonOpen?: (kind: DayMoon['kind']) => void;
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
   attention: Set<string>;
@@ -173,9 +186,17 @@ export function PlanetSystem({
     });
   }, [planets, size.width, size.height, compact]);
 
+  // Desktop-Home: ganzer Himmel, Tiefe nach echter Aktivität (Signal > Aufmerksamkeit > Ordner).
+  const skySlots = useMemo(() => {
+    if (!compact || strip || size.width < 600) return null;
+    const weights = planets.map((p) => (signals?.get(p.id) ? 2 : 0) + (attention.has(p.id) ? 1 : 0) + Math.min(8, p.moons?.length ?? 0) / 8);
+    return skyLayout(weights, size.width, size.height);
+  }, [planets, signals, attention, compact, strip, size.width, size.height]);
+
   return (
     <div
       ref={containerRef}
+      onPointerMove={skySlots ? (e) => { const el = e.currentTarget, r = el.getBoundingClientRect(); el.style.setProperty('--px', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3)); el.style.setProperty('--py', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3)); } : undefined}
       className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}`}
       data-testid="planet-system"
     >
@@ -183,25 +204,32 @@ export function PlanetSystem({
         <ellipse cx="50" cy="49" rx="33" ry="28" />
         <ellipse className="ck-sys__orbit2" cx="50" cy="49" rx="44" ry="37" />
       </svg>
-      <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>
+      {skySlots ? <SkyWeave planets={planets} slots={skySlots} threads={threads} width={size.width} height={size.height} /> : null}
+      {skySlots ? null : <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>}
       {planets.map((p, i) => {
-        const s = slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
+        const sky = skySlots?.[i];
+        const s = sky ?? slots[i] ?? { x: size.width / 2, y: size.height / 2, size: 100 };
         const folderCount = p.moons?.length ?? 0;
-        const orbSize = strip ? 48 : compact ? Math.round(s.size * 0.9) : s.size;
         const tint = tintForGlass(p.glass);
         const cleanTitle = stripFiktiv(p.title) || p.title;
         const active = !!(signals?.get(p.id) || attention.has(p.id));
+        const orbSize = strip ? 48 : sky ? sky.size : Math.round((compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active));
 
+        const pm = !strip ? moons?.get(p.id) : undefined;
         return (
+          <React.Fragment key={p.id}>
+          {pm?.length ? <DayMoons moons={pm} x={s.x} y={s.y} r={orbSize / 2 + 16} onTaskDone={onTaskDone} onOpen={onMoonOpen} /> : null}
           <button
-            key={p.id}
             type="button"
             className={active ? 'ck-planet ck-planet--active' : 'ck-planet'}
             data-active={active ? 'true' : undefined}
+            data-depth={sky ? (sky.depth >= 0.5 ? 'near' : 'far') : undefined}
             style={{
               left: `${s.x}px`,
               top: `${s.y}px`,
               ['--strip-x' as string]: `${((i + 0.5) / planets.length) * 100}%`,
+              ['--drift' as string]: `${-(i * 2.7).toFixed(1)}s`,
+              ...(sky ? { zIndex: 1 + Math.round(sky.depth * 10), ['--pd' as string]: (3 + 9 * sky.depth).toFixed(1) } : null),
             }}
             onClick={() => onOpen(p.id)}
             data-testid={`open-${p.id}`}
@@ -221,13 +249,18 @@ export function PlanetSystem({
               >
                 <PixelSphere size={orbSize} lit={0.8} tint={tint} variant="A" seed={i + 1} />
               </div>
+            ) : sky ? (
+              <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} className="ck-opal">
+                <span className="ck-opal__milk" data-testid="planet-opal" aria-hidden />
+                <span className="ck-opal__iris" aria-hidden />
+                <span className="ck-opal__spec" aria-hidden />
+              </GlassOrb>
             ) : (
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
             <b>{cleanTitle}</b>
-            <small>{folderCount > 0 ? `${folderCount} ${folderCount === 1 ? 'Ordner' : 'Ordner'}` : 'Noch keine Ordner'}</small>
             {(() => {
-              const sig = signals?.get(p.id) || (attention.has(p.id) ? { isAlarm: false, reason: 'Braucht dich' } : null);
+              const sig = signals?.get(p.id) ?? null;
               if (!sig) return null;
               return (
                 <span
@@ -266,6 +299,44 @@ export function PlanetSystem({
               );
             })()}
           </button>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
+
+/** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [done, setDone] = useState<Set<string>>(() => new Set());
+  return (
+    <div className="ck-daymoons" style={{ left: x, top: y }} data-testid="day-moons">
+      {moons.map((m, i) => {
+        const a = -Math.PI / 2 + Math.PI * 0.32 + (i * Math.PI * 0.36);
+        const isDone = done.has(m.id);
+        const isOpen = open === m.id;
+        return (
+          <div key={m.id} className="ck-daymoon" data-kind={m.kind} data-open={isOpen ? 'true' : undefined} data-done={isDone ? 'true' : undefined}
+            style={{ ['--mx' as string]: `${Math.cos(a) * r}px`, ['--my' as string]: `${Math.sin(a) * r}px`, ['--md' as string]: `${-i * 1.3}s` }}>
+            <button type="button" className="ck-daymoon__orb" aria-label={m.title} aria-expanded={isOpen}
+              data-testid={`day-moon-${m.id}`} onClick={() => setOpen(isOpen ? null : m.id)} />
+            {isOpen ? (
+              <div className="ck-daymoon__card" data-testid={`day-moon-card-${m.id}`}>
+                <span aria-hidden>{MOON_ICON[m.kind]}</span>
+                <b>{m.title}</b>
+                {m.when ? <time>{m.when}</time> : null}
+                {m.kind === 'task' && m.taskId ? (
+                  <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
+                    onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                ) : onOpen ? (
+                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>
@@ -383,5 +454,52 @@ export function OpenPlanet({
         {cleanPlanetTitle}
       </h2>
     </div>
+  );
+}
+
+/** Myzel + Sternbild: feine Fäden zwischen Bereichen mit gemeinsamer Arbeit, darüber ein stilles Sternbild. */
+function SkyWeave({ planets, slots, threads, width, height }: {
+  planets: DemoPlanet[]; slots: { x: number; y: number; size: number }[]; threads?: MyceliumThread[]; width: number; height: number;
+}) {
+  const idx = new Map(planets.map((p, i) => [p.id, i]));
+  const paths = (threads ?? []).flatMap((t) => {
+    const a = slots[idx.get(t.a) ?? -1], b = slots[idx.get(t.b) ?? -1];
+    if (!a || !b) return [];
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 + Math.hypot(b.x - a.x, b.y - a.y) * 0.18;
+    // feine Seitenfäden: kurze Abzweige an zwei Stellen entlang des Fadens
+    const at = (u: number) => ({ x: (1 - u) ** 2 * a.x + 2 * (1 - u) * u * mx + u * u * b.x, y: (1 - u) ** 2 * a.y + 2 * (1 - u) * u * my + u * u * b.y });
+    const fil = [0.32, 0.68].map((u, k) => {
+      const p0 = at(u), p1 = at(u + 0.02), dx = p1.x - p0.x, dy = p1.y - p0.y, l = Math.hypot(dx, dy) || 1, s = (k ? -1 : 1) * 22;
+      return `M ${p0.x} ${p0.y} q ${dx / l * 10 - dy / l * s * 0.5} ${dy / l * 10 + dx / l * s * 0.5} ${dx / l * 6 - dy / l * s} ${dy / l * 6 + dx / l * s}`;
+    }).join(' ');
+    return [{ id: `${t.a}~${t.b}`, d: `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`, fil, w: t.weight }];
+  });
+  // Sternbild in den Lücken zwischen den Planeten, nie auf ihnen.
+  const band = Math.round(Math.min(96, height * 0.11));
+  const xs = slots.slice(0, planets.length).map((s) => s.x).sort((a, b) => a - b);
+  const stars = xs.slice(1).map((x, i) => ({ id: `s${i}`, x: (xs[i] + x) / 2, y: band * (0.35 + 0.45 * (((i * 37) % 7) / 6)), weight: 0.35 + 0.4 * (((i * 53) % 5) / 4) }));
+  return (
+    <>
+      {paths.length ? (
+        <svg className="ck-myc" data-testid="mycelium" width={width} height={height} aria-hidden>
+          {paths.map((p, i) => (
+            <g key={p.id} style={{ ['--w' as string]: p.w.toFixed(2) }}>
+              <path d={p.d} style={{ animationDelay: `${-i * 2.3}s` }} />
+              <path className="ck-myc__fil" d={p.fil} style={{ animationDelay: `${-i * 3.1}s` }} />
+              <path className="ck-myc__pulse" d={p.d} pathLength={100} style={{ animationDelay: `${-i * 6}s` }} />
+            </g>
+          ))}
+        </svg>
+      ) : null}
+      {stars.length > 1 ? (
+        <div className="ck-constellation" data-testid="constellation" style={{ height: band }} aria-hidden>
+          <SemanticConstellation center={{ x: width / 2, y: band * 0.2 }} satellites={stars} />
+          <svg className="ck-constellation__lines" width={width} height={band}>
+            <polyline points={stars.map((s) => `${s.x},${s.y}`).join(' ')} />
+          </svg>
+          {stars.map((s) => <i key={s.id} style={{ left: s.x, top: s.y, opacity: s.weight }} />)}
+        </div>
+      ) : null}
+    </>
   );
 }

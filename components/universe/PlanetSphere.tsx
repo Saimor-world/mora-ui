@@ -373,7 +373,7 @@ export function areaHue(name: string, _arch?: string | null): [number, number, n
   return [140, 170, 160];
 }
 const JEWEL_CACHE = new Map<string, ImageData>();
-function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
+export function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
   // hd47 (Marius): matt nur leicht getönt – Sättigung gut halbiert
@@ -382,7 +382,7 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1); const W = Math.round(size * dpr); if (cv.width !== W) cv.width = cv.height = W;
-    const c = cv.getContext('2d'); if (!c) return;
+    const c = cv.getContext('2d'); if (!c || typeof c.createImageData !== 'function') return;
     const key = [W, lit.toFixed(2), h.join(','), matte, seed, quiet].join('|'); const hit = JEWEL_CACHE.get(key);
     if (hit) { c.putImageData(hit, 0, 0); drawRim(); return; }
     const img = c.createImageData(W, W); const d = img.data;

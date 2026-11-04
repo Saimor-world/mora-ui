@@ -331,3 +331,343 @@ html[data-mora-stage] .os-shell__content, html[data-mora-stage] .os-shell__topba
 .ck-planet--active > :first-child { filter:drop-shadow(0 0 14px var(--br-accent, rgba(214,168,72,.55))); animation:ck-planet-pulse 4.8s ease-in-out infinite; }
 @keyframes ck-planet-pulse { 50% { filter:drop-shadow(0 0 24px var(--br-accent, rgba(214,168,72,.75))) brightness(1.12); } }
 @media (prefers-reduced-motion: reduce) { .ck-planet--active > :first-child { animation:none; } }
+
+/* Runde 4 · Premium: ein Material, eine Typo-Skala, 8pt-Raster, ruhige Tiefe.
+   Hintergrund (JPG) → Planeten → Glas-Deck → Karten. Weniger Glühen, feinere Kanten. */
+html[data-dock='c'] {
+  --br-glass:rgba(8,26,34,.38);
+  --br-glass-hi:rgba(255,255,255,.14);
+  --br-line:rgba(255,255,255,.09);
+  --br-mute:rgba(226,238,232,.58); --br-faint:rgba(226,238,232,.36);
+  --br-ease:cubic-bezier(.22,1,.36,1);
+  --pm-r:24px;
+  --pm-shadow:0 1px 1px rgba(0,0,0,.10),0 4px 8px rgba(0,0,0,.10),0 16px 40px -8px rgba(0,0,0,.36);
+  --pm-inner:inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.02);
+}
+/* Wasser: weniger Funkeln und Linien */
+.bridge__sparkle { opacity:.22; }
+.bridge__ripple { opacity:.16; }
+.bridge__hull path:last-of-type { stroke-opacity:.45; filter:none; }
+.bridge__beam { opacity:.55; }
+/* Instrumente: echtes Glas, gleiche Kanten, 8pt-Innenraum */
+.bridge__deck { gap:16px; }
+.bridge__inst { padding:16px 16px 12px; border-radius:var(--pm-r);
+  background:linear-gradient(180deg,rgba(255,255,255,.075) 0%,rgba(255,255,255,.02) 48%,rgba(255,255,255,0) 100%),var(--br-glass);
+  -webkit-backdrop-filter:blur(28px) saturate(160%); backdrop-filter:blur(28px) saturate(160%);
+  border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow);
+  transition:transform .5s var(--br-ease),box-shadow .5s var(--br-ease),background .3s; }
+.bridge__inst[data-col='inner'] { margin-top:48px; }
+.bridge__inst:hover { transform:translateY(-2px); box-shadow:var(--pm-inner),0 2px 4px rgba(0,0,0,.12),0 24px 48px -8px rgba(0,0,0,.42); }
+.bridge__inst[data-live='true'] { animation:none; }
+.bridge__inst[data-tone='amber'] { border-color:rgba(242,192,106,.22); }
+.bridge__comp { gap:12px; min-height:48px; padding:0 0 12px; border-bottom:.5px solid var(--br-line); }
+.bridge__ring, .bridge__ring svg { width:32px; height:32px; }
+.bridge__ring-track { stroke:rgba(255,255,255,.08); stroke-width:2.5; }
+.bridge__ring-fill { stroke-width:2.5; }
+.bridge__comp-text { gap:2px; }
+.bridge__comp-text small { font:600 11px/16px var(--br-font); letter-spacing:.06em; color:var(--br-faint); }
+.bridge__comp-text strong { font:600 22px/28px var(--br-font); letter-spacing:-.022em; font-variant-numeric:tabular-nums; }
+.bridge__comp-text em { font:400 13px/16px var(--br-font); color:var(--br-mute); }
+.bridge__inst-list { margin-top:12px; gap:8px; }
+.bridge__inst-list li { font:400 13px/16px var(--br-font); color:rgba(238,246,241,.82); }
+.bridge__inst-list li b { min-width:48px; font-weight:500; color:var(--br-faint); }
+.bridge__inst-actions { margin-top:auto; padding-top:8px; }
+.bridge__inst-actions button { height:32px; border-radius:12px; border:.5px solid var(--br-line); background:rgba(255,255,255,.04); color:rgba(238,246,241,.86); font:500 13px/1 var(--br-font); }
+/* MÔRAs Feld: ruhiger Schein statt Rand-Glühen */
+.bridge__field { padding:56px 24px 16px; gap:8px;
+  background:radial-gradient(100% 80% at 50% 0%,color-mix(in srgb,var(--br-accent) 9%,transparent),transparent 62%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(8,26,34,.46));
+  border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow); }
+.bridge__mora { filter:drop-shadow(0 8px 16px rgba(0,0,0,.35)) drop-shadow(0 0 12px color-mix(in srgb,var(--br-accent) 28%,transparent)); }
+.bridge__ask > button { height:44px; border-radius:16px; border:.5px solid rgba(255,255,255,.12); background:rgba(2,14,20,.42); font:400 15px/1 var(--br-font); }
+/* Status und App-Leiste */
+.bridge__clock b { font:200 28px/32px var(--br-font); }
+.bridge__chip { height:32px; border-radius:16px; border:.5px solid var(--br-line); font-weight:500; }
+.bridge__pill { gap:8px; padding:8px 12px; height:64px; border-radius:24px; border:.5px solid rgba(255,255,255,.14); box-shadow:var(--pm-inner),var(--pm-shadow); }
+.bridge__app-icon { border-radius:12px; background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); box-shadow:inset 0 .5px 0 rgba(255,255,255,.18); }
+.bridge__badge { font-weight:600; letter-spacing:-.01em; box-shadow:0 0 0 2px rgba(8,26,34,.9); }
+/* Heute-Karten: schwebendes Glas über dem Himmel */
+.ck-focus { gap:16px; }
+.ck-focus__card { gap:8px; min-width:200px; padding:16px 24px 16px 20px; border-radius:20px;
+  border:.5px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)),rgba(8,26,34,.34);
+  -webkit-backdrop-filter:blur(24px) saturate(160%); backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:var(--pm-inner),var(--pm-shadow); transition:transform .5s var(--br-ease),box-shadow .5s var(--br-ease),border-color .3s; }
+.ck-focus__card:hover, .ck-focus__card:focus-visible { transform:translateY(-2px); border-color:rgba(255,255,255,.24); background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04)),rgba(8,26,34,.34); }
+.ck-focus__card span { font:600 11px/16px var(--br-font,system-ui); letter-spacing:.06em; text-transform:uppercase; opacity:1; color:rgba(226,238,232,.56); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ck-focus__card b { font:600 22px/28px var(--br-font,system-ui); letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:#f3f8f5; }
+.ck-focus__card[data-tone='amber'] b { color:#f2c06a; }
+.ck-focus__card[data-tone='red'] b { color:#f58c7d; }
+/* Planeten: ruhigerer Puls */
+.ck-planet--active > :first-child { animation-duration:6s; animation-timing-function:var(--br-ease,ease-in-out); }
+@media (max-width:699px) {
+  .bridge__deck { gap:8px; }
+  .bridge__inst { padding:8px 8px; border-radius:16px; }
+  .bridge__comp { padding:0; border:0; }
+  .bridge__comp-text strong { font-size:15px; line-height:20px; letter-spacing:-.02em; overflow:visible; text-overflow:clip; }
+  /* Handy: Dock als 2×2-Raster, Werte stehen voll da */
+  html[data-dock='c'], html[data-dock='c'] .os-root { --os-dock-space:304px !important; }
+  .bridge__body { height:304px; }
+  .bridge__deck { grid-template-columns:repeat(2,1fr); grid-template-rows:1fr auto auto; }
+  .bridge__inst[data-station='post'] { grid-column:1; grid-row:2; } .bridge__inst[data-station='today'] { grid-column:2; grid-row:2; }
+  .bridge__inst[data-station='team'] { grid-column:1; grid-row:3; } .bridge__inst[data-station='next'] { grid-column:2; grid-row:3; }
+  .bridge__comp { min-height:32px; }
+  .bridge__field { padding:44px 12px 8px; border-radius:20px; }
+  .bridge__pill { height:56px; padding:6px 8px; border-radius:20px; }
+  .ck-focus { gap:8px; } .ck-focus__card { min-width:0; padding:12px 16px; } .ck-focus__card b { font-size:17px; line-height:22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bridge__inst, .ck-focus__card { transition:none; }
+  .bridge__inst:hover, .ck-focus__card:hover, .ck-focus__card:focus-visible { transform:none; }
+}
+
+/* Runde 5 · Feinschliff: gleiche Elemente, gleiche Anordnung – nur feineres Handwerk. */
+@media (min-width:700px) {
+  .bridge__inst { border:.5px solid rgba(255,255,255,.13); border-radius:22px;
+    background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.02) 38%,rgba(255,255,255,.01)),var(--br-glass);
+    -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%);
+    box-shadow:inset 0 .5px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.03),0 1px 2px rgba(0,0,0,.18),0 8px 16px -4px rgba(0,0,0,.22),0 28px 56px -12px rgba(0,0,0,.42); }
+  .bridge__comp-text strong { font-size:clamp(17px,1.55vw,22px); font-weight:620; font-variant-numeric:tabular-nums; }
+  .bridge__comp-text small { color:rgba(238,246,241,.56); }
+  .bridge__comp-text em { color:rgba(238,246,241,.66); }
+  .bridge__inst-list li span { color:rgba(238,246,241,.84); }
+  .bridge__inst-actions button { border-radius:999px; border:.5px solid rgba(255,255,255,.14); background:rgba(255,255,255,.045); box-shadow:inset 0 .5px 0 rgba(255,255,255,.12); }
+  .bridge__inst-actions button:hover { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.22); }
+  .bridge__pill { gap:8px; border:.5px solid rgba(255,255,255,.14); }
+}
+.bridge__ring-track { stroke:rgba(255,255,255,.09); stroke-width:2.5; }
+.bridge__ring-fill { stroke-width:2.5; filter:drop-shadow(0 0 3px color-mix(in srgb,var(--br-accent) 45%,transparent)); }
+.bridge__app { width:44px; height:44px; }
+.bridge__badge { font-variant-numeric:tabular-nums; min-width:18px; height:18px; line-height:18px; top:-3px; right:-3px; }
+.bridge__comp:focus-visible, .bridge__inst-actions button:focus-visible, .bridge__chip:focus-visible, .bridge__ask > button:focus-visible { outline:2px solid color-mix(in srgb,var(--br-accent) 80%,white); outline-offset:2px; }
+.bridge__app:focus-visible .bridge__app-icon { box-shadow:0 0 0 2px color-mix(in srgb,var(--br-accent) 80%,white); }
+@media (prefers-reduced-motion: reduce) { .bridge__inst-actions button, .bridge__ring-fill { transition:none; } }
+@media (min-width:700px) and (max-width:1180px) {
+  .bridge__inst .bridge__chev { display:none; }
+  .bridge__comp { gap:8px; }
+  .bridge__comp-text strong { font-size:16px; letter-spacing:-.025em; }
+}
+
+/* Runde 6 · Bühnen: jedes Paneel eine Bühne – Heldzahl, Licht von oben, Tönung je Quelle, See-Spiegelung; Toolbar und Dock als eine Konsole. */
+.bridge__inst[data-station='post'] { --st:#7fd8ff; }
+.bridge__inst[data-station='today'] { --st:#f2c06a; }
+.bridge__inst[data-station='team'] { --st:#8ff0c0; }
+.bridge__inst[data-station='next'] { --st:#c3a8ff; }
+@media (min-width:700px) {
+  .bridge__inst[data-stage='true'] { padding:0; overflow:hidden; isolation:isolate; border:.5px solid color-mix(in srgb,var(--st) 34%,rgba(255,255,255,.1));
+    background:
+      radial-gradient(120% 70% at 50% -10%,color-mix(in srgb,var(--st) 30%,transparent),transparent 62%),
+      linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.02) 45%,rgba(0,0,0,.10)),
+      rgba(10,28,36,.55);
+    box-shadow:inset 0 1px 0 color-mix(in srgb,var(--st) 55%,white),inset 0 -24px 40px -24px color-mix(in srgb,var(--st) 26%,transparent),
+      0 0 0 .5px rgba(0,0,0,.25),0 18px 40px -10px rgba(0,0,0,.55),0 0 60px -18px color-mix(in srgb,var(--st) 55%,transparent); }
+  /* Spiegelung des Sees am unteren Rand */
+  .bridge__inst[data-stage='true']::after { content:''; position:absolute; inset:auto 0 0 0; height:38%; z-index:-1; pointer-events:none;
+    background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--st) 12%,transparent)),repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px); }
+  .bridge__stage { position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; gap:8px; width:100%; height:100%; min-height:0; padding:16px 18px 18px; border:0; border-radius:inherit; }
+  .bridge__stage-top { display:flex; align-items:center; gap:8px; width:100%; }
+  .bridge__stage-icon { display:grid; place-items:center; width:30px; height:30px; border-radius:10px; color:var(--st);
+    background:color-mix(in srgb,var(--st) 16%,transparent); box-shadow:inset 0 .5px 0 rgba(255,255,255,.25),0 0 16px -4px color-mix(in srgb,var(--st) 70%,transparent); }
+  .bridge__stage-top small { font:600 11px/14px var(--br-font); letter-spacing:.1em; text-transform:uppercase; color:rgba(238,246,241,.62); }
+  .bridge__stage-dot { margin-left:auto; width:9px; height:9px; border-radius:50%; background:var(--br-amber); box-shadow:0 0 0 0 rgba(242,192,106,.6); animation:bridge-amber 2.2s ease-out infinite; }
+  .bridge__inst[data-tone='red'] .bridge__stage-dot { background:var(--br-red); }
+  @keyframes bridge-amber { 70% { box-shadow:0 0 0 10px rgba(242,192,106,0); } 100% { box-shadow:0 0 0 0 rgba(242,192,106,0); } }
+  .bridge__stage-hero { display:flex; flex-direction:column; min-width:0; margin-top:auto; }
+  .bridge__stage-hero strong { font:700 clamp(32px,3.3vw,48px)/1 var(--br-font); letter-spacing:-.04em; font-variant-numeric:tabular-nums; color:#fff;
+    text-shadow:0 0 24px color-mix(in srgb,var(--st) 55%,transparent),0 2px 0 rgba(0,0,0,.25); white-space:nowrap; }
+  .bridge__stage-hero span { margin-top:6px; font:500 15px/18px var(--br-font); color:color-mix(in srgb,var(--st) 55%,white); white-space:nowrap; }
+  .bridge__inst[data-tone='amber'] .bridge__stage-hero strong { color:var(--br-amber); }
+  .bridge__stage .bridge__ring { position:absolute; right:14px; bottom:16px; width:40px; height:40px; opacity:.9; }
+  .bridge__stage .bridge__ring svg { width:40px; height:40px; }
+  .bridge__inst[data-stage='true'] .bridge__ring-fill { stroke:var(--st); }
+  .bridge__inst[data-stage='true']:hover { transform:translateY(-3px); }
+  .bridge__stage:focus-visible { outline:2px solid color-mix(in srgb,var(--st) 80%,white); outline-offset:-3px; }
+  /* Konsole: Toolbar sitzt im selben Material auf einer durchgehenden Bank */
+  .bridge__body::after { content:''; position:absolute; z-index:1; left:12px; right:12px; bottom:4px; height:68px; border-radius:26px; pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01)),rgba(6,20,26,.5);
+    -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 -12px 40px -20px rgba(159,234,240,.35); }
+  .bridge__pill { background:transparent; border-color:transparent; box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .bridge__status { z-index:6; }
+}
+@media (min-width:700px) and (max-width:1180px) {
+  .bridge__stage { padding:12px 12px 14px; }
+  .bridge__stage-hero strong { font-size:30px; }
+  .bridge__stage-hero span { font-size:13px; }
+  .bridge__stage .bridge__ring { width:30px; height:30px; right:10px; bottom:12px; } .bridge__stage .bridge__ring svg { width:30px; height:30px; }
+}
+@media (max-width:699px) {
+  .bridge__stage { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; padding:4px 6px; border:0; background:none; color:var(--br-text); text-align:left; }
+  .bridge__stage-top small { font:600 10px/14px var(--br-font); letter-spacing:.06em; text-transform:uppercase; color:rgba(238,246,241,.6); }
+  .bridge__stage-icon, .bridge__stage .bridge__ring { display:none; }
+  .bridge__stage-dot { display:inline-block; width:7px; height:7px; margin-left:6px; border-radius:50%; background:var(--br-amber); }
+  .bridge__stage-hero { display:flex; align-items:baseline; gap:5px; }
+  .bridge__stage-hero strong { font:700 20px/24px var(--br-font); font-variant-numeric:tabular-nums; }
+  .bridge__stage-hero span { font:500 13px/16px var(--br-font); color:rgba(238,246,241,.72); }
+  .bridge__inst[data-tone='amber'] .bridge__stage-hero strong { color:var(--br-amber); }
+}
+@media (prefers-reduced-motion: reduce) { .bridge__stage-dot { animation:none; } .bridge__inst[data-stage='true']:hover { transform:none; } }
+
+/* ── Runde 7: Raum, Licht, Jade-MÔRA ───────────────────────────── */
+/* Atmosphäre über dem See: Nebelschleier, ein ferner Lichtkegel, langsam treibende Sterne. Unter Planeten und Karten. */
+.ck-mist { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+.ck-mist::before { content:""; position:absolute; inset:-10% -10% 40% -10%; opacity:.5;
+  background-image:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.7),transparent 60%),radial-gradient(1px 1px at 33% 42%,rgba(220,240,255,.55),transparent 60%),radial-gradient(1.5px 1.5px at 58% 12%,rgba(255,246,220,.7),transparent 60%),radial-gradient(1px 1px at 77% 36%,rgba(255,255,255,.5),transparent 60%),radial-gradient(1px 1px at 91% 8%,rgba(210,235,255,.6),transparent 60%),radial-gradient(1.5px 1.5px at 46% 28%,rgba(255,255,255,.45),transparent 60%);
+  background-size:420px 300px; animation:ck-stars 180s linear infinite; }
+.ck-mist::after { content:""; position:absolute; left:50%; top:-20%; width:70vw; height:85%; margin-left:-35vw; opacity:.32; mix-blend-mode:screen;
+  background:conic-gradient(from 180deg at 50% 0%,transparent 160deg,rgba(200,236,226,.16) 176deg,rgba(255,244,214,.2) 180deg,rgba(200,236,226,.16) 184deg,transparent 200deg);
+  filter:blur(18px); -webkit-mask-image:linear-gradient(180deg,#000 10%,transparent 92%); mask-image:linear-gradient(180deg,#000 10%,transparent 92%); animation:ck-beam 24s ease-in-out infinite alternate; }
+.ck-mist i { position:absolute; border-radius:50%; filter:blur(48px); mix-blend-mode:screen; will-change:transform; animation:ck-veil 70s ease-in-out infinite alternate; }
+.ck-mist i:nth-child(1) { left:-8%; top:6%; width:46vw; height:22vh; background:radial-gradient(closest-side,rgba(120,200,190,.16),transparent); }
+.ck-mist i:nth-child(2) { right:-6%; top:14%; width:40vw; height:20vh; background:radial-gradient(closest-side,rgba(150,150,230,.12),transparent); animation-duration:90s; animation-delay:-30s; }
+.ck-mist i:nth-child(3) { left:18%; top:44%; width:64vw; height:12vh; background:radial-gradient(closest-side,rgba(210,232,226,.14),transparent); animation-duration:60s; animation-delay:-12s; }
+@keyframes ck-stars { to { background-position:420px 60px; } }
+@keyframes ck-beam { from { opacity:.22; translate:-2vw 0; } to { opacity:.36; translate:2vw 0; } }
+@keyframes ck-veil { from { transform:translate3d(-3vw,0,0) scale(1); } to { transform:translate3d(4vw,-1.5vh,0) scale(1.08); } }
+
+/* Home-Planeten: weit und ruhig über dem ganzen Himmel statt rechts gedrängt */
+@media (min-width:700px) {
+  html[data-dock='c'] .ck[data-view='home'] .ck-sys--compact { left:2% !important; right:2% !important; top:64px !important; bottom:322px !important; }
+  html[data-dock='c'] .ck[data-view='home'] .ck-sys__orbit ellipse { stroke:rgba(210,236,228,.05); }
+  html[data-dock='c'] .ck[data-view='home'] .ck-sys__core { font-size:0 !important; opacity:.6; }
+}
+/* Glasplaneten: Tiefe, weicher Hof, langsames Treiben. Nur der Name bleibt. */
+html[data-dock='c'] .ck-planet .glass-orb { animation:ck-drift 16s ease-in-out infinite; animation-delay:var(--drift,0s); }
+html[data-dock='c'] .ck-planet .glass-orb::before { content:""; position:absolute; inset:-38%; border-radius:50%; z-index:0; pointer-events:none;
+  background:radial-gradient(closest-side,rgba(190,232,224,.2),rgba(190,232,224,.06) 55%,transparent 72%); }
+html[data-dock='c'] .ck-planet .glass-orb::after { content:""; position:absolute; inset:0; border-radius:50%; z-index:2; pointer-events:none;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.34),transparent 26%),radial-gradient(circle at 70% 82%,rgba(140,220,210,.18),transparent 40%);
+  box-shadow:inset 0 -10px 18px rgba(4,14,22,.45),inset 0 2px 1px rgba(255,255,255,.18); }
+html[data-dock='c'] .ck-planet--active .glass-orb::before { background:radial-gradient(closest-side,rgba(242,200,128,.26),rgba(242,200,128,.07) 55%,transparent 72%); }
+html[data-dock='c'] .ck-planet b { font-weight:500; letter-spacing:.02em; color:rgba(238,246,242,.86); }
+html[data-dock='c'] .ck[data-view='home'] .ck-planet small { display:none; }
+html[data-dock='c'] .ck[data-view='home'] .ck-planet__signal { color:rgba(236,244,240,.72) !important; font-size:11.5px !important; font-weight:400 !important; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; justify-content:center; }
+html[data-dock='c'] .ck-planet[data-depth='far'] b { font-size:12px; color:rgba(230,240,236,.66); }
+html[data-dock='c'] .ck-planet[data-depth='near'] b { font-size:15px; }
+html[data-dock='c'] .ck-planet--active .glass-orb::before { animation:ck-pulse 5.5s ease-in-out infinite; }
+@keyframes ck-pulse { 0%,100% { opacity:.55; scale:.96; } 50% { opacity:1; scale:1.06; } }
+@keyframes ck-drift { 0%,100% { translate:0 0; } 33% { translate:3px -6px; } 66% { translate:-3px 3px; } }
+
+/* Info-Karte: Glas, leise, nur Name und Datum */
+html[data-dock='c'] .ck-focus__card { min-width:0; padding:12px 22px 13px; gap:4px; border-radius:18px; align-items:center;
+  border:.5px solid rgba(255,255,255,.16); background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(6,22,30,.28);
+  -webkit-backdrop-filter:blur(18px) saturate(140%); backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 18px 40px -18px rgba(0,0,0,.55); }
+html[data-dock='c'] .ck-focus__card span { font:500 10px/14px var(--br-font,system-ui); letter-spacing:.16em; color:rgba(226,238,232,.5); max-width:220px; }
+html[data-dock='c'] .ck-focus__card b { font:400 19px/24px var(--br-font,system-ui); letter-spacing:.01em; color:rgba(243,248,245,.92); display:inline-flex; align-items:center; gap:8px; }
+html[data-dock='c'] .ck-focus__card[data-tone='amber'] b { color:#ecc98a; }
+html[data-dock='c'] .ck-focus__card[data-tone='amber'] b::before { content:""; width:6px; height:6px; border-radius:50%; background:#f2c06a; box-shadow:0 0 10px 2px rgba(242,192,106,.45); }
+html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
+
+/* Handy: der Himmel bleibt Himmel – keine Kastenfläche, keine doppelten Zeilen */
+@media (max-width:699px) {
+  .ck[data-view='home'][data-phone='1'] .ck-panel { background:none !important; border-color:transparent !important; box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  .ck[data-view='home'][data-phone='1'] .ck-panel .ck-list, .ck[data-view='home'][data-phone='1'] .ck-panel .mr-depts, .ck[data-view='home'][data-phone='1'] .ck-panel .widget-board { display:none !important; }
+}
+
+/* MÔRA: runde Jade, schwebt über dem See, atmet Licht, spiegelt sich weich */
+.bridge__mora:has(.jade-mora) { width:150px; height:180px; margin-top:-156px; -webkit-box-reflect:below 14px linear-gradient(transparent 55%,rgba(255,255,255,.22)); animation:jade-fly 8s ease-in-out infinite; }
+.jade-mora { display:block; image-rendering:auto; position:relative; }
+.jade-mora img { position:relative; z-index:1; display:block; width:100%; height:100%; image-rendering:auto; filter:drop-shadow(0 14px 22px rgba(0,0,0,.4)); }
+.jade-mora__glow { position:absolute; left:50%; top:58%; width:120%; height:96%; translate:-50% -50%; border-radius:50%; z-index:0;
+  background:radial-gradient(closest-side,rgba(130,240,190,.34),rgba(90,210,190,.12) 55%,transparent); filter:blur(12px); animation:jade-glow 6s ease-in-out infinite; }
+.bridge__heart[data-mood='thinking'] .jade-mora__glow, .bridge__heart[data-mood='speaking'] .jade-mora__glow, .bridge__heart[data-attention='true'] .jade-mora__glow { background:radial-gradient(closest-side,rgba(242,210,140,.4),rgba(130,230,190,.14) 55%,transparent); }
+@keyframes jade-fly { 0%,100% { translate:0 0; rotate:-1deg; } 50% { translate:0 -10px; rotate:1.2deg; } }
+@keyframes jade-glow { 0%,100% { opacity:.65; scale:1; } 50% { opacity:1; scale:1.06; } }
+@media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:100px; height:118px; margin-top:-86px; } }
+
+@media (prefers-reduced-motion:reduce) {
+  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; }
+}
+/* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
+.bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
+.bridge__day .bridge__mark:hover .bridge__mark-label, .bridge__day .bridge__mark:focus-visible .bridge__mark-label { opacity:1 !important; }
+
+/* q1 Dock: leichteres Glas, gleiche Höhen, ruhiger Kern */
+.bridge__inst[data-col='inner'] { margin-top:0 !important; }
+.bridge__inst { background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(200,235,225,.035)) !important; backdrop-filter:blur(22px) saturate(1.25); -webkit-backdrop-filter:blur(22px) saturate(1.25); border-color:rgba(210,245,232,.14) !important; }
+/* q2 Ursache: Feld folgte im Spalten-Flex direkt auf MÔRA (margin-top:-30px, flex:0 0 auto) und klebte oben.
+   Fix: margin-top:auto schiebt es an die gemeinsame Unterkante der Kacheln; darüber Luft + Spiegelung. */
+@media (min-width:821px) { .bridge__heart > .bridge__field { flex:0 0 auto; margin-top:auto; justify-content:center; padding:22px 18px 14px; gap:8px; } }
+.bridge__facts { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; font:400 12.5px/16px var(--br-font); color:rgba(226,242,236,.78); }
+.bridge__facts li { white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+.bridge__mora { filter: drop-shadow(0 6px 14px rgba(0,0,0,.3)) drop-shadow(-2px -3px 6px rgba(190,236,220,.22)) drop-shadow(0 0 14px color-mix(in srgb,var(--br-accent) 24%,transparent)); }
+
+/* q2: kein Mittelfeld – MÔRA atmet, Spiegelung im See; Eingabe rechts unten; ruhige Zeilen in den Kacheln */
+.bridge__stage-lines { display:flex; flex-direction:column; gap:5px; width:100%; margin-top:10px; padding-right:4px; min-width:0; text-align:left; }
+.bridge__stage-lines > span { display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font:400 12.5px/16px var(--br-font); color:rgba(228,242,237,.66); }
+.bridge__stage-lines b { font-weight:500; color:rgba(238,248,244,.86); margin-right:6px; font-variant-numeric:tabular-nums; }
+.bridge__stage-lines > span[data-tone='amber'] b { color:var(--br-amber); }
+.bridge__stage-lines > span[data-tone='muted'] { opacity:.6; }
+@media (max-width:820px) { .bridge__stage-lines { display:none; } }
+
+.bridge__mora-reflect { position:absolute; left:50%; top:calc(100% - 48px); width:132px; height:172px; pointer-events:none; z-index:-1;
+  transform:translateX(-50%) scaleY(-.7); transform-origin:50% 50%; opacity:.36; filter:blur(1.8px) saturate(.8) brightness(.8);
+  -webkit-mask:linear-gradient(0deg,#000 10%,rgba(0,0,0,.45) 45%,transparent 80%); mask:linear-gradient(0deg,#000 10%,rgba(0,0,0,.45) 45%,transparent 80%); }
+.bridge__mora-reflect img { display:block; width:100%; height:100%; }
+.bridge__mora[data-flying='true'] .bridge__mora-reflect { display:none; }
+.bridge__now[data-center='true'] i { opacity:0; }
+.bridge__now[data-center='true']:hover i { opacity:1; }
+/* q3: Mitte ruhig – kein Jetzt-Punkt unter dem Spiegelbild */
+.bridge__now[data-center='true'] { opacity:0; }
+.bridge__now[data-center='true']:hover { opacity:1; }
+/* q3: Kachel ohne Zeilen – Zahl ruht in der Mitte statt unten im Leeren */
+@media (min-width:821px) { .bridge__stage[data-bare='true'] { justify-content:space-between; } .bridge__stage[data-bare='true'] .bridge__stage-hero { margin-block:auto; } }
+/* q3 Handy: zweite Kachelreihe endet über der App-Leiste (Raster lief 67px unter die Leiste) */
+@media (max-width:699px) {
+  .bridge__heart .bridge__field { padding:10px 12px 6px; }
+  .bridge__deck { gap:4px; }
+  .bridge__heart .bridge__facts { display:none; }
+  .bridge__inst { padding:4px 8px; }
+  .bridge__stage { min-height:0; padding-block:8px; }
+}
+/* q3: Termine stehen in „Als Nächstes“ – einsame Punkte auf der Welle lasen sich als Artefakte */
+.bridge__mark:not([data-problem='true']) { display:none; }
+/* q4: keine Randlinie quer über den See – Wasser und Glas gehen weich ineinander */
+.bridge__hull path:not(:first-of-type) { display:none; }
+/* q4 Handy: Paneltext liegt auf ruhigem Glas, nicht auf MÔRAs Spiegelbild */
+@media (max-width:699px) { .bridge__heart .bridge__field { background:linear-gradient(180deg,rgba(10,30,40,.86),rgba(6,18,26,.9)); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); } }
+
+/* q4 Myzel: haarfeine Fäden, langsamer Atem */
+.ck-myc { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:0; }
+.ck-myc { filter:drop-shadow(0 0 3px rgba(170,240,210,.55)); }
+.ck-myc path { fill:none; stroke:rgba(205,240,224,1); stroke-width:1.1; stroke-linecap:round; opacity:calc(.4 + .25 * var(--w,.3)); animation:ck-myc-breathe 9s ease-in-out infinite; }
+@keyframes ck-myc-breathe { 0%,100% { opacity:calc(.32 + .15 * var(--w,.3)); } 50% { opacity:calc(.6 + .3 * var(--w,.3)); } }
+/* q4 Sternbild im oberen Himmel */
+.ck-constellation { position:absolute; left:0; right:0; top:0; pointer-events:none; z-index:0; }
+.ck-constellation__lines { position:absolute; inset:0; overflow:visible; }
+.ck-constellation__lines polyline { fill:none; stroke:rgba(220,240,232,.22); stroke-width:.6; stroke-dasharray:2 4; }
+.ck-constellation i { position:absolute; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:#e9f4ef; box-shadow:0 0 8px 1px rgba(200,235,220,.7); animation:ck-star 11s ease-in-out infinite; }
+.ck-constellation i:nth-of-type(2n) { animation-delay:-5s; }
+@keyframes ck-star { 0%,100% { transform:scale(1); } 50% { transform:scale(1.5); } }
+
+/* q5 · MÔRA kleiner (130px), Spiegelung proportional */
+.bridge__mora:has(.jade-mora) { width:114px; height:136px; margin-top:-118px; }
+.bridge__mora-reflect { width:100px; height:130px; top:calc(100% - 36px); }
+@media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:76px; height:90px; margin-top:-66px; } }
+
+/* q5 · Dock als ein fließendes Glasband: Kacheln schmelzen in eine weiche Welle */
+.bridge__deck::before { content:''; position:absolute; z-index:-1; left:-10px; right:-10px; top:-8px; bottom:-14px; pointer-events:none;
+  border-radius:56px 56px 34px 34px / 44px 44px 30px 30px;
+  background:radial-gradient(120% 90% at 50% -20%,rgba(190,240,222,.10),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.07),rgba(160,215,200,.035) 45%,rgba(10,30,36,.28));
+  -webkit-backdrop-filter:blur(26px) saturate(150%); backdrop-filter:blur(26px) saturate(150%);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.22),0 30px 60px -18px rgba(0,0,0,.45);
+  -webkit-mask:radial-gradient(ellipse 15% 42px at 50% 0,transparent 98%,#000 100%); mask:radial-gradient(ellipse 15% 42px at 50% 0,transparent 98%,#000 100%); }
+.bridge__deck .bridge__inst { border-color:transparent !important; border-radius:30px !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.012) 55%,transparent) !important;
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.14) !important;
+  transition:transform .7s cubic-bezier(.22,1,.36,1),background .7s ease,box-shadow .7s ease; }
+.bridge__deck .bridge__inst::after { content:''; position:absolute; top:22%; bottom:22%; right:-14px; width:16px; pointer-events:none;
+  background:radial-gradient(closest-side,rgba(200,240,226,.10),transparent); }
+.bridge__deck .bridge__inst:hover { transform:translateY(-4px);
+  background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(200,240,226,.04) 60%,transparent) !important;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.24),0 0 40px -6px rgba(170,235,210,.22) !important; }
+.bridge__deck:has(.bridge__inst:hover)::before { box-shadow:inset 0 .5px 0 rgba(255,255,255,.3),0 30px 60px -18px rgba(0,0,0,.45),0 0 60px -20px rgba(170,235,210,.3); transition:box-shadow .7s ease; }
+@media (max-width:699px) {
+  .bridge__deck::before { left:-4px; right:-4px; top:auto; height:calc(100% - 0px); border-radius:30px; -webkit-mask:none; mask:none; }
+  .bridge__deck .bridge__inst { border-radius:20px !important; }
+  .bridge__deck .bridge__inst::after { display:none; }
+}
+.ck-myc path.ck-myc__fil { stroke-width:.5; animation-duration:13s; }
+.ck-myc path.ck-myc__pulse { stroke:#eafff5; stroke-width:2; stroke-dasharray:4 96; opacity:.9; animation:ck-myc-travel 14s linear infinite; }
+@keyframes ck-myc-travel { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }

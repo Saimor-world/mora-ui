@@ -1,4 +1,5 @@
 'use client';
+import { demoCompanyName, useDemoStore } from '@/lib/demo/demoStore';
 
 import '@/features/home/cockpit.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -239,9 +240,6 @@ function PixelUniverseOverview({
               </WorldPlanetSphere>
               <span className="wd-label">
                 <span className="wd-name">{displayName}</span>
-                <span className="wd-meta">
-                  {planet.moons?.length ? `${planet.moons.length} Ordner` : 'noch leer'}
-                </span>
                 {incCount > 0 ? (
                   <span
                     className="ck-incident-tag"
@@ -341,7 +339,9 @@ export function UnifiedUniverse({
 
   // Demo detection and company name
   const activeCompanyIsDemo = useActiveCompanyIsDemo();
+  const demoNameId = useDemoStore((s) => s.demoCompanyId);
   const rawCompanyName =
+    demoCompanyName(demoNameId) ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
     'Dein Unternehmen';
   const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';
@@ -494,7 +494,7 @@ export function UnifiedUniverse({
         id: 'briefing-mails',
         label: 'Post',
         title: `${mail.unread} ungelesene Mails`,
-        detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : 'Wartet auf dich',
+        detail: mail.needsYou ? `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : '',
       });
     }
     if (dailyBriefing.metrics?.active_incidents && dailyBriefing.metrics.active_incidents > 0) {
@@ -535,7 +535,7 @@ export function UnifiedUniverse({
       {planetStyle === 'pixel' ? (
         <PixelSky reduced={motionReduced} />
       ) : (
-        <div className="ck-space" aria-hidden />
+        <><div className="ck-space" aria-hidden /><div className="ck-mist" aria-hidden><i /><i /><i /></div></>
       )}
 
 

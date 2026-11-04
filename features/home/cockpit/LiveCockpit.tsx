@@ -1,8 +1,13 @@
 'use client';
+import { demoCompanyName, useDemoStore } from '@/lib/demo/demoStore';
 import '../cockpit.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
 import { PlanetSystem } from './Scene';
+import { homeMycelium } from '@/lib/universe/homeMycelium';
+import { dayMoonsFor } from '@/lib/universe/dayMoons';
+import { corePost } from '@/lib/api/http';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { HomeFocus } from '../widgets/HomeFocus';
 import { widgetsFromToday } from '../widgets/adapters';
@@ -20,6 +25,13 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+
+/** „Mi., 4. Nov.“ aus dem Snapshot-Datum, sonst heute. Keine erfundene Uhrzeit. */
+export function headerDate(raw?: string | null, now: Date = new Date()): string {
+  const parsed = raw ? new Date(raw) : null;
+  const d = parsed && !isNaN(parsed.getTime()) ? parsed : now;
+  return `${d.toLocaleDateString('de-DE', { weekday: 'short' })}, ${d.getDate()}. ${d.toLocaleDateString('de-DE', { month: 'short' })}`;
+}
 
 function usePhone() {
   const [p, setP] = useState(false);
@@ -59,6 +71,7 @@ export function LiveCockpit({
   isDemo = false,
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
+  const demoId = useDemoStore((s) => s.demoCompanyId);
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
@@ -66,11 +79,13 @@ export function LiveCockpit({
   // Compute company name: strip literal [FIKTIV]/(FIKTIV), show badge via effectiveIsDemo
   const rawCompanyName =
     propCompanyName ||
+    demoCompanyName(demoId) ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
     'Dein Unternehmen';
   const companyName = stripFiktiv(rawCompanyName) || 'Dein Unternehmen';
   const effectiveIsDemo =
     isDemo ||
+    !!demoCompanyName(demoId) ||
     hasFiktivMarker(rawCompanyName) ||
     user?.tenant_id === 'tenant-demo-morgenrot' ||
     snapshot?.requested_scope?.tenant_id === 'tenant-demo-morgenrot' ||
@@ -100,6 +115,12 @@ export function LiveCockpit({
     () => deriveLiveAttention(snapshot, navigate, nightwatchIncidents),
     [snapshot, navigate, nightwatchIncidents]
   );
+
+  const scopeCompanyId = useScopeCompanyId();
+  const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
+  const threads = useMemo(() => homeMycelium(planets, snapshot), [planets, snapshot]);
+  // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
+  const onTaskDone = useCallback((id: string) => { if (!effectiveIsDemo && !scopeCompanyId?.startsWith('demo-')) void corePost(`/v3/tasks/${encodeURIComponent(id)}`, { status: 'done' }).catch(() => null); }, [effectiveIsDemo, scopeCompanyId]);
 
   const planetSignals = useMemo(() => {
     const map = new Map<string, { isAlarm: boolean; reason: string }>();
@@ -134,23 +155,8 @@ export function LiveCockpit({
     return map;
   }, [planets, nightwatchIncidents, snapshot?.tasks, attention]);
 
-  const timeHeader = useMemo(() => {
-    const rawDate = snapshot?.calendar?.date;
-    if (rawDate) {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        const dayName = d.toLocaleDateString('de-DE', { weekday: 'short' });
-        const dayNum = d.getDate();
-        const monthName = d.toLocaleDateString('de-DE', { month: 'short' });
-        return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
-      }
-    }
-    const now = new Date();
-    const dayName = now.toLocaleDateString('de-DE', { weekday: 'short' });
-    const dayNum = now.getDate();
-    const monthName = now.toLocaleDateString('de-DE', { month: 'short' });
-    return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
-  }, [snapshot?.calendar?.date]);
+  // Nur das Datum: die Uhrzeit steht live in der Brücke (vorher fest „07:00“ – widersprach der Dock-Uhr).
+  const timeHeader = useMemo(() => headerDate(snapshot?.calendar?.date), [snapshot?.calendar?.date]);
 
   // Home is an overview, not a second Universe. Every entry goes to the same
   // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
@@ -210,6 +216,7 @@ export function LiveCockpit({
       data-folder="0"
     >
       <div className="ck-space" aria-hidden />
+      <div className="ck-mist" aria-hidden><i /><i /><i /></div>
 
       {/* 3D Scene canvas */}
       <div className="ck-scene ck-scene--system ck-scene--behind">
@@ -220,6 +227,9 @@ export function LiveCockpit({
             signals={planetSignals}
             company={companyName}
             compact
+            moons={dayMoons}
+            threads={threads}
+            onTaskDone={onTaskDone}
             onOpen={openDepartment}
           />
         ) : null}
@@ -268,15 +278,16 @@ export function LiveCockpit({
                 </div>
               ) : null}
 
-              <HomeFocus cards={focus} onOpen={openFocus} />
+              {/* Desktop: Planeten und Monde tragen den Tag, keine Karten über dem Himmel. */}
+              {phone ? <HomeFocus cards={focus} phone onOpen={openFocus} /> : null}
 
-              {items.length ? (
+              {phone && items.length ? (
                 <ol className="ck-list">
                   {items.map((it) => (
                     <li key={it.id} className="ck-item">
                       <div className="ck-item__txt">
                         <div className="ck-item__t">{it.title}</div>
-                        <div className="ck-item__d" style={it.isWarning ? { color: 'var(--amber, #f59e0b)' } : undefined}>{it.detail}</div>
+                        {it.detail ? <div className="ck-item__d" style={it.isWarning ? { color: 'var(--amber, #f59e0b)' } : undefined}>{it.detail}</div> : null}
                       </div>
                       <button
                         type="button"
