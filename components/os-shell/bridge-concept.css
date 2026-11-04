@@ -576,7 +576,7 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 @media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:100px; height:118px; margin-top:-86px; } }
 
 @media (prefers-reduced-motion:reduce) {
-  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow { animation:none !important; }
+  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i { animation:none !important; }
 }
 /* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
 .bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
@@ -638,4 +638,3 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .ck-constellation i { position:absolute; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:#e9f4ef; box-shadow:0 0 8px 1px rgba(200,235,220,.7); animation:ck-star 11s ease-in-out infinite; }
 .ck-constellation i:nth-of-type(2n) { animation-delay:-5s; }
 @keyframes ck-star { 0%,100% { transform:scale(1); } 50% { transform:scale(1.5); } }
-@media (prefers-reduced-motion: reduce) { .ck-myc path, .ck-constellation i { animation:none; } }

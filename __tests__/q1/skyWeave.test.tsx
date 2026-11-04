@@ -22,3 +22,8 @@ it('no shared work → no threads drawn', () => {
   const { container } = render(<PlanetSystem planets={P} attention={new Set()} company="X" compact threads={[]} onOpen={() => {}} />);
   expect(container.querySelector('[data-testid=mycelium]')).toBeNull();
 });
+it('mycelium and stars stand still under reduced motion', () => {
+  const css = require('fs').readFileSync(require('path').join(process.cwd(), 'components/os-shell/bridge-concept.css'), 'utf8');
+  const rm = css.slice(css.lastIndexOf('prefers-reduced-motion'));
+  expect(rm).toMatch(/\.ck-myc path, \.ck-constellation i \{ animation:none/);
+});
