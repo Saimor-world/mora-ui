@@ -576,7 +576,7 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 @media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:100px; height:118px; margin-top:-86px; } }
 
 @media (prefers-reduced-motion:reduce) {
-  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i { animation:none !important; }
+  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; }
 }
 /* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
 .bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
@@ -629,8 +629,9 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 
 /* q4 Myzel: haarfeine Fäden, langsamer Atem */
 .ck-myc { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:0; }
-.ck-myc path { fill:none; stroke:rgba(196,226,214,1); stroke-width:.7; stroke-linecap:round; opacity:calc(.26 + .2 * var(--w,.3)); animation:ck-myc-breathe 9s ease-in-out infinite; }
-@keyframes ck-myc-breathe { 0%,100% { opacity:calc(.18 + .12 * var(--w,.3)); } 50% { opacity:calc(.4 + .3 * var(--w,.3)); } }
+.ck-myc { filter:drop-shadow(0 0 3px rgba(170,240,210,.55)); }
+.ck-myc path { fill:none; stroke:rgba(205,240,224,1); stroke-width:1.1; stroke-linecap:round; opacity:calc(.4 + .25 * var(--w,.3)); animation:ck-myc-breathe 9s ease-in-out infinite; }
+@keyframes ck-myc-breathe { 0%,100% { opacity:calc(.32 + .15 * var(--w,.3)); } 50% { opacity:calc(.6 + .3 * var(--w,.3)); } }
 /* q4 Sternbild im oberen Himmel */
 .ck-constellation { position:absolute; left:0; right:0; top:0; pointer-events:none; z-index:0; }
 .ck-constellation__lines { position:absolute; inset:0; overflow:visible; }
@@ -638,3 +639,35 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .ck-constellation i { position:absolute; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:#e9f4ef; box-shadow:0 0 8px 1px rgba(200,235,220,.7); animation:ck-star 11s ease-in-out infinite; }
 .ck-constellation i:nth-of-type(2n) { animation-delay:-5s; }
 @keyframes ck-star { 0%,100% { transform:scale(1); } 50% { transform:scale(1.5); } }
+
+/* q5 · MÔRA kleiner (130px), Spiegelung proportional */
+.bridge__mora:has(.jade-mora) { width:114px; height:136px; margin-top:-118px; }
+.bridge__mora-reflect { width:100px; height:130px; top:calc(100% - 36px); }
+@media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:76px; height:90px; margin-top:-66px; } }
+
+/* q5 · Dock als ein fließendes Glasband: Kacheln schmelzen in eine weiche Welle */
+.bridge__deck::before { content:''; position:absolute; z-index:-1; left:-10px; right:-10px; top:-8px; bottom:-14px; pointer-events:none;
+  border-radius:56px 56px 34px 34px / 44px 44px 30px 30px;
+  background:radial-gradient(120% 90% at 50% -20%,rgba(190,240,222,.10),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.07),rgba(160,215,200,.035) 45%,rgba(10,30,36,.28));
+  -webkit-backdrop-filter:blur(26px) saturate(150%); backdrop-filter:blur(26px) saturate(150%);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.22),0 30px 60px -18px rgba(0,0,0,.45);
+  -webkit-mask:radial-gradient(ellipse 15% 42px at 50% 0,transparent 98%,#000 100%); mask:radial-gradient(ellipse 15% 42px at 50% 0,transparent 98%,#000 100%); }
+.bridge__deck .bridge__inst { border-color:transparent !important; border-radius:30px !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.012) 55%,transparent) !important;
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.14) !important;
+  transition:transform .7s cubic-bezier(.22,1,.36,1),background .7s ease,box-shadow .7s ease; }
+.bridge__deck .bridge__inst::after { content:''; position:absolute; top:22%; bottom:22%; right:-14px; width:16px; pointer-events:none;
+  background:radial-gradient(closest-side,rgba(200,240,226,.10),transparent); }
+.bridge__deck .bridge__inst:hover { transform:translateY(-4px);
+  background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(200,240,226,.04) 60%,transparent) !important;
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.24),0 0 40px -6px rgba(170,235,210,.22) !important; }
+.bridge__deck:has(.bridge__inst:hover)::before { box-shadow:inset 0 .5px 0 rgba(255,255,255,.3),0 30px 60px -18px rgba(0,0,0,.45),0 0 60px -20px rgba(170,235,210,.3); transition:box-shadow .7s ease; }
+@media (max-width:699px) {
+  .bridge__deck::before { left:-4px; right:-4px; top:auto; height:calc(100% - 0px); border-radius:30px; -webkit-mask:none; mask:none; }
+  .bridge__deck .bridge__inst { border-radius:20px !important; }
+  .bridge__deck .bridge__inst::after { display:none; }
+}
+.ck-myc path.ck-myc__fil { stroke-width:.5; animation-duration:13s; }
+.ck-myc path.ck-myc__pulse { stroke:#eafff5; stroke-width:2; stroke-dasharray:4 96; opacity:.9; animation:ck-myc-travel 14s linear infinite; }
+@keyframes ck-myc-travel { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }

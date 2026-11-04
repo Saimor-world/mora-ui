@@ -15,7 +15,10 @@ it('links departments that work on the same thing (demo: Herbstkarte, Lieferung)
 it('sky shows fine mycelium threads and a quiet constellation', () => {
   const threads = homeMycelium(P, demoTodaySnapshot('demo-morgenrot', 'u', 't'));
   const { container } = render(<PlanetSystem planets={P} attention={new Set()} company="X" compact threads={threads} onOpen={() => {}} />);
-  expect(container.querySelectorAll('[data-testid=mycelium] path')).toHaveLength(2);
+  const svg = container.querySelector('[data-testid=mycelium]')!;
+  expect(svg.querySelectorAll('g')).toHaveLength(2); // ein Faden je Verbindung
+  expect(svg.querySelectorAll('.ck-myc__fil')).toHaveLength(2); // feine Abzweige
+  expect(svg.querySelectorAll('.ck-myc__pulse[pathLength="100"]')).toHaveLength(2); // wandernder Lichtpuls
   expect(container.querySelectorAll('[data-testid=constellation] i').length).toBe(3);
 });
 it('no shared work → no threads drawn', () => {
@@ -25,5 +28,5 @@ it('no shared work → no threads drawn', () => {
 it('mycelium and stars stand still under reduced motion', () => {
   const css = require('fs').readFileSync(require('path').join(process.cwd(), 'components/os-shell/bridge-concept.css'), 'utf8');
   const rm = css.slice(css.lastIndexOf('prefers-reduced-motion'));
-  expect(rm).toMatch(/\.ck-myc path, \.ck-constellation i \{ animation:none/);
+  expect(rm).toMatch(/\.ck-myc path, \.ck-constellation i, .*animation:none !important; \} \.ck-myc__pulse \{ display:none; \}/);
 });

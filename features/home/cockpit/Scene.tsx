@@ -466,7 +466,13 @@ function SkyWeave({ planets, slots, threads, width, height }: {
     const a = slots[idx.get(t.a) ?? -1], b = slots[idx.get(t.b) ?? -1];
     if (!a || !b) return [];
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 + Math.hypot(b.x - a.x, b.y - a.y) * 0.18;
-    return [{ id: `${t.a}~${t.b}`, d: `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`, w: t.weight }];
+    // feine Seitenfäden: kurze Abzweige an zwei Stellen entlang des Fadens
+    const at = (u: number) => ({ x: (1 - u) ** 2 * a.x + 2 * (1 - u) * u * mx + u * u * b.x, y: (1 - u) ** 2 * a.y + 2 * (1 - u) * u * my + u * u * b.y });
+    const fil = [0.32, 0.68].map((u, k) => {
+      const p0 = at(u), p1 = at(u + 0.02), dx = p1.x - p0.x, dy = p1.y - p0.y, l = Math.hypot(dx, dy) || 1, s = (k ? -1 : 1) * 22;
+      return `M ${p0.x} ${p0.y} q ${dx / l * 10 - dy / l * s * 0.5} ${dy / l * 10 + dx / l * s * 0.5} ${dx / l * 6 - dy / l * s} ${dy / l * 6 + dx / l * s}`;
+    }).join(' ');
+    return [{ id: `${t.a}~${t.b}`, d: `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`, fil, w: t.weight }];
   });
   // Sternbild in den Lücken zwischen den Planeten, nie auf ihnen.
   const band = Math.round(Math.min(96, height * 0.11));
@@ -476,7 +482,13 @@ function SkyWeave({ planets, slots, threads, width, height }: {
     <>
       {paths.length ? (
         <svg className="ck-myc" data-testid="mycelium" width={width} height={height} aria-hidden>
-          {paths.map((p, i) => <path key={p.id} d={p.d} style={{ ['--w' as string]: p.w.toFixed(2), animationDelay: `${-i * 2.3}s` }} />)}
+          {paths.map((p, i) => (
+            <g key={p.id} style={{ ['--w' as string]: p.w.toFixed(2) }}>
+              <path d={p.d} style={{ animationDelay: `${-i * 2.3}s` }} />
+              <path className="ck-myc__fil" d={p.fil} style={{ animationDelay: `${-i * 3.1}s` }} />
+              <path className="ck-myc__pulse" d={p.d} pathLength={100} style={{ animationDelay: `${-i * 6}s` }} />
+            </g>
+          ))}
         </svg>
       ) : null}
       {stars.length > 1 ? (

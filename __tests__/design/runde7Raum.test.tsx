@@ -23,9 +23,9 @@ describe('Runde 7 – Raum, Planeten, Jade-MÔRA', () => {
   it('Home hat eine stille Nebelschicht über dem See', () => {
     expect(read('features/home/cockpit/LiveCockpit.tsx')).toMatch(/className="ck-mist" aria-hidden/);
   });
-  it('MÔRA im Dock ist die Jade-Variante 01 in ~172px, eine Figur', () => {
+  it('MÔRA im Dock ist die Jade-Variante 01 in ~130px (q5: kleiner), eine Figur', () => {
     const b = read('components/os-shell/BridgeConcept.tsx');
-    expect(b).toMatch(/<JadeMora size=\{phone\?112:172\}/);
+    expect(b).toMatch(/<JadeMora size=\{phone\?84:130\}/);
     expect(b).not.toMatch(/<PixelMora/);
     const { container } = render(<JadeMora size={172} />);
     expect(container.querySelectorAll('.px-mora')).toHaveLength(1);
