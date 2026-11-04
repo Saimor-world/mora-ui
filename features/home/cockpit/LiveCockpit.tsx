@@ -283,9 +283,10 @@ export function LiveCockpit({
                 </div>
               ) : null}
 
-              <HomeFocus cards={focus} onOpen={openFocus} />
+              {/* Desktop: Planeten und Monde tragen den Tag, keine Karten über dem Himmel. */}
+              {phone ? <HomeFocus cards={focus} onOpen={openFocus} /> : null}
 
-              {items.length ? (
+              {phone && items.length ? (
                 <ol className="ck-list">
                   {items.map((it) => (
                     <li key={it.id} className="ck-item">

@@ -269,7 +269,18 @@ describe('Demo-Tenant: fiktiv-badge in Home UND Universe + stripFiktiv erst in d
     unmountFinder();
   }, 60000);
 
+  it('Desktop: keine Karten über dem Himmel – Planeten und Monde tragen den Tag', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <LiveCockpit navigate={jest.fn()} initialView="home" finderPlanets={demoFinder} snapshot={makeSnapshot()} />
+      </QueryClientProvider>
+    );
+    expect(screen.queryByTestId('home-focus')).toBeNull();
+  });
+
   it('Heute-Karte mit Frist öffnet die Aufgaben (Feature „today“), nicht ins Leere', () => {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({ matches: true, media: query, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const navigate = jest.fn();
     render(

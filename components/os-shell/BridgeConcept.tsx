@@ -222,9 +222,9 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
           <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
           <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><JadeMora size={phone?112:172} mood={mood} /></span></button>
           <div className="bridge__field" data-field="mora" data-kind={shownCard?.kind} data-urgent={shownCard?.urgent?'true':undefined}>
-            {shownCard?.eyebrow ? <small className="bridge__field-eyebrow">{shownCard.eyebrow}</small> : null}
+            
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>
-            {shownCard ? <div className="bridge__field-card"><span>{shownCard.detail}</span><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
+            {shownCard ? <div className="bridge__field-card"><button type="button" data-primary="true" onClick={()=>openTarget(shownCard.primary.target)}>{shownCard.primary.label}</button>{shownCard.urgent?<button type="button" onClick={later}>Später</button>:null}</div> : null}
             <div id={DOCK_ASK_SLOT} className="bridge__ask" onFocus={()=>setAsking(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setAsking(false);}}><button type="button" onClick={onMora} data-testid="dock-ask-open"><Search size={15} strokeWidth={1.75} aria-hidden="true" /><span>MÔRA</span><kbd>M</kbd></button></div>
             
           </div>
