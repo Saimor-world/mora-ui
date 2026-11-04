@@ -27,9 +27,10 @@ interface Briefing { status?: string; text?: string; date?: string }
 
 export function MoraBriefing({ live, navigate, companyView = true }: { live: boolean; navigate?: (id: string) => void; companyView?: boolean }) {
   // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
-  const conns = useSources(live);
   const demo = useDemoScopeActive();
-  const connected = connectedSources(conns.data?.connections);
+  // Personal connection metadata belongs to the signed-in user, not the demo company.
+  const conns = useSources(live && !demo);
+  const connected = demo ? [] : connectedSources(conns.data?.connections);
   const ready = live && connected.length > 0;
   const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready && !demo, staleTime: 60_000, retry: false });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
