@@ -51,3 +51,18 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Install hover-test browser
+        run: npx playwright install --with-deps chromium
+
+      - name: MÔRA hover browser regression (isolated fixture)
+        run: npx playwright test e2e/bridge-mora-hitbox.spec.ts --project=chromium --retries=0
+
+      - name: Upload hover fixture evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mora-hover-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
