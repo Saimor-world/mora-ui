@@ -626,3 +626,16 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .bridge__hull path:not(:first-of-type) { display:none; }
 /* q4 Handy: Paneltext liegt auf ruhigem Glas, nicht auf MÔRAs Spiegelbild */
 @media (max-width:699px) { .bridge__heart .bridge__field { background:linear-gradient(180deg,rgba(10,30,40,.86),rgba(6,18,26,.9)); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); } }
+
+/* q4 Myzel: haarfeine Fäden, langsamer Atem */
+.ck-myc { position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:0; }
+.ck-myc path { fill:none; stroke:rgba(196,226,214,1); stroke-width:.7; stroke-linecap:round; opacity:calc(.26 + .2 * var(--w,.3)); animation:ck-myc-breathe 9s ease-in-out infinite; }
+@keyframes ck-myc-breathe { 0%,100% { opacity:calc(.18 + .12 * var(--w,.3)); } 50% { opacity:calc(.4 + .3 * var(--w,.3)); } }
+/* q4 Sternbild im oberen Himmel */
+.ck-constellation { position:absolute; left:0; right:0; top:0; pointer-events:none; z-index:0; }
+.ck-constellation__lines { position:absolute; inset:0; overflow:visible; }
+.ck-constellation__lines polyline { fill:none; stroke:rgba(220,240,232,.22); stroke-width:.6; stroke-dasharray:2 4; }
+.ck-constellation i { position:absolute; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:#e9f4ef; box-shadow:0 0 8px 1px rgba(200,235,220,.7); animation:ck-star 11s ease-in-out infinite; }
+.ck-constellation i:nth-of-type(2n) { animation-delay:-5s; }
+@keyframes ck-star { 0%,100% { transform:scale(1); } 50% { transform:scale(1.5); } }
+@media (prefers-reduced-motion: reduce) { .ck-myc path, .ck-constellation i { animation:none; } }

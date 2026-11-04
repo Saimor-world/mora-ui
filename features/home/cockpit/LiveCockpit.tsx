@@ -4,6 +4,7 @@ import '../cockpit.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CockpitWindow } from './Window';
 import { PlanetSystem } from './Scene';
+import { homeMycelium } from '@/lib/universe/homeMycelium';
 import { dayMoonsFor } from '@/lib/universe/dayMoons';
 import { corePost } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
@@ -117,6 +118,7 @@ export function LiveCockpit({
 
   const scopeCompanyId = useScopeCompanyId();
   const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
+  const threads = useMemo(() => homeMycelium(planets, snapshot), [planets, snapshot]);
   // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
   const onTaskDone = useCallback((id: string) => { if (!effectiveIsDemo && !scopeCompanyId?.startsWith('demo-')) void corePost(`/v3/tasks/${encodeURIComponent(id)}`, { status: 'done' }).catch(() => null); }, [effectiveIsDemo, scopeCompanyId]);
 
@@ -226,6 +228,7 @@ export function LiveCockpit({
             company={companyName}
             compact
             moons={dayMoons}
+            threads={threads}
             onTaskDone={onTaskDone}
             onOpen={openDepartment}
           />

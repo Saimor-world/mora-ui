@@ -1,4 +1,6 @@
 'use client';
+import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
+import type { MyceliumThread } from '@/lib/universe/homeMycelium';
 import { activityScale } from '@/lib/universe/planetActivity';
 import { skyLayout } from '@/lib/universe/skyLayout';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -139,7 +141,9 @@ export function PlanetSystem({
   moons,
   onTaskDone,
   onMoonOpen,
+  threads,
 }: {
+  threads?: MyceliumThread[];
   moons?: Map<string, DayMoon[]>;
   onTaskDone?: (taskId: string) => void;
   onMoonOpen?: (kind: DayMoon['kind']) => void;
@@ -200,6 +204,7 @@ export function PlanetSystem({
         <ellipse cx="50" cy="49" rx="33" ry="28" />
         <ellipse className="ck-sys__orbit2" cx="50" cy="49" rx="44" ry="37" />
       </svg>
+      {skySlots ? <SkyWeave planets={planets} slots={skySlots} threads={threads} width={size.width} height={size.height} /> : null}
       {skySlots ? null : <div className="ck-sys__core" aria-hidden><span />{stripFiktiv(company) || company}</div>}
       {planets.map((p, i) => {
         const sky = skySlots?.[i];
@@ -449,5 +454,40 @@ export function OpenPlanet({
         {cleanPlanetTitle}
       </h2>
     </div>
+  );
+}
+
+/** Myzel + Sternbild: feine Fäden zwischen Bereichen mit gemeinsamer Arbeit, darüber ein stilles Sternbild. */
+function SkyWeave({ planets, slots, threads, width, height }: {
+  planets: DemoPlanet[]; slots: { x: number; y: number; size: number }[]; threads?: MyceliumThread[]; width: number; height: number;
+}) {
+  const idx = new Map(planets.map((p, i) => [p.id, i]));
+  const paths = (threads ?? []).flatMap((t) => {
+    const a = slots[idx.get(t.a) ?? -1], b = slots[idx.get(t.b) ?? -1];
+    if (!a || !b) return [];
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 + Math.hypot(b.x - a.x, b.y - a.y) * 0.18;
+    return [{ id: `${t.a}~${t.b}`, d: `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`, w: t.weight }];
+  });
+  // Sternbild in den Lücken zwischen den Planeten, nie auf ihnen.
+  const band = Math.round(Math.min(96, height * 0.11));
+  const xs = slots.slice(0, planets.length).map((s) => s.x).sort((a, b) => a - b);
+  const stars = xs.slice(1).map((x, i) => ({ id: `s${i}`, x: (xs[i] + x) / 2, y: band * (0.35 + 0.45 * (((i * 37) % 7) / 6)), weight: 0.35 + 0.4 * (((i * 53) % 5) / 4) }));
+  return (
+    <>
+      {paths.length ? (
+        <svg className="ck-myc" data-testid="mycelium" width={width} height={height} aria-hidden>
+          {paths.map((p, i) => <path key={p.id} d={p.d} style={{ ['--w' as string]: p.w.toFixed(2), animationDelay: `${-i * 2.3}s` }} />)}
+        </svg>
+      ) : null}
+      {stars.length > 1 ? (
+        <div className="ck-constellation" data-testid="constellation" style={{ height: band }} aria-hidden>
+          <SemanticConstellation center={{ x: width / 2, y: band * 0.2 }} satellites={stars} />
+          <svg className="ck-constellation__lines" width={width} height={band}>
+            <polyline points={stars.map((s) => `${s.x},${s.y}`).join(' ')} />
+          </svg>
+          {stars.map((s) => <i key={s.id} style={{ left: s.x, top: s.y, opacity: s.weight }} />)}
+        </div>
+      ) : null}
+    </>
   );
 }
