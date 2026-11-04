@@ -181,6 +181,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-stage="true">
     <button type="button" className="bridge__comp bridge__stage" data-station={g.id} onClick={g.open} aria-label={`${g.label}: ${g.value}${g.detail?` · ${g.detail}`:''}`} title={g.detail||undefined}>
       <span className="bridge__stage-top"><span className="bridge__stage-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.6} /></span><small>{g.label}</small>{g.tone==='amber'||g.tone==='red'?<i className="bridge__stage-dot" aria-hidden="true" />:null}</span>
+      {g.lines.length ? <span className="bridge__stage-lines" data-testid={`dock-lines-${g.id}`}>{g.lines.slice(0,2).map(l=><span key={l.id} data-tone={l.tone}><b>{l.lead}</b>{l.text}</span>)}</span> : null}
       <span className="bridge__stage-hero">{m?<><strong>{m[1]}</strong><span>{m[2]}</span></>:<strong>{g.value}</strong>}</span>
       <Ring frac={g.frac} />
     </button>
@@ -213,14 +214,14 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
       <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__day" aria-label="Tagesverlauf 6 bis 22 Uhr">
         {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
-        {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
+        {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" data-center={Math.abs(nowX-50)<12?'true':undefined} style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
       </section>
       <section className="bridge__deck" aria-label="Lage">
         {instrument(instruments[0])}{instrument(instruments[1])}
         <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
           <span className="bridge__beam" aria-hidden="true" />
           <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
-          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><JadeMora size={phone?112:172} mood={mood} /></span></button>
+          <button ref={moraRef} type="button" className="bridge__mora" data-flying={flight?'true':undefined} style={flight?{transform:`translate(${flight.x}px, ${flight.y}px) scale(${flightScale})`}:undefined} aria-pressed={moraOpen} aria-label="MÔRA" onClick={onMora} data-testid="dock-mora"><span data-testid="mora-mark"><JadeMora size={phone?112:172} mood={mood} /></span>{phone?null:<span className="bridge__mora-reflect" data-testid="mora-reflection" aria-hidden="true">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/mora/jade-01.png" alt="" width={132} height={172} draggable={false} /></span>}</button>
           <div className="bridge__field" data-field="mora" data-kind={shownCard?.kind} data-urgent={shownCard?.urgent?'true':undefined}>
             
             <p className="bridge__voice" aria-live="polite">{shownCard ? shownCard.title : line}</p>

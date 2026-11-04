@@ -3,7 +3,7 @@ import { activityScale } from '@/lib/universe/planetActivity';
 import { skyLayout } from '@/lib/universe/skyLayout';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
-import { PixelSphere, JewelSphere, areaHue } from '@/components/universe/PlanetSphere';
+import { PixelSphere } from '@/components/universe/PlanetSphere';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { layoutOrbits, placeOnOrbit, type PlanetLabel } from '@/lib/universe/worldOrbits';
@@ -245,9 +245,11 @@ export function PlanetSystem({
                 <PixelSphere size={orbSize} lit={0.8} tint={tint} variant="A" seed={i + 1} />
               </div>
             ) : sky ? (
-              <span className="ck-cover" data-testid="planet-cover" style={{ width: orbSize, height: orbSize }}>
-                <JewelSphere size={orbSize} lit={-2.2} hue={areaHue(cleanTitle)} matte={false} seed={i + 1} quiet={false} />
-              </span>
+              <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} className="ck-opal">
+                <span className="ck-opal__milk" data-testid="planet-opal" aria-hidden />
+                <span className="ck-opal__iris" aria-hidden />
+                <span className="ck-opal__spec" aria-hidden />
+              </GlassOrb>
             ) : (
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}

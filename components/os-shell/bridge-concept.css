@@ -585,8 +585,25 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 /* q1 Dock: leichteres Glas, gleiche Höhen, ruhiger Kern */
 .bridge__inst[data-col='inner'] { margin-top:0 !important; }
 .bridge__inst { background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(200,235,225,.035)) !important; backdrop-filter:blur(22px) saturate(1.25); -webkit-backdrop-filter:blur(22px) saturate(1.25); border-color:rgba(210,245,232,.14) !important; }
-.bridge__field { flex:0 0 auto; justify-content:center; padding:40px 18px 14px; gap:8px; }
+/* q2 Ursache: Feld folgte im Spalten-Flex direkt auf MÔRA (margin-top:-30px, flex:0 0 auto) und klebte oben.
+   Fix: margin-top:auto schiebt es an die gemeinsame Unterkante der Kacheln; darüber Luft + Spiegelung. */
+@media (min-width:821px) { .bridge__heart > .bridge__field { flex:0 0 auto; margin-top:auto; justify-content:center; padding:22px 18px 14px; gap:8px; } }
 .bridge__facts { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; font:400 12.5px/16px var(--br-font); color:rgba(226,242,236,.78); }
 .bridge__facts li { white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
-.bridge__mora { -webkit-box-reflect: below -6px linear-gradient(transparent 62%, rgba(255,255,255,.3));
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,.3)) drop-shadow(-2px -3px 6px rgba(190,236,220,.22)) drop-shadow(0 0 14px color-mix(in srgb,var(--br-accent) 24%,transparent)); }
+.bridge__mora { filter: drop-shadow(0 6px 14px rgba(0,0,0,.3)) drop-shadow(-2px -3px 6px rgba(190,236,220,.22)) drop-shadow(0 0 14px color-mix(in srgb,var(--br-accent) 24%,transparent)); }
+
+/* q2: kein Mittelfeld – MÔRA atmet, Spiegelung im See; Eingabe rechts unten; ruhige Zeilen in den Kacheln */
+.bridge__stage-lines { display:flex; flex-direction:column; gap:5px; width:100%; margin-top:10px; padding-right:4px; min-width:0; text-align:left; }
+.bridge__stage-lines > span { display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font:400 12.5px/16px var(--br-font); color:rgba(228,242,237,.66); }
+.bridge__stage-lines b { font-weight:500; color:rgba(238,248,244,.86); margin-right:6px; font-variant-numeric:tabular-nums; }
+.bridge__stage-lines > span[data-tone='amber'] b { color:var(--br-amber); }
+.bridge__stage-lines > span[data-tone='muted'] { opacity:.6; }
+@media (max-width:820px) { .bridge__stage-lines { display:none; } }
+
+.bridge__mora-reflect { position:absolute; left:50%; top:calc(100% - 48px); width:132px; height:172px; pointer-events:none; z-index:-1;
+  transform:translateX(-50%) scaleY(-.7); transform-origin:50% 50%; opacity:.36; filter:blur(1.8px) saturate(.8) brightness(.8);
+  -webkit-mask:linear-gradient(0deg,#000 10%,rgba(0,0,0,.45) 45%,transparent 80%); mask:linear-gradient(0deg,#000 10%,rgba(0,0,0,.45) 45%,transparent 80%); }
+.bridge__mora-reflect img { display:block; width:100%; height:100%; }
+.bridge__mora[data-flying='true'] .bridge__mora-reflect { display:none; }
+.bridge__now[data-center='true'] i { opacity:0; }
+.bridge__now[data-center='true']:hover i { opacity:1; }
