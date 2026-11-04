@@ -65,7 +65,7 @@ export function AgentFeed({ live, demo, limit = 8, compact = false, hideWhenEmpt
     queryFn: async () => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return [];
-      const data = await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true }) as { thoughts?: AgentThought[] } | null;
+      const data = await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true, dedupeScope: identity }) as { thoughts?: AgentThought[] } | null;
       return current() ? data?.thoughts || [] : [];
     },
     enabled: live && !demoScope,

@@ -54,6 +54,8 @@ type CoreRequestOptions = {
     headers?: Record<string, string>;
     /** Abbruch nach n ms (z. B. Sitzungsprüfung). Ein Timeout gilt wie ein Netzfehler: null. */
     timeoutMs?: number;
+    /** Local in-flight partition. Never forwarded as a header, query or credential. */
+    dedupeScope?: string;
 };
 
 export function readCookie(name: string): string | null {
@@ -223,7 +225,7 @@ export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'm
     // wuerde aus der Beschleunigung eine stille Veraltung.
     // Auth-strict and tolerant callers intentionally use different keys so a
     // shared in-flight promise cannot change another caller's error semantics.
-    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}|${options.timeoutMs ?? ''}`;
+    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}|${options.timeoutMs ?? ''}|scope:${JSON.stringify(options.dedupeScope ?? null)}`;
     return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 

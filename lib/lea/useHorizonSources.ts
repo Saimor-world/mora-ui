@@ -45,7 +45,7 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
     queryFn: async (): Promise<HorizonMail | null> => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const raw = await coreGet(`/v3/mail/messages?${q}&limit=20`, { isOptional: true });
+      const raw = await coreGet(`/v3/mail/messages?${q}&limit=20`, { isOptional: true, dedupeScope: identity });
       if (!current()) return null;
       if (raw == null) return { status: 'unavailable', items: [] };
       const all = arr(raw, ['messages', 'items']).map((m, i) => ({ id: String(m.id ?? i), subject: String(m.subject ?? '(ohne Betreff)'), from: m.from ? String(m.from) : undefined }));
@@ -57,7 +57,7 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
     queryFn: async (): Promise<HorizonFeed | null> => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const raw = await coreGet(`/v3/integrations/rss/items?limit=5&${q}`, { isOptional: true });
+      const raw = await coreGet(`/v3/integrations/rss/items?limit=5&${q}`, { isOptional: true, dedupeScope: identity });
       if (!current()) return null;
       if (raw == null) return { status: 'unavailable', items: [] };
       return { status: 'ok', items: arr(raw, ['items']).map((m, i) => ({ id: String(m.id ?? m.link ?? i), title: String(m.title ?? 'Eintrag'), source: m.source ? String(m.source) : undefined })) };
@@ -68,7 +68,7 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
     queryFn: async (): Promise<HorizonSource[] | null> => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const raw = await coreGet(`/v3/universe?${q}`, { isOptional: true }) as { planets?: { key?: string; label?: string; kind?: string; moons?: { key?: string; label?: string; status?: string }[] }[] } | null;
+      const raw = await coreGet(`/v3/universe?${q}`, { isOptional: true, dedupeScope: identity }) as { planets?: { key?: string; label?: string; kind?: string; moons?: { key?: string; label?: string; status?: string }[] }[] } | null;
       if (!current()) return null;
       if (!raw) return null;
       return (raw.planets ?? [])

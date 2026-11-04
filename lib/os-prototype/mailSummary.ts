@@ -62,7 +62,7 @@ export function useMailSummary(enabled: boolean) {
     queryFn: async () => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const data = await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true }) as MailSummary | null;
+      const data = await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true, dedupeScope: identity }) as MailSummary | null;
       return current() ? data : null;
     },
     enabled: enabled && !demo,

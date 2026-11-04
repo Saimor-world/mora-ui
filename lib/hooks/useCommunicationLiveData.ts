@@ -219,13 +219,13 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const scopedTail = companyQuery ? `&${companyQuery}` : "";
 
                 const [mailData, calendarData, feedData, myContentData] = await Promise.all([
-                    coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
+                    coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true, dedupeScope: identity }),
                     coreGet(
                         `/v3/calendar/events?start_date=${toIsoDate(start)}&end_date=${toIsoDate(end)}${scopedTail}`,
-                        { isOptional: true }
+                        { isOptional: true, dedupeScope: identity }
                     ),
-                    coreGet(`/v3/integrations/rss/items?limit=5${scopedTail}`, { isOptional: true }),
-                    coreGet("/v3/users/me/content", { isOptional: true }),
+                    coreGet(`/v3/integrations/rss/items?limit=5${scopedTail}`, { isOptional: true, dedupeScope: identity }),
+                    coreGet("/v3/users/me/content", { isOptional: true, dedupeScope: identity }),
                 ]);
 
                 const mailItems = normalizeList<any>(mailData, ["messages", "emails", "mail", "data"]);
@@ -294,7 +294,7 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                                 // hunderte lagen — eine Vorschau, die als
                                 // Auskunft gelesen wurde.
                                 `/v3/integrations/cloud/${connector.id}/items?limit=${CLOUD_VORSCHAU}`,
-                                { isOptional: true }
+                                { isOptional: true, dedupeScope: identity }
                             );
                             const items = Array.isArray(itemsPayload?.items) ? itemsPayload.items : [];
                             return items.map((item: any) => ({

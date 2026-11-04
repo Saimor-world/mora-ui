@@ -14,6 +14,8 @@ Status: defensive frontend changes prepared in PR #213. This document records co
 | Post inbox/calendar | Cache partition used tenant only, not the user/session within that tenant | Add principal/session/demo generation and reject replies/refetches from an obsolete scope |
 | Nightwatch Owl | The internal card includes private invoices/mail highlights and was live in demo scope | Hide/unmount the personal card, stop querying and reject obsolete replies/refetches |
 | AgentFeed | The endpoint reads the presenter's cognition log rather than the selected demo company | Hide the personal feed in demo scope and partition its cache by identity/scope |
+| HTTP coreGet bundling | Same-URL requests from different principals could join the same in-flight promise below React Query | Personal reads pass a local dedupeScope; only identical scope and URL calls share a promise. The scope is never sent to CORE |
+| Native briefing and source connection flow | Shared briefing key and late connection completions could survive an account/demo switch | Identity-bound briefing cache, reset source form/focus, and scope checks before actions and after responses |
 
 `scopeGeneration` in demoStore is only an ephemeral UI cache epoch. It grants no permissions and changes no CORE session, role or tenant. It detects even a batched own → demo → own transition. `sessionGeneration` remains the existing session-store epoch.
 

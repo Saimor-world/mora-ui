@@ -1,5 +1,5 @@
 'use client';
-import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, Orbit, ShieldCheck } from 'lucide-react';
@@ -81,6 +81,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
   const qc = useQueryClient();
   const look = useOsShellStore((s) => s.look);
   const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
   // Demo mode must not read or render the presenter's personal connections.
   const sources = useSources(live && !demo);
   const list = demo ? [] : (sources.data?.connections || []);
@@ -90,6 +91,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
   const [showAll, setShowAll] = useState(false);
+  useEffect(() => { setFocus({ kind: 'idle' }); }, [identity]);
   // Schrift bleibt in echten Pixeln gleich groß, egal wie breit die Szene gerendert wird.
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [k, setK] = useState(1);
@@ -132,40 +134,52 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     ? { from: sel.pos, to: dockPoint(planetPos(sel.target), slots.get(sel.target?.id ?? 'core') ?? 0) } : null;
 
   const briefing = useQuery({
-    queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
+    queryKey: ['os', 'briefing', identity, demo], queryFn: async () => {
+      const active = capturePersonalSourceScope(identity);
+      if (!active()) return null;
+      const data = await coreGet('/v3/briefing', { dedupeScope: identity }) as Briefing;
+      return active() ? data : null;
+    },
     enabled: !demo && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
   const select = (s: DockStation) => {
-    if (demo || s.sample) return;
+    if (!capturePersonalSourceScope(identity)() || s.sample) return;
     setFocus({ kind: s.status === 'connected' ? 'info' : s.status === 'setup_required' ? 'admin' : 'consent', id: s.id });
   };
   const approve = async (s: DockStation) => {
-    if (demo || !local || !s.entry?.action) return;
+    const active = capturePersonalSourceScope(identity);
+    if (!active() || !local || !s.entry?.action) return;
     if (s.entry.action.kind !== 'oauth') { setFocus({ kind: 'form', id: s.id }); return; }
     setFocus({ kind: 'busy', id: s.id });
     try {
       const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, { return_to: window.location.href });
+      if (!active()) return;
       const url = res?.authorization_url || res?.auth_url || res?.url;
       if (url && typeof url === 'string') { window.location.assign(url); return; }
       setFocus({ kind: 'error', id: s.id, raw: 'CORE hat keinen Anmelde-Link geliefert.' });
     } catch (err) {
+      if (!active()) return;
       setFocus({ kind: 'error', id: s.id, raw: err instanceof Error ? err.message : String(err) });
     }
   };
   const submit = async (s: DockStation, values: Record<string, string>) => {
-    if (demo || !local) return;
+    const active = capturePersonalSourceScope(identity);
+    if (!active() || !local) return;
     setFocus({ kind: 'busy', id: s.id });
     try {
       const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
+      if (!active()) return;
       const check = checkConnectResult(s.group, res);
       if (!check.ok) { setFocus({ kind: 'error', id: s.id, raw: check.reason }); return; }
       await qc.invalidateQueries({ queryKey: ['os', 'sources'] });
+      if (!active()) return;
       qc.invalidateQueries({ queryKey: ['os', 'briefing'] });
       qc.invalidateQueries({ queryKey: ['os', 'mail-summary'] });
       qc.invalidateQueries({ queryKey: ['os', 'today'] });
       setFocus({ kind: 'docked', id: s.id, result: res as ConnectResult });
     } catch (err) {
+      if (!active()) return;
       setFocus({ kind: 'error', id: s.id, raw: err instanceof Error ? err.message : String(err) });
     }
   };

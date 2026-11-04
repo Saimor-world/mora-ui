@@ -31,7 +31,7 @@ export function useSources(enabled: boolean) {
     queryFn: async () => {
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const data = await coreGet('/v3/connections', { throwAuthErrors: true }) as SourcesResponse;
+      const data = await coreGet('/v3/connections', { throwAuthErrors: true, dedupeScope: identity }) as SourcesResponse;
       return current() ? data : null;
     },
     enabled: enabled && !demo,

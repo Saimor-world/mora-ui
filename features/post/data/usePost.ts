@@ -9,8 +9,8 @@ export interface PostMessage { id: string; subject?: string; from_addr?: string;
 export interface PostEvent { id: string; title: string; date: string; time?: string; duration?: number }
 
 /** null = CORE gave no answer (offline / not configured) — never shown as "empty". */
-async function readList<T>(path: string, keys: string[]): Promise<T[] | null> {
-  const data = await coreGet(path, { isOptional: true, throwAuthErrors: true });
+async function readList<T>(path: string, keys: string[], identity: string): Promise<T[] | null> {
+  const data = await coreGet(path, { isOptional: true, throwAuthErrors: true, dedupeScope: identity });
   if (data == null) return null;
   return normalizeList<T>(data, keys);
 }
@@ -26,7 +26,7 @@ export function usePostInbox() {
       if (demo) return [] as PostMessage[];
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const data = await readList<PostMessage>('/v3/mail/messages', ['messages', 'items', 'data']);
+      const data = await readList<PostMessage>('/v3/mail/messages', ['messages', 'items', 'data'], identity);
       return current() ? data : null;
     },
     enabled: Boolean(tenant),
@@ -44,7 +44,7 @@ export function usePostCalendar() {
       if (demo) return [] as PostEvent[];
       const current = capturePersonalSourceScope(identity);
       if (!current()) return null;
-      const data = await readList<PostEvent>('/v3/calendar/events', ['events', 'appointments', 'calendar', 'data']);
+      const data = await readList<PostEvent>('/v3/calendar/events', ['events', 'appointments', 'calendar', 'data'], identity);
       return current() ? data : null;
     },
     enabled: Boolean(tenant),

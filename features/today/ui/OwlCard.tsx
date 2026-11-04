@@ -100,7 +100,7 @@ export function OwlCard({ live, navigate }: { live: boolean; navigate?: (id: str
   const q = useQuery({ queryKey: ['os', 'nightwatch-owl', identity, demo], queryFn: async () => {
     const current = capturePersonalSourceScope(identity);
     if (!current()) return null;
-    const data = await coreGet('/v3/nightwatch/owl') as OwlState;
+    const data = await coreGet('/v3/nightwatch/owl', { dedupeScope: identity }) as OwlState;
     return current() ? data : null;
   }, enabled: live && !demo, staleTime: 60_000, retry: false, refetchInterval: 120_000 });
   const [flying, setFlying] = useState(false);

@@ -80,7 +80,7 @@ export function useDailyBriefing() {
             const current = capturePersonalSourceScope(identity);
             if (!current()) return null;
             try {
-                const res = (await coreGet('/v3/briefing')) as DailyBriefingData;
+                const res = (await coreGet('/v3/briefing', { dedupeScope: identity })) as DailyBriefingData;
                 return current() ? res : null;
             } catch {
                 if (!current()) return null;
