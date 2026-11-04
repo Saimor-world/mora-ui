@@ -139,10 +139,13 @@ html[data-palette='1'] .bridge__reflect, html[data-palette='0'] .bridge__reflect
 .bridge__body[data-active='true'] .bridge__aura { opacity:.85; }
 .bridge__mora { position:relative; z-index:3; display:grid; place-items:center; width:128px; height:120px; margin-top:-74px; padding:0; border:0; background:none; cursor:pointer; pointer-events:auto;
   filter:drop-shadow(0 0 16px color-mix(in srgb,var(--br-accent) 45%,transparent)); transition:transform .9s var(--br-spring); will-change:transform;
-  -webkit-box-reflect:below 0px linear-gradient(transparent 35%,rgba(255,255,255,.35)); animation:bridge-float 5s ease-in-out infinite; }
+  -webkit-box-reflect:below 0px linear-gradient(transparent 35%,rgba(255,255,255,.35)); }
+/* Keep the interactive hitbox stationary. Breathing belongs to the visual child only. */
+.bridge__mora > .bridge__mora-visual { display:grid; place-items:center; pointer-events:none; animation:bridge-float 5s ease-in-out infinite; }
 .bridge__mora .px-mora { image-rendering:pixelated; }
 .bridge__heart[data-mood='thinking'] .bridge__mora, .bridge__heart[data-mood='speaking'] .bridge__mora, .bridge__heart[data-attention='true'] .bridge__mora { filter:drop-shadow(0 0 20px rgba(242,192,106,.6)); }
-.bridge__mora[data-flying='true'] { z-index:80; transition-timing-function:var(--br-ease); filter:drop-shadow(0 16px 32px rgba(0,0,0,.45)); -webkit-box-reflect:unset; animation:none; }
+.bridge__mora[data-flying='true'] { z-index:80; transition-timing-function:var(--br-ease); filter:drop-shadow(0 16px 32px rgba(0,0,0,.45)); -webkit-box-reflect:unset; }
+.bridge__mora[data-flying='true'] > .bridge__mora-visual { animation:none; }
 @keyframes bridge-float { 50% { translate:0 -4px; } }
 .bridge__field { position:relative; z-index:2; width:100%; flex:1; min-height:0; margin-top:-30px; padding:52px 18px 12px; border-radius:120px 120px 24px 24px / 48px 48px 24px 24px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; pointer-events:auto;
   background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--br-accent) 14%,transparent),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(10,34,44,.5));
@@ -565,7 +568,9 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 }
 
 /* MÔRA: runde Jade, schwebt über dem See, atmet Licht, spiegelt sich weich */
-.bridge__mora:has(.jade-mora) { width:150px; height:180px; margin-top:-156px; -webkit-box-reflect:below 14px linear-gradient(transparent 55%,rgba(255,255,255,.22)); animation:jade-fly 8s ease-in-out infinite; }
+.bridge__mora:has(.jade-mora) { width:150px; height:180px; margin-top:-156px; -webkit-box-reflect:below 14px linear-gradient(transparent 55%,rgba(255,255,255,.22)); }
+.bridge__mora:has(.jade-mora) > .bridge__mora-visual { animation:jade-fly 8s ease-in-out infinite; }
+.bridge__mora:has(.jade-mora)[data-flying='true'] > .bridge__mora-visual { animation:none; }
 .jade-mora { display:block; image-rendering:auto; position:relative; }
 .jade-mora img { position:relative; z-index:1; display:block; width:100%; height:100%; image-rendering:auto; filter:drop-shadow(0 14px 22px rgba(0,0,0,.4)); }
 .jade-mora__glow { position:absolute; left:50%; top:58%; width:120%; height:96%; translate:-50% -50%; border-radius:50%; z-index:0;
@@ -576,7 +581,7 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 @media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:100px; height:118px; margin-top:-86px; } }
 
 @media (prefers-reduced-motion:reduce) {
-  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; }
+  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora > .bridge__mora-visual, .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; }
 }
 /* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
 .bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
