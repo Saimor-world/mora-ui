@@ -607,3 +607,18 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .bridge__mora[data-flying='true'] .bridge__mora-reflect { display:none; }
 .bridge__now[data-center='true'] i { opacity:0; }
 .bridge__now[data-center='true']:hover i { opacity:1; }
+/* q3: Mitte ruhig – kein Jetzt-Punkt unter dem Spiegelbild */
+.bridge__now[data-center='true'] { opacity:0; }
+.bridge__now[data-center='true']:hover { opacity:1; }
+/* q3: Kachel ohne Zeilen – Zahl ruht in der Mitte statt unten im Leeren */
+@media (min-width:821px) { .bridge__stage[data-bare='true'] { justify-content:space-between; } .bridge__stage[data-bare='true'] .bridge__stage-hero { margin-block:auto; } }
+/* q3 Handy: zweite Kachelreihe endet über der App-Leiste (Raster lief 67px unter die Leiste) */
+@media (max-width:699px) {
+  .bridge__heart .bridge__field { padding:10px 12px 6px; }
+  .bridge__deck { gap:4px; }
+  .bridge__heart .bridge__facts { display:none; }
+  .bridge__inst { padding:4px 8px; }
+  .bridge__stage { min-height:0; padding-block:8px; }
+}
+/* q3: Termine stehen in „Als Nächstes“ – einsame Punkte auf der Welle lasen sich als Artefakte */
+.bridge__mark:not([data-problem='true']) { display:none; }

@@ -284,7 +284,7 @@ export function LiveCockpit({
               ) : null}
 
               {/* Desktop: Planeten und Monde tragen den Tag, keine Karten über dem Himmel. */}
-              {phone ? <HomeFocus cards={focus.slice(0, 2)} onOpen={openFocus} /> : null}
+              {phone ? <HomeFocus cards={focus} phone onOpen={openFocus} /> : null}
 
               {phone && items.length ? (
                 <ol className="ck-list">
