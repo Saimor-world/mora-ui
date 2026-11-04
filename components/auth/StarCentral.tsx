@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import s from './StarCentral.module.css';
+import { startSky } from './starCentralSky';
 
 export type StarCentralMode = 'login' | 'lock' | 'pause' | 'screensaver';
 
@@ -12,15 +13,6 @@ interface StarCentralProps {
     className?: string;
     /** MÔRA in der Szene zeigen (Login platziert MÔRA selbst im Layout). */
     showMora?: boolean;
-}
-
-const STAR_COUNT = 90;
-
-/** Deterministische Sterne: Position, Größe, Phase, langsame Frequenz (rad/s). */
-function makeStars() {
-    let seed = 7;
-    const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    return Array.from({ length: STAR_COUNT }, () => ({ u: r(), v: r() * 0.55, z: r() * 1.4 + 0.4, p: r() * 6.3, f: r() * 0.45 + 0.25 }));
 }
 
 /** Weiche MÔRA-Bewegung: Sinus-Schweben + gelegentlicher, gefederter Hüpfer. Sub-Pixel, keine Rundung. */
@@ -40,7 +32,7 @@ export function moraPose(tSec: number) {
 }
 
 export function starAlpha(tSec: number, f: number, p: number) {
-    return 0.4 + 0.4 * (0.5 + 0.5 * Math.sin(tSec * f + p));
+    return 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(tSec * f + p));
 }
 
 /**
@@ -65,28 +57,7 @@ export function StarCentral({ mode = 'login', firm, className, showMora = true }
     useEffect(() => {
         const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
         const canvas = sky.current;
-        const ctx = canvas?.getContext('2d');
-        if (!canvas || !ctx) return;
-        const stars = makeStars();
-        const sprite = document.createElement('canvas');
-        sprite.width = sprite.height = 64;
-        const sc = sprite.getContext('2d');
-        if (sc) {
-            const g = sc.createRadialGradient(32, 32, 0, 32, 32, 32);
-            g.addColorStop(0, 'rgba(255,250,235,1)');
-            g.addColorStop(0.35, 'rgba(255,250,235,.5)');
-            g.addColorStop(1, 'rgba(255,250,235,0)');
-            sc.fillStyle = g;
-            sc.fillRect(0, 0, 64, 64);
-        }
-        let W = 0, H = 0, K = 1;
-        const resize = () => {
-            K = window.devicePixelRatio || 1;
-            W = canvas.width = Math.round(canvas.clientWidth * K);
-            H = canvas.height = Math.round(canvas.clientHeight * K);
-        };
-        resize();
-        window.addEventListener('resize', resize);
+        if (!canvas || !canvas.getContext('2d')) return;
         let tx = 0, ty = 0, cx = 0, cy = 0;
         const onMove = (e: PointerEvent) => { tx = e.clientX / window.innerWidth - 0.5; ty = e.clientY / window.innerHeight - 0.5; };
         window.addEventListener('pointermove', onMove);
@@ -96,13 +67,6 @@ export function StarCentral({ mode = 'login', firm, className, showMora = true }
             const t = reduced ? 0 : now / 1000;
             const dt = Math.min(0.1, (now - last) / 1000);
             last = now;
-            ctx.clearRect(0, 0, W, H);
-            for (const st of stars) {
-                ctx.globalAlpha = starAlpha(t, st.f, st.p);
-                const r = st.z * K * 6.6;
-                ctx.drawImage(sprite, st.u * W - r / 2, st.v * H - r / 2, r, r);
-            }
-            ctx.globalAlpha = 1;
             if (mora.current) {
                 const m = moraPose(t);
                 mora.current.style.transform = `translate3d(0,${m.y.toFixed(3)}px,0) scale(${m.sx.toFixed(4)},${m.sy.toFixed(4)})`;
@@ -115,9 +79,10 @@ export function StarCentral({ mode = 'login', firm, className, showMora = true }
             if (!reduced) raf = requestAnimationFrame(frame);
         };
         raf = requestAnimationFrame(frame);
+        const stopSky = startSky(canvas, { parallax: () => ({ x: cx, y: cy }), reduced });
         return () => {
             cancelAnimationFrame(raf);
-            window.removeEventListener('resize', resize);
+            stopSky();
             window.removeEventListener('pointermove', onMove);
         };
     }, [calm]);
@@ -134,7 +99,7 @@ export function StarCentral({ mode = 'login', firm, className, showMora = true }
             <div className={`${s.L} ${s.mist} ${s.mistB}`} />
             <div className={`${s.L} ${s.mist} ${s.mistC}`} />
             <div className={`${s.L} ${s.haze}`} />
-            <div className={`${s.L} ${s.glow}`} />
+            {showMora && <div className={`${s.L} ${s.glow}`} />}
             {showMora && <>{/* eslint-disable-next-line @next/next/no-img-element -- Pixel-Sprite, bewusst ohne Next-Optimierung */}
             <img ref={mora} className={s.mora} src="/star-central/mora.png" alt="" width={92} height={92} draggable={false} /></>}
             {firm && !calm && <div className={s.firm}><i>{initials}</i>{firm}</div>}
