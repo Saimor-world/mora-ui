@@ -1,13 +1,22 @@
 'use client';
 import { create } from 'zustand';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { useDemoStore } from '@/lib/demo/demoStore';
+import { resolveScopeCompany, useDemoStore } from '@/lib/demo/demoStore';
+import { useNavStore } from '@/lib/store/navStore';
 
 /** UI navigation context only; it does not grant access to a message. */
 export function postNavigationScope(): string {
   const s = useSessionStore.getState();
   const principal = JSON.stringify([s.user?.tenant_id, s.user?.id, s.sessionGeneration]);
   return JSON.stringify([principal, useDemoStore.getState().demoCompanyId]);
+}
+
+export type ObjectTarget = { kind: 'task' | 'event'; id: string; scope: string; surface: 'today' | 'post' };
+export function objectNavigationScope(): string {
+  const s = useSessionStore.getState();
+  const demo = useDemoStore.getState().demoCompanyId;
+  const company = resolveScopeCompany(demo, s.user?.active_company_id ?? null, useNavStore.getState().activeCompanyId);
+  return JSON.stringify([JSON.stringify([s.user?.tenant_id, s.user?.id, s.sessionGeneration]), demo, company]);
 }
 
 /**
@@ -29,6 +38,8 @@ export interface OsShellState {
   postOpenId: string | null;
   postOpenScope: string | null;
   setPostOpenId: (id: string | null) => void;
+  objectTarget: ObjectTarget | null;
+  setObjectTarget: (target: ObjectTarget | null) => void;
   setMoraDraft(text: string | null): void;
   setActiveFeature(id: string): void;
   setMoraOpen(open: boolean): void;
@@ -109,6 +120,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   postOpenId: null,
   postOpenScope: null,
   setPostOpenId: (id) => set({ postOpenId: id, postOpenScope: id ? postNavigationScope() : null }),
+  objectTarget: null,
+  setObjectTarget: (objectTarget) => set({ objectTarget }),
   setMoraDraft: (text) => set({ moraDraft: text }),
   setActiveFeature: (id) => set({ activeFeatureId: id, surfaceContext: null }),
   setMoraOpen: (open) => set({ moraOpen: open }),

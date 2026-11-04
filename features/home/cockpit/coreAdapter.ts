@@ -10,6 +10,8 @@ import type { DemoFile, DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/struct
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 import { COLLECT_PLANET, type FPlanet } from '@/lib/lea/finder';
+import { objectNavigationScope } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
 
 const GLASS_PALETTE: DemoPlanet['glass'][] = ['champagne', 'sage', 'lavender', 'bluegrey', 'paleblue'];
 
@@ -256,6 +258,7 @@ export function deriveLiveAttention(
 } {
   const attention = new Set<string>();
   const items: LiveAttentionItem[] = [];
+  const objectScope = objectNavigationScope();
 
   // Incidents take top priority - an open incident prevents "Alles erledigt"
   if (incidents && incidents.length > 0) {
@@ -316,11 +319,9 @@ export function deriveLiveAttention(
         detail: open
           ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen`
           : nextEv.time ? `${nextEv.time} Uhr` : '',
-        // Until an event-ID deep link exists, never promise to assign a shift from a generic link.
-        action: 'Kalender ansehen',
+        action: 'Termin ansehen',
         isWarning: open,
-        // Calendar is a legacy pane, not a native feature id; Post is the guarded surface.
-        onAction: () => navigate?.('post'),
+        onAction: () => { if (navigate) openOsObject('event', nextEv.id, navigate, objectScope); },
       });
     }
   }
@@ -332,7 +333,7 @@ export function deriveLiveAttention(
       title: stripFiktiv(nextTask.title) || nextTask.title,
       detail: 'Heute',
       action: 'Aufgabe ansehen',
-      onAction: () => navigate?.('today'),
+      onAction: () => { if (navigate) openOsObject('task', nextTask.id, navigate, objectScope); },
     });
   }
 

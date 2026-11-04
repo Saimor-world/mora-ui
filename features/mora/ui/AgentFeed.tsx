@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity } from 'lucide-react';
 import { Empty, FailureState, Loading, SampleTag, Stack, Surface, Text } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 
 /**
@@ -57,13 +58,21 @@ function ago(d: Date | null): string {
 }
 
 export function AgentFeed({ live, demo, limit = 8, compact = false, hideWhenEmpty = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean; hideWhenEmpty?: boolean }) {
+  const demoScope = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
   const q = useQuery({
-    queryKey: ['os', 'agency-thoughts', limit],
-    queryFn: async () => ((await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true })) as { thoughts?: AgentThought[] } | null)?.thoughts || [],
-    enabled: live,
+    queryKey: ['os', 'agency-thoughts', limit, identity, demoScope],
+    queryFn: async () => {
+      const current = capturePersonalSourceScope(identity);
+      if (!current()) return [];
+      const data = await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true, dedupeScope: identity }) as { thoughts?: AgentThought[] } | null;
+      return current() ? data?.thoughts || [] : [];
+    },
+    enabled: live && !demoScope,
     refetchInterval: 30_000,
     retry: false,
   });
+  if (demoScope) return null;
   const items = live ? (q.data || []) : demo ? DEMO_THOUGHTS.slice(0, limit) : [];
   const sample = !live && demo;
   // Heute zeigt den Feed nur mit echtem Inhalt; leer/Fehler fasst die Statuszeile zusammen.

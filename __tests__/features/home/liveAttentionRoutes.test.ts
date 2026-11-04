@@ -1,5 +1,6 @@
 import { deriveLiveAttention } from '@/features/home/cockpit/coreAdapter';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 describe('Live home attention destinations', () => {
   const snapshot = {
@@ -21,13 +22,15 @@ describe('Live home attention destinations', () => {
 
     mail?.onAction?.();
     calendar?.onAction?.();
+    expect(useOsShellStore.getState().objectTarget).toMatchObject({ kind: 'event', id: 'event-service-1' });
     task?.onAction?.();
-    expect(navigate.mock.calls).toEqual([['post'], ['post'], ['today']]);
+    expect(navigate.mock.calls).toEqual([['post'], ['today'], ['today']]);
+    expect(useOsShellStore.getState().objectTarget).toMatchObject({ kind: 'task', id: 'task-kitchen-1' });
   });
 
   it('does not claim a generic calendar link can assign a shift or complete a task', () => {
     const { items } = deriveLiveAttention(snapshot, jest.fn());
-    expect(items.find(item => item.id === 'live-cal')?.action).toBe('Kalender ansehen');
+    expect(items.find(item => item.id === 'live-cal')?.action).toBe('Termin ansehen');
     expect(items.find(item => item.id === 'live-task')?.action).toBe('Aufgabe ansehen');
   });
 });

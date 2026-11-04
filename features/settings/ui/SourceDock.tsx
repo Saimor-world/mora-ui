@@ -1,5 +1,5 @@
 'use client';
-import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, Orbit, ShieldCheck } from 'lucide-react';
@@ -40,17 +40,17 @@ interface Briefing { status?: string; text?: string }
 
 const STARS: Point[] = Array.from({ length: 34 }, (_, i) => ({ x: (i * 211 + 37) % SCENE.w, y: (i * 97 + 53) % SCENE.h }));
 
-function usePlanets(live: boolean, sample: boolean): DockPlanet[] {
+function usePlanets(live: boolean, sample: boolean, demo: boolean): DockPlanet[] {
   const companyId = useSessionStore((s) => s.user?.active_company_id ?? null);
   const depts = useDepartments(live && !sample ? companyId : null);
   return useMemo(() => {
     // Eigene Abteilungen aus dem Onboarding (nur lokal) haben Vorrang vor dem Demo-Paket.
-    const own = readLocalOrg().departments.slice(0, 6).map((n, i) => ({ id: `local-${i}`, name: n, color: PLANET_COLORS[i % PLANET_COLORS.length] }));
+    const own = (demo ? [] : readLocalOrg().departments).slice(0, 6).map((n, i) => ({ id: `local-${i}`, name: n, color: PLANET_COLORS[i % PLANET_COLORS.length] }));
     const real = !sample && Array.isArray(depts.data) ? depts.data : [];
     if (real.length) return real.slice(0, 6).map((d, i) => ({ id: d.id, name: d.name, color: d.color || PLANET_COLORS[i % PLANET_COLORS.length] }));
     if (own.length) return own;
     return [];
-  }, [sample, depts.data]);
+  }, [sample, demo, depts.data]);
 }
 
 function ConnectFields({ entry, busy, onSubmit }: { entry: SourceEntry; busy: boolean; onSubmit: (values: Record<string, string>) => void }) {
@@ -80,14 +80,18 @@ function ConnectFields({ entry, busy, onSubmit }: { entry: SourceEntry; busy: bo
 export function SourceDock({ live, compact = false, navigate }: { live: boolean; compact?: boolean; navigate?: (id: string) => void }) {
   const qc = useQueryClient();
   const look = useOsShellStore((s) => s.look);
-  const sources = useSources(live);
-  const list = sources.data?.connections || [];
+  const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
+  // Demo mode must not read or render the presenter's personal connections.
+  const sources = useSources(live && !demo);
+  const list = demo ? [] : (sources.data?.connections || []);
   const boundary = live && sources.isSuccess && !list.length;
-  const sample = !live || boundary;
-  const planets = usePlanets(live, sample);
+  const sample = demo || !live || boundary;
+  const planets = usePlanets(live && !demo, sample, demo);
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
   const [showAll, setShowAll] = useState(false);
+  useEffect(() => { setFocus({ kind: 'idle' }); }, [identity]);
   // Schrift bleibt in echten Pixeln gleich groß, egal wie breit die Szene gerendert wird.
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [k, setK] = useState(1);
@@ -130,40 +134,52 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     ? { from: sel.pos, to: dockPoint(planetPos(sel.target), slots.get(sel.target?.id ?? 'core') ?? 0) } : null;
 
   const briefing = useQuery({
-    queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
-    enabled: !isDemoScopeActive() && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
+    queryKey: ['os', 'briefing', identity, demo], queryFn: async () => {
+      const active = capturePersonalSourceScope(identity);
+      if (!active()) return null;
+      const data = await coreGet('/v3/briefing', { dedupeScope: identity }) as Briefing;
+      return active() ? data : null;
+    },
+    enabled: !demo && live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
   const select = (s: DockStation) => {
-    if (s.sample) return;
+    if (!capturePersonalSourceScope(identity)() || s.sample) return;
     setFocus({ kind: s.status === 'connected' ? 'info' : s.status === 'setup_required' ? 'admin' : 'consent', id: s.id });
   };
   const approve = async (s: DockStation) => {
-    if (!local || !s.entry?.action) return;
+    const active = capturePersonalSourceScope(identity);
+    if (!active() || !local || !s.entry?.action) return;
     if (s.entry.action.kind !== 'oauth') { setFocus({ kind: 'form', id: s.id }); return; }
     setFocus({ kind: 'busy', id: s.id });
     try {
       const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, { return_to: window.location.href });
+      if (!active()) return;
       const url = res?.authorization_url || res?.auth_url || res?.url;
       if (url && typeof url === 'string') { window.location.assign(url); return; }
       setFocus({ kind: 'error', id: s.id, raw: 'CORE hat keinen Anmelde-Link geliefert.' });
     } catch (err) {
+      if (!active()) return;
       setFocus({ kind: 'error', id: s.id, raw: err instanceof Error ? err.message : String(err) });
     }
   };
   const submit = async (s: DockStation, values: Record<string, string>) => {
-    if (!local) return;
+    const active = capturePersonalSourceScope(identity);
+    if (!active() || !local) return;
     setFocus({ kind: 'busy', id: s.id });
     try {
       const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
+      if (!active()) return;
       const check = checkConnectResult(s.group, res);
       if (!check.ok) { setFocus({ kind: 'error', id: s.id, raw: check.reason }); return; }
       await qc.invalidateQueries({ queryKey: ['os', 'sources'] });
+      if (!active()) return;
       qc.invalidateQueries({ queryKey: ['os', 'briefing'] });
       qc.invalidateQueries({ queryKey: ['os', 'mail-summary'] });
       qc.invalidateQueries({ queryKey: ['os', 'today'] });
       setFocus({ kind: 'docked', id: s.id, result: res as ConnectResult });
     } catch (err) {
+      if (!active()) return;
       setFocus({ kind: 'error', id: s.id, raw: err instanceof Error ? err.message : String(err) });
     }
   };
@@ -231,7 +247,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             ) : null}
             <div className="os-station-signal" data-testid="dock-first-signal">
               <span className="os-station-signal__label">Erstes Signal</span>
-              {mail ? <MailSummaryView enabled={live} variant="signal" />
+              {mail ? <MailSummaryView enabled={live && !demo} variant="signal" />
                 : briefing.isLoading ? <p>MÔRA liest …</p> : text ? <p>{text.length > 220 ? `${text.slice(0, 217)} …` : text}</p> : <p>Kommt mit dem ersten Abgleich.</p>}
             </div>
             <div className="os-station-actions">
@@ -269,7 +285,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             <p className="os-station-line mt-2"><MoraStone size={22} />{s?.label} speist {targetName(s)}.</p>
             {s?.entry?.detail ? <Text variant="meta" className="mt-2" data-testid="dock-info-detail">{s.entry.detail}</Text> : null}
             {s?.entry?.account_hint ? <Text variant="meta" className="mt-1">{s.entry.account_hint}</Text> : null}
-            {s?.group === 'mail' ? <div className="os-station-signal"><span className="os-station-signal__label">Letztes Signal</span><MailSummaryView enabled={live} variant="signal" /></div> : null}
+            {s?.group === 'mail' ? <div className="os-station-signal"><span className="os-station-signal__label">Letztes Signal</span><MailSummaryView enabled={live && !demo} variant="signal" /></div> : null}
             <div className="os-station-actions"><Button variant="ghost" size="sm" onClick={back}>Zurück</Button></div>
           </div>
         );

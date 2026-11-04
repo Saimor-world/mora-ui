@@ -3,7 +3,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { flightOffset, useMoraPresence } from '@/lib/mora/moraPresence';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { objectNavigationScope, useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
 import { DOCK_ASK_SLOT } from '@/lib/mora/hubMood';
 import { JadeMora } from '@/components/world/JadeMora';
 import type { SpiritMood } from '@/components/world/MoraSpirit';
@@ -140,6 +141,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   // Im Gespräch fliegt MÔRA in die Mitte über dem See und wird größer, sonst (Flug zu einem Planeten) kleiner.
   const flightScale=target.kind==='anchor'&&target.reason==='stage'?(phone?1.1:1.3):.7;
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
+  const objectScope=objectNavigationScope();
   const openTarget=(t:'calendar'|'post'|'nightwatch')=>t==='calendar'?openLegacyApp('calendar'):t==='post'?onNavigate('post'):openNightwatch();
   const later=()=>{if(!card)return;setDismissed(card.id);setAsking(false);try{sessionStorage.setItem(DISMISS_KEY,card.id);}catch{/* privat */}};
   const controls = [
@@ -213,7 +215,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
       </div>
       <span className="bridge__plate" aria-hidden="true" />
       <section className="bridge__day" aria-label="Tagesverlauf 6 bis 22 Uhr">
-        {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openLegacyApp('calendar')} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
+        {arc.map(m=><button key={m.id} type="button" className="bridge__mark" data-problem={m.problem?'true':undefined} data-past={m.minute<now?'true':undefined} data-edge={m.x<16?'start':m.x>84?'end':undefined} style={{left:`${m.x}%`,top:`${hullY(m.x*14.4)/3}%`}} onClick={()=>openOsObject('event',m.id,onNavigate,objectScope)} aria-label={`${m.time} ${m.label}`}><span className="bridge__mark-label"><b>{m.time}</b> {m.label}</span></button>)}
         {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" data-center={Math.abs(nowX-50)<12?'true':undefined} style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
       </section>
       <section className="bridge__deck" aria-label="Lage">

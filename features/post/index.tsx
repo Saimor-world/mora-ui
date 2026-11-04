@@ -1,6 +1,8 @@
 'use client';
 import { localISO, shortDate } from '@/lib/lea/world';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { objectNavigationScope, useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
+import { ObjectFocus } from '@/features/today/ui/ObjectFocus';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
 import { MailClient } from './MailClient';
@@ -11,6 +13,7 @@ import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
+import { isDemoScopeActive, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -34,8 +37,13 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
 }
 
 
-export default function PostSurface({ preview }: FeatureSurfaceProps) {
+export default function PostSurface({ preview, navigate }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
+  const openPersonalApp = (id: 'mail' | 'calendar') => {
+    if (!isDemoScopeActive()) openLegacyApp(id);
+  };
   const sample = Boolean(preview) && !hasSession;
   const liveInbox = usePostInbox();
   const liveCalendar = usePostCalendar();
@@ -43,6 +51,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
   // Demos laufen über echte is_demo-Firmen in CORE – keine lokale Kopie mehr.
   const inbox = liveInbox;
   const calendar = liveCalendar;
+  const objectScope = objectNavigationScope();
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-post">
@@ -53,22 +62,26 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           Was hereinkommt und was ansteht. MÔRA hilft beim Antworten – senden tust du.
         </Text>
       </header>
+      <ObjectFocus surface="post" snapshot={null} events={calendar.data ?? []}
+        eventStatus={calendar.isError || calendar.data == null ? 'unavailable' : calendar.data.length ? 'ok' : 'empty'}
+        loading={false} calendarLoading={calendar.isLoading} />
       <div className="os-post-grid">
-        <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('mail')}>Im Postfach öffnen</Button>}>
-          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} />} />
+        <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" variant="ghost" disabled={demo} onClick={() => openPersonalApp('mail')}>Im Postfach öffnen</Button>}>
+          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient key={identity} items={items} />} />
         </Column>
-        <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
+        <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" disabled={demo} onClick={() => openPersonalApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine anstehenden Termine im Kalender." render={(items) => (
             items.filter((e) => !e.date || String(e.date) >= today).length === 0 ? <Text variant="meta" className="os-post-empty">Keine anstehenden Termine im Kalender.</Text> : <div className="os-list">
               {items.filter((e) => !e.date || String(e.date) >= today).slice(0, 8).map((e) => (
-                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{postDate(String(e.date || ''), today)}{e.time ? ` · ${e.time} Uhr` : ''}</Text></div>
+                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{postDate(String(e.date || ''), today)}{e.time ? ` · ${e.time} Uhr` : ''}</Text><Button size="sm" variant="ghost" aria-label={`Termin öffnen: ${e.title}`} onClick={() => openOsObject('event', e.id, navigate, objectScope, 'post')}>Ansehen</Button></div>
               ))}
             </div>
           )} />
         </Column>
       </div>
       {/* V1.5: Kalender-Fäden aus dem Legacy-Home (CalendarContinuity, /v3/continuity) – vorbereitende Aufgaben zu Terminen, nur mit deiner Freigabe. */}
-      {sample ? (
+      {demo ? <Text variant="meta" role="status">Persönliches Postfach und Kalender sind in der Demo gesperrt.</Text> : null}
+      {demo ? null : sample ? (
         <Surface padding={5} data-testid="post-continuity">
           <Text variant="eyebrow">Kalender-Fäden</Text>
           <Text className="mt-2">Vorbereitungs-Aufgaben zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>

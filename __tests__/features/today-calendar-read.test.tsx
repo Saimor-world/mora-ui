@@ -13,7 +13,7 @@ const mockSetPostOpenId = jest.fn();
 jest.mock('@/lib/os/useScopedToday', () => ({ useScopedToday: () => ({ snapshot: mockSnapshot, loading: false, refreshing: false, loadError: null, refresh: jest.fn() }) }));
 jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => mockWorld }));
 jest.mock('@/lib/store/sessionStore', () => ({ useSessionStore: (select: (s: unknown) => unknown) => select({ user: { id: 'reader', tenant_id: 'tenant', name: 'Test', role: 'owner' } }) }));
-jest.mock('@/lib/os-prototype/shellStore', () => ({ useOsShellStore: Object.assign((select: (s: unknown) => unknown) => select({ phaseOverride: null }), { getState: () => ({ setPostOpenId: mockSetPostOpenId }) }) }));
+jest.mock('@/lib/os-prototype/shellStore', () => ({ objectNavigationScope: () => 'test-scope', useOsShellStore: Object.assign((select: (s: unknown) => unknown) => select({ phaseOverride: null }), { getState: () => ({ setPostOpenId: mockSetPostOpenId }) }) }));
 jest.mock('@/lib/hooks/useIsPhone', () => ({ useIsPhone: () => false }));
 jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => false }));
 jest.mock('@/components/os-shell/RolePreview', () => ({ useRolePreview: () => ({ role: 'owner' }), RolePreviewBanner: () => null, RolePreviewToggle: () => null, RolePreviewMenu: () => null }));

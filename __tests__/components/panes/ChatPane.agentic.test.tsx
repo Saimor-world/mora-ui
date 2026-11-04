@@ -114,8 +114,7 @@ describe('ChatPane agentic file ops', () => {
       nameConflict: null,
       navigateToDepartment: jest.fn(),
     } as any);
-    // attach getState for components calling useNavStore.getState()
-    (useNavStore as any).getState = () => useNavStore.getState();
+    // Zustand already exposes getState; replacing it with itself recurses.
 
     useOrbStore.setState({ orbState: 'idle' } as any);
   });
