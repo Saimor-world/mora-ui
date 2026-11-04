@@ -302,7 +302,7 @@ export function deriveLiveAttention(
       detail: '',
       action: 'Post öffnen',
       primary: true,
-      onAction: () => navigate?.('mora'),
+      onAction: () => navigate?.('post'),
     });
   }
 
@@ -316,9 +316,11 @@ export function deriveLiveAttention(
         detail: open
           ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen`
           : nextEv.time ? `${nextEv.time} Uhr` : '',
-        action: open ? 'Schicht besetzen' : 'Kalender ansehen',
+        // Until an event-ID deep link exists, never promise to assign a shift from a generic link.
+        action: 'Kalender ansehen',
         isWarning: open,
-        onAction: () => navigate?.('calendar'),
+        // Calendar is a legacy pane, not a native feature id; Post is the guarded surface.
+        onAction: () => navigate?.('post'),
       });
     }
   }
@@ -329,8 +331,8 @@ export function deriveLiveAttention(
       id: 'live-task',
       title: stripFiktiv(nextTask.title) || nextTask.title,
       detail: 'Heute',
-      action: 'Aufgabe erledigen',
-      onAction: () => navigate?.('tasks'),
+      action: 'Aufgabe ansehen',
+      onAction: () => navigate?.('today'),
     });
   }
 
