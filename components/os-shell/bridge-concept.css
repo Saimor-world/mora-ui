@@ -622,3 +622,7 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 }
 /* q3: Termine stehen in „Als Nächstes“ – einsame Punkte auf der Welle lasen sich als Artefakte */
 .bridge__mark:not([data-problem='true']) { display:none; }
+/* q4: keine Randlinie quer über den See – Wasser und Glas gehen weich ineinander */
+.bridge__hull path:not(:first-of-type) { display:none; }
+/* q4 Handy: Paneltext liegt auf ruhigem Glas, nicht auf MÔRAs Spiegelbild */
+@media (max-width:699px) { .bridge__heart .bridge__field { background:linear-gradient(180deg,rgba(10,30,40,.86),rgba(6,18,26,.9)); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); } }

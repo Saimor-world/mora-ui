@@ -25,6 +25,13 @@ import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
+/** „Mi., 4. Nov.“ aus dem Snapshot-Datum, sonst heute. Keine erfundene Uhrzeit. */
+export function headerDate(raw?: string | null, now: Date = new Date()): string {
+  const parsed = raw ? new Date(raw) : null;
+  const d = parsed && !isNaN(parsed.getTime()) ? parsed : now;
+  return `${d.toLocaleDateString('de-DE', { weekday: 'short' })}, ${d.getDate()}. ${d.toLocaleDateString('de-DE', { month: 'short' })}`;
+}
+
 function usePhone() {
   const [p, setP] = useState(false);
   useEffect(() => {
@@ -146,23 +153,8 @@ export function LiveCockpit({
     return map;
   }, [planets, nightwatchIncidents, snapshot?.tasks, attention]);
 
-  const timeHeader = useMemo(() => {
-    const rawDate = snapshot?.calendar?.date;
-    if (rawDate) {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        const dayName = d.toLocaleDateString('de-DE', { weekday: 'short' });
-        const dayNum = d.getDate();
-        const monthName = d.toLocaleDateString('de-DE', { month: 'short' });
-        return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
-      }
-    }
-    const now = new Date();
-    const dayName = now.toLocaleDateString('de-DE', { weekday: 'short' });
-    const dayNum = now.getDate();
-    const monthName = now.toLocaleDateString('de-DE', { month: 'short' });
-    return `${dayName}, ${dayNum}. ${monthName} · 07:00`;
-  }, [snapshot?.calendar?.date]);
+  // Nur das Datum: die Uhrzeit steht live in der Brücke (vorher fest „07:00“ – widersprach der Dock-Uhr).
+  const timeHeader = useMemo(() => headerDate(snapshot?.calendar?.date), [snapshot?.calendar?.date]);
 
   // Home is an overview, not a second Universe. Every entry goes to the same
   // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
