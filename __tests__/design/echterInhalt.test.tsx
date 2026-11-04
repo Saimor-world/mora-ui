@@ -62,9 +62,9 @@ describe('HQ Home: echter Inhalt statt Text', () => {
     mockSnapshot = snap;
     const { container, unmount } = renderDock();
     const deck = container.querySelector('.bridge__deck')!;
-    expect(within(deck as HTMLElement).getByText('9 Mails')).toBeInTheDocument();
-    expect(within(deck as HTMLElement).getByText('3 Aufgaben')).toBeInTheDocument();
-    expect(within(deck as HTMLElement).getByText('2 Termine')).toBeInTheDocument();
+    expect(deck.querySelector('[aria-label*="9 Mails"]')).not.toBeNull();
+    expect(deck.querySelector('[aria-label*="3 Aufgaben"]')).not.toBeNull();
+    expect(deck.querySelector('[aria-label*="2 Termine"]')).not.toBeNull();
     unmount();
     mockSnapshot = { ...snap, mail: { ...snap.mail, status: 'unavailable' } } as unknown as TodaySnapshot;
     renderDock();
@@ -104,10 +104,13 @@ describe('HQ Home: echter Inhalt statt Text', () => {
     );
     Date.now = realNow;
     mockSnapshot = null;
-    const text = container.querySelector('.bridge__deck')!.textContent ?? '';
-    expect(text).toContain('2 Termine');
-    expect(text).toContain('Do 05.11. 14:00 Kundencall');
-    expect(text).not.toMatch(/kein Termin/i);
+    const next = container.querySelector('[data-station="next"] button')!;
+    expect(next.getAttribute('aria-label')).toContain('2 Termine');
+    expect(next.getAttribute('aria-label')).toContain('Do 05.11. 14:00 Kundencall');
+    // Bühne: eine Heldzahl, ein Nomen – keine Vorschauzeilen, keine Extra-Knöpfe
+    expect(next.querySelector('.bridge__stage-hero strong')!.textContent).toBe('2');
+    expect(container.querySelector('.bridge__inst-list, .bridge__inst-actions')).toBeNull();
+    expect(container.querySelector('.bridge__deck')!.textContent).not.toMatch(/Postfach|Schichtplan|Kalender|ungelesen|kein Termin/i);
   });
 });
 

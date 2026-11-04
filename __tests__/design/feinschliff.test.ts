@@ -23,3 +23,12 @@ describe('Mittlere Breite', () => {
     expect(r5).toMatch(/max-width:1180px\) \{[^}]*\.bridge__chev \{ display:none/);
   });
 });
+describe('Runde 6 · Bühnen', () => {
+  const r6 = css.split('Runde 6')[1] ?? '';
+  it('Heldzahl 32–48px, Tönung je Quelle, Konsole', () => {
+    expect(r6).toMatch(/strong \{ font:700 clamp\(32px,3\.3vw,48px\)/);
+    expect(r6).toMatch(/data-station='today'\] \{ --st:/);
+    expect(r6).toMatch(/\.bridge__body::after/);
+    expect(r6).toMatch(/prefers-reduced-motion[^}]*bridge__stage-dot \{ animation:none/);
+  });
+});

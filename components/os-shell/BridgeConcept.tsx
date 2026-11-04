@@ -176,18 +176,15 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
     <button type="button" className="bridge__bay" onClick={()=>onNavigate('settings')} aria-label={`${g.label} verbinden`}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></button>
   </article>;};
-  const instrument=(g:Instrument)=>g.offline?bay(g):<article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-live={g.lines.length?'true':undefined}>
-    <button type="button" className="bridge__comp" data-station={g.id} onClick={g.open} aria-label={`${g.label}: ${g.value} · ${g.detail}`} title={`${g.label}: ${g.value} · ${g.detail}`}>
+  // Bühne: ganze Fläche ist der Klick. Eine große Zahl, ein kurzes Nomen, ein Zustand. Keine Vorschauzeilen.
+  const instrument=(g:Instrument)=>{ if(g.offline) return bay(g); const Icon=CHANNEL_ICON[g.id]; const m=/^(\d[\d.]*\+?)\s+(.+)$/.exec(g.value);
+    return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-stage="true">
+    <button type="button" className="bridge__comp bridge__stage" data-station={g.id} onClick={g.open} aria-label={`${g.label}: ${g.value}${g.detail?` · ${g.detail}`:''}`} title={g.detail||undefined}>
+      <span className="bridge__stage-top"><span className="bridge__stage-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.6} /></span><small>{g.label}</small>{g.tone==='amber'||g.tone==='red'?<i className="bridge__stage-dot" aria-hidden="true" />:null}</span>
+      <span className="bridge__stage-hero">{m?<><strong>{m[1]}</strong><span>{m[2]}</span></>:<strong>{g.value}</strong>}</span>
       <Ring frac={g.frac} />
-      <span className="bridge__comp-text"><small>{g.label}</small><strong>{g.value}</strong><em>{g.detail}</em></span>
-      <ChevronRight className="bridge__chev" size={16} strokeWidth={1.75} aria-hidden="true" />
     </button>
-    {g.lines.length ? <ul className="bridge__inst-list">{g.lines.map(l=><li key={l.id} data-tone={l.tone}><b>{l.lead}</b><span>{l.text}</span></li>)}</ul>
-        : null}
-    <div className="bridge__inst-actions">
-      <button type="button" onClick={g.open}>{g.openLabel}</button>
-    </div>
-  </article>;
+  </article>;};
   const asOf=snapshot?.generated_at?new Date(snapshot.generated_at):null;
   const stand=asOf&&!isNaN(asOf.getTime())?asOf.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:snapshot?.timezone||'Europe/Berlin'}):null;
   const dateText=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Berlin'}).format(new Date());
