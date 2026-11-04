@@ -1,4 +1,5 @@
 'use client';
+import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 
@@ -35,7 +36,8 @@ const HIDDEN_FOR_CUSTOMERS = new Set(['system:finanzen', 'system:wache']);
  * null von CORE heißt „nicht lesbar“, nie „leer“.
  */
 export function useHorizonSources(companyId: string | null, enabled: boolean) {
-  const on = enabled && Boolean(companyId);
+  const demo = useDemoScopeActive();
+  const on = enabled && Boolean(companyId) && !demo;
   const q = `company_id=${encodeURIComponent(companyId ?? '')}`;
   const mail = useQuery({
     queryKey: ['lea-world', 'mail', companyId], enabled: on, staleTime: 60_000,
