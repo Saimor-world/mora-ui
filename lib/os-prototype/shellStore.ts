@@ -1,5 +1,14 @@
 'use client';
 import { create } from 'zustand';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDemoStore } from '@/lib/demo/demoStore';
+
+/** UI navigation context only; it does not grant access to a message. */
+export function postNavigationScope(): string {
+  const s = useSessionStore.getState();
+  const principal = JSON.stringify([s.user?.tenant_id, s.user?.id, s.sessionGeneration]);
+  return JSON.stringify([principal, useDemoStore.getState().demoCompanyId]);
+}
 
 /**
  * UI-only state of the OS prototype shell (no server data, no persistence).
@@ -18,6 +27,7 @@ export interface OsShellState {
   moraDraft: string | null;
   /** Mail, die Post beim nächsten Öffnen direkt zeigt (aus Heute › Braucht dich). */
   postOpenId: string | null;
+  postOpenScope: string | null;
   setPostOpenId: (id: string | null) => void;
   setMoraDraft(text: string | null): void;
   setActiveFeature(id: string): void;
@@ -97,7 +107,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   surfaceContext: null,
   moraDraft: null,
   postOpenId: null,
-  setPostOpenId: (id) => set({ postOpenId: id }),
+  postOpenScope: null,
+  setPostOpenId: (id) => set({ postOpenId: id, postOpenScope: id ? postNavigationScope() : null }),
   setMoraDraft: (text) => set({ moraDraft: text }),
   setActiveFeature: (id) => set({ activeFeatureId: id, surfaceContext: null }),
   setMoraOpen: (open) => set({ moraOpen: open }),

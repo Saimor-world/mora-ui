@@ -238,6 +238,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                     <div key={m.id} className="os-list-row">
                       <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="[overflow-wrap:anywhere]">{m.from_addr}</Text></Stack>
                       {m.read === false ? <Status tone="info">neu</Status> : null}
+                      <Button size="sm" variant="ghost" aria-label={`Nachricht öffnen: ${m.subject || '(ohne Betreff)'}`} onClick={() => { useOsShellStore.getState().setPostOpenId(m.id); navigate('post'); }}>Ansehen</Button>
                     </div>
                   ))}
                 </div>
