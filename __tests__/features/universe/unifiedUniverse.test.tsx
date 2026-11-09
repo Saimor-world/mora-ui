@@ -146,7 +146,7 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     unmountCockpit();
   });
 
-  it('schaltet zwischen Pixel und Glas um, ohne den ausgewählten Planeten oder Navigationszustand zu verlieren', () => {
+  it('schaltet zwischen Pixel und Glas um, ohne den ausgewählten Planeten oder Navigationszustand zu verlieren', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     render(
@@ -179,8 +179,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     const backBtn = screen.getByTestId('world-planet-close');
     fireEvent.click(backBtn);
 
-    // Jetzt in der System-Ansicht mit allen Planeten
-    expect(screen.getByTestId('planet-system')).toBeInTheDocument();
+    // Nach dem Rückflug (≈0,4 s) in der System-Ansicht mit allen Planeten
+    expect(await screen.findByTestId('planet-system', {}, { timeout: 2000 })).toBeInTheDocument();
     expect(screen.queryByTestId('planet-dept-kueche')).not.toBeInTheDocument();
   });
 

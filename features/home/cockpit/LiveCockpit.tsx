@@ -180,7 +180,7 @@ export function LiveCockpit({
     const el = typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`[data-testid="open-${CSS.escape(id)}"] .glass-orb`) : null;
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    const scene = (el.closest('.ck-scene') as HTMLElement | null)?.getBoundingClientRect() ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+    const scene = (el.closest('.ck-scene') as HTMLElement | null)?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
     const x = r.left + r.width / 2 - scene.left, y = r.top + r.height / 2 - scene.top;
     // Ziel = Ort und Größe des offenen Planeten (OpenPlanet: Mitte, 30 % Höhe) → nahtlose Übergabe.
     el.closest('.ck-planet')?.classList.add('is-dive');
