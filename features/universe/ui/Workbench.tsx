@@ -209,7 +209,7 @@ export function WorkSurface({
         }
       }
       if (!hull || hull.top < 200) { setRest(null); return; }
-      const work = size === 'folio' || size === 'task';
+      const work = size === 'folio' || size === 'task' || size === 'full';
       // Visuelle Halbachse der fliegenden Figur (~scale .7 × zoom .72 × ~150px) + Luft
       const half = work ? 56 : 60; // Mitte + visuelle Halbbreite der scale-.7-Figur
       const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
@@ -330,30 +330,30 @@ export function WorkSurface({
       const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
       const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
       const topEdge = Math.max(topbar?.bottom ?? 0, topRight?.bottom ?? 0, 48) + 8;
+      // Plane deckt Dock-Chrome (z-index 70): Unterkante knapp über Icon-Leiste → max. Lesehöhe.
+      const pill = document.querySelector('.bridge__pill')?.getBoundingClientRect();
+      const status = document.querySelector('.bridge__status')?.getBoundingClientRect();
       const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
         ?? document.querySelector('.bridge')?.getBoundingClientRect();
-      const hullTop = hull && hull.top > 120 ? hull.top : window.innerHeight - 220;
-      const gap = 16;
-      const bottomClear = Math.max(96, Math.round(window.innerHeight - hullTop + gap));
-      if (size === 'folio') {
-        el.style.setProperty('--ws-top', `${Math.round(topEdge)}px`);
-        el.style.setProperty('--ws-bottom', `${bottomClear}px`);
-        return;
-      }
-      if (size === 'task') {
-        el.style.setProperty('--ws-top', `${Math.round(topEdge + 4)}px`);
-        el.style.setProperty('--ws-bottom', `${bottomClear}px`);
-        return;
-      }
-      el.style.setProperty('--ws-top', `${Math.round(Math.max(36, topEdge - 8))}px`);
-      el.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - hullTop + 100)}px`);
+      const iconTop = Math.min(
+        pill?.top ?? Infinity,
+        status?.top ?? Infinity,
+        (hull && hull.top > 120 ? hull.top + 220 : Infinity),
+      );
+      const floor = Number.isFinite(iconTop) ? iconTop : window.innerHeight - 88;
+      const gap = 12;
+      const bottomClear = Math.max(72, Math.round(window.innerHeight - floor + gap));
+      el.style.setProperty('--ws-top', `${Math.round(size === 'task' ? topEdge + 4 : topEdge)}px`);
+      el.style.setProperty('--ws-bottom', `${bottomClear}px`);
     };
     apply();
     const raf = requestAnimationFrame(apply);
     window.addEventListener('resize', apply);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
     const hullEl = document.querySelector('.bridge__hull') ?? document.querySelector('.bridge');
+    const pillEl = document.querySelector('.bridge__pill');
     if (hullEl && ro) ro.observe(hullEl);
+    if (pillEl && ro) ro.observe(pillEl);
     ro?.observe(el);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', apply); ro?.disconnect(); };
   }, [size]);

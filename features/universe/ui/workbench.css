@@ -35,7 +35,7 @@
 /* Lesemodus: ruhige gerade Fläche – kein Oval, kein Glow, volle Höhe Topbar→Dock. */
 .ws-surface--folio{
   left:50%; width:min(1240px,calc(100% - 40px)); translate:-50% 0;
-  top:var(--ws-top,52px); bottom:var(--ws-bottom,220px);
+  top:var(--ws-top,52px); bottom:var(--ws-bottom,96px);
   padding:24px 32px; border-radius:8px;
   color:rgba(236,244,240,.94); font-family:var(--os-font,inherit);
   display:flex; flex-direction:column; min-height:0; overflow:hidden;
@@ -60,11 +60,17 @@ html[data-os-work="folio"] .bridge__sparkle,
 html[data-os-work="folio"] .bridge__ripple,
 html[data-os-work="folio"] .bridge__day{opacity:.12; transition:opacity .45s ease}
 html[data-os-work="folio"] .bridge__hull{opacity:.22; filter:none}
-html[data-os-work="folio"] .bridge__mora:not([data-flying="true"]),
-html[data-os-work="task"] .bridge__mora:not([data-flying="true"]){
-  opacity:.35; transition:opacity .4s ease;
+html[data-os-work] .bridge__mora:not([data-flying="true"]),
+html[data-os-work] .bridge__mora-reflect,
+html[data-os-work] .bridge__heart .jade-mora__glow{
+  opacity:0 !important; visibility:hidden; pointer-events:none;
+  transition:opacity .35s ease, visibility .35s ease;
 }
-.ws-surface--folio .ws-head{width:100%; max-width:none; margin:0 0 18px; color:rgba(236,244,240,.92); flex:none}
+html[data-os-work] .bridge__field,
+html[data-os-work] .bridge__ask{
+  opacity:0; pointer-events:none; transition:opacity .35s ease;
+}
+.ws-surface--folio .ws-head{width:100%; max-width:none; margin:0 0 12px; color:rgba(236,244,240,.92); flex:none}
 .ws-surface--folio .ws-head p{color:rgba(214,232,226,.58); font-size:13.5px; letter-spacing:0; text-transform:none}
 .ws-surface--folio .ws-doc__title{color:rgba(236,244,240,.96); font-size:clamp(22px,2vw,28px); font-weight:600; letter-spacing:-.02em; line-height:1.25}
 .ws-surface--folio .ws-back{border-color:rgba(214,232,226,.14); background:rgba(255,255,255,.04); color:inherit; border-radius:10px}
@@ -91,8 +97,8 @@ html[data-os-work="task"] .bridge__mora:not([data-flying="true"]){
 .ws-docview__toc li button:hover,.ws-docview__toc li button:focus-visible{background:rgba(255,255,255,.06); color:rgba(236,244,240,.95); outline:none}
 .ws-docview__main{
   flex:1; min-width:0; min-height:0; overflow:auto; padding:0 8px 48px;
-  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 36px),transparent 100%);
-  mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 36px),transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%);
 }
 .ws-docview__main[data-at-end="1"]{
   -webkit-mask-image:none; mask-image:none;
@@ -157,6 +163,38 @@ html[data-os-work="task"] .bridge__ripple,
 html[data-os-work="task"] .bridge__day{opacity:.12; transition:opacity .45s ease}
 html[data-os-work="task"] .bridge__hull{opacity:.35; filter:none}
 html[data-os-work="task"] .bridge__beam{opacity:.03}
+
+/* Listenansicht: dieselbe gerade Fläche wie Folio – kein Oval, scrollbare 25 Aufgaben. */
+.ws-surface--full{
+  left:50%; width:min(1240px,calc(100% - 40px)); translate:-50% 0;
+  top:var(--ws-top,52px); bottom:var(--ws-bottom,96px);
+  padding:24px 32px; border-radius:8px;
+  background:rgba(8,16,20,.94);
+  box-shadow:0 0 0 1px rgba(214,232,226,.16);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  z-index:70; overflow:hidden; min-height:0;
+  display:flex; flex-direction:column;
+}
+.ws-surface--full .ws-face{display:none}
+.ws-surface--full::before,.ws-surface--full::after{content:none!important;opacity:0}
+.ws-surface--full .ws-head{width:100%; max-width:none; margin:0 0 14px; flex:none}
+.ws-surface--full .ws-head p,.ws-surface--full .ws-col h3{
+  letter-spacing:0; text-transform:none; color:rgba(214,232,226,.55);
+}
+.ws-surface--full .ws-desk{flex:1; min-height:0; overflow:hidden}
+.ws-surface--full .ws-list--tasks{flex:1; min-height:0; max-height:none; height:auto; overflow:auto}
+html[data-os-work="full"] .bridge__inst{
+  opacity:0; transform:translateY(32px); pointer-events:none;
+  transition:opacity .45s ease, transform .45s ease;
+}
+html[data-os-work="full"] .bridge__water,
+html[data-os-work="full"] .bridge__reflect,
+html[data-os-work="full"] .bridge__sparkle,
+html[data-os-work="full"] .bridge__ripple,
+html[data-os-work="full"] .bridge__day{opacity:.1; transition:opacity .45s ease}
+html[data-os-work="full"] .bridge__hull{opacity:.2; filter:none}
+html[data-os-work="full"] .bridge__beam{opacity:.03}
+.ck-universe-unified[data-work="full"] > .ck-scene{filter:blur(5px) brightness(.28) saturate(.65); transform:none}
 /* kein zoom auf .bridge__mora – bricht die Dock-Flugmathematik; Parken außerhalb oder goHome */
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
@@ -247,7 +285,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 @media (max-width:820px){
   .ws-surface{top:48px;bottom:72px;width:calc(100% - 16px);padding:18px 18px 20px;border-radius:28px}
   .ws-face{border-radius:28px}.ws-face__shade{border-radius:28px}.ws-face__shade::after{border-radius:28px}
-  .ws-surface--folio{width:calc(100% - 16px);top:var(--ws-top,44px);bottom:var(--ws-bottom,180px);padding:16px 14px;border-radius:8px}
+  .ws-surface--folio,.ws-surface--full{width:calc(100% - 16px);top:var(--ws-top,44px);bottom:var(--ws-bottom,88px);padding:16px 14px;border-radius:8px}
   .ws-docview__toc{display:none}
   .ws-doc__read,.ws-doc__body{font-size:16px;max-width:none}
   .ws-surface--task{width:min(94vw,520px);top:var(--ws-top,56px);bottom:auto;max-height:calc(100% - var(--ws-top,56px) - var(--ws-bottom,160px));padding:24px 24px;border-radius:8px}
