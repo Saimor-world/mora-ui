@@ -158,12 +158,40 @@ export function LiveCockpit({
   // Nur das Datum: die Uhrzeit steht live in der Brücke (vorher fest „07:00“ – widersprach der Dock-Uhr).
   const timeHeader = useMemo(() => headerDate(snapshot?.calendar?.date), [snapshot?.calendar?.date]);
 
+  // Leise Zeichen aus echten Daten: Zahl = überfällige Aufgaben der Abteilung, Ring = offene Nachtwache.
+  const planetMarks = useMemo(() => {
+    const map = new Map<string, { overdue: number; watch: boolean }>();
+    planets.forEach((p) => {
+      const overdue = (snapshot?.tasks?.overdue ?? []).filter((t) => t.department_id === p.id).length;
+      const watch = nightwatchIncidents.some((i) => i.department_id === p.id && !(i as { acked?: boolean }).acked);
+      if (overdue || watch) map.set(p.id, { overdue, watch });
+    });
+    return map;
+  }, [planets, snapshot?.tasks, nightwatchIncidents]);
+
   // Home is an overview, not a second Universe. Every entry goes to the same
   // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
+  // Ein Raum: die Kamera fliegt auf den Planeten zu, dann öffnet derselbe Himmel die Abteilung.
+  const [dive, setDive] = useState<{ id: string; x: number; y: number; dx: number; dy: number; k: number } | null>(null);
   const openDepartment = useCallback((id: string) => {
     if (!planets.some((p) => p.id === id)) return;
     useUniverseFocus.getState().show({ planetId: id });
-    navigate('universe');
+    const el = typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`[data-testid="open-${CSS.escape(id)}"] .glass-orb`) : null;
+    const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!el || reduced) { navigate('universe'); return; }
+    const r = el.getBoundingClientRect();
+    const scene = (el.closest('.ck-scene') as HTMLElement | null)?.getBoundingClientRect() ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+    const x = r.left + r.width / 2 - scene.left, y = r.top + r.height / 2 - scene.top;
+    // Ziel = Ort und Größe des offenen Planeten (OpenPlanet: Mitte, 30 % Höhe, 230 px) → nahtlose Übergabe.
+    el.closest('.ck-planet')?.classList.add('is-dive');
+    setDive({ id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.3 - y, k: 230 / Math.max(24, r.width) });
+    // Weiter erst, wenn die Kamera angekommen ist (transitionend), sonst spätestens nach 1,6 s.
+    const sceneEl = el.closest('.ck-scene') as HTMLElement | null;
+    let done = false;
+    const go = () => { if (done) return; done = true; sceneEl?.removeEventListener('transitionend', onEnd); navigate('universe'); };
+    const onEnd = (e: TransitionEvent) => { if (e.target === sceneEl && e.propertyName === 'transform') go(); };
+    sceneEl?.addEventListener('transitionend', onEnd);
+    window.setTimeout(go, 1600);
   }, [planets, navigate]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -214,6 +242,8 @@ export function LiveCockpit({
       data-view="home"
       data-phone={phone ? '1' : '0'}
       data-folder="0"
+      data-dive={dive ? dive.id : undefined}
+      style={dive ? ({ ['--dive-x' as string]: `${dive.x}px`, ['--dive-y' as string]: `${dive.y}px`, ['--dive-dx' as string]: `${dive.dx}px`, ['--dive-dy' as string]: `${dive.dy}px`, ['--dive-k' as string]: dive.k.toFixed(3) } as React.CSSProperties) : undefined}
     >
       <div className="ck-space" aria-hidden />
       <div className="ck-mist" aria-hidden><i /><i /><i /></div>
@@ -225,6 +255,7 @@ export function LiveCockpit({
             planets={planets}
             attention={attention}
             signals={planetSignals}
+            marks={planetMarks}
             company={companyName}
             compact
             moons={dayMoons}

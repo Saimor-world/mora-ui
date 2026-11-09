@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet, FolderSheet } from '@/features/home/cockpit/Sheets';
 import { CockpitWindow } from '@/features/home/cockpit/Window';
 import { deriveLiveAttention, finderToCockpitPlanets } from '@/features/home/cockpit/coreAdapter';
@@ -433,6 +434,12 @@ export function UnifiedUniverse({
     return nightwatchIncidentsToIncidentStatusPanels(activeDeptIncidents);
   }, [activeDeptIncidents]);
 
+  // Von Home kommend: der angeflogene Planet ist sofort offen (vorher landete der Klick in der Übersicht).
+  useEffect(() => {
+    const t = useUniverseFocus.getState().take();
+    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.moonId ?? null); }
+  }, []);
+
   // Synchronisiere useNavPos für Dock-Instrumente und Brotkrumen
   const handleOpenPlanet = (id: string) => {
     setPlanetId(id);
@@ -715,6 +722,7 @@ export function UnifiedUniverse({
             signals={planetSignals}
             company={companyName}
             compact={false}
+            scale={1.45}
             style={planetStyle}
             onOpen={handleOpenPlanet}
           />

@@ -312,3 +312,32 @@
   background: radial-gradient(60% 70% at 50% 100%, rgba(190,232,214,.16), transparent 70%), linear-gradient(180deg, transparent, rgba(150,200,190,.10) 55%, rgba(170,214,202,.16));
   filter: blur(14px); }
 @media (prefers-reduced-motion: reduce) { .ck-sys--compact .ck-planet[data-depth] { translate:none; transition:none; } }
+
+/* ── Ein Universum (grok/os-ein-universum): leise Zeichen, Kameraflug, Abteilung im selben Raum ── */
+.ck-planet__count{position:absolute;left:calc(50% + var(--orb) * .33);top:calc(6px + var(--orb) * .02);min-width:17px;height:17px;padding:0 5px;border-radius:9px;font:600 10.5px/17px var(--br-font,inherit);text-align:center;color:rgba(18,26,24,.92);background:rgba(236,212,164,.86);box-shadow:0 0 12px rgba(236,200,130,.32);pointer-events:none}
+.ck-planet__ring{position:absolute;left:50%;top:6px;width:calc(var(--orb) + 20px);height:calc(var(--orb) + 20px);margin:-10px 0 0 calc((var(--orb) + 20px) / -2);border-radius:50%;border:1px solid rgba(190,176,255,.34);box-shadow:0 0 22px rgba(170,150,255,.16),inset 0 0 14px rgba(170,150,255,.08);pointer-events:none;animation:ck-ring 7s ease-in-out infinite}
+@keyframes ck-ring{50%{opacity:.5;scale:1.05}}
+
+.ck > .ck-scene,.ck > .ck-mist{transition:transform 1.15s cubic-bezier(.62,0,.24,1),opacity .9s ease,filter 1.15s ease}
+.ck[data-dive] > .ck-scene{transform-origin:var(--dive-x) var(--dive-y);transform:translate(var(--dive-dx),var(--dive-dy)) scale(var(--dive-k))}
+.ck[data-dive] > .ck-mist{transform:scale(1.25);opacity:.4}
+.ck[data-dive] .ck-planet b{opacity:0!important;transition:none}
+.ck[data-dive] .ck-planet__count,.ck[data-dive] .ck-planet__ring,.ck[data-dive] .ck-myc,.ck[data-dive] .ck-constellation,.ck[data-dive] .ck-daymoons{opacity:0;transition:opacity .18s ease}
+.ck[data-dive] .ck-planet{transition:opacity .7s ease}
+.ck[data-dive] .ck-planet:not(.is-dive){opacity:0}
+
+.ck-open--orbit .ck-open__core{position:absolute;inset:0;pointer-events:none}
+.ck-open--orbit .ck-open__core > .glass-orb{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);filter:drop-shadow(0 18px 50px rgba(0,0,0,.45))}
+.ck-open__path{position:absolute;left:26%;right:26%;top:11%;bottom:51%;border-radius:50%;border:1px solid rgba(214,232,226,.10);pointer-events:none;animation:ck-fade-in 1.4s ease both .2s}
+.ck-open--orbit .ck-moons{top:0;height:100%}
+.ck-open--orbit .ck-moon{animation:ck-moon-in 1s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(.25s + var(--i,0) * .12s)}
+.ck-open--orbit .ck-horizon{opacity:.28}
+.ck-open--orbit .ck-horizon__title{bottom:auto;top:calc(30% + 128px);font-size:22px;font-weight:500;letter-spacing:.01em;color:rgba(236,244,240,.88);animation:ck-fade-in 1s ease both .3s}
+@keyframes ck-moon-in{from{opacity:0;scale:.35}}
+@keyframes ck-fade-in{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ck > .ck-scene,.ck > .ck-mist{transition:none}.ck-open--orbit .ck-moon,.ck-open__path,.ck-planet__ring,.ck-open--orbit .ck-horizon__title{animation:none}}
+@media (min-width:821px){.ck[data-folder="1"] .ck-open--orbit{right:440px}.ck[data-folder="1"] .ck-open--orbit .ck-moons{right:0}.ck[data-folder="1"] .ck-open--orbit .ck-horizon__title{right:0}.ck[data-folder="1"] .ck-open--orbit .ck-horizon{left:50%}}
+/* Universe: größere Planeten im Zentrum, frei über MÔRA und dem See */
+@media (min-width:821px){.os-root .ck .ck-sys.ck-sys--big{left:7%;right:7%;top:36px;bottom:440px}}
+.os-root .ck[data-dive] > .ck-scene{transition-property:transform,opacity,filter}
+html[data-dock="c"] .os-root .ck-scene--system .ck-sys.ck-sys--big:not(.ck-sys--strip){top:50px;bottom:420px!important}
