@@ -33,7 +33,7 @@
 .ws-surface .ws-face,.ws-surface .ws-face__shade,.ws-surface .ws-face__shade::after{border-radius:28px}
 .ws-surface::after{border-radius:28px}
 /* Lesemodus: nahe volle Himmelsbreite, Textspalte max ~760px, kein Disc-Cramming. */
-.ws-surface--folio{width:min(1180px,calc(100% - 96px));top:var(--ws-top,28px);bottom:var(--ws-bottom,300px);padding:28px 28px 24px;border-radius:28px;
+.ws-surface--folio{width:min(1180px,calc(100% - 96px));top:var(--ws-top,24px);bottom:var(--ws-bottom,220px);padding:28px 28px 24px;border-radius:28px;
   color:rgba(236,244,240,.94);font-family:var(--os-font,inherit);display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .ws-surface--folio .ws-face{border-radius:28px;
   -webkit-mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);

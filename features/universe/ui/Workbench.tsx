@@ -255,6 +255,13 @@ export function WorkSurface({
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
   const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
+  useLayoutEffect(() => {
+    const bridge = document.querySelector('.bridge')?.getBoundingClientRect().top;
+    if (!bridge || bridge < 300) return;
+    const pad = size === 'folio' ? 48 : size === 'task' ? 120 : 100;
+    ref.current?.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - bridge + pad)}px`);
+  }, [size]);
+
 
   useEffect(() => {
     const root = document.documentElement;
