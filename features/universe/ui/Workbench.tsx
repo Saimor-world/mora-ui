@@ -328,14 +328,26 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
         <div className="ws-col" data-testid="work-tasks">
           <h3>Aufgaben <span>{open.length}</span></h3>
           <div className="ws-list">
-            {[...open, ...done].map((t) => (
-              <div key={t.id} className="ws-row ws-row--task" data-done={t.done ? '1' : undefined} data-overdue={t.overdue ? '1' : undefined} data-testid={`work-task-${t.id}`}>
-                <button type="button" className="ws-check" aria-pressed={t.done} aria-label={t.done ? `${t.title} wieder öffnen` : `${t.title} erledigen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`}>{t.done ? <Check size={13} strokeWidth={2.6} /> : null}</button>
+            {open.map((t) => (
+              <div key={t.id} className="ws-row ws-row--task" data-overdue={t.overdue ? '1' : undefined} data-testid={`work-task-${t.id}`}>
+                <button type="button" className="ws-check" aria-pressed={false} aria-label={`${t.title} erledigen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`} />
                 <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
-                {t.due && !t.done ? <span className="ws-due">{dueLabel(t)}</span> : null}
+                {t.due ? <span className="ws-due">{dueLabel(t)}</span> : null}
                 {expanded === t.id ? <div className="ws-row__more" ref={(el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
               </div>
             ))}
+            {done.length ? (
+              <details className="ws-group" open={done.some((t) => expanded === t.id) || undefined}>
+                <summary>{done.length === 1 ? '1 erledigt' : `${done.length} erledigt`}</summary>
+                {done.map((t) => (
+                  <div key={t.id} className="ws-row ws-row--task" data-done="1" data-testid={`work-task-${t.id}`}>
+                    <button type="button" className="ws-check" aria-pressed={true} aria-label={`${t.title} wieder öffnen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`}><Check size={13} strokeWidth={2.6} /></button>
+                    <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
+                    {expanded === t.id ? <div className="ws-row__more"><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
+                  </div>
+                ))}
+              </details>
+            ) : null}
           </div>
           <form className="ws-new" onSubmit={(e) => { e.preventDefault(); void create(); }}>
             <span className="ws-check ws-check--ghost" aria-hidden />
