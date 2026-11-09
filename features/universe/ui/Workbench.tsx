@@ -243,7 +243,6 @@ export function WorkSurface({
         y = Math.min(Math.max((topClear + bottomClear) / 2, topClear), bottomClear);
       }
       setRest({ x: Math.round(Math.min(edgeR, Math.max(edgeL, x))), y: Math.round(y) });
-      useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
     };
     const raf = requestAnimationFrame(() => place());
     const raf2 = requestAnimationFrame(() => {
@@ -257,6 +256,16 @@ export function WorkSurface({
     const t2 = window.setTimeout(place, 320);
     return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.clearTimeout(t); window.clearTimeout(t2); window.removeEventListener('resize', place); ro?.disconnect(); };
   }, [view, size]);
+
+  useLayoutEffect(() => {
+    if (!rest) return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [rest]);
 
   const close = useCallback(() => {
     flushDoc.current?.();
