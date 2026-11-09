@@ -6,7 +6,7 @@
 .ws-moon .ws-moon__btn{position:absolute;left:0;top:0;transform:translate(-50%,-60px);min-width:150px}
 .ws-moon__body{width:104px;height:104px}
 .ws-moon .ck-planet__count{left:calc(50% + 34px)}
-.ws-doc{width:8px;height:8px;margin:-4px 0 0 -4px;opacity:.85}
+.ws-moon .ws-doc,.ck-moon__doc.ws-doc{width:8px;height:8px;margin:-4px 0 0 -4px;opacity:.85}
 .ws-light{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;display:grid;place-items:center;animation:ws-drift 9s ease-in-out infinite;animation-delay:var(--d,0s)}
 .ws-light i{width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff6e4,rgba(246,208,150,.95) 45%,rgba(226,170,100,.6) 80%);box-shadow:0 0 10px rgba(246,200,130,.45),0 0 22px rgba(246,190,120,.18);transition:transform .25s ease,box-shadow .25s ease}
 .ws-light[data-overdue] i{width:10px;height:10px;background:radial-gradient(circle at 40% 35%,#fff1d6,rgba(244,180,96,.98) 45%,rgba(222,140,70,.7) 80%);box-shadow:0 0 12px rgba(244,170,90,.6),0 0 26px rgba(244,160,80,.24)}
@@ -27,9 +27,11 @@
 .ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]),.ck-universe-unified[data-work] .ws-title,.ck-universe-unified[data-work] .ck-horizon__title{opacity:.05;transition:opacity .5s ease}
 .ck-universe-unified[data-work] .ws-light,.ck-universe-unified[data-work] .ws-path,.ck-universe-unified[data-work] .ck-horizon{opacity:.15;transition:opacity .5s ease}
 .ck-universe-unified[data-work] > .ck-top{opacity:.35;transition:opacity .5s ease;pointer-events:none}
-.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 160px));translate:-50% 0;display:flex;flex-direction:column;
-  border-radius:50%;padding:5.2% 10.5% 4.8%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
+.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);width:min(1080px,calc(100% - 120px));translate:-50% 0;display:flex;flex-direction:column;
+  border-radius:28px;padding:28px 32px 24px;color:rgba(236,244,240,.94);outline:none;isolation:isolate;min-height:0;overflow:hidden;
   transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
+.ws-surface .ws-face,.ws-surface .ws-face__shade,.ws-surface .ws-face__shade::after{border-radius:28px}
+.ws-surface::after{border-radius:28px}
 /* Lesemodus: nahe volle Himmelsbreite, Textspalte max ~760px, kein Disc-Cramming. */
 .ws-surface--folio{width:min(1180px,calc(100% - 96px));top:var(--ws-top,28px);bottom:var(--ws-bottom,300px);padding:28px 28px 24px;border-radius:28px;
   color:rgba(236,244,240,.94);font-family:var(--os-font,inherit);display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -52,17 +54,19 @@
 .ws-surface--folio .ws-doc__title{color:rgba(236,244,240,.96);font-size:clamp(22px,2.2vw,28px);font-weight:600;letter-spacing:-.02em;line-height:1.25}
 .ws-surface--folio .ws-back{border-color:rgba(214,232,226,.14);background:rgba(255,255,255,.04);color:inherit}
 .ws-surface--folio .ws-back:hover,.ws-surface--folio .ws-back:focus-visible{background:rgba(255,255,255,.09)}
-.ws-doc{display:flex;gap:28px;flex:1;min-height:0;width:100%}
-.ws-doc__toc{flex:0 0 200px;max-height:100%;overflow:auto;padding:4px 8px 12px 0;border-right:1px solid rgba(214,232,226,.1)}
-.ws-doc__toc-label{margin:0 0 10px;font-size:var(--os-type-eyebrow-size,10.5px);letter-spacing:.14em;text-transform:uppercase;color:rgba(214,232,226,.45)}
-.ws-doc__toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.ws-doc__toc li button{display:block;width:100%;text-align:left;border:0;background:none;color:rgba(214,232,226,.62);font:inherit;font-size:13px;line-height:1.35;padding:6px 8px;border-radius:8px;cursor:pointer}
-.ws-doc__toc li[data-level="1"] button{font-weight:600;color:rgba(236,244,240,.88)}
-.ws-doc__toc li[data-level="2"] button{padding-left:14px}
-.ws-doc__toc li[data-level="3"] button{padding-left:24px;font-size:12.5px;color:rgba(214,232,226,.5)}
-.ws-doc__toc li button:hover,.ws-doc__toc li button:focus-visible{background:rgba(255,255,255,.06);color:rgba(236,244,240,.95);outline:none}
-.ws-doc__main{flex:1;min-width:0;min-height:0;overflow:auto;padding:0 4px 24px}
+.ws-docview{display:flex;gap:28px;flex:1;min-height:0;width:100%}
+.ws-docview__toc{flex:0 0 200px;max-height:100%;overflow:auto;padding:4px 8px 12px 0;border-right:1px solid rgba(214,232,226,.1)}
+.ws-docview__toc-label{margin:0 0 10px;font-size:var(--os-type-eyebrow-size,10.5px);letter-spacing:.14em;text-transform:uppercase;color:rgba(214,232,226,.45)}
+.ws-docview__toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.ws-docview__toc li button{display:block;width:100%;text-align:left;border:0;background:none;color:rgba(214,232,226,.62);font:inherit;font-size:13px;line-height:1.35;padding:6px 8px;border-radius:8px;cursor:pointer}
+.ws-docview__toc li[data-level="1"] button{font-weight:600;color:rgba(236,244,240,.88)}
+.ws-docview__toc li[data-level="2"] button{padding-left:14px}
+.ws-docview__toc li[data-level="3"] button{padding-left:24px;font-size:12.5px;color:rgba(214,232,226,.5)}
+.ws-docview__toc li button:hover,.ws-docview__toc li button:focus-visible{background:rgba(255,255,255,.06);color:rgba(236,244,240,.95);outline:none}
+.ws-docview__main{flex:1;min-width:0;min-height:0;overflow:auto;padding:0 4px 24px}
 .ws-doc__read,.ws-doc__body{max-width:760px;margin:0 auto;width:100%;font-family:var(--os-font,inherit);font-size:var(--os-type-body-size,16px);line-height:1.7;color:rgba(232,240,236,.92);background:transparent;border:0;box-shadow:none}
+.ws-surface--folio .ws-doc__read{flex:none;overflow:visible;height:auto;max-height:none;cursor:default;padding:4px 0 32px;border-radius:0}
+.ws-surface--folio .ws-doc__body{flex:none;min-height:60vh}
 .ws-doc__body{min-height:60%;resize:none;padding:8px 4px;color:inherit}
 .ws-doc__body:focus{outline:none;box-shadow:none}
 .ws-doc__pdf{display:block;width:100%;height:100%;min-height:520px;border:0;border-radius:12px;background:rgba(0,0,0,.25)}
@@ -93,6 +97,7 @@
 .ws-surface--task{width:min(680px,calc(100% - 160px));height:auto;min-height:340px;max-height:min(540px,calc(100% - var(--ws-bottom,410px) - 100px));
   top:auto;bottom:calc(var(--ws-bottom,410px) + 40px);translate:-50% 0;aspect-ratio:auto;
   padding:72px 88px 64px;justify-content:center;border-radius:50%}
+.ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
 .ws-surface--task .ws-head{width:100%;margin-bottom:6px;min-height:0}
 .ws-surface--task .ws-head__t{padding-right:0}
 .ws-surface--task .ws-head__ctx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -187,7 +192,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-face{border-radius:28px}.ws-face__shade{border-radius:28px}.ws-face__shade::after{border-radius:28px}
   .ws-surface--folio{width:calc(100% - 16px);top:40px;bottom:84px;padding:16px;border-radius:20px}
   .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:20px}
-  .ws-doc__toc{display:none}
+  .ws-docview__toc{display:none}
   .ws-doc__read,.ws-doc__body{font-size:16px;max-width:none}
   .ws-surface--task{width:min(94vw,480px);height:auto;min-height:280px;top:auto;bottom:96px;translate:-50% 0;max-height:min(480px,58vh);padding:40px 28px 36px;border-radius:50%}
   .ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
@@ -214,7 +219,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-surface{top:40px;bottom:64px;width:calc(100% - 10px);padding:14px 12px 16px;border-radius:22px}
   .ws-surface--folio{border-radius:18px;padding:14px;width:calc(100% - 10px);top:36px;bottom:72px}
   .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:18px}
-  .ws-doc__toc{display:none}
+  .ws-docview__toc{display:none}
   .ws-doc__read,.ws-doc__body{font-size:15px;max-width:none}
   .ws-head h2{font-size:18px}.ws-head{gap:8px;margin-bottom:8px;width:100%}
   .ws-col h3{margin-bottom:4px}.ws-row{padding:8px 10px;gap:8px}

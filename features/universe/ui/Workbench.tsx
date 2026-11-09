@@ -504,10 +504,10 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
         <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
         <p>{clean(moon.title)}{fileName && fileName !== t ? ` · ${fileName}` : ''}{origin ? ` · ${origin}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
       </Head>
-      <div className="ws-doc" data-folio={folio ? '1' : undefined} data-pdf={pdf ? '1' : undefined} data-editing={editing ? '1' : undefined}>
+      <div className="ws-docview" data-folio={folio ? '1' : undefined} data-pdf={pdf ? '1' : undefined} data-editing={editing ? '1' : undefined}>
         {folio && headings.length > 1 ? (
-          <nav className="ws-doc__toc" aria-label="Inhalt">
-            <p className="ws-doc__toc-label">Inhalt</p>
+          <nav className="ws-docview__toc" aria-label="Inhalt">
+            <p className="ws-docview__toc-label">Inhalt</p>
             <ol>
               {headings.map((h) => (
                 <li key={h.id} data-level={h.level}>
@@ -517,7 +517,7 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
             </ol>
           </nav>
         ) : null}
-        <div className="ws-doc__main" ref={readRef}>
+        <div className="ws-docview__main" ref={readRef}>
           {pdf ? (
             <iframe className="ws-doc__pdf" title={t} src={fixturePdfDataUrl(t)} data-testid="work-doc-pdf" />
           ) : editing ? (
