@@ -68,5 +68,20 @@ export function useDayActions(companyId: string | null) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
 
-  return { setDone, addForTomorrow, addTask, assignFolder };
+  /** Titel oder Fälligkeit ändern – derselbe Endpunkt POST /v3/tasks/{id} (TaskUpdate: title, status, priority, due_date). */
+  const update = useCallback(async (task: WorldTask, change: { title?: string; due_date?: string }) => {
+    const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, ...change } : t)));
+    try {
+      const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, change);
+      if (!res) throw new Error('no response');
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      return true;
+    } catch {
+      qc.setQueryData(key, prev);
+      return false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qc, companyId]);
+
+  return { setDone, addForTomorrow, addTask, assignFolder, update };
 }
