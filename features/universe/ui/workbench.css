@@ -24,7 +24,7 @@
 .ck-universe-unified[data-work] > .ck-scene{filter:blur(4px) brightness(.38) saturate(.75);transform:scale(1.02);transition:transform .7s cubic-bezier(.2,.7,.2,1),filter .7s ease}
 .ck-universe-unified[data-work] > .ck-scene .mora-anchor{opacity:.0}
 .ck-universe-unified[data-work] .ws-moon[data-active] .ws-moon__btn{opacity:0;transition:opacity .3s ease}
-.ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]){opacity:.08;transition:opacity .5s ease}
+.ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]),.ck-universe-unified[data-work] .ws-title,.ck-universe-unified[data-work] .ck-horizon__title{opacity:.05;transition:opacity .5s ease}
 .ck-universe-unified[data-work] .ws-light,.ck-universe-unified[data-work] .ws-path,.ck-universe-unified[data-work] .ck-horizon{opacity:.15;transition:opacity .5s ease}
 .ck-universe-unified[data-work] > .ck-top{opacity:.35;transition:opacity .5s ease;pointer-events:none}
 .ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 48px));translate:-50% 0;display:flex;flex-direction:column;
@@ -37,8 +37,8 @@
 .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:17px;line-height:1.75;padding:10px 28px 16px;max-width:720px;margin:0 auto;width:100%}
 .ws-surface--folio .ws-head{width:min(100%,720px);margin-bottom:10px}
 /* Einzelaufgabe: runder Mond fest über dem Dock, nie in den Glow. */
-.ws-surface--task{width:min(520px,calc(100% - 80px));aspect-ratio:1/1;height:auto;top:auto;bottom:calc(var(--ws-bottom,410px) + 28px);translate:-50% 0;
-  max-height:min(520px,calc(100% - var(--ws-bottom,410px) - 100px));padding:14% 12% 12%;justify-content:center}
+.ws-surface--task{width:min(560px,calc(100% - 72px));aspect-ratio:1/1;height:auto;top:auto;bottom:calc(var(--ws-bottom,410px) + 36px);translate:-50% 0;
+  max-height:min(560px,calc(100% - var(--ws-bottom,410px) - 110px));padding:12% 11% 11%;justify-content:center}
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
 .ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
@@ -119,11 +119,11 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 .ws-doc__body{flex:1;min-height:0;width:100%;resize:none;border:0;outline:none;background:none;border-radius:22px;padding:20px 24px;color:rgba(236,244,240,.9);
   font:inherit;font-size:16px;line-height:1.65;max-width:none;box-shadow:inset 0 0 0 1px rgba(214,232,226,.06)}
 .ws-doc__body:focus{box-shadow:inset 0 0 0 1px rgba(214,232,226,.16)}
-.ws-task{display:flex;align-items:center;gap:16px;margin:2px 0 20px}
+.ws-task{display:flex;align-items:flex-start;gap:14px;margin:2px 0 16px}
 .ws-check--big{width:34px;height:34px;border-width:2px}
-.ws-task__title{flex:1;min-width:0;border:0;background:none;color:inherit;font:inherit;font-size:22px;font-weight:600;letter-spacing:-.012em;outline:none;padding:0}
+.ws-task__title{flex:1;min-width:0;border:0;background:none;color:inherit;font:inherit;font-size:20px;font-weight:600;letter-spacing:-.012em;outline:none;padding:0;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
 .ws-task[data-done] .ws-task__title{text-decoration:line-through;text-decoration-color:rgba(214,232,226,.4);color:rgba(214,232,226,.55)}
-.ws-facts{margin:0;display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:8px 44px}
+.ws-facts{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-content:stretch;gap:8px 20px;width:100%}
 .ws-facts dt{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(214,232,226,.5);margin-bottom:6px}
 .ws-facts dd{margin:0;font-size:15px;display:flex;align-items:center;gap:10px}
 .ws-facts em{white-space:nowrap;font-style:normal;font-size:12.5px;color:rgba(240,190,120,.95)}
