@@ -256,10 +256,19 @@ export function WorkSurface({
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
   const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
   useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Folio: volle Höhe Topbar → knapp über der Dock-Leiste (Karten werden per CSS ausgeblendet).
+    if (size === 'folio') {
+      el.style.setProperty('--ws-top', '52px');
+      el.style.setProperty('--ws-bottom', '72px');
+      return;
+    }
     const bridge = document.querySelector('.bridge')?.getBoundingClientRect().top;
     if (!bridge || bridge < 300) return;
-    const pad = size === 'folio' ? 48 : size === 'task' ? 120 : 100;
-    ref.current?.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - bridge + pad)}px`);
+    const pad = size === 'task' ? 28 : 100;
+    el.style.setProperty('--ws-top', size === 'task' ? '64px' : '36px');
+    el.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - bridge + pad)}px`);
   }, [size]);
 
 
