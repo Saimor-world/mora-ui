@@ -12,8 +12,6 @@ import { fetchNodeDetails } from '@/lib/api/orgClient';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { renderMarkdown } from '@/lib/docs/markdown';
-import { openDocumentNode } from '@/lib/utils/contentOpen';
-import { usePaneStore } from '@/lib/store/paneStore';
 import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
@@ -135,7 +133,7 @@ export function StationPlanet({
   );
 }
 
-type View = { kind: 'moon'; task?: string } | { kind: 'doc'; id: string } | { kind: 'task'; id: string };
+type View = { kind: 'moon'; task?: string } | { kind: 'doc'; id: string; folio?: boolean } | { kind: 'task'; id: string };
 
 /**
  * Nahansicht: das angeklickte Objekt kommt nach vorn und wird zur lesbaren Arbeitsfläche – im selben Raum,
@@ -206,6 +204,7 @@ export function WorkSurface({
     window.setTimeout(onClose, 380);
   }, [onClose]);
   const back = useCallback(() => {
+    if (view.kind === 'doc' && view.folio) { flushDoc.current?.(); setView({ kind: 'doc', id: view.id }); return; }
     if (view.kind === 'doc') { flushDoc.current?.(); setView({ kind: 'moon' }); return; }
     if (view.kind === 'moon' && view.task) { setView({ kind: 'moon' }); return; }
     close();
@@ -233,7 +232,7 @@ export function WorkSurface({
   }, [work]);
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
-  const size = view.kind === 'task' ? 'task' : 'full';
+  const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
 
   useEffect(() => {
     const root = document.documentElement;
@@ -263,7 +262,8 @@ export function WorkSurface({
           onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView(view.task === id ? { kind: 'moon' } : { kind: 'moon', task: id })} />
       ) : null}
       {view.kind === 'doc' && moon ? (
-        <DocDesk id={view.id} moon={moon} name={mw?.docs.find((d) => d.id === view.id)?.name ?? ''} onBack={back} flushRef={flushDoc} />
+        <DocDesk id={view.id} moon={moon} name={mw?.docs.find((d) => d.id === view.id)?.name ?? ''} folio={Boolean(view.folio)}
+          onBack={back} onFolio={() => setView({ kind: 'doc', id: view.id, folio: true })} flushRef={flushDoc} />
       ) : null}
       {view.kind === 'task' && current ? (
         <TaskDesk task={current} planet={planet} folder={folderOf(current)} owner={current.assignee ?? owner} companyId={companyId} onBack={back} backLabel={clean(planet.title)} />
@@ -360,9 +360,11 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
   );
 }
 
-function DocDesk({ id, moon, name, onBack, flushRef }: { id: string; moon: DemoMoon; name: string; onBack: () => void; flushRef: React.MutableRefObject<(() => void) | null> }) {
+function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
+  id: string; moon: DemoMoon; name: string; folio?: boolean;
+  onBack: () => void; onFolio: () => void; flushRef: React.MutableRefObject<(() => void) | null>;
+}) {
   const qc = useQueryClient();
-  const openPane = usePaneStore((st) => st.openPane);
   const [editing, setEditing] = useState(false);
   const q = useQuery({ queryKey: ['node', id], queryFn: () => fetchNodeDetails(id), staleTime: 30_000 });
   const upd = useUpdateNode(moon.id);
@@ -397,8 +399,10 @@ function DocDesk({ id, moon, name, onBack, flushRef }: { id: string; moon: DemoM
     <>
       <Head onBack={onBack} backLabel={clean(moon.title)} actions={<>
         <button type="button" className="ws-back" aria-pressed={editing} aria-label={editing ? 'Fertig' : 'Bearbeiten'} onClick={() => { if (editing) save(); setEditing((v) => !v); }} data-testid="work-doc-edit">{editing ? <Check size={16} /> : <PenLine size={16} />}</button>
-        {/* Die bestehende Dokument-App (apps/document): PDF, Bilder, Originaldatei, Verwandtes. */}
-        <button type="button" className="ws-back" aria-label="In Dokumente öffnen" onClick={() => { save(); openDocumentNode({ id, title: t, name: node?.name ?? name, type: node?.type, content: c, metadata: node?.metadata, folder_id: node?.folder_id ?? moon.id }, openPane); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
+        {/* Volle Ansicht: Folio kommt im selben Raum nach vorn – kein altes Pane-Fenster. */}
+        {folio ? null : (
+          <button type="button" className="ws-back" aria-label="Volle Ansicht" onClick={() => { save(); onFolio(); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
+        )}
       </>}>
         <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
         <p>{clean(moon.title)}{node?.name && node.name !== t ? ` · ${node.name}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
