@@ -211,7 +211,7 @@ export function WorkSurface({
       if (!hull || hull.top < 200) { setRest(null); return; }
       const work = size === 'folio' || size === 'task';
       // Visuelle Halbachse der fliegenden Figur (~scale .7 × zoom .72 × ~150px) + Luft
-      const half = work ? 52 : 56;
+      const half = work ? 56 : 60; // Mitte + visuelle Halbbreite der scale-.7-Figur
       const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
       const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
       const topClear = Math.max(topbar?.bottom ?? 52, topRight?.bottom ?? 0) + half + 10;
@@ -225,10 +225,10 @@ export function WorkSurface({
         const leftGap = surface.left;
         const need = half * 2 + 12;
         if (rightGap >= need) {
-          x = Math.min(edgeR, surface.right + half + 14);
+          x = Math.min(edgeR, surface.right + half + 20);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
         } else if (leftGap >= need) {
-          x = Math.max(edgeL, surface.left - half - 14);
+          x = Math.max(edgeL, surface.left - half - 20);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
         } else {
           // Kein Seitenraum: über der Plane, rechts – Figur darf die Fläche nicht schneiden.
@@ -275,13 +275,16 @@ export function WorkSurface({
   }, [view, size, phase]);
 
   useLayoutEffect(() => {
-    if (!rest) return;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
-      });
-    });
-    return () => cancelAnimationFrame(id);
+    if (!rest) {
+      useMoraPresence.getState().goHome();
+      return;
+    }
+    // Dock-Flug neu anstoßen: kurz home, dann Anker (sonst bleibt alter Versatz hängen).
+    useMoraPresence.getState().goHome();
+    const id = window.setTimeout(() => {
+      useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
+    }, 40);
+    return () => window.clearTimeout(id);
   }, [rest]);
 
   const close = useCallback(() => {
@@ -378,7 +381,7 @@ export function WorkSurface({
         <img className="ws-face__glass" src={`/universe/glass/${glassVariantFor(clean(planet.title))}.png`} alt="" draggable={false} />
         <i className="ws-face__shade" />
       </span>
-      {rest ? createPortal(<span className="mora-anchor mora-anchor--rest" data-mora-anchor="work" style={{ left: rest.x, top: rest.y }} aria-hidden />, document.body) : null}
+      {rest ? createPortal(<span key={`${rest.x},${rest.y}`} className="mora-anchor mora-anchor--rest" data-mora-anchor="work" style={{ left: rest.x, top: rest.y }} aria-hidden />, document.body) : null}
       {view.kind === 'moon' && moon ? (
         <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId} owner={owner} expanded={view.task ?? null}
           onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView(view.task === id ? { kind: 'moon' } : { kind: 'moon', task: id })} />
