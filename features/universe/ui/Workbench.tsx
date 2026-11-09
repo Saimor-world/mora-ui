@@ -221,6 +221,7 @@ export function WorkSurface({
       aria-label={view.kind === 'task' ? current?.title : clean(moon?.title ?? planet.title)}
       style={{ ...vars, ...(colorIndex !== undefined ? planetColor(colorIndex) : {}) }}
     >
+      <span className="mora-anchor mora-anchor--work" data-mora-anchor="work" aria-hidden />
       {view.kind === 'moon' && moon ? (
         <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId} owner={owner} expanded={view.task ?? null}
           onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView(view.task === id ? { kind: 'moon' } : { kind: 'moon', task: id })} />
