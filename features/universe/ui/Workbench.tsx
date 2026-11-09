@@ -163,11 +163,14 @@ export function WorkSurface({
     const b = el.getBoundingClientRect();
     const o = origin ?? { x: b.left + b.width / 2, y: b.top + b.height / 2, r: 80 };
     const bridge = document.querySelector('.bridge')?.getBoundingClientRect().top;
+    // Der Mond selbst wächst zur Scheibe: Start als Kreis in Mondgröße an seinem Ort.
+    const k = (n: number) => Math.max(0.04, Math.min(0.5, o.r / Math.max(1, n))).toFixed(3);
     setVars({
       ['--fx' as string]: `${Math.round(o.x - (b.left + b.width / 2))}px`,
       ['--fy' as string]: `${Math.round(o.y - (b.top + b.height / 2))}px`,
-      ['--fk' as string]: Math.max(0.06, Math.min(0.4, o.r / Math.max(1, el.offsetWidth))).toFixed(3),
-      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 52)}px` } : {}),
+      ['--fkx' as string]: k(el.offsetWidth),
+      ['--fky' as string]: k(el.offsetHeight),
+      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 10)}px` } : {}),
     });
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
     return () => cancelAnimationFrame(raf);
@@ -221,6 +224,11 @@ export function WorkSurface({
       aria-label={view.kind === 'task' ? current?.title : clean(moon?.title ?? planet.title)}
       style={{ ...vars, ...(colorIndex !== undefined ? planetColor(colorIndex) : {}) }}
     >
+      <span className="ws-face" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="ws-face__glass" src={`/universe/glass/${glassVariantFor(clean(planet.title))}.png`} alt="" draggable={false} />
+        <i className="ws-face__shade" />
+      </span>
       <span className="mora-anchor mora-anchor--work" data-mora-anchor="work" aria-hidden />
       {view.kind === 'moon' && moon ? (
         <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId} owner={owner} expanded={view.task ?? null}
@@ -273,7 +281,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
   };
   return (
     <>
-      <Head onBack={onBack} backLabel={clean(planet.title)} orb={<GlassOrb size={46} variant={glassVariantFor(clean(planet.title))} className="ck-opal ck-opal--true ws-head__orb" />}>
+      <Head onBack={onBack} backLabel={clean(planet.title)}>
         <h2>{clean(moon.title)}</h2>
         <p>{clean(planet.title)}{w?.overdue ? <em> · {w.overdue} überfällig</em> : null}</p>
       </Head>
