@@ -69,7 +69,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 .ws-row__t{flex:1;min-width:0;border:0;background:none;color:inherit;font:inherit;font-size:15px;text-align:left;cursor:pointer;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ws-row--task{flex-wrap:wrap}
 .ws-row__more{flex-basis:100%;padding:12px 0 6px 32px}
-.ws-row__more .ws-facts{gap:8px 22px}
+.ws-row__more .ws-facts{display:flex;flex-wrap:wrap;gap:10px 30px}
 .ws-row--task:has(.ws-row__more){background:rgba(255,255,255,.045)}
 .ws-row--task[data-done] .ws-row__t{text-decoration:line-through;text-decoration-color:rgba(214,232,226,.4);color:rgba(214,232,226,.45)}
 .ws-due{flex:none;font-size:12.5px;color:rgba(214,232,226,.6);font-variant-numeric:tabular-nums}
@@ -83,7 +83,6 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 .ws-new input{border:0;background:none;color:inherit;font:inherit;font-size:15px;outline:none;min-width:0}
 .ws-new input:first-of-type{flex:1}
 .ws-new input::placeholder{color:rgba(214,232,226,.38)}
-.ws-new input[type=date],.ws-facts input[type=date]{font-size:13px;color:rgba(214,232,226,.7);color-scheme:dark;border-radius:10px;padding:4px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(214,232,226,.1)}
 .ws-doc__title{width:100%;border:0;background:none;color:inherit;font:inherit;font-size:23px;font-weight:600;letter-spacing:-.012em;outline:none;padding:0}
 .ws-doc__body{flex:1;min-height:0;width:100%;resize:none;border:0;outline:none;background:none;border-radius:22px;padding:20px 24px;color:rgba(236,244,240,.9);
   font:inherit;font-size:16px;line-height:1.65;max-width:none;box-shadow:inset 0 0 0 1px rgba(214,232,226,.06)}
@@ -106,3 +105,27 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-moon .ws-moon__btn{min-width:90px}
 }
 @media (prefers-reduced-motion:reduce){.ws-surface,.ws-surface > *,.ck-universe-unified[data-work] > .ck-scene{transition:none}.ws-light,.ws-moon,.ws-station .ws-path{animation:none}}
+/* Fälligkeit: deutscher Wähler (Mo–So, TT.MM.), dunkles Glas wie der Rest, kein Weiß. */
+.ws-due-btn{flex:none;display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:999px;border:1px solid rgba(214,232,226,.12);background:rgba(255,255,255,.035);color:rgba(214,232,226,.78);font:inherit;font-size:13px;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .2s ease,border-color .2s ease}
+.ws-due-btn[data-empty]{width:30px;padding:0;justify-content:center;color:rgba(214,232,226,.5)}
+.ws-due-btn[data-overdue]{color:rgba(240,190,120,.95);border-color:rgba(240,190,120,.28)}
+.ws-due-btn:hover,.ws-due-btn:focus-visible,.ws-due-btn[aria-expanded="true"]{background:rgba(255,255,255,.08);border-color:rgba(214,232,226,.22);outline:none}
+.ws-cal{position:fixed;z-index:60;width:284px;padding:14px 14px 12px;border-radius:22px;color:rgba(236,244,240,.92);
+  background:radial-gradient(120% 80% at 20% 0%,rgba(150,210,190,.08),transparent 60%),rgba(9,24,28,.94);border:1px solid rgba(214,232,226,.12);
+  box-shadow:0 24px 60px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);animation:ws-cal-in .22s cubic-bezier(.2,.7,.2,1) both}
+@keyframes ws-cal-in{from{opacity:0;translate:0 6px}}
+.ws-cal button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.ws-cal__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ws-cal__head b{font-size:14px;font-weight:600}
+.ws-cal__head button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:rgba(214,232,226,.7)}
+.ws-cal__head button:hover,.ws-cal__head button:focus-visible{background:rgba(255,255,255,.07);outline:none}
+.ws-cal__grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.ws-cal__wd{font-size:11px;text-align:center;color:rgba(214,232,226,.45);padding:4px 0 6px}
+.ws-cal__grid button{height:32px;border-radius:50%;font-size:13px;font-variant-numeric:tabular-nums}
+.ws-cal__grid button[data-past]{color:rgba(214,232,226,.4)}
+.ws-cal__grid button[data-today]{box-shadow:inset 0 0 0 1px rgba(246,208,150,.55)}
+.ws-cal__grid button:hover,.ws-cal__grid button:focus-visible{background:rgba(255,255,255,.08);outline:none}
+.ws-cal__grid button[aria-pressed="true"]{background:rgba(150,214,190,.88);color:#0d1f1c;font-weight:600}
+.ws-cal__quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(214,232,226,.08)}
+.ws-cal__quick button{height:28px;padding:0 11px;border-radius:999px;font-size:12.5px;background:rgba(255,255,255,.05);color:rgba(214,232,226,.82)}
+.ws-cal__quick button:hover,.ws-cal__quick button:focus-visible{background:rgba(255,255,255,.1);outline:none}

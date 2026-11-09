@@ -12,6 +12,7 @@ import { fetchNodeDetails } from '@/lib/api/orgClient';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { shortDate } from '@/lib/lea/world';
+import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
 
 const ORB = 260;
@@ -209,6 +210,7 @@ export function WorkSurface({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('[data-ws-pop]')) return; // offener Datumswähler schließt zuerst sich selbst
       const t = e.target as HTMLElement | null;
       if (t && t.tagName === 'INPUT' && (t as HTMLInputElement).value && t.dataset.clearOnEsc) { (t as HTMLInputElement).value = ''; e.preventDefault(); return; }
       e.preventDefault();
@@ -327,7 +329,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
           <form className="ws-new" onSubmit={(e) => { e.preventDefault(); void create(); }}>
             <span className="ws-check ws-check--ghost" aria-hidden />
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-clear-on-esc="1" data-testid="work-new-title" />
-            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fällig" data-testid="work-new-due" />
+            <DueDate value={due || null} onChange={(v) => setDue(v ?? '')} clearable testId="work-new-due" />
           </form>
         </div>
       </div>
@@ -403,8 +405,7 @@ function TaskFacts({ task, owner, companyId }: { task: WorkTask; owner: string; 
   return (
     <dl className="ws-facts" data-testid={`work-facts-${task.id}`}>
       <div><dt>Fällig</dt><dd>
-        <input type="date" value={task.due ?? ''} onChange={(e) => e.target.value && void update(task.raw, { due_date: e.target.value })} aria-label="Fällig" data-testid="work-task-due" />
-        {task.overdue ? <em>überfällig {dueLabel(task)}</em> : task.dueToday ? <em className="is-today">heute</em> : null}
+        <DueDate value={task.due} onChange={(v) => { if (v) void update(task.raw, { due_date: v }); }} testId="work-task-due" />
       </dd></div>
       <div><dt>Verantwortlich</dt><dd>{owner || '–'}</dd></div>
       <div><dt>Status</dt><dd>{task.done ? 'erledigt' : task.status === 'in_progress' ? 'in Arbeit' : 'offen'}</dd></div>
