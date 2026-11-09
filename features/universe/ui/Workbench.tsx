@@ -181,16 +181,17 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
-  // MÔRA während der Arbeit: Anker rechts neben dem Dock-Herz und tief im Hügel –
-  // Flugweg um die Scheibe herum, Glow berührt den Scheibenrand nicht.
+  // MÔRA während der Arbeit: ruhig rechts oben über der Dock-Linie im leeren Himmel –
+  // deckt keine Karten („Frei“) ab, Flug um die Scheibe, ohne Dock-Dateien anzufassen.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
-      const heart = document.querySelector('.bridge__heart')?.getBoundingClientRect();
-      if (!bridge || !heart || bridge.top < 300) { setRest(null); return; }
-      const side = Math.min(window.innerWidth - 48, heart.right + Math.max(56, heart.width * 0.55));
-      setRest({ x: Math.round(side), y: Math.round(bridge.top + Math.min(92, bridge.height * 0.42)) });
+      if (!bridge || bridge.top < 300) { setRest(null); return; }
+      // Mitte der Figur (~scale .7 → ~90px) bleibt über dem Dock; weit rechts, weg von Team/Als-nächstes.
+      const x = Math.round(Math.min(window.innerWidth - 64, bridge.right - 36));
+      const y = Math.round(bridge.top - 56);
+      setRest({ x, y });
     };
     place();
     window.addEventListener('resize', place);
