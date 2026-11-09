@@ -122,42 +122,43 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 @media (max-width:820px){
   .ws-surface{top:48px;bottom:72px;width:calc(100% - 16px);padding:18px 18px 20px;border-radius:28px}
   .ws-face{border-radius:28px}.ws-face__shade{border-radius:28px}.ws-face__shade::after{border-radius:28px}
-  /* Folio: große Lese-/Schreibansicht im selben Raum, Scheibe tritt weiter nach vorn. */
-.ws-surface--folio{width:min(1180px,calc(100% - 36px));top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);padding:4.2% 9% 4%;border-radius:42% / 46%}
-.ws-surface--folio .ws-face{border-radius:42% / 46%}
-.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:42% / 46%}
-.ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:17px;line-height:1.75;padding:10px 28px 16px;max-width:720px;margin:0 auto;width:100%}
-.ws-surface--folio .ws-head{width:min(100%,720px);margin-bottom:10px}
-.ws-surface--task{width:min(92vw,420px);aspect-ratio:1/1;height:auto;top:46%;bottom:auto;translate:-50% -50%;max-height:min(420px,62vh);padding:16% 12% 12%;border-radius:50%}
+  .ws-surface--folio{width:calc(100% - 16px);top:40px;bottom:72px;padding:16px 14px 18px;border-radius:28px}
+  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:28px}
+  .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:16px;padding:6px 10px 10px;max-width:none}
+  .ws-surface--task{width:min(92vw,420px);aspect-ratio:1/1;height:auto;top:46%;bottom:auto;translate:-50% -50%;max-height:min(420px,62vh);padding:16% 12% 12%;border-radius:50%}
   .ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
   .ws-desk{grid-template-columns:1fr;gap:14px;overflow:auto}
   .ws-facts{grid-template-columns:1fr 1fr}
   .ws-moon .ws-moon__btn{min-width:90px}
 }
-@media (max-width:1100px) and (min-width:821px){
-  .ws-surface{width:min(960px,calc(100% - 40px));padding:5% 9.5% 4.5%}
-  /* Folio: große Lese-/Schreibansicht im selben Raum, Scheibe tritt weiter nach vorn. */
-.ws-surface--folio{width:min(1180px,calc(100% - 36px));top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);padding:4.2% 9% 4%;border-radius:42% / 46%}
-.ws-surface--folio .ws-face{border-radius:42% / 46%}
-.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:42% / 46%}
-.ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:17px;line-height:1.75;padding:10px 28px 16px;max-width:720px;margin:0 auto;width:100%}
-.ws-surface--folio .ws-head{width:min(100%,720px);margin-bottom:10px}
-.ws-surface--task{width:min(480px,calc(100% - 64px));max-height:min(480px,calc(100% - var(--ws-bottom,340px) - 56px))}
+/* 1280: Scheibe etwas schmaler. */
+@media (max-width:1280px) and (min-width:1025px){
+  .ws-surface{width:min(980px,calc(100% - 48px));padding:5% 10% 4.6%}
+  .ws-surface--folio{width:min(1040px,calc(100% - 40px))}
+  .ws-surface--task{width:min(500px,calc(100% - 72px));max-height:min(500px,calc(100% - var(--ws-bottom,340px) - 56px))}
 }
+/* 1024: zwei Spalten bleiben, kompakter. */
+@media (max-width:1024px) and (min-width:821px){
+  .ws-surface{width:min(900px,calc(100% - 36px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
+  .ws-surface--folio{width:min(940px,calc(100% - 28px));border-radius:38% / 44%}
+  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade{border-radius:38% / 44%}
+  .ws-surface--task{width:min(440px,calc(100% - 56px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 48px))}
+  .ws-desk{gap:20px}
+  .ws-head h2{font-size:20px}
+}
+/* Phone 390. */
 @media (max-width:390px){
   .ws-surface{top:40px;bottom:64px;width:calc(100% - 10px);padding:14px 12px 16px;border-radius:22px}
-  .ws-head h2{font-size:18px}.ws-head{gap:8px;margin-bottom:8px}
+  .ws-surface--folio{border-radius:22px;padding:14px 12px 16px;width:calc(100% - 10px);top:36px;bottom:64px}
+  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:22px}
+  .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:15px;padding:4px 8px 8px;max-width:none}
+  .ws-head h2{font-size:18px}.ws-head{gap:8px;margin-bottom:8px;width:100%}
   .ws-col h3{margin-bottom:4px}.ws-row{padding:8px 10px;gap:8px}
   .ws-row--doc b,.ws-row__t{font-size:14px}
   .ws-new{padding-top:6px;gap:8px}
-  /* Folio: große Lese-/Schreibansicht im selben Raum, Scheibe tritt weiter nach vorn. */
-.ws-surface--folio{width:min(1180px,calc(100% - 36px));top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);padding:4.2% 9% 4%;border-radius:42% / 46%}
-.ws-surface--folio .ws-face{border-radius:42% / 46%}
-.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:42% / 46%}
-.ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:17px;line-height:1.75;padding:10px 28px 16px;max-width:720px;margin:0 auto;width:100%}
-.ws-surface--folio .ws-head{width:min(100%,720px);margin-bottom:10px}
-.ws-surface--task{width:min(94vw,340px);max-height:min(340px,58vh);padding:18% 10% 12%}
+  .ws-surface--task{width:min(94vw,340px);max-height:min(340px,58vh);padding:18% 10% 12%}
   .ws-task__title{font-size:18px}.ws-facts{gap:6px 18px;grid-template-columns:1fr}
+  .ws-doc__read,.ws-doc__body{padding:4px 8px 8px;font-size:15px}
 }
 @media (prefers-reduced-motion:reduce){.ws-surface,.ws-surface > *,.ck-universe-unified[data-work] > .ck-scene{transition:none}.ws-light,.ws-moon,.ws-station .ws-path{animation:none}}
 /* Fälligkeit: deutscher Wähler (Mo–So, TT.MM.), dunkles Glas wie der Rest, kein Weiß. */
