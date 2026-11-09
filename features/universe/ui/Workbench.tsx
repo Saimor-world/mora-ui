@@ -182,32 +182,51 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
-  // MÔRA: rechts Mitte im leeren Himmel (wie Task-Mond) – nie über Topbar (+ Abteilung),
-  // Scheibe, Home-Link oder Dock-Karten. Figur ~scale .7 → ~56 px Halbmesser. Ohne Dock-Dateien.
+  // MÔRA: außerhalb der Lesefläche parkieren (nie über Plane/Topbar/Dock). Ohne Dock-Dateien.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
-      const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
+      const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
+        ?? document.querySelector('.bridge')?.getBoundingClientRect();
       const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
-      if (!bridge || bridge.top < 300) { setRest(null); return; }
-      const half = 56;
+      if (!hull || hull.top < 200) { setRest(null); return; }
+      const folio = document.documentElement.getAttribute('data-os-work') === 'folio';
+      const half = folio ? 40 : 56; // folio: etwas kleinerer Anker → Figur wirkt ruhiger
       const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
       const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
-      const homeLink = document.querySelector('.ck-top a, .ck-top [data-testid="universe-home"], .ck-top button')?.getBoundingClientRect();
-      // Dock-Karten (Frei / Heute / …) – Figur darf sie nicht decken.
-      const cards = [...document.querySelectorAll('.bridge__inst')].map((el) => el.getBoundingClientRect());
-      const topClear = Math.max(topbar?.bottom ?? 56, topRight?.bottom ?? 0) + half + 14;
-      const cardTops = cards.map((c) => c.top - half - 10).filter((n) => n > topClear);
-      const bottomClear = Math.min(bridge.top - half - 20, ...(cardTops.length ? cardTops : [bridge.top - half - 20]));
-      const edge = window.innerWidth - half - 10;
-      // Rechts außen neben der Scheibe; nie nach oben in die Topbar ausweichen.
-      let x = Math.min(edge, Math.max((surface?.right ?? 0) + half + 12, window.innerWidth - half - 28));
-      if (surface && x - half < surface.right - 2) x = edge;
-      const mid = surface ? (surface.top + surface.bottom) / 2 : (topClear + bottomClear) / 2;
-      let y = Math.min(Math.max(mid, topClear), Math.max(topClear, bottomClear));
-      x = Math.round(Math.min(edge, Math.max(half + 8, x)));
-      y = Math.round(y);
-      setRest({ x, y });
+      const topClear = Math.max(topbar?.bottom ?? 52, topRight?.bottom ?? 0) + half + 10;
+      const bottomClear = hull.top - half - 16;
+      const edgeR = window.innerWidth - half - 12;
+      const edgeL = half + 12;
+      let x: number;
+      let y: number;
+      if (surface) {
+        const rightGap = window.innerWidth - surface.right;
+        const leftGap = surface.left;
+        if (rightGap >= half * 2 + 8) {
+          x = Math.min(edgeR, surface.right + half + 10);
+          y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
+        } else if (leftGap >= half * 2 + 8) {
+          x = Math.max(edgeL, surface.left - half - 10);
+          y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
+        } else {
+          // Kein Seitenraum: zwischen Topbar und Plane-Oberkante, rechts außen.
+          x = edgeR;
+          y = Math.min(Math.max(topClear, (topClear + Math.max(topClear, surface.top - half - 8)) / 2), Math.max(topClear, surface.top - half - 8));
+        }
+        // Harte Kollisionsprüfung gegen die Plane
+        const overlaps =
+          x + half > surface.left + 2 && x - half < surface.right - 2 &&
+          y + half > surface.top + 2 && y - half < surface.bottom - 2;
+        if (overlaps) {
+          x = edgeR;
+          y = Math.max(topClear, Math.min(surface.top - half - 12, bottomClear));
+        }
+      } else {
+        x = edgeR;
+        y = Math.min(Math.max((topClear + bottomClear) / 2, topClear), bottomClear);
+      }
+      setRest({ x: Math.round(Math.min(edgeR, Math.max(edgeL, x))), y: Math.round(y) });
     };
     const raf = requestAnimationFrame(() => place());
     const raf2 = requestAnimationFrame(() => {
@@ -216,7 +235,10 @@ export function WorkSurface({
       });
     });
     window.addEventListener('resize', place);
-    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.removeEventListener('resize', place); };
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => place()) : null;
+    const surf = document.querySelector('.ws-surface');
+    if (surf && ro) ro.observe(surf);
+    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.removeEventListener('resize', place); ro?.disconnect(); };
   }, [view]);
 
   const close = useCallback(() => {
@@ -255,20 +277,40 @@ export function WorkSurface({
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
   const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
+  // Lesefläche: Unterkante immer über Hull-Oberkante (getBoundingClientRect + ResizeObserver), 16px Luft.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // Folio: volle Höhe Topbar → knapp über der Dock-Leiste (Karten werden per CSS ausgeblendet).
-    if (size === 'folio') {
-      el.style.setProperty('--ws-top', '52px');
-      el.style.setProperty('--ws-bottom', '72px');
-      return;
-    }
-    const bridge = document.querySelector('.bridge')?.getBoundingClientRect().top;
-    if (!bridge || bridge < 300) return;
-    const pad = size === 'task' ? 28 : 100;
-    el.style.setProperty('--ws-top', size === 'task' ? '64px' : '36px');
-    el.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - bridge + pad)}px`);
+    const apply = () => {
+      const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
+      const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
+      const topEdge = Math.max(topbar?.bottom ?? 0, topRight?.bottom ?? 0, 48) + 8;
+      const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
+        ?? document.querySelector('.bridge')?.getBoundingClientRect();
+      const hullTop = hull && hull.top > 120 ? hull.top : window.innerHeight - 220;
+      const gap = 16;
+      const bottomClear = Math.max(96, Math.round(window.innerHeight - hullTop + gap));
+      if (size === 'folio') {
+        el.style.setProperty('--ws-top', `${Math.round(topEdge)}px`);
+        el.style.setProperty('--ws-bottom', `${bottomClear}px`);
+        return;
+      }
+      if (size === 'task') {
+        el.style.setProperty('--ws-top', `${Math.round(topEdge + 4)}px`);
+        el.style.setProperty('--ws-bottom', `${bottomClear}px`);
+        return;
+      }
+      el.style.setProperty('--ws-top', `${Math.round(Math.max(36, topEdge - 8))}px`);
+      el.style.setProperty('--ws-bottom', `${Math.round(window.innerHeight - hullTop + 100)}px`);
+    };
+    apply();
+    const raf = requestAnimationFrame(apply);
+    window.addEventListener('resize', apply);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    const hullEl = document.querySelector('.bridge__hull') ?? document.querySelector('.bridge');
+    if (hullEl && ro) ro.observe(hullEl);
+    ro?.observe(el);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', apply); ro?.disconnect(); };
   }, [size]);
 
 
@@ -507,6 +549,19 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
     const el = root?.querySelector(`#${CSS.escape(hid)}`) as HTMLElement | null;
     el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
+  useEffect(() => {
+    const root = readRef.current;
+    if (!root || !folio) return;
+    const sync = () => {
+      const atEnd = root.scrollTop + root.clientHeight >= root.scrollHeight - 4;
+      root.dataset.atEnd = atEnd ? '1' : '0';
+    };
+    sync();
+    root.addEventListener('scroll', sync, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+    ro?.observe(root);
+    return () => { root.removeEventListener('scroll', sync); ro?.disconnect(); };
+  }, [folio, c, pdf, editing]);
   return (
     <>
       <Head onBack={onBack} backLabel={clean(moon.title)} actions={<>
