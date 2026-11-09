@@ -187,10 +187,12 @@ export function WorkSurface({
   useLayoutEffect(() => {
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
-      if (!bridge || bridge.top < 300) { setRest(null); return; }
-      // Figur (~scale .7 → ~90px) komplett über der Dock-Linie; weit rechts im leeren Himmel, unterhalb der Scheibe.
-      const x = Math.round(Math.min(window.innerWidth - 56, bridge.right - 28));
-      const y = Math.round(bridge.top - 130);
+      const ask = document.querySelector('.bridge__ask')?.getBoundingClientRect()
+        || document.querySelector('.bridge__heart')?.getBoundingClientRect();
+      if (!bridge || !ask || bridge.top < 300) { setRest(null); return; }
+      // Klein neben dem Frag-MÔRA-Feld, über der Dock-Linie – links vom Ask, weg von Team/Als-nächstes.
+      const x = Math.round(ask.left - 44);
+      const y = Math.round(bridge.top - 118);
       setRest({ x, y });
     };
     place();
