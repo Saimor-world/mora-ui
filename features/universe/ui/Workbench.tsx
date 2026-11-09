@@ -182,8 +182,8 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
-  // MÔRA während der Arbeit: rechts außen im leeren Himmel, klar neben der Scheibe
-  // (Figur ~scale .7 → ~56 px Halbmesser). Nie über Folio/Task/Frei. Ohne Dock-Dateien.
+  // MÔRA: rechts Mitte im leeren Himmel (wie Task-Mond) – nie über Topbar (+ Abteilung),
+  // Scheibe, Home-Link oder Dock-Karten. Figur ~scale .7 → ~56 px Halbmesser. Ohne Dock-Dateien.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
@@ -191,22 +191,25 @@ export function WorkSurface({
       const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
       if (!bridge || bridge.top < 300) { setRest(null); return; }
       const half = 56;
-      const edge = window.innerWidth - half - 8;
-      // Wunsch: rechts neben der Scheibe, sonst ganz rechts im Himmel.
-      let x = Math.min(edge, Math.max((surface?.right ?? bridge.right) + half + 10, window.innerWidth - half - 28));
-      let y = Math.min(bridge.top - 100, Math.max(72, (surface?.top ?? 72) + 36));
-      // Wenn rechts kein Platz (Folio fast vollbreit): über dem oberen Scheibenrand, ganz rechts.
-      if (surface && x - half < surface.right - 4) {
-        x = edge;
-        y = Math.max(64, Math.min(surface.top - 4, bridge.top - 120));
-      }
-      // Harte Klammer: Figur bleibt im Viewport und über dem Dock.
+      const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
+      const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
+      const homeLink = document.querySelector('.ck-top a, .ck-top [data-testid="universe-home"], .ck-top button')?.getBoundingClientRect();
+      // Dock-Karten (Frei / Heute / …) – Figur darf sie nicht decken.
+      const cards = [...document.querySelectorAll('.bridge__inst')].map((el) => el.getBoundingClientRect());
+      const topClear = Math.max(topbar?.bottom ?? 56, topRight?.bottom ?? 0) + half + 14;
+      const cardTops = cards.map((c) => c.top - half - 10).filter((n) => n > topClear);
+      const bottomClear = Math.min(bridge.top - half - 20, ...(cardTops.length ? cardTops : [bridge.top - half - 20]));
+      const edge = window.innerWidth - half - 10;
+      // Rechts außen neben der Scheibe; nie nach oben in die Topbar ausweichen.
+      let x = Math.min(edge, Math.max((surface?.right ?? 0) + half + 12, window.innerWidth - half - 28));
+      if (surface && x - half < surface.right - 2) x = edge;
+      const mid = surface ? (surface.top + surface.bottom) / 2 : (topClear + bottomClear) / 2;
+      let y = Math.min(Math.max(mid, topClear), Math.max(topClear, bottomClear));
       x = Math.round(Math.min(edge, Math.max(half + 8, x)));
-      y = Math.round(Math.min(bridge.top - 90, Math.max(56, y)));
+      y = Math.round(y);
       setRest({ x, y });
     };
     const raf = requestAnimationFrame(() => place());
-    // Nach Platzierung Presence auf work-Anker ziehen (sonst misst das Dock zu früh und MÔRA bleibt unten).
     const raf2 = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
