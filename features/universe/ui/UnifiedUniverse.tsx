@@ -468,7 +468,7 @@ export function UnifiedUniverse({
   const [fromHome, setFromHome] = useState(false);
   useEffect(() => {
     const t = useUniverseFocus.getState().take();
-    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.moonId ?? null); setFromHome(t.from === 'home'); }
+    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.taskId ? null : (t.moonId ?? null)); setTaskId(t.taskId ?? null); setFromHome(t.from === 'home'); }
   }, []);
 
   // Leise Zeichen auf den Monden: überfällige Aufgaben dieses Ordners (folder_id), offene Nachtwache an einem seiner Einträge (node_id).

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 /** Ziel, das das Universe beim nächsten Öffnen zeigen soll (z. B. aus Wissen). `from: 'home'` = Anflug vom Home-Himmel. */
-export interface UniverseTarget { planetId: string; moonId?: string | null; starId?: string | null; from?: 'home' }
+export interface UniverseTarget { planetId: string; moonId?: string | null; starId?: string | null; taskId?: string | null; from?: 'home' }
 interface S {
   target: UniverseTarget | null;
   show: (t: UniverseTarget) => void;

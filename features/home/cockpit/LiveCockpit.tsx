@@ -186,9 +186,21 @@ export function LiveCockpit({
     el.closest('.ck-planet')?.classList.add('is-dive');
     return { el, d: { id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.3 - y, k: OPEN_PLANET_SIZE / Math.max(24, r.width) } };
   }, []);
+  const openTaskMoon = useCallback((planetId: string, taskId: string) => {
+    if (!planets.some((p) => p.id === planetId)) return;
+    useUniverseFocus.getState().show({ planetId, taskId, from: 'home' });
+    navigate('universe');
+  }, [planets, navigate]);
   const openDepartment = useCallback((id: string) => {
     if (!planets.some((p) => p.id === id)) return;
-    useUniverseFocus.getState().show({ planetId: id, from: 'home' });
+    const planet = planets.find((p) => p.id === id)!;
+    const moonIds = new Set(planet.moons.map((m) => m.id));
+    const match = (t: { department_id?: string | null; folder_id?: string | null }) =>
+      t.department_id === id || (!!t.folder_id && moonIds.has(t.folder_id));
+    const overdue = (snapshot?.tasks?.overdue ?? []).find(match);
+    const due = (snapshot?.tasks?.due_today ?? []).find(match);
+    const taskId = overdue?.id ?? due?.id ?? null;
+    useUniverseFocus.getState().show({ planetId: id, taskId, from: 'home' });
     const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const hit = reduced ? null : diveFor(id);
     if (!hit) { navigate('universe'); return; }
@@ -200,7 +212,7 @@ export function LiveCockpit({
     const onEnd = (e: TransitionEvent) => { if (e.target === sceneEl && e.propertyName === 'transform') go(); };
     sceneEl?.addEventListener('transitionend', onEnd);
     window.setTimeout(go, 1600);
-  }, [planets, navigate, diveFor]);
+  }, [planets, navigate, diveFor, snapshot?.tasks]);
   // Die Abteilungen schon im Ruhezustand vorladen, damit der Anflug ohne Ladepause in den Planeten übergeht.
   useEffect(() => {
     const t = window.setTimeout(() => { void import('@/features/universe/index').catch(() => undefined); }, 1200);
@@ -262,14 +274,23 @@ export function LiveCockpit({
 
   const openFocus = (target: FocusCard['target']) => {
     if (target === 'post') navigate('post');
-    else if (target === 'tasks') navigate('today');
+    else if (target === 'tasks') {
+      const t = (snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0];
+      const planetId = t?.department_id || planets.find((p) => p.moons.some((m) => m.id === t?.folder_id))?.id;
+      if (t && planetId) openTaskMoon(planetId, t.id);
+      else navigate('today');
+    }
     else if (target === 'calendar') openLegacyApp('calendar');
     else useOsShellStore.getState().setNightwatchOpen(true);
   };
 
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
-      navigate('tasks');
+      const list = widgetId === 'overdue-tasks' ? (snapshot?.tasks?.overdue ?? []) : [...(snapshot?.tasks?.overdue ?? []), ...(snapshot?.tasks?.due_today ?? [])];
+      const t = list[0];
+      const planetId = t?.department_id || planets.find((p) => p.moons.some((m) => m.id === t?.folder_id))?.id;
+      if (t && planetId) openTaskMoon(planetId, t.id);
+      else navigate('today');
     } else if (widgetId === 'calendar') {
       navigate('calendar');
     } else if (widgetId === 'mail') {
@@ -309,6 +330,11 @@ export function LiveCockpit({
             moons={dayMoons}
             threads={threads}
             onTaskDone={onTaskDone}
+            onOpenTask={(taskId) => {
+              const t = [...(snapshot?.tasks?.overdue ?? []), ...(snapshot?.tasks?.due_today ?? []), ...(snapshot?.tasks?.items ?? [])].find((x) => x.id === taskId);
+              const planetId = t?.department_id || planets.find((p) => p.moons.some((m) => m.id === t?.folder_id))?.id;
+              if (planetId) openTaskMoon(planetId, taskId);
+            }}
             onOpen={openDepartment}
           />
         ) : null}
