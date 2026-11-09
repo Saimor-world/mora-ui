@@ -27,10 +27,12 @@
 .ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]){opacity:.22;transition:opacity .5s ease}
 .ck-universe-unified[data-work] .ws-light,.ck-universe-unified[data-work] .ws-path,.ck-universe-unified[data-work] .ck-horizon{opacity:.15;transition:opacity .5s ease}
 .ck-universe-unified[data-work] > .ck-top{opacity:.35;transition:opacity .5s ease;pointer-events:none}
-.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,54px);bottom:var(--ws-bottom,312px);width:min(1040px,calc(100% - 64px));translate:-50% 0;display:flex;flex-direction:column;
-  border-radius:50%;padding:5.8% 11.5% 5.2%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
+.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,340px);width:min(1080px,calc(100% - 48px));translate:-50% 0;display:flex;flex-direction:column;
+  border-radius:50%;padding:5.2% 10.5% 4.8%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
   transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
-.ws-surface--task{width:min(720px,calc(100% - 64px));top:auto;bottom:calc(var(--ws-bottom,312px) + 20px);height:min(410px,calc(100% - 300px));padding:0 10%;justify-content:center}
+/* Einzelaufgabe: runder Mond (nicht flache Linse), groß genug dass der Planet nicht wie eine Kuppe darüber lugt. */
+.ws-surface--task{width:min(560px,calc(100% - 80px));aspect-ratio:1/1;height:auto;top:50%;bottom:auto;translate:-50% -54%;
+  max-height:min(560px,calc(100% - var(--ws-bottom,340px) - 64px));padding:14% 12% 12%;justify-content:center}
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
 .ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
@@ -112,12 +114,26 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 .ws-facts em{white-space:nowrap;font-style:normal;font-size:12.5px;color:rgba(240,190,120,.95)}
 .ws-facts em.is-today{color:rgba(246,214,160,.9)}
 @media (max-width:820px){
-  .ws-surface{top:56px;bottom:84px;width:calc(100% - 20px);padding:16px 16px 18px;border-radius:32px}
-  .ws-face{border-radius:32px}.ws-face__shade{border-radius:32px}
-  .ws-surface--task{bottom:96px}
-  .ws-desk{grid-template-columns:1fr;gap:16px;overflow:auto}
+  .ws-surface{top:48px;bottom:72px;width:calc(100% - 16px);padding:18px 18px 20px;border-radius:28px}
+  .ws-face{border-radius:28px}.ws-face__shade{border-radius:28px}.ws-face__shade::after{border-radius:28px}
+  .ws-surface--task{width:min(92vw,420px);aspect-ratio:1/1;height:auto;top:46%;bottom:auto;translate:-50% -50%;max-height:min(420px,62vh);padding:16% 12% 12%;border-radius:50%}
+  .ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
+  .ws-desk{grid-template-columns:1fr;gap:14px;overflow:auto}
   .ws-facts{grid-template-columns:1fr 1fr}
   .ws-moon .ws-moon__btn{min-width:90px}
+}
+@media (max-width:1100px) and (min-width:821px){
+  .ws-surface{width:min(960px,calc(100% - 40px));padding:5% 9.5% 4.5%}
+  .ws-surface--task{width:min(480px,calc(100% - 64px));max-height:min(480px,calc(100% - var(--ws-bottom,340px) - 56px))}
+}
+@media (max-width:390px){
+  .ws-surface{top:40px;bottom:64px;width:calc(100% - 10px);padding:14px 12px 16px;border-radius:22px}
+  .ws-head h2{font-size:18px}.ws-head{gap:8px;margin-bottom:8px}
+  .ws-col h3{margin-bottom:4px}.ws-row{padding:8px 10px;gap:8px}
+  .ws-row--doc b,.ws-row__t{font-size:14px}
+  .ws-new{padding-top:6px;gap:8px}
+  .ws-surface--task{width:min(94vw,340px);max-height:min(340px,58vh);padding:18% 10% 12%}
+  .ws-task__title{font-size:18px}.ws-facts{gap:6px 18px;grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.ws-surface,.ws-surface > *,.ck-universe-unified[data-work] > .ck-scene{transition:none}.ws-light,.ws-moon,.ws-station .ws-path{animation:none}}
 /* Fälligkeit: deutscher Wähler (Mo–So, TT.MM.), dunkles Glas wie der Rest, kein Weiß. */

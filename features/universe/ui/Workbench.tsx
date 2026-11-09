@@ -175,7 +175,7 @@ export function WorkSurface({
       ['--fy' as string]: `${Math.round(o.y - (b.top + b.height / 2))}px`,
       ['--fkx' as string]: k(el.offsetWidth),
       ['--fky' as string]: k(el.offsetHeight),
-      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 10)}px` } : {}),
+      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 48)}px` } : {}),
     });
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
     return () => cancelAnimationFrame(raf);
