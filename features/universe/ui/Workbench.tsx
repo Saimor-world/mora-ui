@@ -21,7 +21,14 @@ const ORB = 260;
 const MOON = 104;
 const clean = (s: string) => stripFiktiv(s) || s;
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const kindLabel = (meta: string) => (/note/i.test(meta) ? 'Notiz' : /document|file|doc/i.test(meta) ? 'Dokument' : clean(meta));
+const kindLabel = (meta: string, name = '') => {
+  const s = `${meta} ${name}`;
+  if (/\.pdf\b|\bpdf\b/i.test(s)) return 'PDF';
+  if (/\.docx?\b|\bdocx?\b|\bword\b/i.test(s)) return 'Word';
+  if (/note/i.test(s)) return 'Notiz';
+  if (/document|file|\bdoc\b/i.test(s)) return 'Dokument';
+  return 'Dokument';
+};
 const dueLabel = (t: WorkTask) => (!t.due ? '' : t.dueToday ? 'heute' : t.overdue ? `seit ${shortDate(t.due)}` : shortDate(t.due));
 
 /** Wohin ein Objekt fliegt: Mittelpunkt des angeklickten Elements im Fenster. */
@@ -336,7 +343,7 @@ export function WorkSurface({
         ?? document.querySelector('.bridge')?.getBoundingClientRect();
       // Nur Icon-Leiste als Boden – Status-Chips liegen auf gleicher Höhe, Status-Box ist höher.
       const floor = pill?.top ?? (hull && hull.top > 120 ? hull.top + 260 : window.innerHeight - 88);
-      const gap = 12;
+      const gap = 8;
       const bottomClear = Math.max(72, Math.round(window.innerHeight - floor + gap));
       el.style.setProperty('--ws-top', `${Math.round(size === 'task' ? topEdge + 4 : topEdge)}px`);
       el.style.setProperty('--ws-bottom', `${bottomClear}px`);
@@ -496,7 +503,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
             {docs.map((d) => (
               <button key={d.id} type="button" className="ws-row ws-row--doc" onClick={() => onDoc(d.id)} data-testid={`work-doc-${d.id}`}>
                 {/note/i.test(d.meta) ? <StickyNote size={15} aria-hidden /> : <FileText size={15} aria-hidden />}
-                <b>{clean(d.name)}</b><span>{kindLabel(d.meta)}</span>
+                <b>{clean(d.name)}</b><span>{kindLabel(d.meta, d.name)}</span>
               </button>
             ))}
           </div>

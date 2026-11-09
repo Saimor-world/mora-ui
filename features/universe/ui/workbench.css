@@ -157,7 +157,7 @@ html[data-os-work="task"] .bridge__inst{
 .ws-surface--full{
   left:50%; width:min(1240px,calc(100% - 40px)); translate:-50% 0;
   top:var(--ws-top,52px); bottom:var(--ws-bottom,96px);
-  padding:24px 32px; border-radius:8px;
+  padding:20px 28px 16px; border-radius:8px;
   background:rgba(8,16,20,.94);
   box-shadow:0 0 0 1px rgba(214,232,226,.16);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -170,6 +170,24 @@ html[data-os-work="task"] .bridge__inst{
 .ws-surface--full .ws-head p,.ws-surface--full .ws-col h3{
   letter-spacing:0; text-transform:none; color:rgba(214,232,226,.55);
 }
+.ws-surface--full .ws-col{
+  min-width:0; overflow:visible; padding-left:2px;
+}
+.ws-surface--full .ws-col h3{
+  overflow:visible; text-overflow:clip; white-space:nowrap;
+  padding:0 2px; margin:0 0 8px; flex:none;
+}
+.ws-surface--full .ws-desk{
+  gap:24px; padding:0 4px;
+}
+/* Mehr Später-Zeilen sichtbar */
+.ws-surface--full .ws-row{padding:5px 8px; gap:8px}
+.ws-surface--full .ws-row--doc b,.ws-surface--full .ws-row__t{font-size:14px}
+.ws-surface--full .ws-group__label{margin:8px 0 3px; font-size:12.5px}
+.ws-surface--full .ws-new{padding:6px 0 0; margin-top:2px}
+.ws-surface--full .ws-head{margin:0 0 10px}
+.ws-surface--full .ws-list{margin:0; padding:0}
+
 .ws-surface--full .ws-desk{flex:1; min-height:0; overflow:hidden}
 .ws-surface--full .ws-list--tasks{flex:1; min-height:0; max-height:none; height:auto; overflow:auto}
 html[data-os-work="full"] .bridge__inst{

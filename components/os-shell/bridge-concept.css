@@ -612,12 +612,33 @@ html[data-os-work] .bridge__mora-reflect {
   transform: translateY(56px);
   transition: opacity .4s ease, transform .55s cubic-bezier(.2,.7,.2,1), visibility .4s;
 }
-html[data-os-work] .bridge__pill,
+html[data-os-work] .bridge__pill {
+  opacity: 1;
+  visibility: visible;
+  left: 50% !important;
+  /* left:50% braucht translateX(-50%) – transform:none schob die Leiste nach rechts in die Status-Chips */
+  transform: translateX(-50%) !important;
+  pointer-events: auto;
+  max-width: min(640px, calc(100vw - 520px));
+}
 html[data-os-work] .bridge__status {
   opacity: 1;
   visibility: visible;
-  transform: none;
+  transform: none !important;
   pointer-events: auto;
+  z-index: 7;
+}
+html[data-os-work] .bridge__status[data-side='right'] { right: 24px; }
+html[data-os-work] .bridge__status[data-side='left'] { left: 24px; }
+@media (max-width: 1280px) {
+  html[data-os-work] .bridge__pill { max-width: min(560px, calc(100vw - 460px)); }
+}
+@media (max-width: 1100px) {
+  html[data-os-work] .bridge__pill { max-width: min(480px, calc(100vw - 380px)); gap: 4px; }
+  html[data-os-work] .bridge__status[data-side='right'] .bridge__legacy { display: none; }
+}
+@media (max-width: 1024px) {
+  html[data-os-work] .bridge__pill { max-width: min(420px, calc(100vw - 340px)); }
 }
 html[data-os-work] .bridge__status { pointer-events: none; }
 html[data-os-work] .bridge__status .bridge__chip,
