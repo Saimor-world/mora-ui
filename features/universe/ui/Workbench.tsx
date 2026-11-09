@@ -190,7 +190,7 @@ export function WorkSurface({
       if (!bridge || bridge.top < 300) { setRest(null); return; }
       // Figur (~scale .7 → ~90px) komplett über der Dock-Linie; weit rechts im leeren Himmel, unterhalb der Scheibe.
       const x = Math.round(Math.min(window.innerWidth - 56, bridge.right - 28));
-      const y = Math.round(bridge.top - 100);
+      const y = Math.round(bridge.top - 130);
       setRest({ x, y });
     };
     place();
