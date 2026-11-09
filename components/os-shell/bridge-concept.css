@@ -671,3 +671,65 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .ck-myc path.ck-myc__fil { stroke-width:.5; animation-duration:13s; }
 .ck-myc path.ck-myc__pulse { stroke:#eafff5; stroke-width:2; stroke-dasharray:4 96; opacity:.9; animation:ck-myc-travel 14s linear infinite; }
 @keyframes ck-myc-travel { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
+
+/* ─── Arbeitsmodus (nur wenn html[data-os-work] gesetzt) ─────────────────
+   Oberer Dock-Rumpf gleitet weg: Karten, Wasser, Herz, Ask.
+   Zurückbleiben: Icon-Leiste + Uhr + Fokus. Ohne data-os-work: unverändert. */
+html[data-os-work] {
+  --os-dock-space: 92px;
+}
+html[data-os-work] .bridge__body {
+  height: 92px;
+  transition: height .55s cubic-bezier(.2,.7,.2,1);
+}
+html[data-os-work] .bridge__hull,
+html[data-os-work] .bridge__water,
+html[data-os-work] .bridge__plate,
+html[data-os-work] .bridge__day,
+html[data-os-work] .bridge__reflect,
+html[data-os-work] .bridge__sparkle,
+html[data-os-work] .bridge__ripple {
+  opacity: 0;
+  transform: translateY(48px);
+  pointer-events: none;
+  transition: opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+}
+html[data-os-work] .bridge__deck,
+html[data-os-work] .bridge__inst,
+html[data-os-work] .bridge__heart,
+html[data-os-work] .bridge__field,
+html[data-os-work] .bridge__ask,
+html[data-os-work] .bridge__mora,
+html[data-os-work] .bridge__beam,
+html[data-os-work] .bridge__aura,
+html[data-os-work] .bridge__mora-reflect {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none !important;
+  transform: translateY(56px);
+  transition: opacity .4s ease, transform .55s cubic-bezier(.2,.7,.2,1), visibility .4s;
+}
+html[data-os-work] .bridge__pill,
+html[data-os-work] .bridge__status {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+}
+html[data-os-work] .bridge__status { pointer-events: none; }
+html[data-os-work] .bridge__status .bridge__chip,
+html[data-os-work] .bridge__status .bridge__legacy,
+html[data-os-work] .bridge__status a { pointer-events: auto; }
+html[data-os-work] .bridge__body::after {
+  opacity: .55;
+  height: 72px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-os-work] .bridge__body,
+  html[data-os-work] .bridge__hull,
+  html[data-os-work] .bridge__water,
+  html[data-os-work] .bridge__deck,
+  html[data-os-work] .bridge__heart {
+    transition: none;
+  }
+}
