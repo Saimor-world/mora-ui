@@ -172,9 +172,9 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 }
 /* 1024: zwei Spalten bleiben, kompakter. */
 @media (max-width:1024px) and (min-width:821px){
-  .ws-surface{width:min(900px,calc(100% - 160px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
-  .ws-surface--folio{width:min(900px,calc(100% - 160px));padding:4.8% 10% 4.5%}
-  .ws-surface--task{width:min(520px,calc(100% - 160px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 80px));padding:44px 40px 36px}
+  .ws-surface{width:min(900px,calc(100% - 200px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
+  .ws-surface--folio{width:min(900px,calc(100% - 200px));padding:4.8% 10% 4.5%}
+  .ws-surface--task{width:min(520px,calc(100% - 200px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 80px));padding:44px 40px 36px}
   .ws-desk{gap:20px}
   .ws-head h2{font-size:20px}
 }

@@ -15,6 +15,7 @@ import { renderMarkdown } from '@/lib/docs/markdown';
 import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
+import { useMoraPresence } from '@/lib/mora/moraPresence';
 
 const ORB = 260;
 const MOON = 104;
@@ -205,8 +206,14 @@ export function WorkSurface({
       setRest({ x, y });
     };
     const raf = requestAnimationFrame(() => place());
+    // Nach Platzierung Presence auf work-Anker ziehen (sonst misst das Dock zu früh und MÔRA bleibt unten).
+    const raf2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
+      });
+    });
     window.addEventListener('resize', place);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', place); };
+    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.removeEventListener('resize', place); };
   }, [view]);
 
   const close = useCallback(() => {
