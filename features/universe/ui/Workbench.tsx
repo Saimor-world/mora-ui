@@ -3,7 +3,7 @@ import './workbench.css';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, FileText, StickyNote } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Maximize2, PenLine, StickyNote } from 'lucide-react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { planetColor } from '@/features/home/cockpit/Scene';
 import type { DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
@@ -11,6 +11,9 @@ import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { fetchNodeDetails } from '@/lib/api/orgClient';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { useDayActions } from '@/lib/lea/useDayActions';
+import { renderMarkdown } from '@/lib/docs/markdown';
+import { openDocumentNode } from '@/lib/utils/contentOpen';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
@@ -261,12 +264,12 @@ export function WorkSurface({
   );
 }
 
-function Head({ onBack, backLabel, children, orb }: { onBack: () => void; backLabel: string; children: React.ReactNode; orb?: React.ReactNode }) {
+function Head({ onBack, backLabel, children, actions }: { onBack: () => void; backLabel: string; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <header className="ws-head">
+    <header className="ws-head" data-actions={actions ? '1' : undefined}>
       <button type="button" className="ws-back" onClick={onBack} aria-label={`Zurück zu ${backLabel}`} data-testid="work-back"><ArrowLeft size={17} /></button>
-      {orb}
       <div className="ws-head__t">{children}</div>
+      {actions ? <div className="ws-head__act">{actions}</div> : null}
     </header>
   );
 }
@@ -339,13 +342,15 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
 
 function DocDesk({ id, moon, name, onBack, flushRef }: { id: string; moon: DemoMoon; name: string; onBack: () => void; flushRef: React.MutableRefObject<(() => void) | null> }) {
   const qc = useQueryClient();
+  const openPane = usePaneStore((st) => st.openPane);
+  const [editing, setEditing] = useState(false);
   const q = useQuery({ queryKey: ['node', id], queryFn: () => fetchNodeDetails(id), staleTime: 30_000 });
   const upd = useUpdateNode(moon.id);
   const [title, setTitle] = useState<string | null>(null);
   const [body, setBody] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const dirty = useRef(false);
-  const node = q.data as ({ title?: string; name?: string; content?: string; type?: string; updated_at?: string } | undefined);
+  const node = q.data as ({ id?: string; title?: string; name?: string; content?: string; type?: string; updated_at?: string; metadata?: Record<string, unknown>; folder_id?: string | null } | undefined);
   const t = title ?? (node?.title || name);
   const c = body ?? (node?.content ?? '');
   const save = useCallback(() => {
@@ -370,11 +375,22 @@ function DocDesk({ id, moon, name, onBack, flushRef }: { id: string; moon: DemoM
   const edited = node?.updated_at ? new Date(node.updated_at) : null;
   return (
     <>
-      <Head onBack={onBack} backLabel={clean(moon.title)}>
+      <Head onBack={onBack} backLabel={clean(moon.title)} actions={<>
+        <button type="button" className="ws-back" aria-pressed={editing} aria-label={editing ? 'Fertig' : 'Bearbeiten'} onClick={() => { if (editing) save(); setEditing((v) => !v); }} data-testid="work-doc-edit">{editing ? <Check size={16} /> : <PenLine size={16} />}</button>
+        {/* Die bestehende Dokument-App (apps/document): PDF, Bilder, Originaldatei, Verwandtes. */}
+        <button type="button" className="ws-back" aria-label="In Dokumente öffnen" onClick={() => { save(); openDocumentNode({ id, title: t, name: node?.name ?? name, type: node?.type, content: c, metadata: node?.metadata, folder_id: node?.folder_id ?? moon.id }, openPane); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
+      </>}>
         <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
         <p>{clean(moon.title)}{node?.name && node.name !== t ? ` · ${node.name}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
       </Head>
-      <textarea className="ws-doc__body" value={c} onChange={(e) => { dirty.current = true; setBody(e.target.value); }} aria-label={t} data-testid="work-doc-body" disabled={q.isLoading} spellCheck />
+      {editing ? (
+        <textarea className="ws-doc__body" value={c} onChange={(e) => { dirty.current = true; setBody(e.target.value); }} aria-label={t} data-testid="work-doc-body" disabled={q.isLoading} spellCheck autoFocus />
+      ) : (
+        // Lesen mit demselben Renderer wie die Dokument-App; ein Klick auf den Text öffnet das Schreiben.
+        <div className="ws-doc__read" role="document" tabIndex={0} aria-label={t} data-testid="work-doc-read" aria-busy={q.isLoading}
+          onClick={() => setEditing(true)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setEditing(true); } }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(c) }} />
+      )}
     </>
   );
 }

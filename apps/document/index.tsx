@@ -19,6 +19,7 @@ import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/uti
 import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
 import type { AppProps } from '@/lib/apps/types';
 import { AuditDossierView } from '@/components/panes/AuditDossierView';
+import { renderMarkdown } from '@/lib/docs/markdown';
 
 interface NodeRelation {
     type?: string;
@@ -195,15 +196,6 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             default: return Sparkles;
         }
     })();
-
-    const renderMarkdown = (md: string) =>
-        md.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-white/90 mt-4 mb-2">$1</h3>')
-          .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-white/90 mt-6 mb-3">$1</h2>')
-          .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-white mt-8 mb-4">$1</h1>')
-          .replace(/\*\*(.*?)\*\*/gim, '<strong class="text-white">$1</strong>')
-          .replace(/\*(.*?)\*/gim, '<em class="text-white/70">$1</em>')
-          .replace(/`(.*?)`/gim, '<code class="px-1 py-0.5 rounded bg-white/10 text-emerald-400 font-mono text-sm">$1</code>')
-          .replace(/\n/gim, '<br />');
 
     const getRelationExplanation = (relation: NodeRelation): string => {
         switch (relation.type) {
