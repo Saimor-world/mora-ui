@@ -575,9 +575,63 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 @keyframes jade-glow { 0%,100% { opacity:.65; scale:1; } 50% { opacity:1; scale:1.06; } }
 @media (max-width:699px) { .bridge__mora:has(.jade-mora) { width:100px; height:118px; margin-top:-86px; } }
 
-@media (prefers-reduced-motion:reduce) {
-  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; }
+/* ─── Arbeitsmodus (nur wenn html[data-os-work] gesetzt) ─────────────────
+   Oberer Dock-Rumpf gleitet weg: Karten, Wasser, Herz, Ask.
+   Zurückbleiben: Icon-Leiste + Uhr + Fokus. Ohne data-os-work: unverändert. */
+html[data-os-work] {
+  --os-dock-space: 92px;
 }
+html[data-os-work] .bridge__body {
+  height: 92px;
+  transition: height .55s cubic-bezier(.2,.7,.2,1);
+}
+html[data-os-work] .bridge__hull,
+html[data-os-work] .bridge__water,
+html[data-os-work] .bridge__plate,
+html[data-os-work] .bridge__day,
+html[data-os-work] .bridge__reflect,
+html[data-os-work] .bridge__sparkle,
+html[data-os-work] .bridge__ripple {
+  opacity: 0 !important;
+  transform: translateY(48px);
+  pointer-events: none;
+  transition: opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+}
+html[data-os-work] .bridge__deck,
+html[data-os-work] .bridge__inst,
+html[data-os-work] .bridge__heart,
+html[data-os-work] .bridge__field,
+html[data-os-work] .bridge__ask,
+html[data-os-work] .bridge__mora,
+html[data-os-work] .bridge__beam,
+html[data-os-work] .bridge__aura,
+html[data-os-work] .bridge__mora-reflect {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none !important;
+  transform: translateY(56px);
+  transition: opacity .4s ease, transform .55s cubic-bezier(.2,.7,.2,1), visibility .4s;
+}
+html[data-os-work] .bridge__pill,
+html[data-os-work] .bridge__status {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+}
+html[data-os-work] .bridge__status { pointer-events: none; }
+html[data-os-work] .bridge__status .bridge__chip,
+html[data-os-work] .bridge__status .bridge__legacy,
+html[data-os-work] .bridge__status a { pointer-events: auto; }
+html[data-os-work] .bridge__body::after {
+  opacity: .55;
+  height: 72px;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .ck-mist::before, .ck-mist::after, .ck-mist i, html[data-dock='c'] .ck-planet .glass-orb, html[data-dock='c'] .ck-planet--active .glass-orb::before, .bridge__mora:has(.jade-mora), .jade-mora__glow, .ck-myc path, .ck-constellation i, .bridge__deck .bridge__inst { animation:none !important; } .ck-myc__pulse { display:none; } html[data-os-work] .bridge__body, html[data-os-work] .bridge__hull, html[data-os-work] .bridge__water, html[data-os-work] .bridge__deck, html[data-os-work] .bridge__heart { transition:none !important; }
+}
+
 /* Ruhe: Tagesmarken sind Punkte; Text nur beim Zeigen */
 .bridge__day .bridge__mark .bridge__mark-label { opacity:0 !important; transition:opacity .3s; pointer-events:none; }
 .bridge__day .bridge__mark:hover .bridge__mark-label, .bridge__day .bridge__mark:focus-visible .bridge__mark-label { opacity:1 !important; }
@@ -672,64 +726,3 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 .ck-myc path.ck-myc__pulse { stroke:#eafff5; stroke-width:2; stroke-dasharray:4 96; opacity:.9; animation:ck-myc-travel 14s linear infinite; }
 @keyframes ck-myc-travel { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
 
-/* ─── Arbeitsmodus (nur wenn html[data-os-work] gesetzt) ─────────────────
-   Oberer Dock-Rumpf gleitet weg: Karten, Wasser, Herz, Ask.
-   Zurückbleiben: Icon-Leiste + Uhr + Fokus. Ohne data-os-work: unverändert. */
-html[data-os-work] {
-  --os-dock-space: 92px;
-}
-html[data-os-work] .bridge__body {
-  height: 92px;
-  transition: height .55s cubic-bezier(.2,.7,.2,1);
-}
-html[data-os-work] .bridge__hull,
-html[data-os-work] .bridge__water,
-html[data-os-work] .bridge__plate,
-html[data-os-work] .bridge__day,
-html[data-os-work] .bridge__reflect,
-html[data-os-work] .bridge__sparkle,
-html[data-os-work] .bridge__ripple {
-  opacity: 0 !important;
-  transform: translateY(48px);
-  pointer-events: none;
-  transition: opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);
-}
-html[data-os-work] .bridge__deck,
-html[data-os-work] .bridge__inst,
-html[data-os-work] .bridge__heart,
-html[data-os-work] .bridge__field,
-html[data-os-work] .bridge__ask,
-html[data-os-work] .bridge__mora,
-html[data-os-work] .bridge__beam,
-html[data-os-work] .bridge__aura,
-html[data-os-work] .bridge__mora-reflect {
-  opacity: 0 !important;
-  visibility: hidden;
-  pointer-events: none !important;
-  transform: translateY(56px);
-  transition: opacity .4s ease, transform .55s cubic-bezier(.2,.7,.2,1), visibility .4s;
-}
-html[data-os-work] .bridge__pill,
-html[data-os-work] .bridge__status {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  pointer-events: auto;
-}
-html[data-os-work] .bridge__status { pointer-events: none; }
-html[data-os-work] .bridge__status .bridge__chip,
-html[data-os-work] .bridge__status .bridge__legacy,
-html[data-os-work] .bridge__status a { pointer-events: auto; }
-html[data-os-work] .bridge__body::after {
-  opacity: .55;
-  height: 72px;
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-os-work] .bridge__body,
-  html[data-os-work] .bridge__hull,
-  html[data-os-work] .bridge__water,
-  html[data-os-work] .bridge__deck,
-  html[data-os-work] .bridge__heart {
-    transition: none;
-  }
-}
