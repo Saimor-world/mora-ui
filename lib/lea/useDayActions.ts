@@ -10,6 +10,9 @@ import { localISO, type WorldTask } from './world';
  * CORE-Endpunkte POST /v3/tasks/{id} und POST /v3/tasks. Optimistisch, bei Fehler zurück.
  * Nach jeder Änderung wird auch der Heute-Schnappschuss (Dock: Heute-Zahl) neu geladen.
  */
+/** Merkt den Status vor dem Abhaken, damit „wieder öffnen“ in_progress etc. zurückbringt (clientseitig). */
+const priorStatus = new Map<string, string>();
+
 export function useDayActions(companyId: string | null) {
   const qc = useQueryClient();
   const key = ['lea-world', 'tasks', companyId];
@@ -21,7 +24,15 @@ export function useDayActions(companyId: string | null) {
   };
 
   const setDone = useCallback(async (task: WorldTask, done: boolean) => {
-    const status = done ? 'done' : 'backlog';
+    let status: string;
+    if (done) {
+      const cur = (task.status && !/^(done|erledigt|closed|completed)$/i.test(task.status)) ? task.status : 'backlog';
+      priorStatus.set(task.id, cur);
+      status = 'done';
+    } else {
+      status = priorStatus.get(task.id) || 'backlog';
+      priorStatus.delete(task.id);
+    }
     const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, status } : t)));
     try {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { status });

@@ -41,6 +41,21 @@ describe('Arbeitsfläche → CORE (dieselben Endpunkte wie Heute)', () => {
     expect(corePost).toHaveBeenLastCalledWith('/v3/tasks/t1', { status: 'backlog' });
   });
 
+  it('stellt in_progress wieder her statt immer backlog', async () => {
+    const progress = { id: 't2', title: 'In Arbeit', status: 'in_progress', due_date: null, folder_id: 'f-brief' } as never;
+    corePost.mockResolvedValue({ data: { ...(progress as object), status: 'done' } });
+    const qc = new (require('@tanstack/react-query').QueryClient)({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(['lea-world', 'tasks', 'comp-1'], [progress]);
+    const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    const { result } = renderHook(() => useDayActions('comp-1'), { wrapper });
+    await act(async () => { await result.current.setDone(progress, true); });
+    expect(corePost).toHaveBeenLastCalledWith('/v3/tasks/t2', { status: 'done' });
+    corePost.mockResolvedValue({ data: { ...(progress as object), status: 'in_progress' } });
+    await act(async () => { await result.current.setDone({ ...(progress as object), status: 'done' } as never, false); });
+    expect(corePost).toHaveBeenLastCalledWith('/v3/tasks/t2', { status: 'in_progress' });
+    expect((qc.getQueryData(['lea-world', 'tasks', 'comp-1']) as { status: string }[])[0].status).toBe('in_progress');
+  });
+
   it('setzt die Fälligkeit: POST /v3/tasks/{id} {due_date}', async () => {
     corePost.mockResolvedValue({ data: { ...(task as object), due_date: '2026-11-10' } });
     const { qc, result } = setup();
