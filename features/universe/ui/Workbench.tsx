@@ -325,7 +325,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
                 <button type="button" className="ws-check" aria-pressed={t.done} aria-label={t.done ? `${t.title} wieder öffnen` : `${t.title} erledigen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`}>{t.done ? <Check size={13} strokeWidth={2.6} /> : null}</button>
                 <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
                 {t.due && !t.done ? <span className="ws-due">{dueLabel(t)}</span> : null}
-                {expanded === t.id ? <div className="ws-row__more"><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} /></div> : null}
+                {expanded === t.id ? <div className="ws-row__more" ref={(el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
               </div>
             ))}
           </div>
@@ -416,7 +416,7 @@ function TaskDesk({ task, planet, folder, owner, companyId, onBack, backLabel }:
   );
 }
 
-function TaskFacts({ task, owner, companyId }: { task: WorkTask; owner: string; companyId: string | null }) {
+function TaskFacts({ task, owner, companyId, compact = false }: { task: WorkTask; owner: string; companyId: string | null; compact?: boolean }) {
   const { update } = useDayActions(companyId);
   return (
     <dl className="ws-facts" data-testid={`work-facts-${task.id}`}>
@@ -424,7 +424,8 @@ function TaskFacts({ task, owner, companyId }: { task: WorkTask; owner: string; 
         <DueDate value={task.due} onChange={(v) => { if (v) void update(task.raw, { due_date: v }); }} testId="work-task-due" />
       </dd></div>
       <div><dt>Verantwortlich</dt><dd>{owner || '–'}</dd></div>
-      <div><dt>Status</dt><dd>{task.done ? 'erledigt' : task.status === 'in_progress' ? 'in Arbeit' : 'offen'}</dd></div>
+      {/* In der Liste zeigt der Kreis den Status schon; ausführlich nur in der Einzelansicht. */}
+      {compact ? null : <div><dt>Status</dt><dd>{task.done ? 'erledigt' : task.status === 'in_progress' ? 'in Arbeit' : 'offen'}</dd></div>}
     </dl>
   );
 }
