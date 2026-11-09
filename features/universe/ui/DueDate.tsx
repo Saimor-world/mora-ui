@@ -37,7 +37,8 @@ export function monthGrid(year: number, month: number): (string | null)[] {
 export function DueDate({ value, onChange, clearable = false, testId }: {
   value: string | null;
   onChange: (iso: string | null) => void;
-  clearable?: boolean;
+  /** true = löschbar; 'disabled' = „Ohne“ sichtbar aber deaktiviert (CORE ignoriert null bei TaskUpdate). */
+  clearable?: boolean | 'disabled';
   testId?: string;
 }) {
   const today = localISO(new Date());
@@ -97,7 +98,11 @@ export function DueDate({ value, onChange, clearable = false, testId }: {
             <button type="button" onClick={() => pick(today)}>Heute</button>
             <button type="button" onClick={() => pick(addDays(today, 1))}>Morgen</button>
             <button type="button" onClick={() => pick(addDays(today, 7))}>In einer Woche</button>
-            {clearable && value ? <button type="button" onClick={() => pick(null)} aria-label="Ohne Fälligkeit">Ohne</button> : null}
+            {clearable && value ? (
+              clearable === 'disabled'
+                ? <button type="button" disabled aria-disabled="true" title="Fälligkeit lässt sich hier nicht entfernen" aria-label="Ohne Fälligkeit (nicht verfügbar)">Ohne</button>
+                : <button type="button" onClick={() => pick(null)} aria-label="Ohne Fälligkeit">Ohne</button>
+            ) : null}
           </div>
         </div>, document.body) : null}
     </>

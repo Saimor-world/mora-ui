@@ -441,7 +441,7 @@ function TaskFacts({ task, owner, companyId, compact = false }: { task: WorkTask
   return (
     <dl className="ws-facts" data-testid={`work-facts-${task.id}`}>
       <div><dt>Fällig</dt><dd>
-        <DueDate value={task.due} onChange={(v) => { if (v) void update(task.raw, { due_date: v }); }} testId="work-task-due" />
+        <DueDate value={task.due} onChange={(v) => { if (v) void update(task.raw, { due_date: v }); }} clearable="disabled" testId="work-task-due" />
       </dd></div>
       <div><dt>Verantwortlich</dt><dd>{owner || '–'}</dd></div>
       {/* In der Liste zeigt der Kreis den Status schon; ausführlich nur in der Einzelansicht. */}

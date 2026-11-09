@@ -179,3 +179,5 @@ html[data-os-work] .bridge__heart .jade-mora__glow{opacity:.35;transition:opacit
 .ws-group{margin-top:6px;padding-top:4px;border-top:1px solid rgba(214,232,226,.06)}
 .ws-group > summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(214,232,226,.45);padding:2px 2px 4px}
 .ws-group > summary::-webkit-details-marker{display:none}
+
+.ws-cal__quick button:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.03)}
