@@ -332,15 +332,10 @@ export function WorkSurface({
       const topEdge = Math.max(topbar?.bottom ?? 0, topRight?.bottom ?? 0, 48) + 8;
       // Plane deckt Dock-Chrome (z-index 70): Unterkante knapp über Icon-Leiste → max. Lesehöhe.
       const pill = document.querySelector('.bridge__pill')?.getBoundingClientRect();
-      const status = document.querySelector('.bridge__status')?.getBoundingClientRect();
       const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
         ?? document.querySelector('.bridge')?.getBoundingClientRect();
-      const iconTop = Math.min(
-        pill?.top ?? Infinity,
-        status?.top ?? Infinity,
-        (hull && hull.top > 120 ? hull.top + 220 : Infinity),
-      );
-      const floor = Number.isFinite(iconTop) ? iconTop : window.innerHeight - 88;
+      // Nur Icon-Leiste als Boden – Status-Chips liegen auf gleicher Höhe, Status-Box ist höher.
+      const floor = pill?.top ?? (hull && hull.top > 120 ? hull.top + 260 : window.innerHeight - 88);
       const gap = 12;
       const bottomClear = Math.max(72, Math.round(window.innerHeight - floor + gap));
       el.style.setProperty('--ws-top', `${Math.round(size === 'task' ? topEdge + 4 : topEdge)}px`);
