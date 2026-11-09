@@ -30,15 +30,15 @@
 .ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 48px));translate:-50% 0;display:flex;flex-direction:column;
   border-radius:50%;padding:5.2% 10.5% 4.8%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
   transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
-/* Einzelaufgabe: runder Mond (nicht flache Linse), groß genug dass der Planet nicht wie eine Kuppe darüber lugt. */
 /* Folio: große Lese-/Schreibansicht im selben Raum, Scheibe tritt weiter nach vorn. */
 .ws-surface--folio{width:min(1180px,calc(100% - 36px));top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);padding:4.2% 9% 4%;border-radius:42% / 46%}
 .ws-surface--folio .ws-face{border-radius:42% / 46%}
 .ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:42% / 46%}
 .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:17px;line-height:1.75;padding:10px 28px 16px;max-width:720px;margin:0 auto;width:100%}
 .ws-surface--folio .ws-head{width:min(100%,720px);margin-bottom:10px}
-.ws-surface--task{width:min(560px,calc(100% - 80px));aspect-ratio:1/1;height:auto;top:50%;bottom:auto;translate:-50% -54%;
-  max-height:min(560px,calc(100% - var(--ws-bottom,410px) - 64px));padding:14% 12% 12%;justify-content:center}
+/* Einzelaufgabe: runder Mond fest über dem Dock, nie in den Glow. */
+.ws-surface--task{width:min(520px,calc(100% - 80px));aspect-ratio:1/1;height:auto;top:auto;bottom:calc(var(--ws-bottom,410px) + 28px);translate:-50% 0;
+  max-height:min(520px,calc(100% - var(--ws-bottom,410px) - 100px));padding:14% 12% 12%;justify-content:center}
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
 .ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
@@ -134,7 +134,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-surface--folio{width:calc(100% - 16px);top:40px;bottom:72px;padding:16px 14px 18px;border-radius:28px}
   .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:28px}
   .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:16px;padding:6px 10px 10px;max-width:none}
-  .ws-surface--task{width:min(92vw,420px);aspect-ratio:1/1;height:auto;top:46%;bottom:auto;translate:-50% -50%;max-height:min(420px,62vh);padding:16% 12% 12%;border-radius:50%}
+  .ws-surface--task{width:min(92vw,420px);aspect-ratio:1/1;height:auto;top:auto;bottom:96px;translate:-50% 0;max-height:min(420px,58vh);padding:16% 12% 12%;border-radius:50%}
   .ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
   .ws-desk{grid-template-columns:1fr;gap:14px;overflow:auto}
   .ws-facts{grid-template-columns:1fr 1fr}
@@ -165,7 +165,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-col h3{margin-bottom:4px}.ws-row{padding:8px 10px;gap:8px}
   .ws-row--doc b,.ws-row__t{font-size:14px}
   .ws-new{padding-top:6px;gap:8px}
-  .ws-surface--task{width:min(94vw,340px);max-height:min(340px,58vh);padding:18% 10% 12%}
+  .ws-surface--task{width:min(94vw,340px);top:auto;bottom:80px;translate:-50% 0;max-height:min(340px,52vh);padding:18% 10% 12%}
   .ws-task__title{font-size:18px}.ws-facts{gap:6px 18px;grid-template-columns:1fr}
   .ws-doc__read,.ws-doc__body{padding:4px 8px 8px;font-size:15px}
 }
