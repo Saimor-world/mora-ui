@@ -1,7 +1,7 @@
 'use client';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { MoraMark } from '@/components/world/MoraSpirit';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
@@ -134,7 +134,11 @@ export function OsShell({ preview }: { preview: boolean }) {
   }, [setPaletteOpen, setMoraOpen, setShortcutsOpen, dockItems, navigate]);
 
   const active = getFeature(activeFeatureId) || FEATURE_MANIFESTS[0];
-  const ActiveSurface = lazyFor(active);
+  // Ein Raum: beim Wechsel bleibt die alte Fläche stehen, bis die neue geladen ist (kein Lade-Blitz mitten im Flug).
+  const [shownId, setShownId] = useState(active.id);
+  useEffect(() => { if (shownId !== active.id) startTransition(() => setShownId(active.id)); }, [active.id, shownId]);
+  const surface = getFeature(shownId) || active;
+  const ActiveSurface = lazyFor(surface);
   const online = health.data?.state === 'online';
   const atmosphere = active.atmosphere ?? 'calm';
 
@@ -180,7 +184,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
-      <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
+      <div className="os-shell" data-place={surface.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} look={look} />
 
         <main className="os-shell__main" id="os-main">
@@ -202,8 +206,8 @@ export function OsShell({ preview }: { preview: boolean }) {
           <DemoBanner />
           {trayOpen ? <NotificationTray onClose={closeTray} /> : null}
           <div className="os-shell__content">
-            <FeatureBoundary featureId={active.id}>
-              <Suspense fallback={<Loading label={`${active.title} wird geladen`} lines={5} />}>
+            <FeatureBoundary featureId={surface.id}>
+              <Suspense fallback={<Loading label={`${surface.title} wird geladen`} lines={5} />}>
                 <ActiveSurface navigate={navigate} preview={preview} />
               </Suspense>
             </FeatureBoundary>

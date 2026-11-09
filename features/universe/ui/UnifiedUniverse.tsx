@@ -435,10 +435,57 @@ export function UnifiedUniverse({
   }, [activeDeptIncidents]);
 
   // Von Home kommend: der angeflogene Planet ist sofort offen (vorher landete der Klick in der Übersicht).
+  const [fromHome, setFromHome] = useState(false);
   useEffect(() => {
     const t = useUniverseFocus.getState().take();
-    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.moonId ?? null); }
+    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.moonId ?? null); setFromHome(t.from === 'home'); }
   }, []);
+
+  // Leise Zeichen auf den Monden: überfällige Aufgaben dieses Ordners (folder_id), offene Nachtwache an einem seiner Einträge (node_id).
+  const moonMarks = useMemo(() => {
+    const map = new Map<string, { overdue: number; watch: boolean }>();
+    if (!planet) return map;
+    const open = activeDeptIncidents.filter((i) => !i.acked);
+    planet.moons.forEach((m) => {
+      const ids = new Set(m.files.map((f) => f.id));
+      const overdue = (snapshot?.tasks?.overdue ?? []).filter((t) => t.folder_id === m.id).length;
+      const watch = open.some((i) => (i.node_id && ids.has(i.node_id)) || (i.relatedNodeIds ?? []).some((n) => ids.has(n)));
+      if (overdue || watch) map.set(m.id, { overdue, watch });
+    });
+    return map;
+  }, [planet, snapshot?.tasks, activeDeptIncidents]);
+
+  // Rückflug = Umkehr des Anflugs: Monde ziehen sich zurück, dann fährt die Kamera hinaus –
+  // nach Home, wenn der Flug dort begann, sonst in die Universe-Übersicht.
+  const [leaving, setLeaving] = useState(false);
+  const [backFrom, setBackFrom] = useState<string | null>(null);
+  const flyBack = () => {
+    if (!planetId || leaving) return;
+    const id = planetId;
+    if (motionReduced) {
+      if (fromHome) { navigate('home'); return; }
+      setPlanetId(null); setMoonId(null); setDeptSheetOpen(false); return;
+    }
+    setMoonId(null); setDeptSheetOpen(false); setLeaving(true);
+    window.setTimeout(() => {
+      if (fromHome) { useUniverseFocus.getState().returnTo(id); navigate('home'); return; }
+      setLeaving(false); setFromHome(false); setPlanetId(null); setBackFrom(id);
+      window.setTimeout(() => setBackFrom(null), 1300);
+    }, 380);
+  };
+  // Universe-Übersicht nach dem Rückflug: der Himmel zoomt von diesem Planeten aus zurück.
+  useEffect(() => {
+    if (!backFrom) return;
+    const raf = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`.ck-scene--system [data-testid="open-${CSS.escape(backFrom)}"] .glass-orb`);
+      const sc = el?.closest('.ck-scene') as HTMLElement | null;
+      if (!el || !sc) return;
+      const r = el.getBoundingClientRect(), q = sc.getBoundingClientRect();
+      sc.style.setProperty('--back-x', `${r.left + r.width / 2 - q.left}px`);
+      sc.style.setProperty('--back-y', `${r.top + r.height / 2 - q.top}px`);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [backFrom]);
 
   // Synchronisiere useNavPos für Dock-Instrumente und Brotkrumen
   const handleOpenPlanet = (id: string) => {
@@ -456,10 +503,25 @@ export function UnifiedUniverse({
   }, [planetId]);
 
   const handleBackToUniverse = () => {
+    if (planetId && !moonId && !deptSheetOpen) { flyBack(); return; }
     setPlanetId(null);
     setMoonId(null);
     setDeptSheetOpen(false);
   };
+  // Esc: erst ein offenes Blatt schließen, sonst zurückfliegen.
+  useEffect(() => {
+    if (!planetId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (moonId) { setMoonId(null); return; }
+      if (deptSheetOpen) { setDeptSheetOpen(false); return; }
+      flyBack();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   useEffect(() => {
     useNavPos.getState().set({
@@ -557,7 +619,7 @@ export function UnifiedUniverse({
               data-testid="world-planet-close"
               aria-label="Zurück zum Universe"
             >
-              <ArrowLeft size={16} /> <span>Universe</span>
+              <ArrowLeft size={16} /> <span>{fromHome ? 'Home' : 'Universe'}</span>
             </button>
           ) : (
             <span>{companyName}</span>
@@ -690,7 +752,7 @@ export function UnifiedUniverse({
       ) : null}
 
       {/* Scene canvas */}
-      <div className={`ck-scene ck-scene--${sceneMode}`}>
+      <div className={`ck-scene ck-scene--${sceneMode}${backFrom ? ' is-back' : ''}`}>
         {sceneMode === 'planet' && planet ? <span className="mora-anchor mora-anchor--planet" data-mora-anchor="planet" aria-hidden="true" /> : null}
         {sceneMode === 'planet' && planet ? (
           <OpenPlanet
@@ -703,6 +765,9 @@ export function UnifiedUniverse({
             activeMoon={moonId}
             onOpenDept={() => setDeptSheetOpen(true)}
             style={planetStyle}
+            moonMarks={moonMarks}
+            colorIndex={planets.findIndex((p) => p.id === planet.id)}
+            leaving={leaving}
           />
         ) : planetStyle === 'pixel' ? (
           <PixelUniverseOverview

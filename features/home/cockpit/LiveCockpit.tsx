@@ -1,9 +1,9 @@
 'use client';
 import { demoCompanyName, useDemoStore } from '@/lib/demo/demoStore';
 import '../cockpit.css';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CockpitWindow } from './Window';
-import { PlanetSystem } from './Scene';
+import { OPEN_PLANET_SIZE, PlanetSystem } from './Scene';
 import { homeMycelium } from '@/lib/universe/homeMycelium';
 import { dayMoonsFor } from '@/lib/universe/dayMoons';
 import { corePost } from '@/lib/api/http';
@@ -173,26 +173,71 @@ export function LiveCockpit({
   // CORE-backed FinderVerse used by Heute and the dock, with the real target ID.
   // Ein Raum: die Kamera fliegt auf den Planeten zu, dann öffnet derselbe Himmel die Abteilung.
   const [dive, setDive] = useState<{ id: string; x: number; y: number; dx: number; dy: number; k: number } | null>(null);
-  const openDepartment = useCallback((id: string) => {
-    if (!planets.some((p) => p.id === id)) return;
-    useUniverseFocus.getState().show({ planetId: id });
+  // Rückflug aus der Abteilung: Home startet nah am Planeten (ohne Übergang) und fährt dann hinaus.
+  // Nur lesen (StrictMode ruft Initialisierer doppelt); verbraucht wird der Rückflug im Effekt unten.
+  const [returning, setReturning] = useState<string | null>(() => useUniverseFocus.getState().returning);
+  const diveFor = useCallback((id: string) => {
     const el = typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`[data-testid="open-${CSS.escape(id)}"] .glass-orb`) : null;
-    const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!el || reduced) { navigate('universe'); return; }
+    if (!el) return null;
     const r = el.getBoundingClientRect();
     const scene = (el.closest('.ck-scene') as HTMLElement | null)?.getBoundingClientRect() ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
     const x = r.left + r.width / 2 - scene.left, y = r.top + r.height / 2 - scene.top;
-    // Ziel = Ort und Größe des offenen Planeten (OpenPlanet: Mitte, 30 % Höhe, 230 px) → nahtlose Übergabe.
+    // Ziel = Ort und Größe des offenen Planeten (OpenPlanet: Mitte, 30 % Höhe) → nahtlose Übergabe.
     el.closest('.ck-planet')?.classList.add('is-dive');
-    setDive({ id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.3 - y, k: 230 / Math.max(24, r.width) });
+    return { el, d: { id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.3 - y, k: OPEN_PLANET_SIZE / Math.max(24, r.width) } };
+  }, []);
+  const openDepartment = useCallback((id: string) => {
+    if (!planets.some((p) => p.id === id)) return;
+    useUniverseFocus.getState().show({ planetId: id, from: 'home' });
+    const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const hit = reduced ? null : diveFor(id);
+    if (!hit) { navigate('universe'); return; }
+    setDive(hit.d);
     // Weiter erst, wenn die Kamera angekommen ist (transitionend), sonst spätestens nach 1,6 s.
-    const sceneEl = el.closest('.ck-scene') as HTMLElement | null;
+    const sceneEl = hit.el.closest('.ck-scene') as HTMLElement | null;
     let done = false;
     const go = () => { if (done) return; done = true; sceneEl?.removeEventListener('transitionend', onEnd); navigate('universe'); };
     const onEnd = (e: TransitionEvent) => { if (e.target === sceneEl && e.propertyName === 'transform') go(); };
     sceneEl?.addEventListener('transitionend', onEnd);
     window.setTimeout(go, 1600);
-  }, [planets, navigate]);
+  }, [planets, navigate, diveFor]);
+  // Die Abteilungen schon im Ruhezustand vorladen, damit der Anflug ohne Ladepause in den Planeten übergeht.
+  useEffect(() => {
+    const t = window.setTimeout(() => { void import('@/features/universe/index').catch(() => undefined); }, 1200);
+    return () => window.clearTimeout(t);
+  }, []);
+  // Rückflug: warten, bis der Himmel vermessen ist (Planet an seinem echten Platz), dann nah ansetzen und hinausfahren.
+  useLayoutEffect(() => {
+    if (!returning) return;
+    useUniverseFocus.getState().takeReturn();
+    let raf = 0, tries = 0, last = '';
+    const settle = () => {
+      const el = document.querySelector<HTMLElement>(`[data-testid="open-${CSS.escape(returning)}"] .glass-orb`);
+      const r = el?.getBoundingClientRect();
+      const key = r ? `${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)}` : '';
+      if (!r || !r.width || key !== last) { last = key; if (++tries < 40) { raf = requestAnimationFrame(settle); return; } }
+      const hit = diveFor(returning);
+      if (!hit) { setReturning(null); return; }
+      setDive(hit.d); // noch mit data-return: ohne Übergang, sieht aus wie die Abteilung
+      // Erst Übergänge wieder einschalten (Bild unverändert), dann im nächsten Bild hinausfahren –
+      // beides in einem Schritt startet in Chrome keinen Übergang.
+      const after2 = (fn: () => void) => { raf = requestAnimationFrame(() => { raf = requestAnimationFrame(fn); }); };
+      after2(() => { flyOut.current = true; setReturning(null); });
+    };
+    raf = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(raf);
+  }, [returning, diveFor]);
+  const flyOut = useRef(false);
+  // Drehpunkt bleibt beim Hinausfahren derselbe, sonst springt das Bild.
+  const lastDive = useRef<{ x: number; y: number } | null>(null);
+  if (dive) lastDive.current = { x: dive.x, y: dive.y };
+  useEffect(() => {
+    if (returning || !flyOut.current) return;
+    flyOut.current = false;
+    let raf = requestAnimationFrame(() => { raf = requestAnimationFrame(() => setDive(null)); });
+    const t = window.setTimeout(() => document.querySelectorAll('.ck-planet.is-dive').forEach((b) => b.classList.remove('is-dive')), 1400);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(t); };
+  }, [returning]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('ort');
@@ -243,7 +288,9 @@ export function LiveCockpit({
       data-phone={phone ? '1' : '0'}
       data-folder="0"
       data-dive={dive ? dive.id : undefined}
-      style={dive ? ({ ['--dive-x' as string]: `${dive.x}px`, ['--dive-y' as string]: `${dive.y}px`, ['--dive-dx' as string]: `${dive.dx}px`, ['--dive-dy' as string]: `${dive.dy}px`, ['--dive-k' as string]: dive.k.toFixed(3) } as React.CSSProperties) : undefined}
+      data-return={returning ? '1' : undefined}
+      style={dive ? ({ ['--dive-x' as string]: `${dive.x}px`, ['--dive-y' as string]: `${dive.y}px`, ['--dive-dx' as string]: `${dive.dx}px`, ['--dive-dy' as string]: `${dive.dy}px`, ['--dive-k' as string]: dive.k.toFixed(3) } as React.CSSProperties)
+        : lastDive.current ? ({ ['--dive-x' as string]: `${lastDive.current.x}px`, ['--dive-y' as string]: `${lastDive.current.y}px` } as React.CSSProperties) : undefined}
     >
       <div className="ck-space" aria-hidden />
       <div className="ck-mist" aria-hidden><i /><i /><i /></div>
@@ -258,6 +305,7 @@ export function LiveCockpit({
             marks={planetMarks}
             company={companyName}
             compact
+            skyScale={2}
             moons={dayMoons}
             threads={threads}
             onTaskDone={onTaskDone}

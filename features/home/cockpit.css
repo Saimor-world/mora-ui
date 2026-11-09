@@ -315,8 +315,7 @@
 
 /* ── Ein Universum (grok/os-ein-universum): leise Zeichen, Kameraflug, Abteilung im selben Raum ── */
 .ck-planet__count{position:absolute;left:calc(50% + var(--orb) * .33);top:calc(6px + var(--orb) * .02);min-width:17px;height:17px;padding:0 5px;border-radius:9px;font:600 10.5px/17px var(--br-font,inherit);text-align:center;color:rgba(18,26,24,.92);background:rgba(236,212,164,.86);box-shadow:0 0 12px rgba(236,200,130,.32);pointer-events:none}
-.ck-planet__ring{position:absolute;left:50%;top:6px;width:calc(var(--orb) + 20px);height:calc(var(--orb) + 20px);margin:-10px 0 0 calc((var(--orb) + 20px) / -2);border-radius:50%;border:1px solid rgba(190,176,255,.34);box-shadow:0 0 22px rgba(170,150,255,.16),inset 0 0 14px rgba(170,150,255,.08);pointer-events:none;animation:ck-ring 7s ease-in-out infinite}
-@keyframes ck-ring{50%{opacity:.5;scale:1.05}}
+.ck-planet__ring{position:absolute;left:50%;top:6px;width:calc(var(--orb) + 20px);height:calc(var(--orb) + 20px);margin:-10px 0 0 calc((var(--orb) + 20px) / -2);border-radius:50%;border:1px solid rgba(190,176,255,.38);box-shadow:0 0 22px rgba(170,150,255,.18),inset 0 0 14px rgba(170,150,255,.08);pointer-events:none}
 
 .ck > .ck-scene,.ck > .ck-mist{transition:transform 1.15s cubic-bezier(.62,0,.24,1),opacity .9s ease,filter 1.15s ease}
 .ck[data-dive] > .ck-scene{transform-origin:var(--dive-x) var(--dive-y);transform:translate(var(--dive-dx),var(--dive-dy)) scale(var(--dive-k))}
@@ -339,5 +338,44 @@
 @media (min-width:821px){.ck[data-folder="1"] .ck-open--orbit{right:440px}.ck[data-folder="1"] .ck-open--orbit .ck-moons{right:0}.ck[data-folder="1"] .ck-open--orbit .ck-horizon__title{right:0}.ck[data-folder="1"] .ck-open--orbit .ck-horizon{left:50%}}
 /* Universe: größere Planeten im Zentrum, frei über MÔRA und dem See */
 @media (min-width:821px){.os-root .ck .ck-sys.ck-sys--big{left:7%;right:7%;top:36px;bottom:440px}}
-.os-root .ck[data-dive] > .ck-scene{transition-property:transform,opacity,filter}
+.os-root .ck[data-dive] > .ck-scene,.os-root .ck[data-view='home'] > .ck-scene{transition-property:transform,opacity,filter}
+.ck[data-view='home'] > .ck-scene{transform-origin:var(--dive-x,50%) var(--dive-y,50%)}
 html[data-dock="c"] .os-root .ck-scene--system .ck-sys.ck-sys--big:not(.ck-sys--strip){top:50px;bottom:420px!important}
+
+/* ── v4: echte Farben auf Home, Abteilungen von innen, Rückflug ── */
+/* Home-Himmel: dieselben Glasfarben wie im Universe, ohne Milchschleier; ruhig, nur größer. */
+.ck-opal--true > img{filter:var(--pf,none) drop-shadow(0 0 12px var(--pg,transparent)) drop-shadow(0 14px 26px rgba(2,8,14,.5))!important}
+.ck-opal--true > .ck-opal__milk{opacity:.22}
+.ck-opal--true > .ck-opal__iris{opacity:.28}
+.ck-opal--true > .ck-opal__spec{opacity:.55}
+.ck-sys--compact .ck-planet[data-depth='far'] .ck-opal--true{filter:brightness(.9)}
+.ck-sys--compact .ck-planet .ck-opal--true{margin-bottom:10px}
+.ck-sys--compact .ck-planet:has(.ck-opal--true) b{font-size:14.5px;opacity:.92!important}
+.ck-sys--compact .ck-planet[data-depth='far']:has(.ck-opal--true) b{opacity:.8!important}
+.ck[data-dive] .ck-sys--compact .ck-planet:has(.ck-opal--true) b{opacity:0!important;transition:none}
+/* Rückflug nach Home: erst nah am Planeten ansetzen (ohne Übergang), dann hinausfahren. */
+.ck[data-return] > .ck-scene,.ck[data-return] > .ck-mist,.ck[data-return] .ck-scene *{transition:none!important}
+.ck[data-return]:not([data-dive]) > .ck-scene{opacity:0}
+.ck .ck-sys--compact .ck-planet[data-depth]{transition:translate .9s cubic-bezier(.2,.7,.2,1),filter .4s,opacity .8s ease .3s}
+.ck:not([data-dive]) .ck-planet b,.ck:not([data-dive]) .ck-planet__count,.ck:not([data-dive]) .ck-planet__ring{transition:opacity .6s ease .75s}
+/* Abteilung von innen: Planet groß in seiner echten Farbe, Ordner als Monde, Einträge als kleine Begleiter. */
+.ck-open--orbit .ck-open__core > .glass-orb{filter:drop-shadow(0 22px 60px rgba(0,0,0,.5))}
+.ck-open--orbit .ck-horizon__title{top:calc(30% + 146px)}
+.ck-moon__body{position:relative;display:block;width:96px;height:96px;margin-bottom:6px}
+.ck-moon__body > .glass-orb{margin:0}
+.ck-moon .ck-planet__ring{top:0}
+.ck-moon .ck-planet__count{top:2px}
+.ck-moon__doc{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;translate:var(--bx) var(--by);
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),rgba(206,230,224,.45) 45%,rgba(120,160,160,.25) 75%);box-shadow:0 0 8px rgba(200,236,226,.25);pointer-events:auto}
+.ck-open--orbit .ck-moon,.ck-open--orbit .ck-open__path,.ck-open--orbit .ck-horizon__title{transition:opacity .34s ease,scale .36s cubic-bezier(.5,0,.75,0)}
+.ck-open--orbit.is-leaving .ck-moon{animation:none;opacity:0!important;scale:.4}
+.ck-open--orbit.is-leaving .ck-open__path,.ck-open--orbit.is-leaving .ck-horizon__title{opacity:0}
+/* Rückflug in die Universe-Übersicht: der Himmel kommt vom Planeten her zurück. */
+.ck-scene.is-back .ck-sys{transform-origin:var(--back-x,50%) var(--back-y,30%);animation:ck-flyback 1.1s cubic-bezier(.2,.7,.2,1) both}
+@keyframes ck-flyback{from{scale:1.9;opacity:0}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ck-open--orbit .ck-moon{transition:none}.ck-scene.is-back .ck-sys{animation:none}}
+/* MÔRA begleitet in die Abteilung: neben dem Planeten, außerhalb der Mondbahn. */
+.ck-universe-unified .ck-scene--planet .mora-anchor--planet{right:auto;left:calc(50% + 190px);top:calc(30% + 64px)}
+/* Home (Brücke): die unsichtbare Textfläche oben fängt keine Klicks mehr ab – die größeren Planeten liegen darunter. */
+html[data-dock='c'] .ck[data-view='home'] .ck-panel{pointer-events:none}
+html[data-dock='c'] .ck[data-view='home'] .ck-panel :is(button,a,input,textarea,select,[role='button']){pointer-events:auto}
