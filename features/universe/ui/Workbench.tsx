@@ -187,12 +187,11 @@ export function WorkSurface({
   useLayoutEffect(() => {
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
-      const ask = document.querySelector('.bridge__ask')?.getBoundingClientRect()
-        || document.querySelector('.bridge__heart')?.getBoundingClientRect();
-      if (!bridge || !ask || bridge.top < 300) { setRest(null); return; }
-      // Klein neben dem Frag-MÔRA-Feld, über der Dock-Linie – links vom Ask, weg von Team/Als-nächstes.
-      const x = Math.round(ask.left - 44);
-      const y = Math.round(bridge.top - 118);
+      const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
+      if (!bridge || bridge.top < 300) { setRest(null); return; }
+      // Rechts außen im leeren Himmel: über den Karten, rechts neben Scheibe/Folio (kein Frei-Text, kein Folio-Rand).
+      const x = Math.round(Math.min(window.innerWidth - 52, Math.max((surface?.right ?? bridge.right) + 36, window.innerWidth - 110)));
+      const y = Math.round(Math.min(bridge.top - 110, (surface?.bottom ?? bridge.top) - 24));
       setRest({ x, y });
     };
     place();
