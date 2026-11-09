@@ -7,7 +7,10 @@ import { useReducedMotion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
-import { DepartmentSheet, FolderSheet } from '@/features/home/cockpit/Sheets';
+import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
+import { StationPlanet, WorkSurface, type Origin } from '@/features/universe/ui/Workbench';
+import { deptWork } from '@/lib/universe/deptWork';
+import { localISO } from '@/lib/lea/world';
 import { CockpitWindow } from '@/features/home/cockpit/Window';
 import { deriveLiveAttention, finderToCockpitPlanets } from '@/features/home/cockpit/coreAdapter';
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
@@ -290,6 +293,9 @@ export function UnifiedUniverse({
 
   const [planetId, setPlanetId] = useState<string | null>(initialPlanetId ?? null);
   const [moonId, setMoonId] = useState<string | null>(null);
+  // Arbeitsplatz: welches Objekt gerade nah ist (Mond oder einzelne Aufgabe) und von wo es kam.
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [origin, setOrigin] = useState<Origin | null>(null);
   const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [mobileBriefingOpen, setMobileBriefingOpen] = useState(false);
@@ -429,6 +435,30 @@ export function UnifiedUniverse({
     return filterIncidentsForDepartment(nightwatchIncidents, planet.id);
   }, [nightwatchIncidents, planet]);
 
+  // Was in dieser Abteilung zu tun ist – aus useWorld (dieselben /v3/tasks- und Ordner-Daten wie Heute und Finder).
+  const work = useMemo(() => deptWork(planet, world.tasks, localISO(new Date())), [planet, world.tasks]);
+  const spaceName = useMemo(() => {
+    const f = planet ? world.finder.find((p) => p.id === planet.id) : null;
+    const names = Array.from(new Set((f?.spaces ?? []).map((sp) => sp.name).filter(Boolean)));
+    return names.length === 1 ? names[0] : null;
+  }, [planet, world.finder]);
+  const workTask = useMemo(() => {
+    if (!taskId) return null;
+    let hit = work.loose.find((t) => t.id === taskId) ?? null;
+    work.moons.forEach((w) => { hit = hit ?? [...w.open, ...w.done].find((t) => t.id === taskId) ?? null; });
+    return hit;
+  }, [taskId, work]);
+  const watchMoons = useMemo(() => {
+    const set = new Set<string>();
+    if (!planet) return set;
+    const open = activeDeptIncidents.filter((i) => !i.acked);
+    planet.moons.forEach((m) => {
+      const ids = new Set(m.files.map((f) => f.id));
+      if (open.some((i) => (i.node_id && ids.has(i.node_id)) || (i.relatedNodeIds ?? []).some((n) => ids.has(n)))) set.add(m.id);
+    });
+    return set;
+  }, [planet, activeDeptIncidents]);
+
   const incidentPanels = useMemo(() => {
     if (activeDeptIncidents.length === 0) return [];
     return nightwatchIncidentsToIncidentStatusPanels(activeDeptIncidents);
@@ -466,7 +496,7 @@ export function UnifiedUniverse({
       if (fromHome) { navigate('home'); return; }
       setPlanetId(null); setMoonId(null); setDeptSheetOpen(false); return;
     }
-    setMoonId(null); setDeptSheetOpen(false); setLeaving(true);
+    setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setLeaving(true);
     window.setTimeout(() => {
       if (fromHome) { useUniverseFocus.getState().returnTo(id); navigate('home'); return; }
       setLeaving(false); setFromHome(false); setPlanetId(null); setBackFrom(id);
@@ -515,7 +545,7 @@ export function UnifiedUniverse({
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (moonId) { setMoonId(null); return; }
+      if (moonId || taskId) { setMoonId(null); setTaskId(null); return; }
       if (deptSheetOpen) { setDeptSheetOpen(false); return; }
       flyBack();
     };
@@ -598,7 +628,8 @@ export function UnifiedUniverse({
       data-view="universe"
       data-style={planetStyle}
       data-phone={phone ? '1' : '0'}
-      data-folder={moon ? '1' : '0'}
+      data-folder="0"
+      data-work={(moon || workTask) && planet ? '1' : undefined}
     >
       {/* Background: PixelSky in pixel mode, ck-space in glass mode */}
       {planetStyle === 'pixel' ? (
@@ -754,7 +785,20 @@ export function UnifiedUniverse({
       {/* Scene canvas */}
       <div className={`ck-scene ck-scene--${sceneMode}${backFrom ? ' is-back' : ''}`}>
         {sceneMode === 'planet' && planet ? <span className="mora-anchor mora-anchor--planet" data-mora-anchor="planet" aria-hidden="true" /> : null}
-        {sceneMode === 'planet' && planet ? (
+        {sceneMode === 'planet' && planet && planetStyle !== 'pixel' ? (
+          <StationPlanet
+            planet={planet}
+            work={work}
+            space={spaceName}
+            colorIndex={planets.findIndex((p) => p.id === planet.id)}
+            activeMoon={moonId}
+            leaving={leaving}
+            watch={watchMoons}
+            onMoon={(id, o) => { setOrigin(o); setTaskId(null); setMoonId(id); setDeptSheetOpen(false); }}
+            onTask={(id, o) => { setOrigin(o); setMoonId(null); setTaskId(id); setDeptSheetOpen(false); }}
+            onOpenDept={() => setDeptSheetOpen(true)}
+          />
+        ) : sceneMode === 'planet' && planet ? (
           <OpenPlanet
             planet={planet}
             showMoons={true}
@@ -797,11 +841,22 @@ export function UnifiedUniverse({
       <CockpitWindow />
 
       {/* Sheets: Folder (Files) & Department (Tasks + IncidentStatusPanels) */}
-      {moon && planet ? (
-        <FolderSheet
-          moon={moon}
-          planetTitle={planet.title}
-          onClose={() => setMoonId(null)}
+      {(moon || workTask) && planet ? (
+        <WorkSurface
+          key={moon ? `m-${moon.id}` : `t-${workTask?.id}`}
+          planet={planet}
+          moon={moon ?? (workTask?.folderId ? planet.moons.find((m) => m.id === workTask.folderId) ?? null : null)}
+          work={work}
+          task={moon ? null : workTask}
+          origin={origin}
+          companyId={companyId}
+          owner={firstName(user) || ''}
+          colorIndex={planets.findIndex((p) => p.id === planet.id)}
+          onClose={() => {
+            const back = moonId;
+            setMoonId(null); setTaskId(null);
+            if (back) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-testid="moon-${CSS.escape(back)}"]`)?.focus({ preventScroll: true }));
+          }}
         />
       ) : null}
 
