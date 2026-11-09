@@ -2,11 +2,13 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { corePost } from '@/lib/api/http';
+import { invalidateToday } from '@/lib/os/useScopedToday';
 import { localISO, type WorldTask } from './world';
 
 /**
  * Aufgaben abhaken, zurücknehmen und für morgen anlegen – über die bestehenden
  * CORE-Endpunkte POST /v3/tasks/{id} und POST /v3/tasks. Optimistisch, bei Fehler zurück.
+ * Nach jeder Änderung wird auch der Heute-Schnappschuss (Dock: Heute-Zahl) neu geladen.
  */
 export function useDayActions(companyId: string | null) {
   const qc = useQueryClient();
@@ -25,6 +27,7 @@ export function useDayActions(companyId: string | null) {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { status });
       if (!res) throw new Error('no response');
       qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
       return true;
     } catch {
       qc.setQueryData(key, prev);
@@ -41,6 +44,7 @@ export function useDayActions(companyId: string | null) {
     if (!created?.id) return false;
     patch((l) => [...l, created]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -52,6 +56,7 @@ export function useDayActions(companyId: string | null) {
     if (!created?.id) return false;
     patch((l) => [...l, created]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -64,6 +69,7 @@ export function useDayActions(companyId: string | null) {
     if (!upd || upd.folder_id !== folderId) return false;
     patch((l) => l.map((t) => (t.id === task.id ? { ...t, folder_id: folderId } : t)));
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -75,6 +81,7 @@ export function useDayActions(companyId: string | null) {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, change);
       if (!res) throw new Error('no response');
       qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
       return true;
     } catch {
       qc.setQueryData(key, prev);
