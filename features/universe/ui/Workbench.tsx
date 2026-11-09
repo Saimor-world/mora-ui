@@ -427,14 +427,17 @@ function TaskDesk({ task, planet, folder, owner, companyId, onBack, backLabel }:
   const [title, setTitle] = useState(task.title);
   useEffect(() => setTitle(task.title), [task.title]);
   const commitTitle = () => { const v = title.trim(); if (v && v !== task.title) void update(task.raw, { title: v }); else setTitle(task.title); };
+  const crumb = [clean(planet.title), folder ? clean(folder.title) : null].filter(Boolean).join(' · ');
   return (
     <>
       <Head onBack={onBack} backLabel={backLabel}>
-        <p className="ws-head__ctx">{clean(planet.title)}{folder ? ` · ${clean(folder.title)}` : ''}</p>
+        <p className="ws-head__ctx" title={crumb}>{crumb}</p>
       </Head>
       <div className="ws-task" data-done={task.done ? '1' : undefined} data-overdue={task.overdue ? '1' : undefined} data-testid="work-task-view">
         <button type="button" className="ws-check ws-check--big" aria-pressed={task.done} aria-label={task.done ? 'Wieder öffnen' : 'Erledigen'} onClick={() => void setDone(task.raw, !task.done)} data-testid="work-task-done">{task.done ? <Check size={20} strokeWidth={2.4} /> : null}</button>
-        <input className="ws-task__title" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} aria-label="Aufgabe" data-testid="work-task-title" />
+        <textarea className="ws-task__title" value={title} rows={2} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
+          aria-label="Aufgabe" data-testid="work-task-title" />
       </div>
       <TaskFacts task={task} owner={owner} companyId={companyId} />
     </>
