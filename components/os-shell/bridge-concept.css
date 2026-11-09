@@ -689,7 +689,7 @@ html[data-os-work] .bridge__day,
 html[data-os-work] .bridge__reflect,
 html[data-os-work] .bridge__sparkle,
 html[data-os-work] .bridge__ripple {
-  opacity: 0;
+  opacity: 0 !important;
   transform: translateY(48px);
   pointer-events: none;
   transition: opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);

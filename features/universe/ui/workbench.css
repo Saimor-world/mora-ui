@@ -54,12 +54,7 @@ html[data-os-work="folio"] .bridge__inst{
 }
 html[data-os-work="folio"] .bridge__beam{opacity:.03}
 html[data-os-work="folio"] .bridge__heart .jade-mora__glow{opacity:.15}
-html[data-os-work="folio"] .bridge__water,
-html[data-os-work="folio"] .bridge__reflect,
-html[data-os-work="folio"] .bridge__sparkle,
-html[data-os-work="folio"] .bridge__ripple,
-html[data-os-work="folio"] .bridge__day{opacity:.12; transition:opacity .45s ease}
-html[data-os-work="folio"] .bridge__hull{opacity:.22; filter:none}
+/* B: Dock-Kollaps in bridge-concept.css übernimmt Oberteil; keine Opacity-Konkurrenz */
 html[data-os-work] .bridge__mora:not([data-flying="true"]),
 html[data-os-work] .bridge__mora-reflect,
 html[data-os-work] .bridge__heart .jade-mora__glow{
@@ -156,13 +151,7 @@ html[data-os-work="task"] .bridge__inst{
   opacity:0; transform:translateY(32px); pointer-events:none;
   transition:opacity .45s ease, transform .45s ease;
 }
-html[data-os-work="task"] .bridge__water,
-html[data-os-work="task"] .bridge__reflect,
-html[data-os-work="task"] .bridge__sparkle,
-html[data-os-work="task"] .bridge__ripple,
-html[data-os-work="task"] .bridge__day{opacity:.12; transition:opacity .45s ease}
-html[data-os-work="task"] .bridge__hull{opacity:.35; filter:none}
-html[data-os-work="task"] .bridge__beam{opacity:.03}
+/* B: task-Oberteil via Dock-Kollaps */
 
 /* Listenansicht: dieselbe gerade Fläche wie Folio – kein Oval, scrollbare 25 Aufgaben. */
 .ws-surface--full{
@@ -187,13 +176,7 @@ html[data-os-work="full"] .bridge__inst{
   opacity:0; transform:translateY(32px); pointer-events:none;
   transition:opacity .45s ease, transform .45s ease;
 }
-html[data-os-work="full"] .bridge__water,
-html[data-os-work="full"] .bridge__reflect,
-html[data-os-work="full"] .bridge__sparkle,
-html[data-os-work="full"] .bridge__ripple,
-html[data-os-work="full"] .bridge__day{opacity:.1; transition:opacity .45s ease}
-html[data-os-work="full"] .bridge__hull{opacity:.2; filter:none}
-html[data-os-work="full"] .bridge__beam{opacity:.03}
+/* B: full-Oberteil via Dock-Kollaps */
 .ck-universe-unified[data-work="full"] > .ck-scene{filter:blur(5px) brightness(.28) saturate(.65); transform:none}
 /* kein zoom auf .bridge__mora – bricht die Dock-Flugmathematik; Parken außerhalb oder goHome */
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
