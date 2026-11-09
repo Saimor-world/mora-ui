@@ -188,9 +188,9 @@ export function WorkSurface({
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
       if (!bridge || bridge.top < 300) { setRest(null); return; }
-      // Mitte der Figur (~scale .7 → ~90px) bleibt über dem Dock; weit rechts, weg von Team/Als-nächstes.
-      const x = Math.round(Math.min(window.innerWidth - 64, bridge.right - 36));
-      const y = Math.round(bridge.top - 56);
+      // Figur (~scale .7 → ~90px) komplett über der Dock-Linie; weit rechts im leeren Himmel, unterhalb der Scheibe.
+      const x = Math.round(Math.min(window.innerWidth - 56, bridge.right - 28));
+      const y = Math.round(bridge.top - 100);
       setRest({ x, y });
     };
     place();
