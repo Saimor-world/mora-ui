@@ -182,6 +182,8 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
+  const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
+
   // MÔRA: außerhalb der Lesefläche parkieren (nie über Plane/Topbar/Dock). Ohne Dock-Dateien.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
@@ -190,8 +192,9 @@ export function WorkSurface({
         ?? document.querySelector('.bridge')?.getBoundingClientRect();
       const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
       if (!hull || hull.top < 200) { setRest(null); return; }
-      const folio = document.documentElement.getAttribute('data-os-work') === 'folio';
-      const half = folio ? 40 : 56; // folio: etwas kleinerer Anker → Figur wirkt ruhiger
+      const work = size === 'folio' || size === 'task';
+      // Visuelle Halbachse der fliegenden Figur (~scale .7 × zoom .72 × ~150px) + Luft
+      const half = work ? 52 : 56;
       const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
       const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
       const topClear = Math.max(topbar?.bottom ?? 52, topRight?.bottom ?? 0) + half + 10;
@@ -203,43 +206,57 @@ export function WorkSurface({
       if (surface) {
         const rightGap = window.innerWidth - surface.right;
         const leftGap = surface.left;
-        if (rightGap >= half * 2 + 8) {
-          x = Math.min(edgeR, surface.right + half + 10);
+        const need = half * 2 + 12;
+        if (rightGap >= need) {
+          x = Math.min(edgeR, surface.right + half + 14);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
-        } else if (leftGap >= half * 2 + 8) {
-          x = Math.max(edgeL, surface.left - half - 10);
+        } else if (leftGap >= need) {
+          x = Math.max(edgeL, surface.left - half - 14);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
         } else {
-          // Kein Seitenraum: zwischen Topbar und Plane-Oberkante, rechts außen.
+          // Kein Seitenraum: über der Plane, rechts – Figur darf die Fläche nicht schneiden.
           x = edgeR;
-          y = Math.min(Math.max(topClear, (topClear + Math.max(topClear, surface.top - half - 8)) / 2), Math.max(topClear, surface.top - half - 8));
+          const above = surface.top - half - 14;
+          y = above >= topClear ? above : topClear;
         }
-        // Harte Kollisionsprüfung gegen die Plane
-        const overlaps =
-          x + half > surface.left + 2 && x - half < surface.right - 2 &&
-          y + half > surface.top + 2 && y - half < surface.bottom - 2;
-        if (overlaps) {
+        // Harte Kollisionsprüfung – solange Überlapper, nach oben/außen schieben.
+        const hits = () => (
+          x + half > surface.left + 1 && x - half < surface.right - 1 &&
+          y + half > surface.top + 1 && y - half < surface.bottom - 1
+        );
+        if (hits()) {
           x = edgeR;
-          y = Math.max(topClear, Math.min(surface.top - half - 12, bottomClear));
+          y = Math.max(topClear, surface.top - half - 14);
+        }
+        if (hits()) {
+          x = edgeL;
+          y = Math.max(topClear, surface.top - half - 14);
+        }
+        if (hits()) {
+          // Kein freier Himmel: Figur bleibt ruhig im Dock (nicht über der Lesefläche).
+          setRest(null);
+          useMoraPresence.getState().goHome();
+          return;
         }
       } else {
         x = edgeR;
         y = Math.min(Math.max((topClear + bottomClear) / 2, topClear), bottomClear);
       }
       setRest({ x: Math.round(Math.min(edgeR, Math.max(edgeL, x))), y: Math.round(y) });
+      useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
     };
     const raf = requestAnimationFrame(() => place());
     const raf2 = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        useMoraPresence.getState().goTo('[data-mora-anchor="work"]', 'work');
-      });
+      requestAnimationFrame(() => { place(); });
     });
     window.addEventListener('resize', place);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => place()) : null;
     const surf = document.querySelector('.ws-surface');
     if (surf && ro) ro.observe(surf);
-    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.removeEventListener('resize', place); ro?.disconnect(); };
-  }, [view]);
+    const t = window.setTimeout(place, 50);
+    const t2 = window.setTimeout(place, 320);
+    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.clearTimeout(t); window.clearTimeout(t2); window.removeEventListener('resize', place); ro?.disconnect(); };
+  }, [view, size]);
 
   const close = useCallback(() => {
     flushDoc.current?.();
@@ -276,7 +293,6 @@ export function WorkSurface({
   }, [work]);
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
-  const size = view.kind === 'task' ? 'task' : view.kind === 'doc' && view.folio ? 'folio' : 'full';
   // Lesefläche: Unterkante immer über Hull-Oberkante (getBoundingClientRect + ResizeObserver), 16px Luft.
   useLayoutEffect(() => {
     const el = ref.current;
@@ -314,7 +330,7 @@ export function WorkSurface({
   }, [size]);
 
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-os-work', size);
     return () => { root.removeAttribute('data-os-work'); };

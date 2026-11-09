@@ -155,7 +155,11 @@ html[data-os-work="task"] .bridge__hull{opacity:.35; filter:none}
 html[data-os-work="task"] .bridge__beam{opacity:.03}
 html[data-os-work="folio"] .bridge__mora[data-flying="true"],
 html[data-os-work="task"] .bridge__mora[data-flying="true"]{
-  zoom:.72;
+  zoom:.58;
+}
+@media (max-width:1100px){
+  html[data-os-work="folio"] .bridge__mora[data-flying="true"],
+  html[data-os-work="task"] .bridge__mora[data-flying="true"]{ zoom:.48; }
 }
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
@@ -254,10 +258,15 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
   .ws-facts{grid-template-columns:1fr 1fr}
   .ws-moon .ws-moon__btn{min-width:90px}
 }
-/* 1280: Scheibe etwas schmaler. */
+/* 1280: Scheibe etwas schmaler; Folio behält gerade Lesefläche. */
 @media (max-width:1280px) and (min-width:1025px){
   .ws-surface{width:min(980px,calc(100% - 160px));padding:5% 10% 4.6%}
-  
+  .ws-surface--folio{
+    width:min(1180px,calc(100% - 48px));
+    padding:24px 32px;
+    border-radius:8px;
+    top:var(--ws-top,52px); bottom:var(--ws-bottom,220px);
+  }
   .ws-surface--task{width:min(720px,calc(100% - 48px));max-height:calc(100% - var(--ws-top,64px) - var(--ws-bottom,220px));padding:24px 32px;border-radius:8px}
 }
 /* 1024: zwei Spalten bleiben, kompakter. */
