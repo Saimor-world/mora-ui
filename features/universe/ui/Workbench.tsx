@@ -1,6 +1,7 @@
 'use client';
 import './workbench.css';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, FileText, StickyNote } from 'lucide-react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
@@ -178,6 +179,20 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
+  // MÔRA während der Arbeit: sie sinkt klein in den Dock-Hügel (die eine MÔRA fliegt zu diesem Anker), nie auf die Scheibe.
+  const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
+      const heart = document.querySelector('.bridge__heart')?.getBoundingClientRect();
+      if (!bridge || !heart || bridge.top < 300) { setRest(null); return; }
+      setRest({ x: Math.round(heart.left + heart.width / 2), y: Math.round(bridge.top + 36) });
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, []);
+
   const close = useCallback(() => {
     flushDoc.current?.();
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { onClose(); return; }
@@ -229,7 +244,7 @@ export function WorkSurface({
         <img className="ws-face__glass" src={`/universe/glass/${glassVariantFor(clean(planet.title))}.png`} alt="" draggable={false} />
         <i className="ws-face__shade" />
       </span>
-      <span className="mora-anchor mora-anchor--work" data-mora-anchor="work" aria-hidden />
+      {rest ? createPortal(<span className="mora-anchor mora-anchor--rest" data-mora-anchor="work" style={{ left: rest.x, top: rest.y }} aria-hidden />, document.body) : null}
       {view.kind === 'moon' && moon ? (
         <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId} owner={owner} expanded={view.task ?? null}
           onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView(view.task === id ? { kind: 'moon' } : { kind: 'moon', task: id })} />

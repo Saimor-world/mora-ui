@@ -45,8 +45,7 @@
 .ws-surface[data-phase="from"] .ws-face__glass,.ws-surface[data-phase="out"] .ws-face__glass{opacity:1}
 .ws-surface[data-phase="from"] .ws-face__shade,.ws-surface[data-phase="out"] .ws-face__shade{opacity:0}
 .ws-surface::after{content:"";position:absolute;inset:-6%;z-index:-2;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,var(--pg,rgba(150,210,190,.3)),transparent 72%);opacity:.22}
-.ws-surface > .mora-anchor--work{position:absolute;left:calc(100% + 18px);top:50%;margin-top:-60px;opacity:1!important;transition:none}
-@media (max-width:1300px){.ws-surface > .mora-anchor--work{display:none}}
+span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1px 0 0 -1px;pointer-events:none}
 .ws-head{display:flex;align-items:center;gap:14px;margin:0 auto 16px;min-height:42px;width:min(100%,560px);text-align:center}
 .ws-head__t{padding-right:50px}
 .ws-head__orb{flex:none}
