@@ -188,9 +188,26 @@ export function WorkSurface({
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
+      if (phase !== 'in') return;
       const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
         ?? document.querySelector('.bridge')?.getBoundingClientRect();
-      const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
+      const surfaceEl = document.querySelector('.ws-surface') as HTMLElement | null;
+      // getBoundingClientRect während Anflug ist transformiert – Layout-Box nutzen.
+      let surface: DOMRect | null = null;
+      if (surfaceEl) {
+        const r = surfaceEl.getBoundingClientRect();
+        const transformed = surfaceEl.getAttribute('data-phase') !== 'in';
+        if (transformed) {
+          const top = parseFloat(getComputedStyle(surfaceEl).top) || r.top;
+          const bottomClear = parseFloat(surfaceEl.style.getPropertyValue('--ws-bottom')) || 0;
+          const width = surfaceEl.offsetWidth;
+          const left = (window.innerWidth - width) / 2;
+          const height = size === 'task' ? surfaceEl.offsetHeight : Math.max(0, window.innerHeight - top - bottomClear);
+          surface = { left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON() {} } as DOMRect;
+        } else {
+          surface = r;
+        }
+      }
       if (!hull || hull.top < 200) { setRest(null); return; }
       const work = size === 'folio' || size === 'task';
       // Visuelle Halbachse der fliegenden Figur (~scale .7 × zoom .72 × ~150px) + Luft
@@ -255,7 +272,7 @@ export function WorkSurface({
     const t = window.setTimeout(place, 50);
     const t2 = window.setTimeout(place, 320);
     return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); window.clearTimeout(t); window.clearTimeout(t2); window.removeEventListener('resize', place); ro?.disconnect(); };
-  }, [view, size]);
+  }, [view, size, phase]);
 
   useLayoutEffect(() => {
     if (!rest) return;
