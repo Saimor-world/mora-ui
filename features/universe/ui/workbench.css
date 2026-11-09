@@ -153,14 +153,7 @@ html[data-os-work="task"] .bridge__ripple,
 html[data-os-work="task"] .bridge__day{opacity:.12; transition:opacity .45s ease}
 html[data-os-work="task"] .bridge__hull{opacity:.35; filter:none}
 html[data-os-work="task"] .bridge__beam{opacity:.03}
-html[data-os-work="folio"] .bridge__mora[data-flying="true"],
-html[data-os-work="task"] .bridge__mora[data-flying="true"]{
-  zoom:.58;
-}
-@media (max-width:1100px){
-  html[data-os-work="folio"] .bridge__mora[data-flying="true"],
-  html[data-os-work="task"] .bridge__mora[data-flying="true"]{ zoom:.48; }
-}
+/* kein zoom auf .bridge__mora – bricht die Dock-Flugmathematik; Parken außerhalb oder goHome */
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
 .ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
