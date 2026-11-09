@@ -54,6 +54,10 @@
 .ws-row--doc span{font-size:12px;color:var(--mute,rgba(214,232,226,.55))}
 .ws-row--doc:hover,.ws-row--doc:focus-visible,.ws-row--task:hover{background:rgba(255,255,255,.045)}
 .ws-row__t{flex:1;min-width:0;border:0;background:none;color:inherit;font:inherit;font-size:15px;text-align:left;cursor:pointer;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-row--task{flex-wrap:wrap}
+.ws-row__more{flex-basis:100%;padding:12px 0 6px 32px}
+.ws-row__more .ws-facts{gap:8px 36px}
+.ws-row--task:has(.ws-row__more){background:rgba(255,255,255,.045)}
 .ws-row--task[data-done] .ws-row__t{text-decoration:line-through;text-decoration-color:rgba(214,232,226,.4);color:rgba(214,232,226,.45)}
 .ws-due{flex:none;font-size:12.5px;color:rgba(214,232,226,.6);font-variant-numeric:tabular-nums}
 .ws-row--task[data-overdue] .ws-due{color:rgba(240,190,120,.95)}

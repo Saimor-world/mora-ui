@@ -527,10 +527,11 @@ export function UnifiedUniverse({
   // Die eine MÔRA begleitet in den offenen Planeten und kehrt danach in den Dock zurück.
   useEffect(() => {
     const presence = useMoraPresence.getState();
-    if (planetId) presence.goTo('[data-mora-anchor="planet"]', 'planet');
+    // Während du an etwas arbeitest, wartet sie im Dock statt über der Arbeitsfläche zu schweben.
+    if (planetId && !moonId && !taskId) presence.goTo('[data-mora-anchor="planet"]', 'planet');
     else presence.goHome();
     return () => useMoraPresence.getState().goHome();
-  }, [planetId]);
+  }, [planetId, moonId, taskId]);
 
   const handleBackToUniverse = () => {
     if (planetId && !moonId && !deptSheetOpen) { flyBack(); return; }

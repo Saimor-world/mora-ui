@@ -35,7 +35,7 @@ function moonSlots(n: number) {
   const out: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
     const isLeft = i % 2 === 0, k = Math.floor(i / 2);
-    const deg = isLeft ? spread(k, left, 208, 158) : spread(k, right, -28, 22);
+    const deg = isLeft ? spread(k, left, 216, 146) : spread(k, right, -34, 34);
     const a = (deg * Math.PI) / 180;
     out.push({ x: Math.cos(a), y: Math.sin(a) });
   }
@@ -98,7 +98,7 @@ export function StationPlanet({
           const docPts = arc(Math.min(docs.length, 7), 238, 302, MOON / 2 + 12);
           const lights = arc(Math.min(open.length, 7), s.x < 0 ? 212 : -32, s.x < 0 ? 140 : 40, MOON / 2 + 24);
           return (
-            <div key={m.id} className="ws-moon" style={{ left: `calc(50% + ${(s.x * 31).toFixed(2)}%)`, top: `calc(30% + ${Math.round(s.y * 150)}px)`, ['--i' as string]: i }} data-active={activeMoon === m.id ? '1' : undefined}>
+            <div key={m.id} className="ws-moon" style={{ left: `calc(50% + ${(s.x * 31).toFixed(2)}%)`, top: `calc(30% + ${Math.round(s.y * 175)}px)`, ['--i' as string]: i }} data-active={activeMoon === m.id ? '1' : undefined}>
               <button type="button" className="ck-moon ws-moon__btn" aria-pressed={activeMoon === m.id} disabled={disabled} data-testid={`moon-${m.id}`}
                 data-watch={watch?.has(m.id) ? 'true' : undefined} title={disabled ? (m.hint || 'Ordner gerade nicht ladbar') : undefined}
                 onClick={disabled ? undefined : (e) => onMoon(m.id, originOf(e.currentTarget.querySelector('.glass-orb')))}>
@@ -130,7 +130,7 @@ export function StationPlanet({
   );
 }
 
-type View = { kind: 'moon' } | { kind: 'doc'; id: string } | { kind: 'task'; id: string; back: boolean };
+type View = { kind: 'moon'; task?: string } | { kind: 'doc'; id: string } | { kind: 'task'; id: string };
 
 /**
  * Nahansicht: das angeklickte Objekt kommt nach vorn und wird zur lesbaren Arbeitsfläche – im selben Raum,
@@ -150,7 +150,7 @@ export function WorkSurface({
   colorIndex?: number;
   onClose: () => void;
 }) {
-  const [view, setView] = useState<View>(task ? { kind: 'task', id: task.id, back: false } : { kind: 'moon' });
+  const [view, setView] = useState<View>(task ? { kind: 'task', id: task.id } : { kind: 'moon' });
   const [phase, setPhase] = useState<'from' | 'in' | 'out'>('from');
   const ref = useRef<HTMLElement>(null);
   const flushDoc = useRef<(() => void) | null>(null);
@@ -167,7 +167,7 @@ export function WorkSurface({
       ['--fx' as string]: `${Math.round(o.x - (b.left + b.width / 2))}px`,
       ['--fy' as string]: `${Math.round(o.y - (b.top + b.height / 2))}px`,
       ['--fk' as string]: Math.max(0.06, Math.min(0.4, o.r / Math.max(1, el.offsetWidth))).toFixed(3),
-      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 14)}px` } : {}),
+      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 52)}px` } : {}),
     });
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
     return () => cancelAnimationFrame(raf);
@@ -183,7 +183,7 @@ export function WorkSurface({
   }, [onClose]);
   const back = useCallback(() => {
     if (view.kind === 'doc') { flushDoc.current?.(); setView({ kind: 'moon' }); return; }
-    if (view.kind === 'task' && view.back) { setView({ kind: 'moon' }); return; }
+    if (view.kind === 'moon' && view.task) { setView({ kind: 'moon' }); return; }
     close();
   }, [view, close]);
 
@@ -208,7 +208,7 @@ export function WorkSurface({
   }, [work]);
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
-  const size = view.kind === 'task' && !view.back ? 'task' : 'full';
+  const size = view.kind === 'task' ? 'task' : 'full';
 
   return (
     <section
@@ -222,14 +222,14 @@ export function WorkSurface({
       style={{ ...vars, ...(colorIndex !== undefined ? planetColor(colorIndex) : {}) }}
     >
       {view.kind === 'moon' && moon ? (
-        <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId}
-          onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView({ kind: 'task', id, back: true })} />
+        <MoonDesk planet={planet} moon={moon} w={mw} companyId={companyId} owner={owner} expanded={view.task ?? null}
+          onBack={close} onDoc={(id) => setView({ kind: 'doc', id })} onTask={(id) => setView(view.task === id ? { kind: 'moon' } : { kind: 'moon', task: id })} />
       ) : null}
       {view.kind === 'doc' && moon ? (
         <DocDesk id={view.id} moon={moon} name={mw?.docs.find((d) => d.id === view.id)?.name ?? ''} onBack={back} flushRef={flushDoc} />
       ) : null}
       {view.kind === 'task' && current ? (
-        <TaskDesk task={current} planet={planet} folder={folderOf(current)} owner={current.assignee ?? owner} companyId={companyId} onBack={back} backLabel={view.back && moon ? clean(moon.title) : clean(planet.title)} />
+        <TaskDesk task={current} planet={planet} folder={folderOf(current)} owner={current.assignee ?? owner} companyId={companyId} onBack={back} backLabel={clean(planet.title)} />
       ) : null}
     </section>
   );
@@ -245,8 +245,8 @@ function Head({ onBack, backLabel, children, orb }: { onBack: () => void; backLa
   );
 }
 
-function MoonDesk({ planet, moon, w, companyId, onBack, onDoc, onTask }: {
-  planet: DemoPlanet; moon: DemoMoon; w?: MoonWork; companyId: string | null;
+function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, onTask }: {
+  planet: DemoPlanet; moon: DemoMoon; w?: MoonWork; companyId: string | null; owner: string; expanded: string | null;
   onBack: () => void; onDoc: (id: string) => void; onTask: (id: string) => void;
 }) {
   const { setDone, addTask } = useDayActions(companyId);
@@ -294,8 +294,9 @@ function MoonDesk({ planet, moon, w, companyId, onBack, onDoc, onTask }: {
             {[...open, ...done].map((t) => (
               <div key={t.id} className="ws-row ws-row--task" data-done={t.done ? '1' : undefined} data-overdue={t.overdue ? '1' : undefined} data-testid={`work-task-${t.id}`}>
                 <button type="button" className="ws-check" aria-pressed={t.done} aria-label={t.done ? `${t.title} wieder öffnen` : `${t.title} erledigen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`}>{t.done ? <Check size={13} strokeWidth={2.6} /> : null}</button>
-                <button type="button" className="ws-row__t" onClick={() => onTask(t.id)}>{t.title}</button>
+                <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
                 {t.due && !t.done ? <span className="ws-due">{dueLabel(t)}</span> : null}
+                {expanded === t.id ? <div className="ws-row__more"><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} /></div> : null}
               </div>
             ))}
           </div>
@@ -368,14 +369,21 @@ function TaskDesk({ task, planet, folder, owner, companyId, onBack, backLabel }:
         <button type="button" className="ws-check ws-check--big" aria-pressed={task.done} aria-label={task.done ? 'Wieder öffnen' : 'Erledigen'} onClick={() => void setDone(task.raw, !task.done)} data-testid="work-task-done">{task.done ? <Check size={20} strokeWidth={2.4} /> : null}</button>
         <input className="ws-task__title" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} aria-label="Aufgabe" data-testid="work-task-title" />
       </div>
-      <dl className="ws-facts">
-        <div><dt>Fällig</dt><dd>
-          <input type="date" value={task.due ?? ''} onChange={(e) => e.target.value && void update(task.raw, { due_date: e.target.value })} aria-label="Fällig" data-testid="work-task-due" />
-          {task.overdue ? <em>überfällig {dueLabel(task)}</em> : task.dueToday ? <em className="is-today">heute</em> : null}
-        </dd></div>
-        <div><dt>Verantwortlich</dt><dd>{owner || '–'}</dd></div>
-        <div><dt>Status</dt><dd>{task.done ? 'erledigt' : task.status === 'in_progress' ? 'in Arbeit' : 'offen'}</dd></div>
-      </dl>
+      <TaskFacts task={task} owner={owner} companyId={companyId} />
     </>
+  );
+}
+
+function TaskFacts({ task, owner, companyId }: { task: WorkTask; owner: string; companyId: string | null }) {
+  const { update } = useDayActions(companyId);
+  return (
+    <dl className="ws-facts" data-testid={`work-facts-${task.id}`}>
+      <div><dt>Fällig</dt><dd>
+        <input type="date" value={task.due ?? ''} onChange={(e) => e.target.value && void update(task.raw, { due_date: e.target.value })} aria-label="Fällig" data-testid="work-task-due" />
+        {task.overdue ? <em>überfällig {dueLabel(task)}</em> : task.dueToday ? <em className="is-today">heute</em> : null}
+      </dd></div>
+      <div><dt>Verantwortlich</dt><dd>{owner || '–'}</dd></div>
+      <div><dt>Status</dt><dd>{task.done ? 'erledigt' : task.status === 'in_progress' ? 'in Arbeit' : 'offen'}</dd></div>
+    </dl>
   );
 }
