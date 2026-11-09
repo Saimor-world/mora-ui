@@ -11,7 +11,7 @@ import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { fetchNodeDetails } from '@/lib/api/orgClient';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { useDayActions } from '@/lib/lea/useDayActions';
-import { renderMarkdown } from '@/lib/docs/markdown';
+import { extractHeadings, renderMarkdown } from '@/lib/docs/markdown';
 import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
@@ -304,6 +304,62 @@ function Head({ onBack, backLabel, children, actions }: { onBack: () => void; ba
   );
 }
 
+function TaskList({ open, done, expanded, owner, companyId, onToggle, onOpen }: {
+  open: WorkTask[]; done: WorkTask[]; expanded: string | null; owner: string; companyId: string | null;
+  onToggle: (t: WorkTask) => void; onOpen: (id: string) => void;
+}) {
+  const overdue = open.filter((t) => t.overdue);
+  const today = open.filter((t) => !t.overdue && t.dueToday);
+  const later = open.filter((t) => !t.overdue && !t.dueToday);
+  const groups: { key: string; label: string; items: WorkTask[] }[] = [
+    { key: 'overdue', label: 'Überfällig', items: overdue },
+    { key: 'today', label: 'Heute', items: today },
+    { key: 'later', label: 'Später', items: later },
+  ].filter((g) => g.items.length);
+  const flat = groups.flatMap((g) => g.items);
+  const [focus, setFocus] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const openKey = open.map((t) => t.id).join('|');
+  useEffect(() => { setFocus(0); }, [openKey]);
+  const onKey = (e: React.KeyboardEvent) => {
+    if (!flat.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setFocus((i) => Math.min(flat.length - 1, i + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus((i) => Math.max(0, i - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); onOpen(flat[focus]?.id); }
+    else if (e.key === ' ') { e.preventDefault(); const t = flat[focus]; if (t) onToggle(t); }
+  };
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-idx="${focus}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [focus]);
+  const row = (t: WorkTask, idx: number, doneRow = false) => (
+    <div key={t.id} className="ws-row ws-row--task" data-overdue={t.overdue ? '1' : undefined} data-done={doneRow ? '1' : undefined} data-focus={focus === idx && !doneRow ? '1' : undefined} data-idx={doneRow ? undefined : idx} data-testid={`work-task-${t.id}`}>
+      <button type="button" className="ws-check" aria-pressed={doneRow} aria-label={doneRow ? `${t.title} wieder öffnen` : `${t.title} erledigen`} onClick={() => onToggle(t)} data-testid={`work-check-${t.id}`}>{doneRow ? <Check size={13} strokeWidth={2.6} /> : null}</button>
+      <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onOpen(t.id)}>{t.title}</button>
+      {t.assignee ? <span className="ws-who">{t.assignee}</span> : null}
+      {t.due ? <span className="ws-due">{dueLabel(t)}</span> : null}
+      {expanded === t.id ? <div className="ws-row__more" ref={(el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
+    </div>
+  );
+  let idx = 0;
+  return (
+    <div className="ws-list ws-list--tasks" ref={listRef} tabIndex={0} role="listbox" aria-label="Aufgaben" onKeyDown={onKey} data-testid="work-task-list">
+      {groups.map((g) => (
+        <div key={g.key} className="ws-group" data-group={g.key}>
+          <p className="ws-group__label">{g.label} <span>{g.items.length}</span></p>
+          {g.items.map((t) => { const i = idx++; return row(t, i); })}
+        </div>
+      ))}
+      {done.length ? (
+        <details className="ws-group" open={done.some((t) => expanded === t.id) || undefined}>
+          <summary>{done.length === 1 ? '1 erledigt' : `${done.length} erledigt`}</summary>
+          {done.map((t) => row(t, -1, true))}
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
 function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, onTask }: {
   planet: DemoPlanet; moon: DemoMoon; w?: MoonWork; companyId: string | null; owner: string; expanded: string | null;
   onBack: () => void; onDoc: (id: string) => void; onTask: (id: string) => void;
@@ -349,28 +405,15 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
         </div>
         <div className="ws-col" data-testid="work-tasks">
           <h3>Aufgaben <span>{open.length}</span></h3>
-          <div className="ws-list">
-            {open.map((t) => (
-              <div key={t.id} className="ws-row ws-row--task" data-overdue={t.overdue ? '1' : undefined} data-testid={`work-task-${t.id}`}>
-                <button type="button" className="ws-check" aria-pressed={false} aria-label={`${t.title} erledigen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`} />
-                <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
-                {t.due ? <span className="ws-due">{dueLabel(t)}</span> : null}
-                {expanded === t.id ? <div className="ws-row__more" ref={(el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
-              </div>
-            ))}
-            {done.length ? (
-              <details className="ws-group" open={done.some((t) => expanded === t.id) || undefined}>
-                <summary>{done.length === 1 ? '1 erledigt' : `${done.length} erledigt`}</summary>
-                {done.map((t) => (
-                  <div key={t.id} className="ws-row ws-row--task" data-done="1" data-testid={`work-task-${t.id}`}>
-                    <button type="button" className="ws-check" aria-pressed={true} aria-label={`${t.title} wieder öffnen`} onClick={() => void toggle(t)} data-testid={`work-check-${t.id}`}><Check size={13} strokeWidth={2.6} /></button>
-                    <button type="button" className="ws-row__t" aria-expanded={expanded === t.id} onClick={() => onTask(t.id)}>{t.title}</button>
-                    {expanded === t.id ? <div className="ws-row__more"><TaskFacts task={t} owner={t.assignee ?? owner} companyId={companyId} compact /></div> : null}
-                  </div>
-                ))}
-              </details>
-            ) : null}
-          </div>
+          <TaskList
+            open={open}
+            done={done}
+            expanded={expanded}
+            owner={owner}
+            companyId={companyId}
+            onToggle={(task) => void toggle(task)}
+            onOpen={onTask}
+          />
           <form className="ws-new" onSubmit={(e) => { e.preventDefault(); void create(); }}>
             <span className="ws-check ws-check--ghost" aria-hidden />
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-clear-on-esc="1" data-testid="work-new-title" />
@@ -380,6 +423,28 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
       </div>
     </>
   );
+}
+
+function isPdfDoc(name: string, type?: string | null) {
+  const n = (name || '').toLowerCase();
+  const ty = (type || '').toLowerCase();
+  return ty === 'pdf' || n.endsWith('.pdf');
+}
+
+/** Minimales einseitiges PDF für Fixture-Vorschau (kein externes File nötig). */
+function fixturePdfDataUrl(title: string): string {
+  const safe = title.replace(/[()\\]/g, ' ').slice(0, 60);
+  const stream = `BT /F1 18 Tf 72 720 Td (${safe}) Tj T* /F1 12 Tf (SAIMOR · Fixture-PDF) Tj ET`;
+  const body =
+    '%PDF-1.4\n' +
+    '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n' +
+    '2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n' +
+    '3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources<< /Font<< /F1 5 0 R >> >> >>endobj\n' +
+    `4 0 obj<< /Length ${stream.length} >>stream\n${stream}\nendstream endobj\n` +
+    '5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n' +
+    'trailer<< /Root 1 0 R >>\n%%EOF\n';
+  // Prefer blob URL at call site; data URL works in iframe for tiny PDFs.
+  return `data:application/pdf;base64,${btoa(body)}`;
 }
 
 function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
@@ -394,9 +459,13 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   const [body, setBody] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const dirty = useRef(false);
+  const readRef = useRef<HTMLDivElement>(null);
   const node = q.data as ({ id?: string; title?: string; name?: string; content?: string; type?: string; updated_at?: string; metadata?: Record<string, unknown>; folder_id?: string | null } | undefined);
   const t = title ?? (node?.title || name);
   const c = body ?? (node?.content ?? '');
+  const fileName = node?.name || name;
+  const pdf = isPdfDoc(fileName, node?.type);
+  const headings = useMemo(() => (pdf || editing ? [] : extractHeadings(c)), [c, pdf, editing]);
   const save = useCallback(() => {
     if (!dirty.current) return;
     dirty.current = false;
@@ -409,7 +478,6 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
     });
   }, [id, t, c, upd, qc]);
   flushRef.current = save;
-  // Leise sichern, kurz nachdem du aufhörst zu schreiben.
   useEffect(() => {
     if (!dirty.current) return;
     const h = window.setTimeout(save, 900);
@@ -417,26 +485,50 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   }, [t, c, save]);
   useEffect(() => () => { flushRef.current = null; }, [flushRef]);
   const edited = node?.updated_at ? new Date(node.updated_at) : null;
+  const origin = typeof node?.metadata?.origin === 'string' ? node.metadata.origin : null;
+  const jump = (hid: string) => {
+    const root = readRef.current;
+    const el = root?.querySelector(`#${CSS.escape(hid)}`) as HTMLElement | null;
+    el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
   return (
     <>
       <Head onBack={onBack} backLabel={clean(moon.title)} actions={<>
-        <button type="button" className="ws-back" aria-pressed={editing} aria-label={editing ? 'Fertig' : 'Bearbeiten'} onClick={() => { if (editing) save(); setEditing((v) => !v); }} data-testid="work-doc-edit">{editing ? <Check size={16} /> : <PenLine size={16} />}</button>
-        {/* Volle Ansicht: Folio kommt im selben Raum nach vorn – kein altes Pane-Fenster. */}
+        {pdf ? null : (
+          <button type="button" className="ws-back" aria-pressed={editing} aria-label={editing ? 'Fertig' : 'Bearbeiten'} onClick={() => { if (editing) save(); setEditing((v) => !v); }} data-testid="work-doc-edit">{editing ? <Check size={16} /> : <PenLine size={16} />}</button>
+        )}
         {folio ? null : (
-          <button type="button" className="ws-back" aria-label="Volle Ansicht" onClick={() => { save(); onFolio(); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
+          <button type="button" className="ws-back" aria-label="Lesen" onClick={() => { save(); onFolio(); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
         )}
       </>}>
         <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
-        <p>{clean(moon.title)}{node?.name && node.name !== t ? ` · ${node.name}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
+        <p>{clean(moon.title)}{fileName && fileName !== t ? ` · ${fileName}` : ''}{origin ? ` · ${origin}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
       </Head>
-      {editing ? (
-        <textarea className="ws-doc__body" value={c} onChange={(e) => { dirty.current = true; setBody(e.target.value); }} aria-label={t} data-testid="work-doc-body" disabled={q.isLoading} spellCheck autoFocus />
-      ) : (
-        // Lesen mit demselben Renderer wie die Dokument-App; ein Klick auf den Text öffnet das Schreiben.
-        <div className="ws-doc__read" role="document" tabIndex={0} aria-label={t} data-testid="work-doc-read" aria-busy={q.isLoading}
-          onClick={() => setEditing(true)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setEditing(true); } }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(c) }} />
-      )}
+      <div className="ws-doc" data-folio={folio ? '1' : undefined} data-pdf={pdf ? '1' : undefined} data-editing={editing ? '1' : undefined}>
+        {folio && headings.length > 1 ? (
+          <nav className="ws-doc__toc" aria-label="Inhalt">
+            <p className="ws-doc__toc-label">Inhalt</p>
+            <ol>
+              {headings.map((h) => (
+                <li key={h.id} data-level={h.level}>
+                  <button type="button" onClick={() => jump(h.id)}>{h.text}</button>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+        <div className="ws-doc__main" ref={readRef}>
+          {pdf ? (
+            <iframe className="ws-doc__pdf" title={t} src={fixturePdfDataUrl(t)} data-testid="work-doc-pdf" />
+          ) : editing ? (
+            <textarea className="ws-doc__body" value={c} onChange={(e) => { dirty.current = true; setBody(e.target.value); }} aria-label={t} data-testid="work-doc-body" disabled={q.isLoading} spellCheck autoFocus />
+          ) : (
+            <div className="ws-doc__read" role="document" tabIndex={0} aria-label={t} data-testid="work-doc-read" aria-busy={q.isLoading}
+              onDoubleClick={() => setEditing(true)}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(c) }} />
+          )}
+        </div>
+      </div>
     </>
   );
 }

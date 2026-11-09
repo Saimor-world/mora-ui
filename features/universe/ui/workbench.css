@@ -30,35 +30,65 @@
 .ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 160px));translate:-50% 0;display:flex;flex-direction:column;
   border-radius:50%;padding:5.2% 10.5% 4.8%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
   transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
-/* Folio: dunklere Seite im Glasmond – elliptisch, Ränder lösen sich ins Glas, kein helles Rechteck. */
-.ws-surface--folio{width:min(1040px,calc(100% - 160px));top:var(--ws-top,40px);bottom:var(--ws-bottom,360px);padding:5.5% 11% 5%;border-radius:50%;
-  color:rgba(228,236,230,.94)}
-.ws-surface--folio .ws-face{border-radius:50%;
-  -webkit-mask-image:radial-gradient(closest-side,#000 86%,rgba(0,0,0,.75) 93%,rgba(0,0,0,.3) 97%,transparent 100%);mask-image:radial-gradient(closest-side,#000 86%,rgba(0,0,0,.75) 93%,rgba(0,0,0,.3) 97%,transparent 100%);
-  box-shadow:0 0 0 1.5px rgba(210,228,218,.28),0 0 36px rgba(170,200,180,.16),0 0 70px rgba(140,180,160,.08),inset 0 0 0 1px rgba(255,255,255,.08)}
-.ws-surface--folio .ws-face__glass{opacity:.78;filter:var(--pf,none) saturate(.95) brightness(1.12);mix-blend-mode:normal}
-.ws-surface--folio .ws-face__shade{border-radius:50%;
+/* Lesemodus: nahe volle Himmelsbreite, Textspalte max ~760px, kein Disc-Cramming. */
+.ws-surface--folio{width:min(1180px,calc(100% - 96px));top:var(--ws-top,28px);bottom:var(--ws-bottom,300px);padding:28px 28px 24px;border-radius:28px;
+  color:rgba(236,244,240,.94);font-family:var(--os-font,inherit)}
+.ws-surface--folio .ws-face{border-radius:28px;
+  -webkit-mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);
+  box-shadow:0 0 0 1px rgba(210,228,218,.22),0 24px 80px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06)}
+.ws-surface--folio .ws-face__glass{opacity:.55;filter:var(--pf,none) saturate(.9) brightness(1.05);mix-blend-mode:normal}
+.ws-surface--folio .ws-face__shade{border-radius:28px;
   background:
-    radial-gradient(ellipse 85% 60% at 30% 18%,rgba(236,244,238,.14),transparent 48%),
-    radial-gradient(ellipse 50% 40% at 72% 78%,rgba(0,0,0,.35),transparent 55%),
-    radial-gradient(closest-side,rgba(16,34,38,.72) 0%,rgba(14,32,36,.78) 55%,rgba(12,28,32,.88) 78%,rgba(10,24,28,.95) 92%,rgba(8,20,24,.98) 100%);
-  box-shadow:inset 18px 14px 40px -16px rgba(210,230,220,.28),inset -18px -22px 48px -18px rgba(0,0,0,.5),inset 0 0 0 1.5px rgba(214,232,226,.2)}
+    radial-gradient(ellipse 80% 50% at 20% 0%,rgba(236,244,238,.08),transparent 50%),
+    linear-gradient(180deg,rgba(10,22,26,.82),rgba(8,18,22,.92));
+  box-shadow:inset 0 1px 0 rgba(214,232,226,.1)}
 .ws-surface--folio .ws-face__shade::before{opacity:0}
-.ws-surface--folio .ws-face__shade::after{border-radius:50%;background:none;box-shadow:inset 0 0 0 1px rgba(214,232,226,.12);-webkit-mask-image:none;mask-image:none;opacity:.7}
-.ws-surface--folio::before{opacity:.55}
-.ws-surface--folio::after{opacity:.28}
-.ws-surface--folio .ws-head{width:min(100%,640px);margin-bottom:12px;color:rgba(236,244,240,.92)}
-.ws-surface--folio .ws-head p{color:rgba(214,232,226,.58)}
-.ws-surface--folio .ws-back{border-color:rgba(214,232,226,.16);background:rgba(255,255,255,.05);color:inherit}
-.ws-surface--folio .ws-back:hover,.ws-surface--folio .ws-back:focus-visible{background:rgba(255,255,255,.1)}
-.ws-surface--folio .ws-doc__title{color:rgba(236,244,240,.95);font-size:23px}
-.ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{
-  font-size:16.5px;line-height:1.7;padding:8px 12px 10px;max-width:640px;margin:0 auto;width:100%;
-  color:rgba(228,236,230,.92);background:transparent;border-radius:0;
-  box-shadow:none}
-.ws-surface--folio .ws-doc__body{background:transparent;color:rgba(236,244,240,.94)}
-.ws-surface--folio .ws-doc__body:focus{box-shadow:none;outline:none}
-.ws-surface--folio .ws-doc__read:focus-visible{box-shadow:none;outline:1px solid rgba(214,232,226,.22);outline-offset:4px;border-radius:8px}
+.ws-surface--folio .ws-face__shade::after{border-radius:26px;background:none;box-shadow:inset 0 0 0 1px rgba(214,232,226,.08);opacity:.5}
+.ws-surface--folio::before{content:none}
+.ws-surface--folio::after{opacity:.18}
+.ck-universe-unified[data-work="folio"] > .ck-scene{filter:blur(6px) brightness(.28) saturate(.65);transform:scale(1.03)}
+.ws-surface--folio .ws-head{width:100%;max-width:none;margin-bottom:16px;color:rgba(236,244,240,.92);flex:none}
+.ws-surface--folio .ws-head p{color:rgba(214,232,226,.55);font-size:var(--os-type-meta-size,12.5px)}
+.ws-surface--folio .ws-doc__title{color:rgba(236,244,240,.96);font-size:clamp(22px,2.2vw,28px);font-weight:600;letter-spacing:-.02em;line-height:1.25}
+.ws-surface--folio .ws-back{border-color:rgba(214,232,226,.14);background:rgba(255,255,255,.04);color:inherit}
+.ws-surface--folio .ws-back:hover,.ws-surface--folio .ws-back:focus-visible{background:rgba(255,255,255,.09)}
+.ws-doc{display:flex;gap:28px;flex:1;min-height:0;width:100%}
+.ws-doc__toc{flex:0 0 200px;max-height:100%;overflow:auto;padding:4px 8px 12px 0;border-right:1px solid rgba(214,232,226,.1)}
+.ws-doc__toc-label{margin:0 0 10px;font-size:var(--os-type-eyebrow-size,10.5px);letter-spacing:.14em;text-transform:uppercase;color:rgba(214,232,226,.45)}
+.ws-doc__toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.ws-doc__toc li button{display:block;width:100%;text-align:left;border:0;background:none;color:rgba(214,232,226,.62);font:inherit;font-size:13px;line-height:1.35;padding:6px 8px;border-radius:8px;cursor:pointer}
+.ws-doc__toc li[data-level="1"] button{font-weight:600;color:rgba(236,244,240,.88)}
+.ws-doc__toc li[data-level="2"] button{padding-left:14px}
+.ws-doc__toc li[data-level="3"] button{padding-left:24px;font-size:12.5px;color:rgba(214,232,226,.5)}
+.ws-doc__toc li button:hover,.ws-doc__toc li button:focus-visible{background:rgba(255,255,255,.06);color:rgba(236,244,240,.95);outline:none}
+.ws-doc__main{flex:1;min-width:0;min-height:0;overflow:auto;padding:0 4px 24px}
+.ws-doc__read,.ws-doc__body{max-width:760px;margin:0 auto;width:100%;font-family:var(--os-font,inherit);font-size:var(--os-type-body-size,16px);line-height:1.7;color:rgba(232,240,236,.92);background:transparent;border:0;box-shadow:none}
+.ws-doc__body{min-height:60%;resize:none;padding:8px 4px;color:inherit}
+.ws-doc__body:focus{outline:none;box-shadow:none}
+.ws-doc__pdf{display:block;width:100%;height:100%;min-height:520px;border:0;border-radius:12px;background:rgba(0,0,0,.25)}
+.ws-md__h1{font-size:clamp(24px,2vw,30px);font-weight:650;letter-spacing:-.02em;line-height:1.25;margin:1.4em 0 .6em;color:rgba(244,248,246,.96)}
+.ws-md__h2{font-size:clamp(18px,1.5vw,22px);font-weight:600;letter-spacing:-.015em;line-height:1.3;margin:1.5em 0 .55em;color:rgba(236,244,240,.94)}
+.ws-md__h3{font-size:16.5px;font-weight:600;margin:1.25em 0 .4em;color:rgba(228,236,230,.9)}
+.ws-md__p{margin:0 0 1em}
+.ws-md__ul,.ws-md__ol{margin:0 0 1.1em;padding-left:1.35em}
+.ws-md__ul li,.ws-md__ol li{margin:.28em 0}
+.ws-md__table{width:100%;border-collapse:collapse;margin:0 0 1.25em;font-size:14.5px}
+.ws-md__table th,.ws-md__table td{border:1px solid rgba(214,232,226,.14);padding:8px 10px;text-align:left}
+.ws-md__table th{background:rgba(255,255,255,.04);font-weight:600;color:rgba(236,244,240,.9)}
+.ws-md__a{color:rgba(160,220,190,.95);text-decoration:underline;text-underline-offset:3px}
+.ws-md__code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;padding:.1em .35em;border-radius:6px;background:rgba(255,255,255,.07)}
+.ws-md__pre{margin:0 0 1.2em;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.28);overflow:auto;font-size:13.5px;line-height:1.5}
+.ws-md__fig{margin:0 0 1.3em;padding:0}
+.ws-md__fig img,.ws-md__img{max-width:100%;height:auto;border-radius:12px;display:block}
+.ws-md__fig figcaption{margin-top:6px;font-size:var(--os-type-meta-size,12.5px);color:rgba(214,232,226,.5)}
+.ws-list--tasks{max-height:min(420px,48vh);overflow:auto;overscroll-behavior:contain;padding-right:4px;outline:none}
+.ws-group__label{margin:10px 0 6px;font-size:var(--os-type-eyebrow-size,10.5px);letter-spacing:.12em;text-transform:uppercase;color:rgba(214,232,226,.48);display:flex;align-items:center;gap:8px}
+.ws-group__label span{letter-spacing:0;text-transform:none;color:rgba(214,232,226,.35)}
+.ws-group[data-group="overdue"] .ws-group__label{color:rgba(240,190,120,.85)}
+.ws-row--task[data-focus="1"]{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(214,232,226,.16)}
+.ws-who{flex:none;font-size:12.5px;color:rgba(214,232,226,.55);max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-row__t{text-align:left;white-space:normal;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
 /* Einzelaufgabe: ruhiger Mond, Größe am Inhalt (Titel bis 2 Zeilen + Fakten), über dem Dock. */
 .ws-surface--task{width:min(680px,calc(100% - 160px));height:auto;min-height:340px;max-height:min(540px,calc(100% - var(--ws-bottom,410px) - 100px));
   top:auto;bottom:calc(var(--ws-bottom,410px) + 40px);translate:-50% 0;aspect-ratio:auto;
@@ -155,9 +185,10 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 @media (max-width:820px){
   .ws-surface{top:48px;bottom:72px;width:calc(100% - 16px);padding:18px 18px 20px;border-radius:28px}
   .ws-face{border-radius:28px}.ws-face__shade{border-radius:28px}.ws-face__shade::after{border-radius:28px}
-  .ws-surface--folio{width:calc(100% - 20px);top:48px;bottom:84px;padding:18px 20px 20px;border-radius:42% / 46%}
-  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:42% / 46%}
-  .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:16px;padding:12px 14px;max-width:none}
+  .ws-surface--folio{width:calc(100% - 16px);top:40px;bottom:84px;padding:16px;border-radius:20px}
+  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:20px}
+  .ws-doc__toc{display:none}
+  .ws-doc__read,.ws-doc__body{font-size:16px;max-width:none}
   .ws-surface--task{width:min(94vw,480px);height:auto;min-height:280px;top:auto;bottom:96px;translate:-50% 0;max-height:min(480px,58vh);padding:40px 28px 36px;border-radius:50%}
   .ws-surface--task .ws-face,.ws-surface--task .ws-face__shade,.ws-surface--task .ws-face__shade::after{border-radius:50%}
   .ws-desk{grid-template-columns:1fr;gap:14px;overflow:auto}
@@ -173,7 +204,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 /* 1024: zwei Spalten bleiben, kompakter. */
 @media (max-width:1024px) and (min-width:821px){
   .ws-surface{width:min(900px,calc(100% - 240px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
-  .ws-surface--folio{width:min(900px,calc(100% - 240px));padding:4.8% 10% 4.5%}
+  .ws-surface--folio{width:min(1040px,calc(100% - 80px));padding:22px 20px 18px}
   .ws-surface--task{width:min(520px,calc(100% - 240px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 80px));padding:44px 40px 36px}
   .ws-desk{gap:20px}
   .ws-head h2{font-size:20px}
@@ -181,9 +212,10 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 /* Phone 390. */
 @media (max-width:390px){
   .ws-surface{top:40px;bottom:64px;width:calc(100% - 10px);padding:14px 12px 16px;border-radius:22px}
-  .ws-surface--folio{border-radius:40% / 44%;padding:16px 14px 18px;width:calc(100% - 12px);top:40px;bottom:72px}
-  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:40% / 44%}
-  .ws-surface--folio .ws-doc__read,.ws-surface--folio .ws-doc__body{font-size:15px;padding:10px 12px;max-width:none}
+  .ws-surface--folio{border-radius:18px;padding:14px;width:calc(100% - 10px);top:36px;bottom:72px}
+  .ws-surface--folio .ws-face,.ws-surface--folio .ws-face__shade,.ws-surface--folio .ws-face__shade::after{border-radius:18px}
+  .ws-doc__toc{display:none}
+  .ws-doc__read,.ws-doc__body{font-size:15px;max-width:none}
   .ws-head h2{font-size:18px}.ws-head{gap:8px;margin-bottom:8px;width:100%}
   .ws-col h3{margin-bottom:4px}.ws-row{padding:8px 10px;gap:8px}
   .ws-row--doc b,.ws-row__t{font-size:14px}
