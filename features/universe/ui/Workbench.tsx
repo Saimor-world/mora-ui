@@ -183,14 +183,16 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
-  // MÔRA während der Arbeit: sie sinkt klein in den Dock-Hügel (die eine MÔRA fliegt zu diesem Anker), nie auf die Scheibe.
+  // MÔRA während der Arbeit: Anker rechts neben dem Dock-Herz und tief im Hügel –
+  // Flugweg um die Scheibe herum, Glow berührt den Scheibenrand nicht.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
       const heart = document.querySelector('.bridge__heart')?.getBoundingClientRect();
       if (!bridge || !heart || bridge.top < 300) { setRest(null); return; }
-      setRest({ x: Math.round(heart.left + heart.width / 2), y: Math.round(bridge.top + 36) });
+      const side = Math.min(window.innerWidth - 48, heart.right + Math.max(56, heart.width * 0.55));
+      setRest({ x: Math.round(side), y: Math.round(bridge.top + Math.min(92, bridge.height * 0.42)) });
     };
     place();
     window.addEventListener('resize', place);
@@ -232,6 +234,12 @@ export function WorkSurface({
   const current = view.kind === 'task' ? allTasks.find((t) => t.id === view.id) ?? (task?.id === view.id ? task : null) : null;
   const folderOf = (t: WorkTask | null) => (t?.folderId ? planet.moons.find((m) => m.id === t.folderId) ?? null : null);
   const size = view.kind === 'task' ? 'task' : 'full';
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-os-work', size);
+    return () => { root.removeAttribute('data-os-work'); };
+  }, [size]);
 
   return (
     <section

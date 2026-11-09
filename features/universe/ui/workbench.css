@@ -170,3 +170,7 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 .ws-head .ws-doc__title{text-align:center}
 .ws-moon .ws-moon__btn:focus-visible{outline:none}
 .ws-moon .ws-moon__btn:focus-visible .ws-moon__body{border-radius:50%;box-shadow:0 0 0 1.5px rgba(214,232,226,.32),0 0 26px rgba(214,232,226,.16)}
+
+/* Dock-Glow leiser während der Arbeit (ohne Dock-Dateien zu ändern) – Scheibenunterkante bleibt frei. */
+html[data-os-work] .bridge__beam{opacity:.18;transition:opacity .5s ease}
+html[data-os-work] .bridge__heart .jade-mora__glow{opacity:.35;transition:opacity .5s ease}
