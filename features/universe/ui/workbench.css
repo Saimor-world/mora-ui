@@ -81,7 +81,7 @@
   filter:var(--pf,none) saturate(1.1) brightness(1.35) contrast(1.08);opacity:1;transition:opacity .8s ease}
 .ws-face__shade{position:absolute;inset:0;border-radius:50%;
   background:
-    radial-gradient(ellipse 80% 55% at 28% 16%,rgba(255,255,255,.34),rgba(220,240,230,.14) 32%,transparent 52%),
+    radial-gradient(ellipse 90% 70% at 30% 18%,rgba(255,255,255,.16),rgba(220,240,230,.07) 40%,transparent 62%),
     radial-gradient(ellipse 55% 45% at 70% 78%,rgba(0,8,12,.45),transparent 58%),
     radial-gradient(closest-side,rgba(18,40,44,.55) 0%,rgba(14,34,38,.62) 48%,rgba(12,30,34,.78) 72%,rgba(10,26,30,.9) 88%,rgba(8,20,24,.96) 100%);
   box-shadow:
@@ -89,17 +89,19 @@
     inset -22px -26px 56px -16px rgba(0,0,0,.48),
     inset 0 0 0 2.5px rgba(214,232,226,.4);
   transition:opacity .7s ease}
-.ws-face__shade::before{content:"";position:absolute;left:16%;top:9%;width:42%;height:24%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(ellipse at 40% 40%,rgba(255,255,255,.38),rgba(255,255,255,.08) 55%,transparent 75%)}
+/* Specular: weicher Verlauf statt harter grauer Bande oben links. */
+.ws-face__shade::before{content:"";position:absolute;left:12%;top:6%;width:48%;height:32%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse 70% 60% at 38% 42%,rgba(255,255,255,.2),rgba(230,245,238,.08) 45%,transparent 78%);
+  filter:blur(14px);opacity:.65}
 .ws-face__shade::after{content:"";position:absolute;inset:2%;border-radius:50%;pointer-events:none;
-  background:conic-gradient(from 200deg,transparent 0 12%,rgba(255,255,255,.2) 22%,transparent 34% 55%,rgba(180,220,200,.14) 65%,transparent 78%);
-  -webkit-mask-image:radial-gradient(closest-side,transparent 78%,#000 88%,#000 96%,transparent 100%);mask-image:radial-gradient(closest-side,transparent 78%,#000 88%,#000 96%,transparent 100%);
-  opacity:.95}
+  background:conic-gradient(from 200deg,transparent 0 14%,rgba(255,255,255,.1) 24%,transparent 36% 56%,rgba(180,220,200,.08) 66%,transparent 78%);
+  -webkit-mask-image:radial-gradient(closest-side,transparent 80%,#000 90%,#000 96%,transparent 100%);mask-image:radial-gradient(closest-side,transparent 80%,#000 90%,#000 96%,transparent 100%);
+  opacity:.7}
 .ws-surface[data-phase="from"] .ws-face__glass,.ws-surface[data-phase="out"] .ws-face__glass{opacity:1}
 .ws-surface[data-phase="from"] .ws-face__shade,.ws-surface[data-phase="out"] .ws-face__shade{opacity:0}
 .ws-surface::after{content:"";position:absolute;inset:-10%;z-index:-2;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,var(--pg,rgba(160,220,200,.5)),transparent 68%);opacity:.45}
 .ws-surface::before{content:"";position:absolute;inset:-2%;z-index:-1;border-radius:50%;pointer-events:none;
-  background:conic-gradient(from 200deg,transparent 0 10%,rgba(230,245,238,.45) 20%,transparent 32% 52%,rgba(190,220,205,.28) 62%,transparent 75%);
+  background:conic-gradient(from 200deg,transparent 0 12%,rgba(230,245,238,.22) 22%,transparent 34% 54%,rgba(190,220,205,.14) 64%,transparent 76%);
   -webkit-mask-image:radial-gradient(closest-side,transparent 84%,#000 90%,#000 97%,transparent 100%);mask-image:radial-gradient(closest-side,transparent 84%,#000 90%,#000 97%,transparent 100%);
   opacity:1}
 span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1px 0 0 -1px;pointer-events:none}
