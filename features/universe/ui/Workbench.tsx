@@ -181,23 +181,33 @@ export function WorkSurface({
   }, []);
   useEffect(() => { if (phase === 'in') ref.current?.focus({ preventScroll: true }); }, [phase]);
 
-  // MÔRA während der Arbeit: ruhig rechts oben über der Dock-Linie im leeren Himmel –
-  // deckt keine Karten („Frei“) ab, Flug um die Scheibe, ohne Dock-Dateien anzufassen.
+  // MÔRA während der Arbeit: rechts außen im leeren Himmel, klar neben der Scheibe
+  // (Figur ~scale .7 → ~56 px Halbmesser). Nie über Folio/Task/Frei. Ohne Dock-Dateien.
   const [rest, setRest] = useState<{ x: number; y: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
       const bridge = document.querySelector('.bridge')?.getBoundingClientRect();
       const surface = document.querySelector('.ws-surface')?.getBoundingClientRect();
       if (!bridge || bridge.top < 300) { setRest(null); return; }
-      // Rechts außen im leeren Himmel: über den Karten, rechts neben Scheibe/Folio (kein Frei-Text, kein Folio-Rand).
-      const x = Math.round(Math.min(window.innerWidth - 52, Math.max((surface?.right ?? bridge.right) + 36, window.innerWidth - 110)));
-      const y = Math.round(Math.min(bridge.top - 110, (surface?.bottom ?? bridge.top) - 24));
+      const half = 56;
+      const edge = window.innerWidth - half - 8;
+      // Wunsch: rechts neben der Scheibe, sonst ganz rechts im Himmel.
+      let x = Math.min(edge, Math.max((surface?.right ?? bridge.right) + half + 10, window.innerWidth - half - 28));
+      let y = Math.min(bridge.top - 100, Math.max(72, (surface?.top ?? 72) + 36));
+      // Wenn rechts kein Platz (Folio fast vollbreit): über dem oberen Scheibenrand, ganz rechts.
+      if (surface && x - half < surface.right - 4) {
+        x = edge;
+        y = Math.max(64, Math.min(surface.top - 4, bridge.top - 120));
+      }
+      // Harte Klammer: Figur bleibt im Viewport und über dem Dock.
+      x = Math.round(Math.min(edge, Math.max(half + 8, x)));
+      y = Math.round(Math.min(bridge.top - 90, Math.max(56, y)));
       setRest({ x, y });
     };
-    place();
+    const raf = requestAnimationFrame(() => place());
     window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, []);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', place); };
+  }, [view]);
 
   const close = useCallback(() => {
     flushDoc.current?.();

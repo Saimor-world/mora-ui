@@ -27,11 +27,11 @@
 .ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]),.ck-universe-unified[data-work] .ws-title,.ck-universe-unified[data-work] .ck-horizon__title{opacity:.05;transition:opacity .5s ease}
 .ck-universe-unified[data-work] .ws-light,.ck-universe-unified[data-work] .ws-path,.ck-universe-unified[data-work] .ck-horizon{opacity:.15;transition:opacity .5s ease}
 .ck-universe-unified[data-work] > .ck-top{opacity:.35;transition:opacity .5s ease;pointer-events:none}
-.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 48px));translate:-50% 0;display:flex;flex-direction:column;
+.ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,48px);bottom:var(--ws-bottom,410px);width:min(1080px,calc(100% - 160px));translate:-50% 0;display:flex;flex-direction:column;
   border-radius:50%;padding:5.2% 10.5% 4.8%;color:rgba(236,244,240,.94);outline:none;isolation:isolate;
   transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
 /* Folio: dunklere Seite im Glasmond – elliptisch, Ränder lösen sich ins Glas, kein helles Rechteck. */
-.ws-surface--folio{width:min(1040px,calc(100% - 56px));top:var(--ws-top,40px);bottom:var(--ws-bottom,360px);padding:5.5% 11% 5%;border-radius:50%;
+.ws-surface--folio{width:min(1040px,calc(100% - 160px));top:var(--ws-top,40px);bottom:var(--ws-bottom,360px);padding:5.5% 11% 5%;border-radius:50%;
   color:rgba(228,236,230,.94)}
 .ws-surface--folio .ws-face{border-radius:50%;
   -webkit-mask-image:radial-gradient(closest-side,#000 86%,rgba(0,0,0,.75) 93%,rgba(0,0,0,.3) 97%,transparent 100%);mask-image:radial-gradient(closest-side,#000 86%,rgba(0,0,0,.75) 93%,rgba(0,0,0,.3) 97%,transparent 100%);
@@ -60,7 +60,7 @@
 .ws-surface--folio .ws-doc__body:focus{box-shadow:inset 0 0 0 1px rgba(214,232,226,.2)}
 .ws-surface--folio .ws-doc__read:focus-visible{box-shadow:inset 0 0 0 1px rgba(214,232,226,.2)}
 /* Einzelaufgabe: ruhiger Mond, Größe am Inhalt (Titel bis 2 Zeilen + Fakten), über dem Dock. */
-.ws-surface--task{width:min(680px,calc(100% - 56px));height:auto;min-height:340px;max-height:min(540px,calc(100% - var(--ws-bottom,410px) - 100px));
+.ws-surface--task{width:min(680px,calc(100% - 160px));height:auto;min-height:340px;max-height:min(540px,calc(100% - var(--ws-bottom,410px) - 100px));
   top:auto;bottom:calc(var(--ws-bottom,410px) + 40px);translate:-50% 0;aspect-ratio:auto;
   padding:72px 88px 64px;justify-content:center;border-radius:50%}
 .ws-surface--task .ws-head{width:100%;margin-bottom:6px;min-height:0}
@@ -166,15 +166,15 @@ span.mora-anchor.mora-anchor--rest{position:fixed;width:2px;height:2px;margin:-1
 }
 /* 1280: Scheibe etwas schmaler. */
 @media (max-width:1280px) and (min-width:1025px){
-  .ws-surface{width:min(980px,calc(100% - 48px));padding:5% 10% 4.6%}
+  .ws-surface{width:min(980px,calc(100% - 160px));padding:5% 10% 4.6%}
   
-  .ws-surface--task{width:min(580px,calc(100% - 56px));max-height:min(480px,calc(100% - var(--ws-bottom,410px) - 90px));padding:48px 48px 40px}
+  .ws-surface--task{width:min(580px,calc(100% - 160px));max-height:min(480px,calc(100% - var(--ws-bottom,410px) - 90px));padding:48px 48px 40px}
 }
 /* 1024: zwei Spalten bleiben, kompakter. */
 @media (max-width:1024px) and (min-width:821px){
-  .ws-surface{width:min(900px,calc(100% - 36px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
-  .ws-surface--folio{width:min(900px,calc(100% - 40px));padding:4.8% 10% 4.5%}
-  .ws-surface--task{width:min(520px,calc(100% - 48px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 80px));padding:44px 40px 36px}
+  .ws-surface{width:min(900px,calc(100% - 160px));padding:4.6% 8.5% 4.2%;top:var(--ws-top,44px);bottom:var(--ws-bottom,300px)}
+  .ws-surface--folio{width:min(900px,calc(100% - 160px));padding:4.8% 10% 4.5%}
+  .ws-surface--task{width:min(520px,calc(100% - 160px));max-height:min(440px,calc(100% - var(--ws-bottom,300px) - 80px));padding:44px 40px 36px}
   .ws-desk{gap:20px}
   .ws-head h2{font-size:20px}
 }
