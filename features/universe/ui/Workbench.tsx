@@ -225,10 +225,10 @@ export function WorkSurface({
         const leftGap = surface.left;
         const need = half * 2 + 12;
         if (rightGap >= need) {
-          x = Math.min(edgeR, surface.right + half + 20);
+          x = Math.min(edgeR, surface.right + half + 28);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
         } else if (leftGap >= need) {
-          x = Math.max(edgeL, surface.left - half - 20);
+          x = Math.max(edgeL, surface.left - half - 28);
           y = Math.min(Math.max((surface.top + surface.bottom) / 2, topClear), bottomClear);
         } else {
           // Kein Seitenraum: über der Plane, rechts – Figur darf die Fläche nicht schneiden.
