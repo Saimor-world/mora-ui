@@ -1,13 +1,13 @@
 'use client';
 import './werkstatt.css';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import type { DeptWork, WorkTask } from '@/lib/universe/deptWork';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { shortDate } from '@/lib/lea/world';
 import { useDayActions } from '@/lib/lea/useDayActions';
-import { fetchNodeDetails, createNode } from '@/lib/api/orgClient';
+import { fetchNodeDetails, createNode, updateNode } from '@/lib/api/orgClient';
 import { renderMarkdown } from '@/lib/docs/markdown';
 import { buildShipTodaySnapshot, getDepartmentRoomContext, getShipNodeById } from '@/lib/universe/shipDepartments';
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
@@ -267,17 +267,37 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
     f.onfinish = () => onExit();
   }, [busy, camFor, onExit, activeRoom]);
 
-  // In ein Objekt hinein / wieder heraus (flüssig & direkt).
+  // In ein Objekt hinein / wieder heraus (flüssig & direkt, ohne doppelten Hintergrund im Studio/Bar).
   const zoom = useCallback((into: Place, dir: 'in' | 'out', done: () => void) => {
     const roomEl = roomRef.current, layer = closeRef.current;
     if (!roomEl || reduced() || typeof roomEl.animate !== 'function') { done(); return; }
+    // Im Studio und in der Bar liegt kein Holz-Pult/Tisch an den Koordinaten von room-werkstatt.webp:
+    // Dort blenden wir sauber und direkt um (200 ms), damit sich niemals 2x derselbe Raum im Hintergrund öffnet!
+    if (activeRoom !== 'werkstatt') {
+      settle(roomEl, '');
+      if (layer && typeof layer.animate === 'function') {
+        const l = layer.animate(
+          dir === 'in'
+            ? [{ opacity: 0, transform: 'scale(0.97)' }, { opacity: 1, transform: 'none' }]
+            : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }],
+          { duration: 190, easing: EASE, fill: 'forwards' as FillMode }
+        );
+        l.onfinish = () => {
+          if (dir === 'in') { l.cancel(); layer.style.transform = ''; layer.style.opacity = ''; }
+          done();
+        };
+      } else {
+        done();
+      }
+      return;
+    }
     const c = camFor(focusOf(into), 0.9);
     const vw = window.innerWidth, vh = window.innerHeight;
     const k0 = c.s.w / vw;
     const from = `translate(${c.s.x + c.s.w / 2 - (vw * k0) / 2}px, ${c.s.y + c.s.h / 2 - (vh * k0) / 2}px) scale(${k0})`;
     const camA = [{ transform: 'none' }, { transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }];
     const layA = [{ transform: from, opacity: 0 }, { transform: from, opacity: 0, offset: 0.25 }, { transform: 'none', opacity: 1 }];
-    const opt = { duration: dir === 'in' ? 320 : 260, easing: EASE, fill: 'forwards' as FillMode };
+    const opt = { duration: dir === 'in' ? 280 : 220, easing: EASE, fill: 'forwards' as FillMode };
     const camEnd = `translate(${c.tx}px, ${c.ty}px) scale(${c.k})`;
     settle(roomEl, null);
     const a = roomEl.animate(dir === 'in' ? camA : [...camA].reverse(), opt);
@@ -287,7 +307,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
       if (layer && l && dir === 'in') { l.cancel(); layer.style.transform = ''; layer.style.opacity = ''; }
       done();
     };
-  }, [camFor]);
+  }, [camFor, activeRoom]);
 
   const pendingIn = useRef<Place | null>(null);
   const open = useCallback((p: Place) => {
@@ -344,6 +364,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
   // Brett & Aktionen -----------------------------------------------------------------------------------
+  const qc = useQueryClient();
   const [page, setPage] = useState(0);
   const [later, setLater] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
@@ -352,7 +373,12 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocBody, setNewDocBody] = useState('');
+  const [studioEditing, setStudioEditing] = useState(false);
+  const [studioEditDraft, setStudioEditDraft] = useState('');
+  const [studioSaved, setStudioSaved] = useState(false);
   const [handoverDraft, setHandoverDraft] = useState('');
+  const [selectedCrewName, setSelectedCrewName] = useState<string | null>(null);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const { addTask, setDone } = useDayActions(companyId);
   const laterPages = useMemo(() => { const p: WorkTask[][] = []; for (let i = 0; i < board.later.length; i += PER_PAGE) p.push(board.later.slice(i, i + PER_PAGE)); return p.length ? p : [[]]; }, [board.later]);
   const pages = later ? laterPages : board.pages;
@@ -360,6 +386,37 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const cards = pages[pg] ?? [];
   const order = useMemo(() => [...board.pages.flat(), ...board.later], [board]);
   const newTaskFolder = activeFolder ?? planFolder ?? planet.moons[0]?.id ?? null;
+
+  useEffect(() => {
+    setStudioEditing(false);
+    setStudioEditDraft(lecternContent);
+  }, [lecternDoc?.id, lecternContent]);
+
+  const saveStudioDoc = async () => {
+    if (!lecternDoc) return;
+    const text = studioEditDraft.trim() || lecternContent;
+    setCreatedDocs((prev) => {
+      const idx = prev.findIndex((d) => d.id === lecternDoc.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], content: text };
+        return next;
+      }
+      return [{ id: lecternDoc.id, name: clean(lecternDoc.name), meta: lecternDoc.meta, folderId: lecternDoc.folderId, content: text }, ...prev];
+    });
+    qc.setQueryData(['node', lecternDoc.id], (old: Record<string, unknown> | null | undefined) => ({
+      ...(old ?? { id: lecternDoc.id, title: clean(lecternDoc.name) }),
+      content: text,
+    }));
+    try {
+      await updateNode(lecternDoc.id, { content: text, title: clean(lecternDoc.name), folder_id: lecternDoc.folderId || undefined });
+    } catch {
+      // Lokal im Studio & Query-Cache bereits aktualisiert
+    }
+    setStudioEditing(false);
+    setStudioSaved(true);
+    window.setTimeout(() => setStudioSaved(false), 2200);
+  };
 
   const submitDraft = async () => {
     const v = (draft ?? '').trim();
@@ -389,6 +446,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
       // Fallback: lokal im Studio sofort verfügbar
     }
     setCreatedDocs((prev) => [{ id: createdId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
+    qc.setQueryData(['node', createdId], { id: createdId, title: t, name: t, content });
     setLectern(createdId);
     setNewDocTitle('');
     setNewDocBody('');
@@ -398,8 +456,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
     e.preventDefault();
     const v = handoverDraft.trim();
     if (!v) return;
-    const ok = await addTask(v, newTaskFolder, today, planet.id);
-    if (ok) setHandoverDraft('');
+    const created = await addTask(v, newTaskFolder, today, planet.id, selectedCrewName);
+    if (created) setHandoverDraft('');
   };
 
   // Signale (Post & Termine) für die Bar der Abteilung (0ms synchron aus TodaySnapshot)
@@ -424,25 +482,37 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const cw = (B.w - PAD * 2 - GAP * (COLS - 1)) / COLS, ch = (B.h - PAD * 2 - GAP) / 2;
   const slot = (i: number) => ({ left: B.x + PAD + (i % COLS) * (cw + GAP), top: B.y + PAD + Math.floor(i / COLS) * (ch + GAP), width: cw, height: ch });
 
-  // Jeder Raum hat sein eigenes Raumbild und eigenes Himmelsfenster!
+  // Jeder Raum hat seine eigene architektonische Bühne & Materialität:
+  // - Werkstatt: Warme Holz-Werkbank & Pinnwand (room-werkstatt.webp)
+  // - Studio: Dunkler Basalt, Optisches Quarzglas & großes Panorama-Fenster ins Universum
+  // - Bar: Abendliche Panorama-Deck-Lounge am kosmischen See (Rauchglas, Messing & Amber-Licht)
   const activeStageImg = useMemo(() => {
     if (activeRoom === 'studio') return world === 'morgennebel' ? '/werkstatt/room-pult-morgen.webp' : '/werkstatt/room-pult.webp';
     if (activeRoom === 'bar') return world === 'morgennebel' ? '/werkstatt/room-schreibtisch-morgen.webp' : '/werkstatt/room-schreibtisch.webp';
     return world === 'morgennebel' ? '/werkstatt/room-werkstatt-morgen.webp' : '/werkstatt/room-werkstatt.webp';
   }, [activeRoom, world]);
-  const activeSkyRect = activeRoom === 'studio' ? CLOSE.doc.sky : activeRoom === 'bar' ? CLOSE.task.sky : ROOM.window;
+  const activeSkyRect = activeRoom === 'werkstatt' ? ROOM.window : { x: 0, y: 0, w: 1920, h: 1080 };
   const activeMoraSeat = activeRoom === 'studio'
-    ? { x: CLOSE.doc.mora.x, y: CLOSE.doc.mora.y, size: 112 }
+    ? { x: 1640, y: 928, size: 104 }
     : activeRoom === 'bar'
-      ? { x: CLOSE.task.mora.x, y: CLOSE.task.mora.y, size: 112 }
+      ? { x: 240, y: 942, size: 104 }
       : ROOM.moraSeat;
 
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
   const folderName = (t: WorkTask | null) => (t?.folderId ? clean(planet.moons.find((m) => m.id === t.folderId)?.title ?? '') : '');
   const folderTitleById = (fid: string) => clean(planet.moons.find((m) => m.id === fid)?.title ?? '');
 
+  const barFilteredTasks = useMemo(() => {
+    if (!selectedCrewName) return allTasks;
+    const target = selectedCrewName.toLowerCase();
+    return allTasks.filter((t) => (t.assignee ?? '').toLowerCase() === target);
+  }, [allTasks, selectedCrewName]);
+
+  const activeSignalMail = useMemo(() => barMails.find((m) => m.id === selectedSignalId) ?? null, [barMails, selectedSignalId]);
+  const activeSignalEvent = useMemo(() => barEvents.find((ev) => ev.id === selectedSignalId) ?? null, [barEvents, selectedSignalId]);
+
   return (
-    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
+    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-dept={planet.id} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
       <div ref={roomRef} className="wk-room" aria-hidden={close ? true : undefined}>
         <StageLayer
           stage={room}
@@ -453,13 +523,14 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
           under={<WindowUniverse rect={activeSkyRect} world={world} planets={planets} focusId={planet.id} />}
         >
           {/* =====================================================================================
-              RAUM 02 · STUDIO (Lesepult & Panorama-Fenster: Dossiers, offenes Buch & Abteilungs-Fokus)
+              RAUM 02 · STUDIO (Basalt- & Quarzglas-Atelier mit großem Panorama-Fenster ins Universum)
              ===================================================================================== */}
           {activeRoom === 'studio' ? (
             <>
-              <div className="wk-room-bar wk-room-bar--studio" style={{ left: 48, top: 26, width: 1824 }} data-testid="wk-room-bar">
+              <div className="wk-arch-backdrop wk-arch-backdrop--studio" aria-hidden />
+              <div className="wk-room-bar wk-room-bar--studio" style={{ left: 48, top: 24, width: 1824 }} data-testid="wk-room-bar">
                 <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-room-sub">{roomCtx.studio.subtitle}</span>
+                <span className="wk-workflow-pill"><b>2 · Basalt- & Glas-Studio:</b> Links Dossier wählen · Mitte direkt lesen & schreiben · Rechts Aufgaben ableiten</span>
                 {planet.moons.length > 0 ? (
                   <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders" style={{ marginLeft: 'auto' }}>
                     <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
@@ -473,8 +544,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
               </div>
 
               <div className="wk-studio-stage" role="list" aria-label={`Studio ${title}`} data-testid="wk-board" data-room-mode="studio">
-                {/* Linke Spalte: Dossiers & Konzepte der Abteilung */}
-                <aside className="wk-studio-panel wk-studio-panel--docs" style={{ left: 48, top: 82, width: 396, height: 836 }}>
+                {/* Linke Spalte: Dossier-Regal aus dunklem Basalt & Rauchglas */}
+                <aside className="wk-studio-panel wk-studio-panel--docs" style={{ left: 48, top: 80, width: 396, height: 842 }}>
                   <div className="wk-studio-panel__head">
                     <div>
                       <span className="wk-studio-eyebrow">{roomCtx.studio.tag}</span>
@@ -534,30 +605,57 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                   </div>
                 </aside>
 
-                {/* Mitte auf dem Holzpult: Aufgeschlagenes Studio-Buch mit Live-Inhalt & Kontext-Matrix */}
-                <section className="wk-studio-lectern" style={{ left: 468, top: 136, width: 984, height: 782 }} data-testid="wk-studio-lectern">
+                {/* Mitte vor dem Panorama-Fenster: Aufgeschlagenes Studio-Folio (direkt lesbar & direkt beschreibbar!) */}
+                <section className="wk-studio-lectern" style={{ left: 468, top: 112, width: 984, height: 810 }} data-testid="wk-studio-lectern">
                   <div className="wk-studio-book">
-                    {/* Linke Buchseite: Direkt lesbares Dossier */}
+                    {/* Linke Buchseite: Direkt lesbares & direkt bearbeitbares Dossier */}
                     <div className="wk-studio-page wk-studio-page--left">
                       <header className="wk-studio-page__head">
-                        <span>{lecternDoc ? (folderTitleById(lecternDoc.folderId) || title) : title}</span>
+                        <span>{lecternDoc ? (folderTitleById(lecternDoc.folderId) || title) : title}{studioSaved ? ' · Gespeichert ✓' : ''}</span>
                         {lecternDoc ? (
-                          <button
-                            type="button"
-                            className="wk-studio-btn wk-studio-btn--primary"
-                            data-testid="wk-studio-open-book"
-                            onClick={() => open({ kind: 'doc', id: lecternDoc.id })}
-                          >
-                            Im Buch blättern & schreiben →
-                          </button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              type="button"
+                              className="wk-studio-btn"
+                              data-testid="wk-studio-edit-toggle"
+                              onClick={() => setStudioEditing((v) => !v)}
+                            >
+                              {studioEditing ? 'Vorschau' : '✎ Direkt schreiben'}
+                            </button>
+                            <button
+                              type="button"
+                              className="wk-studio-btn wk-studio-btn--primary"
+                              data-testid="wk-studio-open-book"
+                              onClick={() => open({ kind: 'doc', id: lecternDoc.id })}
+                            >
+                              Vollbild-Buch →
+                            </button>
+                          </div>
                         ) : null}
                       </header>
                       {lecternDoc ? (
-                        <div
-                          className="wk-studio-markdown"
-                          data-testid="wk-studio-doc-preview"
-                          dangerouslySetInnerHTML={{ __html: renderMarkdown(lecternContent) }}
-                        />
+                        studioEditing ? (
+                          <div className="wk-studio-inline-editor">
+                            <textarea
+                              value={studioEditDraft}
+                              onChange={(e) => setStudioEditDraft(e.target.value)}
+                              aria-label="Dossier direkt im Studio bearbeiten"
+                              data-testid="wk-studio-editor"
+                            />
+                            <div className="wk-studio-inline-editor__bar">
+                              <span>Markdown wird unterstützt (# Überschrift, - Liste)</span>
+                              <button type="button" className="wk-studio-btn wk-studio-btn--primary" data-testid="wk-studio-save" onClick={() => void saveStudioDoc()}>
+                                Änderungen speichern ✓
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="wk-studio-markdown"
+                            data-testid="wk-studio-doc-preview"
+                            dangerouslySetInnerHTML={{ __html: renderMarkdown(lecternContent) }}
+                          />
+                        )
                       ) : (
                         <p className="wk-studio-empty">Noch kein Dossier in diesem Ordner. Legen Sie links ein neues Konzept an.</p>
                       )}
@@ -592,7 +690,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                 </section>
 
                 {/* Rechte Spalte: Verknüpfte Aufgaben & Ableitung aus dem Konzept */}
-                <aside className="wk-studio-panel wk-studio-panel--tasks" style={{ left: 1476, top: 82, width: 396, height: 836 }}>
+                <aside className="wk-studio-panel wk-studio-panel--tasks" style={{ left: 1476, top: 80, width: 396, height: 842 }}>
                   <div className="wk-studio-panel__head">
                     <div>
                       <span className="wk-studio-eyebrow">Umsetzung · {title}</span>
@@ -633,31 +731,48 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
             </>
           ) : activeRoom === 'bar' ? (
             /* =====================================================================================
-               RAUM 03 · BAR & CREW-LOUNGE (Holztisch mit Tee/Kaffee & Lampe: Crew, Übergabe & Funk)
+               RAUM 03 · BAR & CREW-SALON (Abendliche Panorama-Lounge am kosmischen See: Crew, Übergabe & Funk)
                ===================================================================================== */
             <>
-              <div className="wk-room-bar wk-room-bar--bar" style={{ left: 64, top: 162, width: 1792 }} data-testid="wk-room-bar">
+              <div className="wk-arch-backdrop wk-arch-backdrop--bar" aria-hidden />
+              <div className="wk-room-bar wk-room-bar--bar" style={{ left: 64, top: 28, width: 1792 }} data-testid="wk-room-bar">
                 <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-room-sub">{roomCtx.bar.subtitle}</span>
+                <span className="wk-workflow-pill"><b>3 · Panorama-Crew-Bar:</b> Links Crew-Mitglied zum Filtern wählen · Mitte Übergabe notieren · Rechts Funk & Termine</span>
               </div>
 
               <div className="wk-bar-stage" role="list" aria-label={`Bar ${title}`} data-testid="wk-board" data-room-mode="bar">
                 {/* Linke Spalte: Captain, Crew & Relic-Identitäten (#001–#111) + MÔRA */}
-                <section className="wk-bar-panel wk-bar-panel--crew" style={{ left: 64, top: 214, width: 560, height: 706 }}>
+                <section className="wk-bar-panel wk-bar-panel--crew" style={{ left: 64, top: 228, width: 552, height: 692 }}>
                   <header className="wk-bar-panel__head">
-                    <span className="wk-studio-eyebrow">{roomCtx.bar.tag}</span>
-                    <h3>Captain & Crew an Bord ({crew.length})</h3>
+                    <div>
+                      <span className="wk-studio-eyebrow">{roomCtx.bar.tag}</span>
+                      <h3>Captain & Crew an Bord ({crew.length})</h3>
+                    </div>
+                    {selectedCrewName ? (
+                      <button type="button" className="wk-studio-btn" onClick={() => setSelectedCrewName(null)}>
+                        Alle zeigen
+                      </button>
+                    ) : null}
                   </header>
                   <div className="wk-bar-crew-list">
                     {crew.map((c) => {
-                      const openCount = allTasks.filter((t) => !t.done && t.assignee && t.assignee.toLowerCase() === c.name.toLowerCase()).length;
+                      const cleanName = clean(c.name);
+                      const openCount = allTasks.filter((t) => !t.done && t.assignee && t.assignee.toLowerCase() === cleanName.toLowerCase()).length;
                       const relic = deriveCrewRelic(c.id || c.name, Boolean(c.isCaptain));
+                      const isSelected = selectedCrewName?.toLowerCase() === cleanName.toLowerCase();
                       return (
-                        <div key={c.id} role="listitem" className="wk-bar-crew-card" data-testid={`wk-crew-${c.id}`}>
-                          <CrewRelicAvatar id={c.id} name={clean(c.name)} isCaptain={c.isCaptain} status={c.status} size={42} testId={`wk-crew-avatar-${c.id}`} />
+                        <button
+                          key={c.id}
+                          type="button"
+                          role="listitem"
+                          className={`wk-bar-crew-card${isSelected ? ' is-active' : ''}`}
+                          data-testid={`wk-crew-${c.id}`}
+                          onClick={() => setSelectedCrewName((prev) => (prev?.toLowerCase() === cleanName.toLowerCase() ? null : cleanName))}
+                        >
+                          <CrewRelicAvatar id={c.id} name={cleanName} isCaptain={c.isCaptain} status={c.status} size={42} testId={`wk-crew-avatar-${c.id}`} />
                           <div className="wk-bar-crew-card__body">
                             <div className="wk-bar-crew-card__top">
-                              <span className="wk-card__t">{c.isCaptain ? `Captain ${clean(c.name)}` : clean(c.name)}</span>
+                              <span className="wk-card__t">{c.isCaptain ? `Captain ${cleanName}` : cleanName}</span>
                               <span className="wk-bar-status" data-online={c.status !== 'offline' ? '1' : undefined}>
                                 {c.status === 'offline' ? 'Pause' : 'An Bord'}
                               </span>
@@ -668,7 +783,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                               {openCount ? <em>{openCount} offen</em> : <em>Bereit</em>}
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                     <button
@@ -688,28 +803,33 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                   </div>
                 </section>
 
-                {/* Mittlere Spalte: Schicht-Übergabe & Tages-Logbuch am Tisch */}
-                <section className="wk-bar-panel wk-bar-panel--handover" style={{ left: 652, top: 214, width: 616, height: 706 }} data-testid="wk-bar-handover">
+                {/* Mittlere Spalte: Schicht-Übergabe & Tages-Logbuch an der Lounge-Konsole */}
+                <section className="wk-bar-panel wk-bar-panel--handover" style={{ left: 644, top: 228, width: 632, height: 692 }} data-testid="wk-bar-handover">
                   <header className="wk-bar-panel__head">
-                    <span className="wk-studio-eyebrow">Schichtwechsel & Logbuch</span>
-                    <h3>{roomCtx.bar.loungeTitle}</h3>
+                    <div>
+                      <span className="wk-studio-eyebrow">Schichtwechsel & Logbuch</span>
+                      <h3>{roomCtx.bar.loungeTitle}</h3>
+                    </div>
+                    {selectedCrewName ? (
+                      <span className="wk-studio-badge">Filter: {selectedCrewName}</span>
+                    ) : null}
                   </header>
                   <form className="wk-studio-task-form" onSubmit={(e) => void submitHandover(e)} data-testid="wk-bar-handover-form">
                     <input
                       value={handoverDraft}
                       onChange={(e) => setHandoverDraft(e.target.value)}
-                      placeholder={roomCtx.bar.handoverPrompt}
+                      placeholder={selectedCrewName ? `Übergabe an ${selectedCrewName} notieren…` : roomCtx.bar.handoverPrompt}
                       aria-label="Übergabe-Notiz oder Aufgabe"
                       data-testid="wk-bar-handover-input"
                     />
                     <button type="submit" className="wk-studio-btn wk-studio-btn--primary">Festhalten</button>
                   </form>
                   <div className="wk-bar-handover-stats">
-                    <span>Offen in {title}: <b>{allTasks.filter((t) => !t.done).length}</b></span>
-                    <span>Erledigt: <b>{allTasks.filter((t) => t.done).length}</b></span>
+                    <span>{selectedCrewName ? `Aufgaben von ${selectedCrewName}` : `Offen in ${title}`}: <b>{barFilteredTasks.filter((t) => !t.done).length}</b></span>
+                    <span>Erledigt: <b>{barFilteredTasks.filter((t) => t.done).length}</b></span>
                   </div>
                   <div className="wk-studio-task-list" data-testid="wk-bar-tasks">
-                    {allTasks.slice(0, 6).map((t) => (
+                    {barFilteredTasks.slice(0, 7).map((t) => (
                       <div key={t.id} className="wk-studio-task-row" data-done={t.done ? '1' : undefined}>
                         <button
                           type="button"
@@ -729,8 +849,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                   </div>
                 </section>
 
-                {/* Rechte Spalte: Abteilungs-Funk (Post & Termine heute) */}
-                <section className="wk-bar-panel wk-bar-panel--signals" style={{ left: 1296, top: 214, width: 560, height: 706 }} data-testid="wk-bar-signals">
+                {/* Rechte Spalte: Abteilungs-Funk (Post & Termine heute mit Direkt-Vorschau in der Bar!) */}
+                <section className="wk-bar-panel wk-bar-panel--signals" style={{ left: 1304, top: 228, width: 552, height: 692 }} data-testid="wk-bar-signals">
                   <header className="wk-bar-panel__head">
                     <div>
                       <span className="wk-studio-eyebrow">Abteilungs-Funk & Brücke</span>
@@ -746,14 +866,40 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                     </button>
                   </header>
 
+                  {activeSignalMail ? (
+                    <div className="wk-bar-signal-detail" data-testid="wk-bar-signal-detail">
+                      <div className="wk-bar-signal-detail__top">
+                        <b>{clean(activeSignalMail.subject ?? '')}</b>
+                        <button type="button" className="wk-studio-btn" onClick={() => setSelectedSignalId(null)}>Schließen</button>
+                      </div>
+                      <small>{clean(activeSignalMail.from || activeSignalMail.from_addr || 'Eingang')} · {(activeSignalMail.received_at ?? '').slice(11, 16) || 'heute'}</small>
+                      <p>{clean(activeSignalMail.snippet ?? 'Nachricht für diese Abteilung liegt im Posteingang bereit.')}</p>
+                      <button type="button" className="wk-studio-btn wk-studio-btn--primary" onClick={() => useOsShellStore.getState().setActiveFeature('post')}>
+                        In Post beantworten →
+                      </button>
+                    </div>
+                  ) : activeSignalEvent ? (
+                    <div className="wk-bar-signal-detail" data-testid="wk-bar-signal-detail">
+                      <div className="wk-bar-signal-detail__top">
+                        <b>{clean(activeSignalEvent.title)}</b>
+                        <button type="button" className="wk-studio-btn" onClick={() => setSelectedSignalId(null)}>Schließen</button>
+                      </div>
+                      <small>{activeSignalEvent.time || (activeSignalEvent.start ?? '').slice(11, 16) || 'Heute'} Uhr · {activeSignalEvent.location || title}</small>
+                      <p>Synchronisierter Abteilungstermin im Schiffskalender.</p>
+                      <button type="button" className="wk-studio-btn wk-studio-btn--primary" onClick={() => useOsShellStore.getState().setActiveFeature('post')}>
+                        Im Kalender öffnen →
+                      </button>
+                    </div>
+                  ) : null}
+
                   <div className="wk-bar-signal-group">
                     <h4>Eingegangene Nachrichten ({barMails.length})</h4>
                     {barMails.map((m) => (
                       <button
                         key={m.id}
                         type="button"
-                        className="wk-bar-signal-card"
-                        onClick={() => useOsShellStore.getState().setActiveFeature('post')}
+                        className={`wk-bar-signal-card${selectedSignalId === m.id ? ' is-active' : ''}`}
+                        onClick={() => setSelectedSignalId((prev) => (prev === m.id ? null : m.id))}
                       >
                         <b>{clean(m.subject ?? '')}</b>
                         <small>{clean(m.from || m.from_addr || 'Eingang')} · {(m.received_at ?? '').slice(11, 16) || 'heute'}</small>
@@ -767,8 +913,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                       <button
                         key={ev.id}
                         type="button"
-                        className="wk-bar-signal-card"
-                        onClick={() => useOsShellStore.getState().setActiveFeature('post')}
+                        className={`wk-bar-signal-card${selectedSignalId === ev.id ? ' is-active' : ''}`}
+                        onClick={() => setSelectedSignalId((prev) => (prev === ev.id ? null : ev.id))}
                       >
                         <b>{clean(ev.title)}</b>
                         <small>{ev.time || (ev.start ?? '').slice(11, 16) || 'Heute'} Uhr</small>
@@ -780,10 +926,10 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
             </>
           ) : (
             /* =====================================================================================
-               RAUM 01 · WERKSTATT (Holz-Pinnwand, Werkbank, Wochenmappe & Lesepult)
+               RAUM 01 · WERKSTATT (Warme Holz-Werkbank, Pinnwand, Wochenmappe & Lesepult)
                ===================================================================================== */
             <>
-              <div className="wk-room-bar" style={{ left: B.x, top: B.y - 46, width: B.w }} data-testid="wk-room-bar">
+              <div className="wk-room-bar" style={{ left: B.x, top: B.y - 46, width: 1560 }} data-testid="wk-room-bar">
                 <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
                 {planet.moons.length > 0 ? (
                   <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders">
@@ -795,6 +941,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                     ))}
                   </div>
                 ) : null}
+                <span className="wk-workflow-pill wk-workflow-pill--wood"><b>1 · Holz-Werkstatt:</b> Pinnwand für Aufgaben · Tisch für Wochenmappe · Pult rechts für Handbuch</span>
               </div>
 
               <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>

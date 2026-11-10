@@ -1,17 +1,26 @@
 'use client';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { corePost } from '@/lib/api/http';
+import { corePost, isLocalDemoFallback } from '@/lib/api/http';
+import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { invalidateToday } from '@/lib/os/useScopedToday';
 import { localISO, type WorldTask } from './world';
 
 /**
  * Aufgaben abhaken, zurücknehmen und für morgen anlegen – über die bestehenden
  * CORE-Endpunkte POST /v3/tasks/{id} und POST /v3/tasks. Optimistisch, bei Fehler zurück.
+ * Im Demo- oder lokalen Fallback-Modus (`isLocalDemoFallback()`) bleiben Änderungen lokal im Cache bestehen.
  * Nach jeder Änderung wird auch der Heute-Schnappschuss (Dock: Heute-Zahl) neu geladen.
  */
 /** Merkt den Status vor dem Abhaken, damit „wieder öffnen“ in_progress etc. zurückbringt (clientseitig). */
 const priorStatus = new Map<string, string>();
+
+function isDemoOrLocalCompany(companyId: string | null) {
+  return (
+    process.env.NODE_ENV !== 'test' &&
+    (isDemoScopeActive() || isLocalDemoFallback() || companyId === 'company-local-demo' || Boolean(companyId?.startsWith('demo-')))
+  );
+}
 
 export function useDayActions(companyId: string | null) {
   const qc = useQueryClient();
@@ -34,6 +43,10 @@ export function useDayActions(companyId: string | null) {
       priorStatus.delete(task.id);
     }
     const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, status } : t)));
+    if (isDemoOrLocalCompany(companyId)) {
+      invalidateToday();
+      return true;
+    }
     try {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { status });
       if (!res) throw new Error('no response');
@@ -50,18 +63,44 @@ export function useDayActions(companyId: string | null) {
   const addForTomorrow = useCallback(async (title: string) => {
     const t = new Date();
     t.setDate(t.getDate() + 1);
-    const res = await corePost('/v3/tasks', { title, due_date: localISO(t), company_id: companyId ?? undefined }).catch(() => null);
+    const due = localISO(t);
+    if (isDemoOrLocalCompany(companyId)) {
+      const localCreated: WorldTask = {
+        id: `task-local-${Date.now().toString(36)}`,
+        title,
+        status: 'backlog',
+        due_date: due,
+      };
+      patch((l) => [...l, localCreated]);
+      invalidateToday();
+      return true;
+    }
+    const res = await corePost('/v3/tasks', { title, due_date: due, company_id: companyId ?? undefined }).catch(() => null);
     const created = (res && (res.data ?? res)) as WorldTask | null;
     if (!created?.id) return false;
     patch((l) => [...l, created]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
-      invalidateToday();
+    invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
 
   /** Neue Aufgabe mit Bereich (Ordner = Mond) und Abteilung. CORE nimmt folder_id und department_id beim Anlegen an. */
-  const addTask = useCallback(async (title: string, folderId?: string | null, due?: string | null, departmentId?: string | null) => {
+  const addTask = useCallback(async (title: string, folderId?: string | null, due?: string | null, departmentId?: string | null, assignee?: string | null) => {
+    if (isDemoOrLocalCompany(companyId)) {
+      const localTask: WorldTask = {
+        id: `task-local-${Date.now().toString(36)}`,
+        title,
+        status: 'backlog',
+        due_date: due || undefined,
+        ...(folderId ? { folder_id: folderId } : {}),
+        ...(departmentId ? ({ department_id: departmentId } as Partial<WorldTask>) : {}),
+        ...(assignee ? { assignee } : {}),
+      };
+      patch((l) => [localTask, ...l]);
+      invalidateToday();
+      return true;
+    }
     const payload: Record<string, unknown> = {
       title,
       due_date: due || undefined,
@@ -87,12 +126,17 @@ export function useDayActions(companyId: string | null) {
   /** Bestehende Aufgabe einem Ordner zuordnen. Nur wahr, wenn CORE die folder_id wirklich zurückgibt –
    *  heute kennt TaskUpdate das Feld noch nicht, dann bleibt die Aufgabe ehrlich „noch nicht zugeordnet“. */
   const assignFolder = useCallback(async (task: WorldTask, folderId: string) => {
+    if (isDemoOrLocalCompany(companyId)) {
+      patch((l) => l.map((t) => (t.id === task.id ? { ...t, folder_id: folderId } : t)));
+      invalidateToday();
+      return true;
+    }
     const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { folder_id: folderId }).catch(() => null);
     const upd = (res && (res.data ?? res)) as WorldTask | null;
     if (!upd || upd.folder_id !== folderId) return false;
     patch((l) => l.map((t) => (t.id === task.id ? { ...t, folder_id: folderId } : t)));
     qc.invalidateQueries({ queryKey: ['tasks'] });
-      invalidateToday();
+    invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -100,6 +144,10 @@ export function useDayActions(companyId: string | null) {
   /** Titel oder Fälligkeit ändern – derselbe Endpunkt POST /v3/tasks/{id} (TaskUpdate: title, status, priority, due_date). */
   const update = useCallback(async (task: WorldTask, change: { title?: string; due_date?: string; status?: string }) => {
     const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, ...change } : t)));
+    if (isDemoOrLocalCompany(companyId)) {
+      invalidateToday();
+      return true;
+    }
     try {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, change);
       if (!res) throw new Error('no response');

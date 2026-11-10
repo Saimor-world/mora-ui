@@ -112,6 +112,7 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
     const content = serializeBlocks(next);
     if (content === (lastSaved.current ?? serializeBlocks(parseBlocks(node?.content ?? '')))) return;
     lastSaved.current = content;
+    qc.setQueryData(['node', id], (old: object | undefined) => ({ ...(old ?? {}), content }));
     upd.mutate({ id, payload: { content } }, {
       onSuccess: () => qc.setQueryData(['node', id], (old: object | undefined) => ({ ...(old ?? {}), content })),
     });

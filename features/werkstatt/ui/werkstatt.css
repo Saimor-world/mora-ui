@@ -259,86 +259,222 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 .ck-universe-unified[data-werkstatt] .ck-scene { transition: transform .36s cubic-bezier(.45, 0, .2, 1), opacity .36s ease; transform: scale(1.9); opacity: 0; }
 
 /* =====================================================================================
-   RAUM 02 (STUDIO · Lesepult & Panorama) & RAUM 03 (BAR · Crew-Tisch & Übergabe)
+   KEIN DOPPELTER HINTERGRUND: Sobald ein Objekt (.wk-close: Aufgabe, Buch, Planung) offen ist,
+   weicht .wk-room dahinter komplett, damit niemals 2 Räume übereinander im Hintergrund stehen!
    ===================================================================================== */
-.wk-room-sub {
-  display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: var(--r);
-  background: rgba(24, 18, 12, .76); color: #efe5d0; font: 400 15px/1 'Werk Serif', Georgia, serif;
-  box-shadow: inset 0 1px 0 rgba(255, 236, 195, .18), 0 2px 6px rgba(10, 6, 2, .38);
+.wk-root:not([data-place='room']) .wk-room {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden;
+  transition: opacity .16s ease, visibility .16s ease;
 }
+
+/* Abteilungs-spezifische Mineral-/Licht-Akzente */
+.wk-root { --dept-accent: #d8b26e; --dept-glow: rgba(216, 178, 110, .24); }
+.wk-root[data-dept='dept-engineering'] { --dept-accent: #72cad6; --dept-glow: rgba(114, 202, 214, .24); }
+.wk-root[data-dept='dept-studio'] { --dept-accent: #7ed4be; --dept-glow: rgba(126, 212, 190, .26); }
+.wk-root[data-dept='dept-operations'] { --dept-accent: #e29d6e; --dept-glow: rgba(226, 157, 110, .24); }
+.wk-root[data-dept='dept-treasury'] { --dept-accent: #d8be88; --dept-glow: rgba(216, 190, 136, .24); }
+
+/* Im Studio (Basalt & Glas) und in der Bar (Panorama-Lounge) weicht das braune Holzbild im .wk-room
+   dem großen Panorama-Fenster ins Universum + architektonischer Rahmenbühne (.wk-arch-backdrop). */
+.wk-root[data-room='studio'] .wk-room > .wk-stage > .wk-stage__img,
+.wk-root[data-room='bar'] .wk-room > .wk-stage > .wk-stage__img {
+  opacity: 0;
+}
+.wk-root[data-room='studio'] .wk-sky,
+.wk-root[data-room='bar'] .wk-sky {
+  background: #050b10 !important;
+}
+.wk-root[data-room='studio'] .wk-sky__lake,
+.wk-root[data-room='bar'] .wk-sky__lake {
+  background-image: url('/universe/universe-lake.webp') !important;
+}
+.wk-root[data-room='studio'] .wk-dock,
+.wk-root[data-room='bar'] .wk-dock {
+  background: linear-gradient(180deg, rgba(16, 25, 32, .95), rgba(9, 14, 19, .98)) !important;
+  color: rgba(236, 244, 240, .94) !important;
+  box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .18), 0 0 0 1px rgba(190, 224, 216, .18), 0 12px 28px rgba(0, 0, 0, .55) !important;
+}
+.wk-root[data-room='studio'] .wk-dock button[aria-pressed='true'],
+.wk-root[data-room='bar'] .wk-dock button[aria-pressed='true'] {
+  background: rgba(218, 178, 112, .22) !important;
+  color: #f8ecd4 !important;
+}
+
+.wk-arch-backdrop {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+}
+/* RAUM 02 · STUDIO: Architektonisches Basalt- & Quarzglas-Atelier mit großem Panorama-Fenster */
+.wk-arch-backdrop--studio {
+  background:
+    radial-gradient(ellipse 80% 65% at 50% 36%, rgba(6, 12, 18, .08) 0%, rgba(6, 11, 16, .42) 72%, rgba(5, 9, 13, .86) 100%),
+    linear-gradient(180deg, rgba(8, 13, 18, .82) 0%, rgba(8, 13, 18, .08) 8%, rgba(8, 13, 18, .12) 84%, rgba(6, 10, 14, .92) 100%);
+  box-shadow:
+    inset 0 68px 0 rgba(8, 13, 18, .84),
+    inset 0 -88px 0 rgba(6, 10, 14, .92),
+    inset 36px 0 0 rgba(8, 13, 18, .76),
+    inset -36px 0 0 rgba(8, 13, 18, .76);
+}
+.wk-arch-backdrop--studio::after {
+  content: ""; position: absolute; inset: 68px 36px 88px;
+  border: 1px solid rgba(190, 224, 216, .22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 60px var(--dept-glow);
+}
+
+/* RAUM 03 · BAR: Abendliche Panorama-Deck-Lounge am kosmischen See (Rauchglas, Messing & Amber-Licht) */
+.wk-arch-backdrop--bar {
+  background:
+    radial-gradient(ellipse 75% 42% at 50% 14%, rgba(232, 168, 92, .16), transparent 62%),
+    radial-gradient(ellipse 82% 66% at 50% 34%, rgba(8, 11, 16, .06) 0%, rgba(8, 11, 16, .38) 70%, rgba(6, 8, 12, .88) 100%),
+    linear-gradient(180deg, rgba(11, 12, 17, .82) 0%, rgba(11, 12, 17, .06) 9%, rgba(10, 12, 16, .18) 82%, rgba(8, 9, 13, .94) 100%);
+  box-shadow:
+    inset 0 74px 0 rgba(10, 11, 15, .84),
+    inset 0 -92px 0 rgba(7, 8, 11, .94),
+    inset 44px 0 0 rgba(10, 11, 15, .74),
+    inset -44px 0 0 rgba(10, 11, 15, .74);
+}
+.wk-arch-backdrop--bar::after {
+  content: ""; position: absolute; inset: 74px 44px 92px;
+  border: 1px solid rgba(218, 178, 112, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 196, .16), 0 0 70px rgba(218, 168, 96, .16);
+}
+
+/* =====================================================================================
+   ORIENTIERUNGS-LEISTE ("WIE ARBEITEST DU HIER?") + RAUM 02 (STUDIO) & RAUM 03 (BAR)
+   ===================================================================================== */
+.wk-workflow-pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px;
+  background: rgba(11, 18, 24, .86); border: 1px solid rgba(190, 224, 216, .24);
+  color: rgba(232, 242, 238, .9); font: 450 14px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .4); white-space: nowrap;
+}
+.wk-workflow-pill b { color: var(--dept-accent); font-weight: 650; }
+.wk-workflow-pill--wood {
+  margin-left: auto; background: rgba(28, 20, 12, .84); border-color: rgba(218, 178, 112, .34); color: #f4ead5;
+}
+.wk-workflow-pill--wood b { color: #e8be74; }
+
+.wk-root[data-room='studio'] .wk-folder-tab {
+  background: rgba(13, 22, 28, .86); color: rgba(214, 232, 226, .76);
+  border: 1px solid rgba(190, 224, 216, .2); box-shadow: none;
+  font: 500 14px/1 -apple-system, BlinkMacSystemFont, sans-serif; border-radius: 8px;
+}
+.wk-root[data-room='studio'] .wk-folder-tab[aria-pressed='true'] {
+  background: rgba(22, 38, 46, .95); color: #f4faf8; border-color: var(--dept-accent);
+  box-shadow: 0 0 16px var(--dept-glow);
+}
+
 .wk-studio-stage, .wk-bar-stage { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.wk-studio-panel, .wk-bar-panel, .wk-studio-lectern {
+
+/* Dunkle Basalt- & Rauchglas-Konsolen für Studio & Bar (statt beiger Papierwände!) */
+.wk-studio-panel, .wk-bar-panel {
   position: absolute; pointer-events: auto; display: flex; flex-direction: column; gap: 12px;
-  padding: 20px 22px; border-radius: var(--r);
-  background-color: var(--paper); background-image: linear-gradient(165deg, rgba(255, 224, 168, .22), rgba(255, 224, 168, 0) 64%), var(--grain);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .52), 0 2px 4px rgba(24, 15, 6, .38), 0 22px 38px -14px rgba(12, 7, 2, .68);
-  color: var(--ink); overflow: hidden;
+  padding: 20px 22px; border-radius: 14px;
+  background: linear-gradient(170deg, rgba(13, 21, 27, .88) 0%, rgba(8, 13, 18, .93) 100%);
+  border: 1px solid rgba(190, 224, 216, .2);
+  box-shadow: 0 24px 52px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .08);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: #ecf4f0; overflow: hidden;
 }
+.wk-bar-panel {
+  background: linear-gradient(170deg, rgba(18, 19, 26, .88) 0%, rgba(10, 12, 17, .94) 100%);
+  border-color: rgba(218, 178, 112, .26);
+}
+
+/* Architektonisches Basalt-/Titan-Lesepult im Studio mit aufgeschlagenem hellem Folio-Buch */
 .wk-studio-lectern {
-  padding: 14px; background: linear-gradient(180deg, #3c2718 0%, #2b1b10 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 225, 175, .24), 0 28px 48px -16px rgba(8, 4, 1, .82);
-}
-.wk-studio-book {
-  flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-}
-.wk-studio-page {
-  display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; border-radius: var(--r);
-  background-color: var(--paper); background-image: var(--grain);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 6px rgba(20, 12, 4, .35);
+  position: absolute; pointer-events: auto; display: flex; flex-direction: column;
+  padding: 16px; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(16, 24, 30, .94) 0%, rgba(9, 14, 19, .97) 100%);
+  border: 1px solid rgba(190, 224, 216, .26);
+  box-shadow: 0 32px 68px rgba(0, 0, 0, .78), 0 0 42px var(--dept-glow), inset 0 1px 0 rgba(255, 255, 255, .12);
   overflow: hidden;
 }
+.wk-studio-book {
+  flex: 1; min-height: 0; display: grid; grid-template-columns: 1.08fr .92fr; gap: 14px;
+}
+.wk-studio-page {
+  display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; border-radius: 10px;
+  overflow: hidden;
+}
+/* Linke Folio-Seite: Edles Elfenbein-Papier zum konzentrierten Lesen & Schreiben */
+.wk-studio-page--left {
+  background-color: var(--paper); background-image: var(--grain); color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 4px 14px rgba(0, 0, 0, .38);
+}
+/* Rechte Folio-Seite: Dunkle Basalt-Architektur-Matrix für den Abteilungs-Kontext */
+.wk-studio-page--right {
+  background: linear-gradient(165deg, rgba(14, 23, 30, .95) 0%, rgba(9, 15, 20, .98) 100%);
+  border: 1px solid rgba(190, 224, 216, .18); color: #ecf4f0;
+}
+
 .wk-studio-page__head, .wk-studio-panel__head, .wk-bar-panel__head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding-bottom: 10px; border-bottom: 1px solid var(--pencil);
+  padding-bottom: 10px; border-bottom: 1px solid rgba(190, 224, 216, .14);
 }
-.wk-studio-page__head span { font: italic 500 15.5px/1.2 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
-.wk-studio-eyebrow { display: block; font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; text-transform: uppercase; letter-spacing: .06em; color: #7a5628; margin-bottom: 3px; }
+.wk-studio-page--left .wk-studio-page__head { border-bottom-color: var(--pencil); }
+.wk-studio-page__head span { font: italic 500 15px/1.2 'Werk Serif', Georgia, serif; color: rgba(214, 232, 226, .68); }
+.wk-studio-page--left .wk-studio-page__head span { color: var(--ink-soft); }
+
+.wk-studio-eyebrow {
+  display: block; font: 600 11.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
+  text-transform: uppercase; letter-spacing: .1em; color: var(--dept-accent); margin-bottom: 4px;
+}
 .wk-studio-panel__head h3, .wk-bar-panel__head h3, .wk-studio-focus__title {
-  margin: 0; font: 600 21px/1.2 'Werk Serif', Georgia, serif; color: var(--ink);
+  margin: 0; font: 600 20px/1.2 'Werk Serif', Georgia, serif; color: #f4f8f6;
 }
 .wk-studio-btn {
   display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 12px;
-  border: 1px solid rgba(90, 62, 30, .32); border-radius: var(--r);
-  background: rgba(255, 248, 232, .72); color: var(--ink); font: 600 14.5px/1 'Werk Serif', Georgia, serif;
-  cursor: pointer; white-space: nowrap; transition: background .2s, transform .2s;
+  border: 1px solid rgba(190, 224, 216, .26); border-radius: 8px;
+  background: rgba(20, 32, 40, .82); color: #ecf4f0; font: 600 13.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s;
 }
-.wk-studio-btn:hover { background: rgba(255, 240, 205, .95); }
+.wk-studio-page--left .wk-studio-btn:not(.wk-studio-btn--primary) {
+  background: rgba(255, 248, 232, .85); color: var(--ink); border-color: rgba(90, 62, 30, .3);
+}
+.wk-studio-btn:hover { background: rgba(30, 48, 58, .95); border-color: var(--dept-accent); }
 .wk-studio-btn--primary {
-  background: linear-gradient(180deg, #d8b26e 0%, #b58942 100%); color: #261808;
-  border-color: rgba(80, 52, 16, .45); box-shadow: inset 0 1px 0 rgba(255, 242, 208, .65);
+  background: linear-gradient(180deg, #deb974 0%, #b88c44 100%); color: #1e1306;
+  border-color: rgba(255, 232, 185, .55); box-shadow: inset 0 1px 0 rgba(255, 246, 218, .65);
 }
+.wk-studio-btn--primary:hover { background: linear-gradient(180deg, #e8c582 0%, #c4984e 100%); color: #1e1306; }
+
 .wk-studio-form {
-  display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--r);
-  background: rgba(255, 250, 240, .65); border: 1px solid var(--pencil);
+  display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px;
+  background: rgba(8, 14, 19, .78); border: 1px solid rgba(190, 224, 216, .18);
 }
 .wk-studio-form input, .wk-studio-form textarea, .wk-studio-task-form input {
-  width: 100%; padding: 8px 10px; border: 1px solid var(--pencil); border-radius: var(--r);
-  background: rgba(255, 252, 245, .88); font: 500 16px/1.3 'Werk Serif', Georgia, serif; color: var(--ink); outline: none;
+  width: 100%; padding: 8px 11px; border: 1px solid rgba(190, 224, 216, .22); border-radius: 8px;
+  background: rgba(6, 11, 15, .82); font: 450 15px/1.3 -apple-system, BlinkMacSystemFont, sans-serif; color: #f2f7f5; outline: none;
+}
+.wk-studio-form input::placeholder, .wk-studio-form textarea::placeholder, .wk-studio-task-form input::placeholder {
+  color: rgba(200, 220, 214, .45);
 }
 .wk-studio-doc-list, .wk-studio-task-list, .wk-bar-crew-list {
   flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px;
 }
 .wk-studio-doc-item {
-  display: flex; align-items: stretch; gap: 6px; padding: 4px; border-radius: var(--r);
-  background: rgba(255, 248, 234, .58); border: 1px solid rgba(70, 52, 30, .18);
+  display: flex; align-items: stretch; gap: 6px; padding: 5px; border-radius: 10px;
+  background: rgba(16, 26, 33, .76); border: 1px solid rgba(190, 224, 216, .14);
 }
 .wk-studio-doc-item.is-active {
-  background: rgba(236, 198, 132, .32); border-color: #9e7332;
-  box-shadow: inset 3px 0 0 #9e7332;
+  background: rgba(26, 44, 54, .92); border-color: var(--dept-accent);
+  box-shadow: inset 3px 0 0 var(--dept-accent);
 }
 .wk-studio-doc-card {
   flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
-  padding: 8px 10px; border: 0; background: none; text-align: left; cursor: pointer;
+  padding: 7px 10px; border: 0; background: none; text-align: left; cursor: pointer; color: #f2f7f5;
 }
-.wk-studio-doc-card .wk-card__t { font-size: 17.5px; font-weight: 600; line-height: 1.22; -webkit-line-clamp: 2; }
-.wk-studio-doc-card .wk-card__f { font-size: 14px; margin-top: 2px; }
+.wk-studio-doc-card .wk-card__t { font-size: 16.5px; font-weight: 600; line-height: 1.24; color: #f4f8f6; -webkit-line-clamp: 2; }
+.wk-studio-doc-card .wk-card__f { font-size: 13px; margin-top: 2px; color: rgba(200, 220, 214, .64); }
 .wk-studio-doc-open {
-  align-self: center; height: 32px; padding: 0 10px; border: 1px solid rgba(90, 62, 30, .25); border-radius: var(--r);
-  background: rgba(255, 250, 238, .8); font: 600 13.5px/1 'Werk Serif', Georgia, serif; cursor: pointer;
+  align-self: center; height: 30px; padding: 0 10px; border: 1px solid rgba(190, 224, 216, .24); border-radius: 7px;
+  background: rgba(22, 36, 44, .88); color: #e8f2ee; font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, sans-serif; cursor: pointer;
 }
 .wk-studio-markdown {
   flex: 1; min-height: 0; overflow-y: auto; padding-right: 6px;
-  font: 400 17px/1.52 'Werk Serif', Georgia, serif; color: var(--ink);
+  font: 400 17px/1.54 'Werk Serif', Georgia, serif; color: var(--ink);
 }
 .wk-studio-markdown h1, .wk-studio-markdown h2, .wk-studio-markdown h3 {
   margin: 0 0 10px; font-weight: 650; line-height: 1.2; color: var(--ink);
@@ -346,78 +482,110 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 .wk-studio-markdown h1 { font-size: 24px; }
 .wk-studio-markdown h2 { font-size: 19px; margin-top: 14px; }
 .wk-studio-markdown p, .wk-studio-markdown ul, .wk-studio-markdown ol { margin: 0 0 10px; }
+
+/* Inline-Editor direkt auf dem Studio-Pult */
+.wk-studio-inline-editor {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px;
+}
+.wk-studio-inline-editor textarea {
+  flex: 1; width: 100%; min-height: 0; padding: 12px 14px; border-radius: 6px;
+  border: 1px solid rgba(80, 58, 28, .28); background: rgba(255, 252, 244, .82);
+  font: 450 16.5px/1.5 'Werk Serif', Georgia, serif; color: var(--ink); resize: none; outline: none;
+}
+.wk-studio-inline-editor__bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font: 400 13.5px/1.2 'Werk Serif', Georgia, serif; color: var(--ink-soft);
+}
+
 .wk-studio-focus__grid {
   flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
 }
 .wk-studio-focus__card {
-  padding: 12px 14px; border-radius: var(--r); background: rgba(255, 250, 238, .66);
-  border: 1px solid rgba(75, 55, 28, .2);
+  padding: 12px 14px; border-radius: 10px; background: rgba(18, 30, 38, .78);
+  border: 1px solid rgba(190, 224, 216, .16);
 }
 .wk-studio-focus__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.wk-studio-focus__top b { font: 650 16.5px/1.2 'Werk Serif', Georgia, serif; }
-.wk-studio-focus__card p { margin: 0; font: 400 15.5px/1.38 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
+.wk-studio-focus__top b { font: 600 15.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: #f4f8f6; }
+.wk-studio-focus__card p { margin: 0; font: 400 14.5px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(214, 232, 226, .74); }
 .wk-studio-badge {
-  display: inline-flex; align-items: center; padding: 3px 8px; border-radius: var(--r);
-  background: rgba(180, 134, 62, .22); color: #543812; font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+  background: rgba(218, 178, 112, .2); border: 1px solid rgba(218, 178, 112, .38);
+  color: #f2d49b; font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
 }
 .wk-studio-focus__footer {
-  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--pencil);
-  display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 15px;
+  margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(190, 224, 216, .14);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: rgba(214, 232, 226, .78);
 }
 .wk-studio-task-form { display: flex; gap: 6px; }
 .wk-studio-task-row {
-  display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: var(--r);
-  background: rgba(255, 250, 240, .62); border: 1px solid rgba(75, 55, 28, .16);
+  display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border-radius: 10px;
+  background: rgba(16, 26, 33, .76); border: 1px solid rgba(190, 224, 216, .14);
 }
-.wk-studio-task-row[data-done='1'] { opacity: .62; }
+.wk-studio-task-row[data-done='1'] { opacity: .55; }
 .wk-studio-task-row[data-done='1'] .wk-studio-task-title span { text-decoration: line-through; }
 .wk-studio-check {
-  flex: none; width: 26px; height: 26px; margin-top: 2px; border: 1.5px solid #6b5335; border-radius: 50%;
-  background: rgba(255, 252, 244, .9); font: 700 15px/1 'Werk Serif', Georgia, serif; color: #3a2812; cursor: pointer;
+  flex: none; width: 24px; height: 24px; margin-top: 2px; border: 1.5px solid var(--dept-accent); border-radius: 50%;
+  background: rgba(12, 20, 26, .9); font: 700 13px/1 sans-serif; color: var(--dept-accent); cursor: pointer;
 }
 .wk-studio-task-title {
   flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
   border: 0; background: none; padding: 0; text-align: left; cursor: pointer;
 }
-.wk-studio-task-title span { font: 550 16.5px/1.28 'Werk Serif', Georgia, serif; color: var(--ink); }
-.wk-studio-task-title small { font: 400 13.5px/1.2 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
+.wk-studio-task-title span { font: 500 15.5px/1.28 -apple-system, BlinkMacSystemFont, sans-serif; color: #f2f7f5; }
+.wk-studio-task-title small { font: 400 13px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(200, 220, 214, .62); }
 
-/* BAR & CREW-LOUNGE */
+/* BAR & CREW-LOUNGE (Panorama-Deck am kosmischen See) */
 .wk-bar-crew-card {
-  display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r);
-  background: rgba(255, 250, 238, .68); border: 1px solid rgba(75, 55, 28, .22);
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border-radius: 11px;
+  background: rgba(22, 24, 33, .78); border: 1px solid rgba(218, 178, 112, .2);
+  text-align: left; cursor: pointer; transition: border-color .18s, background .18s;
+}
+.wk-bar-crew-card:hover, .wk-bar-crew-card.is-active {
+  background: rgba(34, 32, 42, .94); border-color: #deb974;
+  box-shadow: inset 3px 0 0 #deb974;
 }
 .wk-bar-crew-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .wk-bar-crew-card__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.wk-bar-crew-card__top .wk-card__t { font-size: 18px; font-weight: 650; }
+.wk-bar-crew-card__top .wk-card__t { font-size: 16.5px; font-weight: 600; color: #f6f4ef; }
+.wk-bar-crew-card .wk-card__f { font-size: 13px; color: rgba(214, 224, 220, .66); }
+.wk-bar-crew-card .wk-card__f em { color: #deb974; font-family: inherit; font-size: 13px; }
 .wk-bar-status {
-  padding: 2px 8px; border-radius: 99px; font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
-  background: rgba(90, 80, 68, .16); color: var(--ink-soft);
+  padding: 2px 8px; border-radius: 99px; font: 600 11.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
+  background: rgba(255, 255, 255, .08); color: rgba(214, 232, 226, .65);
 }
-.wk-bar-status[data-online='1'] { background: rgba(46, 125, 78, .18); color: #1e5b38; }
-.wk-bar-relic { font: 500 14.5px/1.2 'Werk Serif', Georgia, serif; color: #6e4e22; }
+.wk-bar-status[data-online='1'] { background: rgba(72, 188, 130, .2); color: #88e6b4; }
+.wk-bar-relic { font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: #deb974; }
 .wk-bar-mora-card {
   margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 13px 16px; border-radius: var(--r); border: 1px solid rgba(110, 80, 35, .38);
-  background: linear-gradient(135deg, rgba(226, 192, 128, .42), rgba(255, 244, 220, .75));
-  text-align: left; cursor: pointer;
+  padding: 13px 16px; border-radius: 11px; border: 1px solid rgba(218, 178, 112, .42);
+  background: linear-gradient(135deg, rgba(48, 38, 24, .88), rgba(22, 28, 34, .92));
+  color: #f6f4ef; text-align: left; cursor: pointer;
 }
 .wk-bar-mora-card__body { display: flex; flex-direction: column; gap: 3px; }
-.wk-bar-mora-card__body .wk-card__t { font-weight: 650; font-size: 18px; }
+.wk-bar-mora-card__body .wk-card__t { font-weight: 650; font-size: 16.5px; color: #f8ecd4; }
+.wk-bar-mora-card__body .wk-card__f { font-size: 13px; color: rgba(236, 224, 198, .72); }
 .wk-bar-handover-stats {
-  display: flex; align-items: center; justify-content: space-between; padding: 6px 10px;
-  border-radius: var(--r); background: rgba(75, 55, 28, .08); font-size: 15px;
+  display: flex; align-items: center; justify-content: space-between; padding: 7px 12px;
+  border-radius: 8px; background: rgba(255, 255, 255, .05); font-size: 14px; color: rgba(224, 236, 232, .82);
 }
 .wk-bar-signal-group { display: flex; flex-direction: column; gap: 7px; }
-.wk-bar-signal-group h4 { margin: 4px 0 2px; font: 600 15px/1.2 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
+.wk-bar-signal-group h4 { margin: 4px 0 2px; font: 600 13.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(218, 178, 112, .85); text-transform: uppercase; letter-spacing: .05em; }
 .wk-bar-signal-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%;
-  padding: 10px 12px; border-radius: var(--r); border: 1px solid rgba(75, 55, 28, .2);
-  background: rgba(255, 250, 240, .68); text-align: left; cursor: pointer;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(218, 178, 112, .2);
+  background: rgba(22, 24, 33, .76); text-align: left; cursor: pointer; transition: background .18s, border-color .18s;
 }
-.wk-bar-signal-card:hover { background: rgba(255, 242, 212, .92); }
-.wk-bar-signal-card b { font: 600 16px/1.25 'Werk Serif', Georgia, serif; color: var(--ink); }
-.wk-bar-signal-card small { font: 400 13.5px/1.2 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
+.wk-bar-signal-card:hover, .wk-bar-signal-card.is-active { background: rgba(34, 32, 44, .95); border-color: #deb974; }
+.wk-bar-signal-card b { font: 600 15px/1.25 -apple-system, BlinkMacSystemFont, sans-serif; color: #f6f4ef; }
+.wk-bar-signal-card small { font: 400 13px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(214, 224, 220, .65); }
+.wk-bar-signal-detail {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 10px;
+  background: rgba(32, 28, 38, .95); border: 1px solid #deb974; color: #f6f4ef;
+}
+.wk-bar-signal-detail__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wk-bar-signal-detail__top b { font-size: 15.5px; color: #f8ecd4; }
+.wk-bar-signal-detail small { font-size: 12.5px; color: rgba(236, 224, 198, .72); }
+.wk-bar-signal-detail p { margin: 2px 0 4px; font-size: 14px; line-height: 1.42; color: rgba(242, 246, 244, .9); }
 
 @media (prefers-reduced-motion: reduce) {
   .wk-sky__drift, .wk-sky__planet, .wk-leaf, .wk-slip { animation: none !important; }

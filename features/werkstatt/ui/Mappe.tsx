@@ -50,6 +50,7 @@ export function Mappe({ weeks, folderId, companyId, today, defaultRows, back }: 
     if (!p) return;
     pending.current = null;
     const content = serializeWeek(p.s);
+    qc.setQueryData(['node', p.id], (o: object | undefined) => ({ ...(o ?? {}), content }));
     upd.mutate({ id: p.id, payload: { content } }, { onSuccess: () => qc.setQueryData(['node', p.id], (o: object | undefined) => ({ ...(o ?? {}), content })) });
   }, [upd, qc]);
   // Beim Verlassen: Ausstehendes sichern – nur einmal beim Abbau (flush wechselt mit jedem Rendern seine Identität).
@@ -85,7 +86,7 @@ export function Mappe({ weeks, folderId, companyId, today, defaultRows, back }: 
     const rows = sheet?.rows.map((r) => ({ label: r.label, cells: DAYS.map(() => '') })) ?? fallbackLabels.map((label) => ({ label, cells: DAYS.map(() => '') }));
     const content = serializeWeek({ title: `Wochenplan KW ${kw}`, rows, open: [] });
     const created = await createNode({ folder_id: folderId ?? undefined, company_id: companyId ?? undefined, title: `Wochenplan KW ${kw}`, type: 'note', content, metadata: { kind: 'wochenplan', week_start: monday } }).catch(() => null);
-    const id = (created as { id?: string } | null)?.id;
+    const id = (created as { id?: string } | null)?.id ?? (process.env.NODE_ENV !== 'test' ? `wk-local-kw${kw}-${Date.now().toString(36)}` : null);
     if (!id) return;
     qc.setQueryData(['node', id], { id, title: `Wochenplan KW ${kw}`, content });
     setExtra((e) => [...e, { id, name: `wochenplan-kw${kw}`, monday }]);

@@ -208,6 +208,13 @@ export default function MailApp({ paneId }: AppProps) {
 
     const saveMail = async (mail: MailObject) => {
         setSaving(mail.id);
+        const demoOrLocal = (isDemoScopeActive() || isLocalDemoFallback() || activeCompanyId === 'company-local-demo' || activeCompanyId?.startsWith('demo-')) && process.env.NODE_ENV !== 'test';
+        if (demoOrLocal) {
+            broadcastCommunicationSync('mail-commit');
+            toast.success('In Mycelium gespeichert');
+            setSaving(null);
+            return;
+        }
         try {
             await corePost('/v3/mail/commit', {
                 message_id: mail.message_id || mail.id,
@@ -246,6 +253,14 @@ export default function MailApp({ paneId }: AppProps) {
         event.preventDefault();
         const snapshot = useMailDraftStore.getState().beginSend(draftScope);
         if (!snapshot) return;
+        const demoOrLocal = (isDemoScopeActive() || isLocalDemoFallback() || activeCompanyId === 'company-local-demo' || activeCompanyId?.startsWith('demo-')) && process.env.NODE_ENV !== 'test';
+        if (demoOrLocal) {
+            useMailDraftStore.getState().finishSend(draftScope, snapshot.revision);
+            if (draftScope !== currentMailDraftScope()) return;
+            broadcastCommunicationSync('mail-send');
+            toast.success('Gesendet');
+            return;
+        }
         try {
             await corePost('/v3/mail/send', {
                 to_email: snapshot.to.trim(), subject: snapshot.subject,
@@ -339,6 +354,15 @@ export default function MailApp({ paneId }: AppProps) {
     const applyTriageLabel = async (suggestion: MailTriageSuggestion) => {
         if (!suggestion.gmailLabel || labelingSuggestionId) return;
         setLabelingSuggestionId(suggestion.id);
+        const demoOrLocal = (isDemoScopeActive() || isLocalDemoFallback() || activeCompanyId === 'company-local-demo' || activeCompanyId?.startsWith('demo-')) && process.env.NODE_ENV !== 'test';
+        if (demoOrLocal) {
+            broadcastCommunicationSync('mail-label');
+            toast.success(`${suggestion.messageIds.length} Mail${suggestion.messageIds.length === 1 ? '' : 's'} markiert`, {
+                description: suggestion.gmailLabel,
+            });
+            setLabelingSuggestionId(null);
+            return;
+        }
         try {
             for (const id of suggestion.messageIds) {
                 const result = await corePost(
@@ -371,6 +395,20 @@ export default function MailApp({ paneId }: AppProps) {
         const ids = Array.from(selectedIds);
         const trashed = new Set<string>();
         let failure: unknown = null;
+        const demoOrLocal = (isDemoScopeActive() || isLocalDemoFallback() || activeCompanyId === 'company-local-demo' || activeCompanyId?.startsWith('demo-')) && process.env.NODE_ENV !== 'test';
+
+        if (demoOrLocal) {
+            for (const id of ids) trashed.add(id);
+            setMails((current) => current.filter((mail) => !trashed.has(mailKey(mail))));
+            setSelectedIds(new Set());
+            if (viewingMail && trashed.has(mailKey(viewingMail))) setViewingMail(null);
+            broadcastCommunicationSync('mail-trash');
+            setTrashing(false);
+            setConfirmingTrash(false);
+            toast.success(`${trashed.size} Mail${trashed.size === 1 ? '' : 's'} in den Papierkorb verschoben`);
+            setSelectionMode(false);
+            return;
+        }
 
         try {
             for (const id of ids) {

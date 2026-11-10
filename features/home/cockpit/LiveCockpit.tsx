@@ -182,9 +182,9 @@ export function LiveCockpit({
     const r = el.getBoundingClientRect();
     const scene = (el.closest('.ck-scene') as HTMLElement | null)?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
     const x = r.left + r.width / 2 - scene.left, y = r.top + r.height / 2 - scene.top;
-    // Ziel = Ort und Größe des offenen Planeten (OpenPlanet: Mitte, 30 % Höhe) → nahtlose Übergabe.
+    // Ziel = Ort und Größe des offenen Planeten in StationPlanet (Mitte, 18 % Höhe, Skalierung 0.66) → nahtlose Übergabe ohne Doppelsprung.
     el.closest('.ck-planet')?.classList.add('is-dive');
-    return { el, d: { id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.3 - y, k: OPEN_PLANET_SIZE / Math.max(24, r.width) } };
+    return { el, d: { id, x, y, dx: scene.width / 2 - x, dy: scene.height * 0.18 - y, k: (OPEN_PLANET_SIZE * 0.66) / Math.max(24, r.width) } };
   }, []);
   const openTaskMoon = useCallback((planetId: string, taskId: string) => {
     if (!planets.some((p) => p.id === planetId)) return;

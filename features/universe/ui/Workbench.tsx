@@ -216,48 +216,28 @@ export function StationPlanet({
             ))}
           </div>
         ) : null}
-        {planet.moons.length > 0 ? (
-          <div className="ws-deck__folders" aria-label={`Ordner in ${title}`} data-testid="dept-folders">
-            {planet.moons.map((m) => {
-              const w = work.moons.get(m.id);
-              const docs = w?.docs ?? [];
-              const open = w?.open ?? [];
-              const disabled = Boolean(m.loadError || m.disabled);
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  className="ws-deck__folder"
-                  disabled={disabled}
-                  onClick={disabled ? undefined : (e) => onMoon(m.id, originOf(e.currentTarget))}
-                  data-testid={`deck-folder-${m.id}`}
-                >
-                  <b>{clean(m.title)}</b>
-                  <small>{[plural(docs.length, 'Dokument', 'Dokumente'), open.length ? `${open.length} offen` : ''].filter(Boolean).join(' · ')}</small>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+        <div className="ws-deck__guide" data-testid="dept-workflow-guide">
+          <span><b>So arbeitest du in {title}:</b> Oben liegen deine <b>Ordner-Monde</b> · Unten betrittst du die <b>3 Arbeitsräume</b> je nach Aufgabe:</span>
+        </div>
         {(onEnter || onEnterRoom) ? (
           <nav className="ws-rooms" aria-label={`Räume in ${title}`} data-testid="dept-rooms">
             <button type="button" className="ws-room-door" data-room="werkstatt" onClick={() => enterRoom('werkstatt')} data-testid="room-enter-werkstatt">
-              <span className="ws-room-door__tag">{roomCtx.werkstatt.tag}</span>
+              <span className="ws-room-door__tag">1 · Holz-Werkbank · {roomCtx.werkstatt.shortLabel}</span>
               <b>{roomCtx.werkstatt.name}</b>
-              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} · ${roomCtx.werkstatt.focusHint}` : roomCtx.werkstatt.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>{roomCtx.werkstatt.shortLabel} betreten →</span>
+              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} an der Pinnwand · Wochenmappe am Tisch` : roomCtx.werkstatt.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>Aufgaben & Wochenplan öffnen →</span>
             </button>
             <button type="button" className="ws-room-door" data-room="studio" onClick={() => enterRoom('studio')} data-testid="room-enter-studio">
-              <span className="ws-room-door__tag">{roomCtx.studio.tag}</span>
+              <span className="ws-room-door__tag">2 · Basalt- & Glas-Atelier · {roomCtx.studio.shortLabel}</span>
               <b>{roomCtx.studio.name}</b>
-              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} · ${roomCtx.studio.focusTitle}` : roomCtx.studio.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>{roomCtx.studio.shortLabel} betreten →</span>
+              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} · Direkt im Folio lesen & schreiben` : roomCtx.studio.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>Dossiers & Konzepte öffnen →</span>
             </button>
             <button type="button" className="ws-room-door" data-room="bar" onClick={() => enterRoom('bar')} data-testid="room-enter-bar">
-              <span className="ws-room-door__tag">{roomCtx.bar.tag}</span>
+              <span className="ws-room-door__tag">3 · Panorama-Lounge · {roomCtx.bar.shortLabel}</span>
               <b>{roomCtx.bar.name}</b>
-              <small>{crew.length ? `${crew.length} an Bord · ${roomCtx.bar.loungeTitle}` : roomCtx.bar.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>{roomCtx.bar.shortLabel} betreten →</span>
+              <small>{crew.length ? `${crew.length} an Bord · Schicht-Logbuch, Team & Funk` : roomCtx.bar.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>Crew, Übergabe & Funk öffnen →</span>
             </button>
           </nav>
         ) : null}

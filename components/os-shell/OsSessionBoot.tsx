@@ -6,6 +6,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import { isLocalDemoFallback, readCookie } from '@/lib/api/http';
+import { finishOnboarding } from '@/lib/os-prototype/onboarding';
 
 /**
  * V1.6: /os lädt die CORE-Sitzung jetzt selbst (vorher nur über die klassische
@@ -38,9 +39,12 @@ export function OsSessionBoot() {
       readCookie('mora_auth_token') === 'local_demo_fallback';
     const currentUser = useSessionStore.getState().user;
     if (isLocalFallback && (!currentUser || !currentUser.active_company_id || isLocalDemoFallback())) {
-      if (isLocalhost && !readCookie('mora_auth_token')) {
-        document.cookie = 'mora_session=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
-        document.cookie = 'mora_auth_token=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+      if (isLocalhost) {
+        finishOnboarding();
+        if (!readCookie('mora_auth_token')) {
+          document.cookie = 'mora_session=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+          document.cookie = 'mora_auth_token=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+        }
       }
       setUser({
         id: currentUser?.id || 'user-demo-local',

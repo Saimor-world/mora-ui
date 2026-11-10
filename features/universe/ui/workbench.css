@@ -29,11 +29,8 @@
 .ws-crew__chip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 7px;border-radius:999px;background:rgba(16,26,32,.88);border:1px solid rgba(214,232,226,.14);font-size:12.5px;color:rgba(236,244,240,.88);line-height:1.2}
 .ws-crew__chip--captain{background:linear-gradient(90deg,rgba(46,36,22,.82),rgba(20,28,34,.92));border-color:rgba(218,182,116,.46);color:rgba(248,236,208,.98)}
 .ws-crew__chip small{font-size:11.5px;color:rgba(214,232,226,.58)}
-.ws-deck__folders{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-.ws-deck__folder{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;border:1px solid rgba(214,232,226,.16);background:rgba(18,29,36,.86);color:rgba(236,244,240,.92);cursor:pointer;font-size:12.5px;transition:border-color .18s ease,background .18s ease}
-.ws-deck__folder:hover,.ws-deck__folder:focus-visible{border-color:rgba(134,205,196,.55);background:rgba(24,38,46,.95);outline:none}
-.ws-deck__folder b{font-weight:600}
-.ws-deck__folder small{font-size:11.5px;color:rgba(214,232,226,.6)}
+.ws-deck__guide{display:flex;justify-content:center;text-align:center;font-size:12.5px;color:rgba(214,232,226,.72);padding:2px 8px}
+.ws-deck__guide b{color:rgba(244,248,246,.95);font-weight:600}
 .ws-rooms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:2px}
 .ws-room-door{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px 16px;border-radius:12px;border:1px solid rgba(214,232,226,.15);background:linear-gradient(165deg,rgba(20,31,38,.92) 0%,rgba(11,18,23,.96) 100%);color:rgba(236,244,240,.95);cursor:pointer;text-align:left;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 .ws-room-door[data-room="werkstatt"]{border-color:rgba(218,182,116,.28)}
@@ -49,10 +46,21 @@
 
 /* Nahansicht: die Szene bleibt in ihren eigenen Farben (kein Schleier, kein Dim, keine Färbung).
    Nur das angeklickte Objekt ist unsichtbar – es ist die fliegende Fläche. Fokus über Schatten der Fläche, optional leichte Unschärfe. */
-.ck-universe-unified[data-work] > .ck-scene{filter:none;transform:none;transition:filter .3s cubic-bezier(0,0,.2,1)}
-html[data-os-work] .ck-universe-unified[data-work] > .ck-scene{filter:blur(2px)}
+.ck-universe-unified[data-work] > .ck-scene{filter:none;transform:none;transition:filter .25s cubic-bezier(0,0,.2,1)}
+html[data-os-work] .ck-universe-unified[data-work] > .ck-scene{filter:none}
 .ck-universe-unified[data-work] > .ck-scene .mora-anchor{opacity:0}
-.ck-universe-unified[data-work] .ws-moon[data-active] .ws-moon__btn{opacity:0;transition:opacity .3s ease}
+/* Kein doppeltes Deck im Hintergrund, wenn ein Ordner/Mond oder eine Aufgabe (WorkSurface) offen ist! */
+.ck-universe-unified[data-work] .ws-deck,
+.ck-universe-unified[data-work] .ws-moons,
+.ck-universe-unified[data-work] .ws-light,
+.ck-universe-unified[data-work] .ws-path,
+.ck-universe-unified[data-work] .ck-open__core,
+.ck-universe-unified[data-work] .ws-enter{
+  opacity:0 !important;
+  pointer-events:none !important;
+  visibility:hidden;
+  transition:opacity .18s ease, visibility .18s ease;
+}
 .ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);width:min(1080px,calc(100% - 120px));translate:-50% 0;display:flex;flex-direction:column;
   border-radius:28px;padding:28px 32px 24px;color:rgba(236,244,240,.94);outline:none;isolation:isolate;min-height:0;overflow:hidden;
   transform-origin:50% 50%;transition:transform .3s cubic-bezier(0,0,.2,1),opacity .3s cubic-bezier(0,0,.2,1),border-radius .3s cubic-bezier(0,0,.2,1)}

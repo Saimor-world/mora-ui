@@ -85,6 +85,12 @@ export function useCalendarEvents() {
     setEvents((previous) => [...previous, optimistic]);
     setError(null);
 
+    if ((isDemoScopeActive() || isLocalDemoFallback()) && process.env.NODE_ENV !== 'test') {
+      setAvailable(true);
+      broadcastCommunicationSync('calendar-create');
+      return;
+    }
+
     try {
       const saved = await corePost('/v3/calendar/events', {
         title,

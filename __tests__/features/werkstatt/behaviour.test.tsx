@@ -257,18 +257,25 @@ describe('Abteilungsräume (Werkstatt, Studio, Bar) & echte Ordner', () => {
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · Formbau-Werkstatt');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-werkstatt');
 
-    // Raum 02: ORIGIN-Atelier & Lesepult auf room-pult.webp mit offenem Buch & ORIGIN // 001 Material-Spektrum
+    // Raum 02: ORIGIN-Atelier & Lesepult (Basalt & Glas) mit direkt beschreibbarem Folio & ORIGIN // 001 Material-Spektrum
     fireEvent.click(screen.getByRole('button', { name: 'Studio' }));
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · ORIGIN-Atelier & Lesepult');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-pult');
     expect(screen.getByTestId('wk-studio-lectern')).toBeInTheDocument();
     expect(screen.getByTestId('wk-studio-focus')).toHaveTextContent('SAIMÔR // ORIGIN // 001 · Material-Spektrum');
+    fireEvent.click(screen.getByTestId('wk-studio-edit-toggle'));
+    expect(screen.getByTestId('wk-studio-editor')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('wk-studio-editor'), { target: { value: '# ORIGIN Spezifikation\n\nBasalt & Quarzglas freigegeben.' } });
+    fireEvent.click(screen.getByTestId('wk-studio-save'));
+    expect(screen.getByTestId('wk-studio-doc-preview')).toHaveTextContent('Basalt & Quarzglas freigegeben.');
 
-    // Raum 03: Atelier-Salon & Bar auf room-schreibtisch.webp mit Schicht-Übergabe & Abteilungs-Funk
+    // Raum 03: Atelier-Salon & Bar (Panorama-Lounge) mit Crew-Filter, Schicht-Übergabe & Inline-Funk
     fireEvent.click(screen.getByRole('button', { name: 'Bar' }));
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · Atelier-Salon & Bar');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-schreibtisch');
     expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Atelier-Salon & Werk-Übergabe');
     expect(screen.getByTestId('wk-bar-signals')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('wk-crew-crew-sorel'));
+    expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Filter: Sorel M.');
   });
 });
