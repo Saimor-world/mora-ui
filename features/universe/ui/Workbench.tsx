@@ -151,7 +151,7 @@ export function StationPlanet({
           <span className="ck-opal__spec" aria-hidden />
         </GlassOrb>
       </div>
-      {(onEnter || onEnterRoom) ? <button type="button" className="ws-enter" onClick={() => enterRoom('werkstatt')} aria-label={`${title}: Werkstatt betreten`} data-testid="planet-enter" style={{ width: ORB, height: ORB }} /> : null}
+      {(onEnter || onEnterRoom) ? <button type="button" className="ws-enter" onClick={() => enterRoom(roomCtx.primaryRoom)} aria-label={`${title}: ${roomCtx.roomName} betreten`} data-testid="planet-enter" style={{ width: ORB, height: ORB }} /> : null}
       {work.loose.slice(0, 9).map((t, k) => (
         <button key={t.id} type="button" className="ws-light ws-light--planet" data-overdue={t.overdue ? '1' : undefined} data-testid={`task-light-${t.id}`}
           style={{ left: `calc(50% + ${loose[k].x}px)`, top: `calc(20% + ${loose[k].y}px)`, ['--d' as string]: `${k * 0.7}s` }}
@@ -217,27 +217,27 @@ export function StationPlanet({
           </div>
         ) : null}
         <div className="ws-deck__guide" data-testid="dept-workflow-guide">
-          <span><b>So arbeitest du in {title}:</b> Oben liegen deine <b>Ordner-Monde</b> · Unten betrittst du die <b>3 Arbeitsräume</b> je nach Aufgabe:</span>
+          <span><b>So arbeitest du in {title}:</b> Oben liegen die <b>Ordner-Monde</b> · Unten betrittst du den <b>eigenen Raum dieser Abteilung</b>:</span>
         </div>
         {(onEnter || onEnterRoom) ? (
-          <nav className="ws-rooms" aria-label={`Räume in ${title}`} data-testid="dept-rooms">
-            <button type="button" className="ws-room-door" data-room="werkstatt" onClick={() => enterRoom('werkstatt')} data-testid="room-enter-werkstatt">
-              <span className="ws-room-door__tag">1 · Holz-Werkbank · {roomCtx.werkstatt.shortLabel}</span>
-              <b>{roomCtx.werkstatt.name}</b>
-              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} an der Pinnwand · Wochenmappe am Tisch` : roomCtx.werkstatt.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>Aufgaben & Wochenplan öffnen →</span>
-            </button>
-            <button type="button" className="ws-room-door" data-room="studio" onClick={() => enterRoom('studio')} data-testid="room-enter-studio">
-              <span className="ws-room-door__tag">2 · Basalt- & Glas-Atelier · {roomCtx.studio.shortLabel}</span>
-              <b>{roomCtx.studio.name}</b>
-              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} · Direkt im Folio lesen & schreiben` : roomCtx.studio.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>Dossiers & Konzepte öffnen →</span>
-            </button>
-            <button type="button" className="ws-room-door" data-room="bar" onClick={() => enterRoom('bar')} data-testid="room-enter-bar">
-              <span className="ws-room-door__tag">3 · Panorama-Lounge · {roomCtx.bar.shortLabel}</span>
-              <b>{roomCtx.bar.name}</b>
-              <small>{crew.length ? `${crew.length} an Bord · Schicht-Logbuch, Team & Funk` : roomCtx.bar.subtitle}</small>
-              <span className="ws-room-door__go" aria-hidden>Crew, Übergabe & Funk öffnen →</span>
+          <nav className="ws-rooms ws-rooms--single" aria-label={`Raum in ${title}`} data-testid="dept-rooms">
+            <button
+              type="button"
+              className="ws-room-door ws-room-door--primary"
+              data-room={roomCtx.primaryRoom}
+              data-archetype={roomCtx.archetype}
+              onClick={() => enterRoom(roomCtx.primaryRoom)}
+              data-testid="dept-room-enter"
+            >
+              <div className="ws-room-door__main">
+                <span className="ws-room-door__tag">{roomCtx.roomTag}</span>
+                <b>{roomCtx.roomName}</b>
+                <small>{roomCtx.roomSubtitle}</small>
+              </div>
+              <div className="ws-room-door__meta">
+                <span>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} offen` : 'Keine offenen Aufgaben'} · {plural(docCount, 'Dokument', 'Dokumente')} · {crew.length || 1} an Bord</span>
+                <span className="ws-room-door__go" aria-hidden>{roomCtx.enterLabel}</span>
+              </div>
             </button>
           </nav>
         ) : null}

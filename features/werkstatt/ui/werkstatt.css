@@ -269,12 +269,13 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   transition: opacity .16s ease, visibility .16s ease;
 }
 
-/* Abteilungs-spezifische Mineral-/Licht-Akzente */
+/* Abteilungs-spezifische Raum-Archetypen & Licht-Akzente */
 .wk-root { --dept-accent: #d8b26e; --dept-glow: rgba(216, 178, 110, .24); }
-.wk-root[data-dept='dept-engineering'] { --dept-accent: #72cad6; --dept-glow: rgba(114, 202, 214, .24); }
-.wk-root[data-dept='dept-studio'] { --dept-accent: #7ed4be; --dept-glow: rgba(126, 212, 190, .26); }
-.wk-root[data-dept='dept-operations'] { --dept-accent: #e29d6e; --dept-glow: rgba(226, 157, 110, .24); }
-.wk-root[data-dept='dept-treasury'] { --dept-accent: #d8be88; --dept-glow: rgba(216, 190, 136, .24); }
+.wk-root[data-archetype='bridge'], .wk-root[data-dept='dept-kommando'] { --dept-accent: #ecc46e; --dept-glow: rgba(236, 196, 110, .28); }
+.wk-root[data-archetype='werkstatt'], .wk-root[data-dept='dept-technik'] { --dept-accent: #72cad6; --dept-glow: rgba(114, 202, 214, .24); }
+.wk-root[data-archetype='studio'], .wk-root[data-dept='dept-studio'] { --dept-accent: #7ed4be; --dept-glow: rgba(126, 212, 190, .26); }
+.wk-root[data-archetype='bar'], .wk-root[data-dept='dept-betrieb'] { --dept-accent: #e29d6e; --dept-glow: rgba(226, 157, 110, .26); }
+.wk-root[data-archetype='kontor'], .wk-root[data-dept='dept-finanzen'] { --dept-accent: #90d0b0; --dept-glow: rgba(144, 208, 176, .26); }
 
 /* Im Studio (Basalt & Glas) und in der Bar (Panorama-Lounge) weicht das braune Holzbild im .wk-room
    dem großen Panorama-Fenster ins Universum + architektonischer Rahmenbühne (.wk-arch-backdrop). */
@@ -320,6 +321,26 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   content: ""; position: absolute; inset: 68px 36px 88px;
   border: 1px solid rgba(190, 224, 216, .22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 60px var(--dept-glow);
+}
+/* KOMMANDOBRÜCKE (Obsidian & Gold Panorama-Kanzel) */
+.wk-arch-backdrop--bridge {
+  background:
+    radial-gradient(ellipse 80% 45% at 50% 10%, rgba(236, 196, 110, .18), transparent 60%),
+    radial-gradient(ellipse 84% 66% at 50% 36%, rgba(8, 10, 16, .06) 0%, rgba(10, 12, 18, .44) 72%, rgba(6, 7, 11, .9) 100%),
+    linear-gradient(180deg, rgba(14, 13, 18, .84) 0%, rgba(14, 13, 18, .08) 8%, rgba(10, 11, 16, .14) 84%, rgba(7, 8, 12, .94) 100%);
+}
+.wk-arch-backdrop--bridge::after {
+  border-color: rgba(236, 196, 110, .34);
+}
+/* TREASURY-KONTOR (Smaragd-Basalt & Champagner-Bronze) */
+.wk-arch-backdrop--kontor {
+  background:
+    radial-gradient(ellipse 75% 45% at 50% 14%, rgba(120, 196, 162, .16), transparent 62%),
+    radial-gradient(ellipse 80% 64% at 50% 36%, rgba(6, 16, 14, .1) 0%, rgba(7, 15, 14, .48) 72%, rgba(4, 10, 9, .9) 100%),
+    linear-gradient(180deg, rgba(8, 17, 15, .86) 0%, rgba(8, 17, 15, .1) 8%, rgba(7, 15, 13, .16) 84%, rgba(5, 11, 10, .94) 100%);
+}
+.wk-arch-backdrop--kontor::after {
+  border-color: rgba(144, 208, 176, .3);
 }
 
 /* RAUM 03 · BAR: Abendliche Panorama-Deck-Lounge am kosmischen See (Rauchglas, Messing & Amber-Licht) */

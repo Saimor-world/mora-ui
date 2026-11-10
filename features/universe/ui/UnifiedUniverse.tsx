@@ -10,7 +10,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
 import { StationPlanet, WorkSurface, type DeptMember, type Origin, type RoomKind } from '@/features/universe/ui/Workbench';
 import { deptWork } from '@/lib/universe/deptWork';
-import { getShipDepartmentCrew } from '@/lib/universe/shipDepartments';
+import { getDepartmentRoomContext, getShipDepartmentCrew } from '@/lib/universe/shipDepartments';
 import { Werkstatt, placeFromParam, roomKindFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
 import { localISO } from '@/lib/lea/world';
 import { useTeamMembers } from '@/lib/queries/useTeamMembers';
@@ -824,7 +824,11 @@ export function UnifiedUniverse({
             onMoon={(id, o) => { setOrigin(o); setTaskId(null); setMoonId(id); setDeptSheetOpen(false); }}
             onTask={(id, o) => { setOrigin(o); setMoonId(null); setTaskId(id); setDeptSheetOpen(false); }}
             onOpenDept={() => setDeptSheetOpen(true)}
-            onEnter={() => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ kind: 'werkstatt', place: null, fromSpace: true }); }}
+            onEnter={() => {
+              const ctx = getDepartmentRoomContext(planet.id, stripFiktiv(planet.title) || planet.title);
+              setMoonId(null); setTaskId(null); setDeptSheetOpen(false);
+              setRoom({ kind: ctx.primaryRoom, place: null, fromSpace: true });
+            }}
             onEnterRoom={(kind) => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ kind, place: null, fromSpace: true }); }}
           />
         ) : sceneMode === 'planet' && planet ? (

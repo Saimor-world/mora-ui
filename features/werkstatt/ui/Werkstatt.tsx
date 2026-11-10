@@ -129,14 +129,16 @@ export interface WerkstattProps {
   onExit: () => void;
 }
 
-export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 'werkstatt', crew = [], backLabel, initial, fromSpace = true, onExit }: WerkstattProps) {
+export function Werkstatt({ planet, work, planets, companyId, today, roomKind, crew = [], backLabel, initial, fromSpace = true, onExit }: WerkstattProps) {
   const stage = useStage();
   // Der Raum hat seine eigene Bühne (bei 4:3 verkleinert, damit Regal und Pult beide sichtbar bleiben).
   const room = useMemo(() => roomStage(stage), [stage]);
   const world = useWorld();
   const title = clean(planet.title);
-  const [activeRoom, setActiveRoom] = useState<RoomKind>(roomKind);
-  useEffect(() => { setActiveRoom(roomKind); }, [roomKind]);
+  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title), [planet.id, title]);
+  const resolvedRoomKind = roomKind ?? roomCtx.primaryRoom;
+  const [activeRoom, setActiveRoom] = useState<RoomKind>(resolvedRoomKind);
+  useEffect(() => { setActiveRoom(roomKind ?? roomCtx.primaryRoom); }, [roomKind, roomCtx.primaryRoom]);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -149,11 +151,10 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const top = stack[stack.length - 1];
   const close = top.kind === 'room' ? null : top;
 
-  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title), [planet.id, title]);
   const currentRoomMeta = roomCtx[activeRoom];
-  const roomSignText = currentRoomMeta.name.toLowerCase().includes(title.toLowerCase())
-    ? currentRoomMeta.name
-    : `${title} · ${currentRoomMeta.name}`;
+  const roomSignText = roomCtx.roomName.toLowerCase().includes(title.toLowerCase())
+    ? roomCtx.roomName
+    : `${title} · ${roomCtx.roomName}`;
 
   // Aufgaben, Dokumente, Wochen – aus denselben Daten wie die Abteilung (useWorld → deptWork).
   const allTasks = useMemo(() => {
@@ -359,7 +360,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
     return () => window.removeEventListener('keydown', k, true);
   }, [back]);
 
-  const roomLabel = activeRoom === 'studio' ? 'Studio' : activeRoom === 'bar' ? 'Bar' : 'Werkstatt';
+  const roomLabel = currentRoomMeta.shortLabel;
   const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
@@ -495,7 +496,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const activeMoraSeat = activeRoom === 'studio'
     ? { x: 1640, y: 928, size: 104 }
     : activeRoom === 'bar'
-      ? { x: 240, y: 942, size: 104 }
+      ? { x: 960, y: 942, size: 104 }
       : ROOM.moraSeat;
 
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
@@ -512,7 +513,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
   const activeSignalEvent = useMemo(() => barEvents.find((ev) => ev.id === selectedSignalId) ?? null, [barEvents, selectedSignalId]);
 
   return (
-    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-dept={planet.id} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
+    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-archetype={roomCtx.archetype} data-dept={planet.id} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
       <div ref={roomRef} className="wk-room" aria-hidden={close ? true : undefined}>
         <StageLayer
           stage={room}
@@ -523,14 +524,14 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
           under={<WindowUniverse rect={activeSkyRect} world={world} planets={planets} focusId={planet.id} />}
         >
           {/* =====================================================================================
-              RAUM 02 · STUDIO (Basalt- & Quarzglas-Atelier mit großem Panorama-Fenster ins Universum)
+              ABTEILUNGS-RAUM TYP: STUDIO / KOMMANDOBRÜCKE / TREASURY-KONTOR
              ===================================================================================== */}
           {activeRoom === 'studio' ? (
             <>
-              <div className="wk-arch-backdrop wk-arch-backdrop--studio" aria-hidden />
+              <div className={`wk-arch-backdrop wk-arch-backdrop--studio wk-arch-backdrop--${roomCtx.archetype}`} aria-hidden />
               <div className="wk-room-bar wk-room-bar--studio" style={{ left: 48, top: 24, width: 1824 }} data-testid="wk-room-bar">
                 <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-workflow-pill"><b>2 · Basalt- & Glas-Studio:</b> Links Dossier wählen · Mitte direkt lesen & schreiben · Rechts Aufgaben ableiten</span>
+                <span className="wk-workflow-pill"><b>{roomCtx.roomName}:</b> Links Dossier wählen · Mitte direkt lesen & schreiben · Rechts Aufgaben der Abteilung</span>
                 {planet.moons.length > 0 ? (
                   <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders" style={{ marginLeft: 'auto' }}>
                     <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
@@ -737,7 +738,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
               <div className="wk-arch-backdrop wk-arch-backdrop--bar" aria-hidden />
               <div className="wk-room-bar wk-room-bar--bar" style={{ left: 64, top: 28, width: 1792 }} data-testid="wk-room-bar">
                 <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-workflow-pill"><b>3 · Panorama-Crew-Bar:</b> Links Crew-Mitglied zum Filtern wählen · Mitte Übergabe notieren · Rechts Funk & Termine</span>
+                <span className="wk-workflow-pill"><b>{roomCtx.roomName}:</b> Links Crew-Mitglied zum Filtern wählen · Mitte Übergabe & Aufgaben · Rechts Funk & Termine</span>
               </div>
 
               <div className="wk-bar-stage" role="list" aria-label={`Bar ${title}`} data-testid="wk-board" data-room-mode="bar">
@@ -941,7 +942,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                     ))}
                   </div>
                 ) : null}
-                <span className="wk-workflow-pill wk-workflow-pill--wood"><b>1 · Holz-Werkstatt:</b> Pinnwand für Aufgaben · Tisch für Wochenmappe · Pult rechts für Handbuch</span>
+                <span className="wk-workflow-pill wk-workflow-pill--wood"><b>{roomCtx.roomName}:</b> Pinnwand für Aufgaben · Tisch für Wochenmappe · Pult rechts für Handbuch</span>
               </div>
 
               <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
@@ -1025,10 +1026,19 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
 
       {!close && landed ? (
         <WorkDock back={backTo} actions={[
-          { id: 'raum-werkstatt', label: 'Werkstatt', run: () => setActiveRoom('werkstatt'), pressed: activeRoom === 'werkstatt' },
-          { id: 'raum-studio', label: 'Studio', run: () => setActiveRoom('studio'), pressed: activeRoom === 'studio' },
-          { id: 'raum-bar', label: 'Bar', run: () => setActiveRoom('bar'), pressed: activeRoom === 'bar' },
-          { id: 'neue-aufgabe', label: 'Neue Aufgabe', run: () => { setActiveRoom('werkstatt'); setLater(false); setPage(0); setDraft(''); } },
+          {
+            id: 'neue-aufgabe',
+            label: 'Neue Aufgabe',
+            run: () => {
+              if (activeRoom === 'werkstatt') {
+                setLater(false); setPage(0); setDraft('');
+              } else if (activeRoom === 'studio') {
+                document.querySelector<HTMLInputElement>('[data-testid="wk-studio-new-task"]')?.focus();
+              } else {
+                document.querySelector<HTMLInputElement>('[data-testid="wk-bar-handover-input"]')?.focus();
+              }
+            },
+          },
           { id: 'dokumente', label: 'Dokumente', run: () => setDocSlip((v) => !v), pressed: docSlip },
           { id: 'planung', label: 'Planung', run: () => open({ kind: 'planung' }) },
         ]} />

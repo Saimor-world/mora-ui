@@ -382,7 +382,16 @@ export interface DeptRoomFocusItem {
   status?: string;
 }
 
+export type DeptRoomArchetype = 'werkstatt' | 'studio' | 'bar' | 'bridge' | 'kontor';
+
 export interface DeptRoomContext {
+  /** Jede Abteilung hat genau EINEN eigenen Raum passend zu ihrer Aufgabe */
+  primaryRoom: 'werkstatt' | 'studio' | 'bar';
+  archetype: DeptRoomArchetype;
+  roomTag: string;
+  roomName: string;
+  roomSubtitle: string;
+  enterLabel: string;
   werkstatt: {
     tag: string;
     name: string;
@@ -412,31 +421,37 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
   const raw = `${deptIdOrName || ''} ${deptTitle || ''}`.toLowerCase();
   const label = deptTitle || deptIdOrName || 'Abteilung';
 
-  if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('führung')) {
+  if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('führung') || raw.includes('brücke')) {
     return {
+      primaryRoom: 'studio',
+      archetype: 'bridge',
+      roomTag: 'Abteilungs-Raum · Kommandobrücke (Obsidian & Gold)',
+      roomName: 'Kommandobrücke & Strategie-Kanzel',
+      roomSubtitle: 'Strategie-Dossiers & Charta am Kommandopult, Führungs-Leitplanken, Prioritäten & Wochenplan',
+      enterLabel: 'Kommandobrücke betreten →',
       werkstatt: {
-        tag: 'Raum 01 · Führung',
-        name: 'Kommandobrücke',
-        shortLabel: 'Werkstatt',
+        tag: 'Kommandobrücke · Führung',
+        name: 'Kommandobrücke & Strategie-Kanzel',
+        shortLabel: 'Kommandobrücke',
         subtitle: 'Strategische Entscheidungen, Prioritäten & Wochen-Taktung',
         focusHint: 'Führungsaufgaben, Freigaben & Meilensteine',
       },
       studio: {
-        tag: 'Raum 02 · Charta & Dossiers',
-        name: 'Kartenraum & Dossiers',
-        shortLabel: 'Studio',
-        subtitle: 'Architektur-Charta, Quartalsziele & Partner-Verträge am Lesepult',
+        tag: 'Kommandobrücke · Charta & Strategie',
+        name: 'Kommandobrücke & Strategie-Kanzel',
+        shortLabel: 'Kommandobrücke',
+        subtitle: 'Architektur-Charta, Quartalsziele & Partner-Verträge direkt am Kommandopult',
         focusTitle: 'Strategischer Kompass & Leitplanken',
         focusItems: [
-          { label: 'Phase 01 Fokus', value: 'ORIGIN // 001 Master & feste Abteilungsräume', status: 'Aktiv' },
+          { label: 'Phase 01 Fokus', value: 'ORIGIN // 001 Master & ein eigener Raum pro Abteilung', status: 'Aktiv' },
           { label: 'Führungs-Takt', value: 'Tägliche Captains-Runde (10:00 Uhr)', status: 'Stabil' },
           { label: 'Kooperationen', value: 'Pilotkunden & Partner-Rahmenverträge', status: 'In Prüfung' },
         ],
       },
       bar: {
-        tag: 'Raum 03 · Captains-Runde',
-        name: 'Offiziersmesse & Bar',
-        shortLabel: 'Bar',
+        tag: 'Kommandobrücke · Captains-Runde',
+        name: 'Offiziersmesse & Brücke',
+        shortLabel: 'Brücke',
         subtitle: 'Abstimmung der Captains, Schicht-Übergabe & direkte Führungs-Signale',
         loungeTitle: 'Captains-Tisch & Führungs-Übergabe',
         handoverPrompt: 'Strategische Übergabe oder Auftrag an die Crew notieren…',
@@ -444,31 +459,39 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
     };
   }
 
-  if (raw.includes('technik') || raw.includes('produkt') || raw.includes('maschine') || raw.includes('core')) {
+  if (raw.includes('technik') || raw.includes('produkt') || raw.includes('maschine') || raw.includes('core') || raw.includes('backstube') || raw.includes('küche') || raw.includes('werkstatt')) {
+    const isCafe = raw.includes('backstube') || raw.includes('küche');
+    const rName = isCafe ? 'Backstube & Werkstatt' : 'Technik-Werkstatt & Maschinenlabor';
     return {
+      primaryRoom: 'werkstatt',
+      archetype: 'werkstatt',
+      roomTag: isCafe ? 'Abteilungs-Raum · Handwerk & Backstube' : 'Abteilungs-Raum · Holz-Werkbank & Pinnwand',
+      roomName: rName,
+      roomSubtitle: 'Aufgabenkarten an der Pinnwand, Wochenmappe am Tisch & technisches Handbuch am Lesepult',
+      enterLabel: `${rName} betreten →`,
       werkstatt: {
-        tag: 'Raum 01 · Engineering',
-        name: 'Maschinenraum & Labor',
+        tag: 'Abteilungs-Raum · Werkstatt',
+        name: rName,
         shortLabel: 'Werkstatt',
-        subtitle: 'Umsetzung, Core-Schnittstellen, Releases & technische Aufgaben',
-        focusHint: 'Sprints, Architektur & System-Verifikation',
+        subtitle: 'Umsetzung, Core-Schnittstellen, Releases & tägliche Aufgaben an der Pinnwand',
+        focusHint: 'Aufgaben-Pinnwand, Wochenmappe am Tisch & Handbuch am Pult',
       },
       studio: {
-        tag: 'Raum 02 · Architektur',
+        tag: 'Technik-Architektur',
         name: 'System-Studio & Blaupausen',
-        shortLabel: 'Studio',
+        shortLabel: 'Blaupausen',
         subtitle: 'Spezifikationen, Core v3 Verträge & System-Dokumentation am Pult',
         focusTitle: 'System-Architektur & Core v3 Status',
         focusItems: [
-          { label: 'Saimôr OS v15', value: 'Feste Abteilungen, echte Ordner & kontextuelle Räume', status: 'Bereit' },
+          { label: 'Saimôr OS v15', value: 'Jede Abteilung besitzt ihren eigenen kontextuellen Raum', status: 'Bereit' },
           { label: 'Mora Core v3', value: '/v3/tree · /v3/tasks · /v3/nodes deterministisch', status: 'Verifiziert' },
           { label: 'Local Dev-Master', value: 'Sofort-Start (0 ms) ohne externe Netzwerk-Blocker', status: 'Aktiv' },
         ],
       },
       bar: {
-        tag: 'Raum 03 · Bereitschaft',
-        name: 'Technik-Kajüte & Bar',
-        shortLabel: 'Bar',
+        tag: 'Bereitschaft',
+        name: 'Technik-Kajüte',
+        shortLabel: 'Kajüte',
         subtitle: 'Release-Übergabe, Bereitschaftsdienst & schneller Engineering-Sync',
         loungeTitle: 'Engineering-Lounge & Release-Übergabe',
         handoverPrompt: 'Technische Übergabe oder Prüfpunkt für die Schicht…',
@@ -478,18 +501,24 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
 
   if (raw.includes('studio') || raw.includes('design') || raw.includes('atelier') || raw.includes('origin')) {
     return {
+      primaryRoom: 'studio',
+      archetype: 'studio',
+      roomTag: 'Abteilungs-Raum · Basalt- & Quarzglas-Atelier',
+      roomName: 'ORIGIN-Atelier & Lesepult',
+      roomSubtitle: 'Dossier-Regal, direkt beschreibbares Konzept-Folio vor dem Panorama-Fenster & Material-Fokus',
+      enterLabel: 'ORIGIN-Atelier betreten →',
       werkstatt: {
-        tag: 'Raum 01 · Formbau',
+        tag: 'Formbau',
         name: 'Formbau-Werkstatt',
         shortLabel: 'Werkstatt',
         subtitle: 'Material-Abnahmen, Raum-Licht, 3D-Assets & handwerklicher Feinschliff',
         focusHint: 'Werkstücke, Lichtstimmung & Oberflächenprüfung',
       },
       studio: {
-        tag: 'Raum 02 · Atelier',
+        tag: 'Abteilungs-Raum · Atelier',
         name: 'ORIGIN-Atelier & Lesepult',
-        shortLabel: 'Studio',
-        subtitle: 'ORIGIN // 001 Material-Manifest, Gestaltungskonzepte & Entwürfe',
+        shortLabel: 'Atelier',
+        subtitle: 'ORIGIN // 001 Material-Manifest, Gestaltungskonzepte & Entwürfe direkt im Folio',
         focusTitle: 'SAIMÔR // ORIGIN // 001 · Material-Spektrum',
         focusItems: [
           { label: 'Körper & Stein', value: 'Dunkler Basalt mit mikro-taktilem Relief (Seed 1001)', status: 'Kanonisch' },
@@ -499,9 +528,9 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
         ],
       },
       bar: {
-        tag: 'Raum 03 · Kritik & Salon',
+        tag: 'Kritik & Salon',
         name: 'Atelier-Salon & Bar',
-        shortLabel: 'Bar',
+        shortLabel: 'Salon',
         subtitle: 'Werkkritik, Abnahmen im Team & ruhiger gestalterischer Austausch',
         loungeTitle: 'Atelier-Salon & Werk-Übergabe',
         handoverPrompt: 'Gestaltungs-Impuls oder Abnahme-Aufgabe festhalten…',
@@ -509,19 +538,27 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
     };
   }
 
-  if (raw.includes('betrieb') || raw.includes('kunde') || raw.includes('projekt') || raw.includes('service')) {
+  if (raw.includes('betrieb') || raw.includes('kunde') || raw.includes('projekt') || raw.includes('service') || raw.includes('gastraum') || raw.includes('theke') || raw.includes('bar')) {
+    const isCafe = raw.includes('gastraum') || raw.includes('theke') || raw.includes('service');
+    const rName = isCafe ? 'Gastraum, Theke & Bar' : 'Panorama-Bar & Crew-Salon';
     return {
+      primaryRoom: 'bar',
+      archetype: 'bar',
+      roomTag: isCafe ? 'Abteilungs-Raum · Gastraum & Theke' : 'Abteilungs-Raum · Panorama-Lounge am See',
+      roomName: rName,
+      roomSubtitle: 'Captain & Crew an Bord, Schicht-Übergabe, laufende Aufgaben & direkter Abteilungs-Funk (Post & Termine)',
+      enterLabel: `${rName} betreten →`,
       werkstatt: {
-        tag: 'Raum 01 · Leitstand',
-        name: 'Deck-Leitstand & Werkstatt',
-        shortLabel: 'Werkstatt',
+        tag: 'Leitstand',
+        name: rName,
+        shortLabel: 'Bar',
         subtitle: 'Laufende Kundenprojekte, Onboarding-Aufgaben & operativer Fluss',
         focusHint: 'Projekt-Steuerung & tägliche Umsetzung',
       },
       studio: {
-        tag: 'Raum 02 · Playbooks',
+        tag: 'Playbooks',
         name: 'Playbook-Studio & Leitfäden',
-        shortLabel: 'Studio',
+        shortLabel: 'Playbooks',
         subtitle: 'Onboarding-Leitfäden, Projektübersichten & Prozess-Handbücher',
         focusTitle: 'Operative Playbooks & Projekt-Status',
         focusItems: [
@@ -531,30 +568,38 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
         ],
       },
       bar: {
-        tag: 'Raum 03 · Empfang & Crew',
-        name: 'Bord-Bar & Schichtwechsel',
+        tag: 'Abteilungs-Raum · Empfang & Crew',
+        name: rName,
         shortLabel: 'Bar',
         subtitle: 'Tägliche Schicht-Übergabe, Kunden-Signale & Abstimmung der Crew',
-        loungeTitle: 'Bord-Bar & Schicht-Übergabe',
+        loungeTitle: `${rName} · Schicht-Übergabe`,
         handoverPrompt: 'Übergabe für die nächste Schicht oder Kunden-Aufgabe…',
       },
     };
   }
 
-  if (raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury') || raw.includes('büro') || raw.includes('verwaltung')) {
+  if (raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury') || raw.includes('büro') || raw.includes('einkauf') || raw.includes('verwaltung')) {
+    const isCafe = raw.includes('büro') || raw.includes('einkauf');
+    const rName = isCafe ? 'Kontor & Einkaufs-Büro' : 'Treasury-Kontor & Vertrags-Archiv';
     return {
+      primaryRoom: 'studio',
+      archetype: 'kontor',
+      roomTag: isCafe ? 'Abteilungs-Raum · Kontor & Einkauf' : 'Abteilungs-Raum · Smaragd- & Bronze-Kontor',
+      roomName: rName,
+      roomSubtitle: 'Verträge, Kalkulationen & Richtlinien direkt am Kontor-Pult, Freigabe-Matrix & Fristen-Aufgaben',
+      enterLabel: `${rName} betreten →`,
       werkstatt: {
-        tag: 'Raum 01 · Kontor',
-        name: 'Treasury-Kontor & Werkstatt',
-        shortLabel: 'Werkstatt',
+        tag: 'Kontor',
+        name: rName,
+        shortLabel: 'Kontor',
         subtitle: 'Budgets, Freigaben, Prüfaufträge & laufende Fristen',
         focusHint: 'Liquidität, Controlling & Freigaben',
       },
       studio: {
-        tag: 'Raum 02 · Tresor-Archiv',
-        name: 'Tresor-Archiv & Richtlinien',
-        shortLabel: 'Studio',
-        subtitle: 'Finanzübersicht, Sicherheitsrichtlinien & Compliance-Dossiers',
+        tag: 'Abteilungs-Raum · Kontor & Archiv',
+        name: rName,
+        shortLabel: 'Kontor',
+        subtitle: 'Finanzübersicht, Sicherheitsrichtlinien & Compliance-Dossiers direkt am Kontor-Pult',
         focusTitle: 'Treasury- & Sicherheits-Matrix',
         focusItems: [
           { label: 'Budget & Rücklagen', value: 'Klare Trennung von Betrieb und strategischer Reserve', status: 'Geprüft' },
@@ -563,9 +608,9 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
         ],
       },
       bar: {
-        tag: 'Raum 03 · Kuratorium',
-        name: 'Kontor-Lounge & Bar',
-        shortLabel: 'Bar',
+        tag: 'Kuratorium',
+        name: 'Kontor-Lounge',
+        shortLabel: 'Kontor',
         subtitle: 'Freigabe-Runde, Budget-Abstimmung & vertrauliche Übergaben',
         loungeTitle: 'Kontor-Lounge & Freigabe-Tisch',
         handoverPrompt: 'Prüfauftrag oder Freigabe-Notiz für das Kontor…',
@@ -574,15 +619,21 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
   }
 
   return {
+    primaryRoom: 'werkstatt',
+    archetype: 'werkstatt',
+    roomTag: 'Abteilungs-Raum · Werkstatt',
+    roomName: `${label} · Werkstatt`,
+    roomSubtitle: 'Aufgabenbrett, Schreibtisch, Handbuch am Pult & Wochenmappe der Abteilung',
+    enterLabel: `${label} · Raum betreten →`,
     werkstatt: {
-      tag: 'Raum 01 · Umsetzung',
+      tag: 'Abteilungs-Raum · Umsetzung',
       name: `${label} · Werkstatt`,
       shortLabel: 'Werkstatt',
       subtitle: 'Aufgabenbrett, Schreibtisch & Wochenmappe der Abteilung',
       focusHint: 'Tägliche Aufgaben & Wochenplanung',
     },
     studio: {
-      tag: 'Raum 02 · Wissen & Buch',
+      tag: 'Wissen & Buch',
       name: `${label} · Studio`,
       shortLabel: 'Studio',
       subtitle: 'Lesepult, Handbücher, Konzepte & Dokumente der Abteilung',
@@ -593,7 +644,7 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
       ],
     },
     bar: {
-      tag: 'Raum 03 · Crew & Übergabe',
+      tag: 'Crew & Übergabe',
       name: `${label} · Bar`,
       shortLabel: 'Bar',
       subtitle: 'Captain, Crew, Schicht-Übergabe & laufende Signale am Tisch',
