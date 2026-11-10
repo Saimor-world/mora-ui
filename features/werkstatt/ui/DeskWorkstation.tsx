@@ -21,6 +21,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
   deskLabel: string;
   deskHint: string;
   badgeText: string;
+  fixtureLabel: string;
+  fixtureSub: string;
+  fixtureBox: { x: number; y: number; w: number; h: number };
 } {
   const raw = `${planetId} ${planetTitle}`.toLowerCase();
   if (raw.includes('küche') || raw.includes('kueche') || raw.includes('backstube')) {
@@ -29,6 +32,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Backstuben-Werkbank · Bestand & Kühlprotokoll',
       deskHint: 'Bestand zählen · Kühlhaus 3 °C abzeichnen · Rezept-Mengen',
       badgeText: 'Bestand & Kühlhaus (3 °C ✓)',
+      fixtureLabel: 'Kühlhaus- & Backofen-Check',
+      fixtureSub: '3,1 °C OK · 24 Zimtschnecken',
+      fixtureBox: { x: 118, y: 380, w: 170, h: 210 },
     };
   }
   if (raw.includes('service') || raw.includes('gastraum') || raw.includes('reservierung')) {
@@ -37,6 +43,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Empfangspult · Reservierungen & Gästestimmen',
       deskHint: 'Tischplan (12:30 Kanzlei Weber) · Google-Bewertungen beantworten',
       badgeText: '3 Reservierungen · 3 Bewertungen',
+      fixtureLabel: 'Siebträger & Gast-Empfang',
+      fixtureSub: '12:30 Kanzlei Weber (12 Pers.)',
+      fixtureBox: { x: 8, y: 560, w: 220, h: 340 },
     };
   }
   if (raw.includes('theke') || raw.includes('aushilfe') || raw.includes('schicht')) {
@@ -45,6 +54,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Siebträger-Theke · Checklisten & Schichttausch',
       deskHint: 'Öffnen (07:30) / Schließen (18:00) abhaken · Schichttausch Jonas → Lena',
       badgeText: 'Checkliste & Schichttausch',
+      fixtureLabel: 'Siebträger-Maschine (9 bar)',
+      fixtureSub: 'Öffnen 07:30 · Schichttausch Do',
+      fixtureBox: { x: 8, y: 560, w: 220, h: 340 },
     };
   }
   if (raw.includes('verwaltung') || raw.includes('inhaber') || raw.includes('einkauf') || raw.includes('büro')) {
@@ -53,6 +65,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Inhaber-Kontor · Bestellung, Kasse & Urlaub',
       deskHint: 'Bestellung (214 € bis 14:00) · Tageskasse (1.842 €) · Urlaub Lena',
       badgeText: 'Bestellung 214 € · Kasse 1.842 €',
+      fixtureLabel: 'Kontor-Waage & Kassenbuch',
+      fixtureSub: '1.842 € Kasse · Bestellung 214 €',
+      fixtureBox: { x: 34, y: 420, w: 175, h: 200 },
     };
   }
   if (archetype === 'studio' || raw.includes('studio') || raw.includes('design') || raw.includes('atelier')) {
@@ -61,6 +76,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'ORIGIN // 001 Prüfsockel & Konzept-Folio',
       deskHint: 'Relikt Seed 1001 Material-Abnahme · Dossier direkt am Tisch bearbeiten',
       badgeText: 'ORIGIN // 001 · Seed 1001',
+      fixtureLabel: 'ORIGIN // 001 Skulptur-Sockel',
+      fixtureSub: 'Seed 1001 · Basalt & Quarzglas',
+      fixtureBox: { x: 24, y: 470, w: 120, h: 150 },
     };
   }
   if (archetype === 'bar' || raw.includes('betrieb') || raw.includes('bar') || raw.includes('kunde')) {
@@ -69,6 +87,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Crew-Tresen · Übergabe-Logbuch & Funk',
       deskHint: 'Captain & Crew filtern · Schicht-Übergabe · Post & Termine',
       badgeText: 'Crew-Logbuch & Funk',
+      fixtureLabel: 'Espresso-Siebträger & Bar-Funk',
+      fixtureSub: 'Crew an Bord · Schicht-Logbuch',
+      fixtureBox: { x: 8, y: 560, w: 220, h: 340 },
     };
   }
   if (archetype === 'bridge' || raw.includes('kommando') || raw.includes('strategie') || raw.includes('leitung')) {
@@ -77,6 +98,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Kommandopult · Captains-Runde & Freigaben',
       deskHint: 'Strategische Entscheidungen · Captains-Sync · Partner-Freigaben',
       badgeText: 'Kommandopult · 3 Entscheidungen',
+      fixtureLabel: 'Führungs-Waage & Charta-Siegel',
+      fixtureSub: 'Captains-Runde 10:00 · Phase 01',
+      fixtureBox: { x: 34, y: 420, w: 175, h: 200 },
     };
   }
   if (archetype === 'kontor' || raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury')) {
@@ -85,6 +109,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
       deskLabel: 'Treasury-Kontor · Budget & XRPL-Freigaben',
       deskHint: 'Abteilungs-Budgets prüfen · XRPL Testnet-Status · Verträge',
       badgeText: 'Treasury & XRPL Testnet',
+      fixtureLabel: 'Präzisionswaage & XRPL-Wächter',
+      fixtureSub: 'Testnet aktiv · Budget geprüft',
+      fixtureBox: { x: 34, y: 420, w: 175, h: 200 },
     };
   }
   return {
@@ -92,6 +119,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
     deskLabel: 'Werkbank · System-Prüfstand & Releases',
     deskHint: 'Core v3 Schnittstellen · Lokaler Dev-Master · Release-Checkliste',
     badgeText: 'System-Prüfstand · Bereit',
+    fixtureLabel: 'Messinglampe & System-Prüfstand',
+    fixtureSub: 'Core v3 & Local Master aktiv',
+    fixtureBox: { x: 118, y: 380, w: 170, h: 210 },
   };
 }
 

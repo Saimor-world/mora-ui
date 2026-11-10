@@ -523,10 +523,34 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
           ) : null}
 
           {/* Physische Möbel & Gegenstände im Raum:
+              0. Spezial-Objekt links am Tisch (ORIGIN-Sockel / Siebträger-Maschine / Messingwaage / Werkbank-Lampe)
               1. Haupttisch / Theke / Werkbank / Zeichentisch links unter der Lampe -> Echte Arbeitsstation der Abteilung!
               2. Runder Beistelltisch in der Mitte -> Wochenmappe
               3. Stehpult vor dem Fenster rechts -> Gebundenes Vollbild-Buch
               4. Wandregal / Archivschrank ganz links -> Dokumenten-Auswahl */}
+          <button
+            type="button"
+            className="wk-hit wk-hit--fixture"
+            style={box(stationMeta.fixtureBox)}
+            onClick={() => open({ kind: 'station' })}
+            aria-label={`${stationMeta.fixtureLabel}: ${stationMeta.fixtureSub}`}
+            data-testid="wk-hit-fixture"
+          />
+          <button
+            type="button"
+            className="wk-plate wk-plate--fixture"
+            style={{
+              left: Math.max(108, stationMeta.fixtureBox.x + stationMeta.fixtureBox.w / 2),
+              top: stationMeta.fixtureBox.y - 16,
+              translate: '-50% 0',
+            }}
+            onClick={() => open({ kind: 'station' })}
+            data-testid="wk-fixture-plate"
+          >
+            <span>{stationMeta.fixtureLabel}</span>
+            <small>{stationMeta.fixtureSub}</small>
+          </button>
+
           <button
             type="button"
             className="wk-hit wk-hit--desk"

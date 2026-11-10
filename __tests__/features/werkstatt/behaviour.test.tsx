@@ -309,5 +309,33 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Finanzen & Recht · Treasury-Kontor & Vertrags-Archiv');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('kontor');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
+    expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Präzisionswaage & XRPL-Wächter');
+  });
+
+  it('bietet in den Café-Morgenrot-Abteilungen Service, Theke und Verwaltung echte operative Werkzeuge am Tisch', () => {
+    const servicePlanet = { ...planet, id: 'dept-service', title: 'Service' };
+    const { unmount: u1 } = wrap(<Werkstatt planet={servicePlanet} work={work} planets={[]} companyId="demo-morgenrot" today={TODAY} backLabel="Service" fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Siebträger & Gast-Empfang');
+    fireEvent.click(screen.getByTestId('wk-hit-fixture'));
+    expect(screen.getByTestId('wk-station-service')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-res-res-1')).toHaveTextContent('Kanzlei Weber');
+    u1();
+
+    const thekePlanet = { ...planet, id: 'dept-theke', title: 'Theke' };
+    const { unmount: u2 } = wrap(<Werkstatt planet={thekePlanet} work={work} planets={[]} companyId="demo-morgenrot" today={TODAY} backLabel="Theke" fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Siebträger-Maschine (9 bar)');
+    fireEvent.click(screen.getByTestId('wk-hit-fixture'));
+    expect(screen.getByTestId('wk-station-theke')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('wk-theke-swap-btn'));
+    expect(screen.getByTestId('wk-theke-swap-btn')).toHaveTextContent('bestätigt ✓');
+    u2();
+
+    const verwaltungPlanet = { ...planet, id: 'dept-verwaltung', title: 'Verwaltung' };
+    wrap(<Werkstatt planet={verwaltungPlanet} work={work} planets={[]} companyId="demo-morgenrot" today={TODAY} backLabel="Verwaltung" fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Kontor-Waage & Kassenbuch');
+    fireEvent.click(screen.getByTestId('wk-hit-fixture'));
+    expect(screen.getByTestId('wk-station-verwaltung')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
+    expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('gesendet ✓');
   });
 });
