@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchNodeDetails } from '@/lib/api/orgClient';
+import { getShipNodeById } from '@/lib/universe/shipDepartments';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { JADE_MORA_SRC } from '@/components/world/JadeMora';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -29,7 +30,13 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
   id: string; fallbackTitle: string; folderId: string | null; stage: Stage; back: { label: string; run: () => void } | null;
 }) {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ['node', id], queryFn: async () => (await fetchNodeDetails(id).catch(() => null)) ?? null, staleTime: 30_000 });
+  const localSeed = useMemo(() => getShipNodeById(id), [id]);
+  const q = useQuery({
+    queryKey: ['node', id],
+    queryFn: async () => (await fetchNodeDetails(id).catch(() => null)) ?? localSeed ?? null,
+    initialData: localSeed ?? undefined,
+    staleTime: 30_000,
+  });
   const upd = useUpdateNode(folderId ?? '');
   const node = q.data as { title?: string; name?: string; content?: string; description?: string; body?: string[] } | null | undefined;
   const title = node?.title || node?.name || fallbackTitle;

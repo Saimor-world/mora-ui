@@ -588,9 +588,57 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
       </div>
 
       {close ? (
-        <div ref={closeRef} key={`${close.kind}-${"id" in close ? close.id : ""}`} className="wk-close" data-testid={`wk-close-${close.kind}`}>
+        <div
+          ref={closeRef}
+          key={`${close.kind}-${"id" in close ? close.id : ""}`}
+          className="wk-close"
+          data-testid={`wk-close-${close.kind}`}
+          data-archetype={roomCtx.archetype}
+          data-close-kind={close.kind}
+        >
           <StageLayer stage={stage} img={closeImg(close.kind, world)} label={nameOf(close)}
             under={<WindowUniverse rect={CLOSE[close.kind].sky} world={world} planets={planets} focusId={planet.id} />}>
+            <div className="wk-close-bar" data-testid="wk-close-bar">
+              <button
+                type="button"
+                className="wk-close-bar__back"
+                onClick={back}
+                data-testid="wk-close-back-room"
+              >
+                ← Zurück in den Raum ({roomCtx.roomName})
+              </button>
+              <span className="wk-plate wk-plate--room">{roomSignText} · {nameOf(close)}</span>
+              <div className="wk-close-bar__nav" role="group" aria-label="Möbel & Arbeitsplätze im Raum">
+                <button
+                  type="button"
+                  className="wk-folder-tab"
+                  aria-pressed={close.kind === 'station'}
+                  onClick={() => open({ kind: 'station' })}
+                  data-testid="wk-close-go-station"
+                >
+                  {stationMeta.badgeText}
+                </button>
+                <button
+                  type="button"
+                  className="wk-folder-tab"
+                  aria-pressed={close.kind === 'planung'}
+                  onClick={() => open({ kind: 'planung' })}
+                  data-testid="wk-close-go-planung"
+                >
+                  Wochenmappe
+                </button>
+                <button
+                  type="button"
+                  className="wk-folder-tab"
+                  aria-pressed={close.kind === 'doc'}
+                  disabled={!lecternDoc}
+                  onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })}
+                  data-testid="wk-close-go-doc"
+                >
+                  Buch am Pult
+                </button>
+              </div>
+            </div>
             {close.kind === 'task' && taskOf(close.id) ? (
               <TaskSheet key={close.id} task={taskOf(close.id) as WorkTask} companyId={companyId}
                 crumb={[title, folderName(taskOf(close.id))].filter(Boolean).join(' · ')}

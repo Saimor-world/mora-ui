@@ -747,6 +747,63 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   display: flex; flex-direction: column; gap: 3px;
 }
 
+/* =====================================================================================
+   NAHANSICHT (.wk-close): Material-Abstimmung je Raum-Archetyp + Raum-Kontextleiste
+   ===================================================================================== */
+.wk-close[data-archetype='studio'] > .wk-stage > .wk-stage__img {
+  filter: saturate(0.42) contrast(1.08) brightness(0.84) hue-rotate(-14deg);
+}
+.wk-close[data-archetype='bar'] > .wk-stage > .wk-stage__img {
+  filter: saturate(1.14) contrast(1.06) brightness(0.92) hue-rotate(-8deg);
+}
+.wk-close[data-archetype='kontor'] > .wk-stage > .wk-stage__img,
+.wk-close[data-archetype='bridge'] > .wk-stage > .wk-stage__img {
+  filter: saturate(0.78) contrast(1.08) brightness(0.88) hue-rotate(42deg);
+}
+
+.wk-close-bar {
+  position: absolute;
+  left: 120px;
+  top: 22px;
+  width: 1680px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+.wk-close-bar > * {
+  pointer-events: auto;
+}
+.wk-close-bar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(24, 18, 12, 0.88);
+  border: 1px solid rgba(214, 168, 72, 0.45);
+  color: #f6e7c1;
+  font: 600 13.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.wk-close-bar__back:hover {
+  background: rgba(38, 28, 18, 0.96);
+  border-color: rgba(235, 190, 92, 0.75);
+}
+.wk-close-bar__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(20, 15, 10, 0.82);
+  border: 1px solid rgba(214, 168, 72, 0.32);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wk-sky__drift, .wk-sky__planet, .wk-leaf, .wk-slip { animation: none !important; }
   .wk-card, .wk-hit, .wk-corner { transition: none; }

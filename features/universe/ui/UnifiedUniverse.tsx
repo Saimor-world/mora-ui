@@ -355,6 +355,8 @@ export function UnifiedUniverse({
   // Demo detection and company name
   const activeCompanyIsDemo = useActiveCompanyIsDemo();
   const demoNameId = useDemoStore((s) => s.demoCompanyId);
+  const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
+  const isCafeScope = demoNameId === 'demo-morgenrot';
   const rawCompanyName =
     demoCompanyName(demoNameId) ||
     (user as { active_company_name?: string | null } | null)?.active_company_name ||
@@ -721,6 +723,74 @@ export function UnifiedUniverse({
         </div>
 
         <div className="ck-top__r flex items-center gap-2">
+          <div
+            className="ck-scope-switch"
+            role="group"
+            aria-label="Arbeitswelt wählen"
+            data-testid="scope-switcher"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: 3,
+              borderRadius: 999,
+              background: 'rgba(6, 16, 20, 0.76)',
+              border: '1px solid rgba(184, 212, 202, 0.22)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setDemoCompany(null);
+                setPlanetId(null);
+                setMoonId(null);
+                setTaskId(null);
+                setRoom(null);
+                setDeptSheetOpen(false);
+              }}
+              aria-pressed={!isCafeScope}
+              data-testid="scope-switch-hq"
+              title="SAIMÔR HQ Raumschiff (Kommando, Technik, Atelier, Betrieb, Kontor)"
+              style={{
+                fontSize: 12,
+                fontWeight: !isCafeScope ? 600 : 500,
+                padding: '4px 12px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                background: !isCafeScope ? 'rgba(214, 168, 72, 0.26)' : 'transparent',
+                color: !isCafeScope ? '#f6d992' : 'rgba(220, 232, 226, 0.72)',
+              }}
+            >
+              SAIMÔR HQ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDemoCompany('demo-morgenrot');
+                setPlanetId(null);
+                setMoonId(null);
+                setTaskId(null);
+                setRoom(null);
+                setDeptSheetOpen(false);
+              }}
+              aria-pressed={isCafeScope}
+              data-testid="scope-switch-cafe"
+              title="Café-Betrieb (Küche & Backstube, Service & Gastraum, Theke & Schicht, Verwaltung)"
+              style={{
+                fontSize: 12,
+                fontWeight: isCafeScope ? 600 : 500,
+                padding: '4px 12px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                background: isCafeScope ? 'rgba(111, 199, 164, 0.26)' : 'transparent',
+                color: isCafeScope ? '#a7f3d0' : 'rgba(220, 232, 226, 0.72)',
+              }}
+            >
+              Café-Demo
+            </button>
+          </div>
           <button
             type="button"
             className="ck-btn"

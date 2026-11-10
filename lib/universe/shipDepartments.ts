@@ -297,7 +297,297 @@ export const CANONICAL_SHIP_DEPARTMENTS: ShipDepartmentSeed[] = [
   },
 ];
 
-export function buildCanonicalShipWorld(now = new Date()): {
+export const CANONICAL_MORGENROT_DEPARTMENTS: ShipDepartmentSeed[] = [
+  {
+    id: 'd-kueche',
+    name: 'Küche & Backstube',
+    spaceId: 'sp-kueche',
+    spaceName: 'Vorbereitung & Ofen',
+    folders: [
+      {
+        id: 'k-rez',
+        name: 'Rezepte & Backstube',
+        docs: [
+          {
+            id: 'rez-1',
+            title: 'Zimtschnecken · Teigführung & Backplan',
+            content: [
+              '# Zimtschnecken · Teigführung & Backplan',
+              '',
+              '## Grundrezept (24 Stück · Teig ab 06:45 Uhr)',
+              '',
+              '- **Mehl Type 550**: 1.000 g',
+              '- **Vollmilch / Haferdrink**: 500 ml (lauwarm)',
+              '- **Rohrzucker**: 120 g',
+              '- **Frischhefe**: 42 g',
+              '- **Ceylon-Zimt & Kardamom**: 35 g für die Füllung',
+              '',
+              '## Ablauf in der Backstube',
+              '',
+              '1. Vorteig 15 Minuten anspringen lassen, dann 10 Minuten langsam kneten.',
+              '2. Erste Gare: 45 Minuten abgedeckt ruhen lassen.',
+              '3. Ausrollen, mit Butter-Zimt-Kardamom bestreichen und in 24 gleichmäßige Rollen schneiden.',
+              '4. Backofen auf **180 °C Ober-/Unterhitze** vorheizen und **18 Minuten** goldbraun backen.',
+            ].join('\n'),
+          },
+          {
+            id: 'rez-2',
+            title: 'Hokkaido-Kürbissuppe (Herbstkarte)',
+            content: [
+              '# Hokkaido-Kürbissuppe (20 Portionen)',
+              '',
+              '- **3,0 kg Hokkaido-Kürbis** (entkernt, mit Schale gewürfelt)',
+              '- **2,0 l Gemüsebrühe** (Hausansatz)',
+              '- **400 ml Kokosmilch** & frischer Ingwer',
+              '- Garnitur: Geröstete Kürbiskerne & steirisches Kernöl.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 'k-best',
+        name: 'Bestand & Lager',
+        docs: [
+          {
+            id: 'inv-1',
+            title: 'Mindestbestände & Donnerstag-Bestellung',
+            content: [
+              '# Mindestbestände & Donnerstag-Bestellung',
+              '',
+              '- **Hafermilch (Barista)**: Mindestbestand 24 Liter (Bestellung Hofmolkerei Sonnental bis Mi 14:00 Uhr).',
+              '- **Espresso-Röstung (Hausblend)**: Mindestbestand 6 kg (Rösterei Hügel).',
+              '- **Weizenmehl Type 550**: Mindestbestand 10 kg (aktuell 18 kg auf Lager).',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 'k-hyg',
+        name: 'HACCP & Hygiene',
+        docs: [
+          {
+            id: 'hyg-1',
+            title: 'Kühlprotokoll & Reinigungsplan Küche',
+            content: [
+              '# HACCP Kühlprotokoll & Reinigungsplan',
+              '',
+              '- **Kühlhaus Hauptlager**: Soll ≤ 4,0 °C (täglich 07:00 Uhr prüfen und an der Werkbank gegenzeichnen).',
+              '- **Unterbaukühlung Theke**: Soll ≤ 6,0 °C.',
+              '- **Tiefkühlung Backstube**: Soll ≤ -18,0 °C.',
+              '- **Mittwoch-Schwerpunkt**: Backofen-Schwadenkanal und Dunstabzug entfetten.',
+            ].join('\n'),
+          },
+        ],
+      },
+    ],
+    tasks: [
+      { id: 'demo-t1', title: 'Kuchenvitrine auffüllen & 36er Zimtschnecken-Charge backen', folderId: 'k-rez', assignee: 'Tarek B.', dueOffsetDays: 0, priority: 'high' },
+      { id: 'demo-t-k2', title: 'Hafermilch- und Espresso-Bestand vor 14:00 Uhr zählen', folderId: 'k-best', assignee: 'Tarek B.', dueOffsetDays: 0, priority: 'high' },
+      { id: 'demo-t-k3', title: 'Kühlhaus- & Thekentemperatur im HACCP-Protokoll gegenzeichnen', folderId: 'k-hyg', assignee: 'Lena K.', dueOffsetDays: 1, priority: 'medium' },
+    ],
+    crew: [
+      { id: 'cafe-tarek', name: 'Tarek B.', role: 'Küchenchef & Bäcker', status: 'online', isCaptain: true },
+      { id: 'cafe-lena-k', name: 'Lena K.', role: 'Vorbereitung & Backstube', status: 'online' },
+    ],
+  },
+  {
+    id: 'd-service',
+    name: 'Service & Gastraum',
+    spaceId: 'sp-service',
+    spaceName: 'Gastraum & Terrasse',
+    folders: [
+      {
+        id: 's-res',
+        name: 'Reservierungen',
+        docs: [
+          {
+            id: 'res-1',
+            title: 'Tischplan heute: Kanzlei Weber & Geburtstag',
+            content: [
+              '# Reservierungen & Tischplan (Heute)',
+              '',
+              '## 12:30 Uhr · Kanzlei Weber (12 Personen · Tisch 4–6)',
+              '- Lange Tafel am Fenster zusammenstellen.',
+              '- 2× vegetarisch, 1× glutenfrei vorab markiert.',
+              '- Abrechnung erfolgt auf eine gemeinsame Sammelrechnung.',
+              '',
+              '## 15:00 Uhr · Geburtstag (4 Personen · Tisch 2)',
+              '- Eigene Torte wird mitgebracht; Kuchenteller, Gabeln und Kerzen bereitlegen.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 's-bew',
+        name: 'Bewertungen',
+        docs: [
+          {
+            id: 'rev-1',
+            title: 'Google-Bewertungen & Antwort-Leitfaden',
+            content: [
+              '# Gästefeedback & Bewertungen',
+              '',
+              '- **★★★★★ „Bester Flat White der Stadt“**: Danke dir! Wir geben das Lob direkt an Tarek und unser Barista-Team weiter.',
+              '- **★★★☆☆ „Samstag lange Wartezeit an der Theke“**: Ehrliche Rückmeldung annehmen – ab dieser Woche besetzen wir die Samstagsspitze (10–14 Uhr) fest zu zweit an der Siebträgermaschine.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 's-karte',
+        name: 'Speisekarte',
+        docs: [
+          {
+            id: 'menu-1',
+            title: 'Herbstkarte 2026 & Allergen-Matrix',
+            content: [
+              '# Herbstkarte 2026 (gültig bis 30.11.)',
+              '',
+              '- **Hokkaido-Kürbissuppe** mit Kernöl & Sauerteigbrot — 6,50 €',
+              '- **Hausgemachte Zimtschnecke** (warm aus dem Ofen) — 3,40 €',
+              '- **Flat White** (Doppelter Ristretto, Bio-Vollmilch oder Hafer) — 3,90 €',
+            ].join('\n'),
+          },
+        ],
+      },
+    ],
+    tasks: [
+      { id: 'demo-t2', title: 'Tisch 4–6 für Kanzlei Weber (12 Pers., 12:30 Uhr) eindecken', folderId: 's-res', assignee: 'Lena K.', dueOffsetDays: 0, priority: 'high' },
+      { id: 'demo-t-s2', title: 'Tortenteller & Kerzen für Tisch 2 (15:00 Uhr) bereitlegen', folderId: 's-res', assignee: 'Jonas W.', dueOffsetDays: 0, priority: 'medium' },
+      { id: 'demo-t-s3', title: 'Google-Bewertung zum Samstag-Service beantworten', folderId: 's-bew', assignee: 'Lena K.', dueOffsetDays: 1, priority: 'low' },
+    ],
+    crew: [
+      { id: 'cafe-lena', name: 'Lena K.', role: 'Service-Leitung', status: 'online', isCaptain: true },
+      { id: 'cafe-jonas', name: 'Jonas W.', role: 'Gastraum & Terrasse', status: 'online' },
+    ],
+  },
+  {
+    id: 'd-theke',
+    name: 'Theke & Schicht',
+    spaceId: 'sp-theke',
+    spaceName: 'Siebträger & Kasse',
+    folders: [
+      {
+        id: 'a-check',
+        name: 'Checklisten',
+        docs: [
+          {
+            id: 'chk-1',
+            title: 'Barista-Checkliste: Öffnen (07:30) & Schließen (18:00)',
+            content: [
+              '# Barista-Checkliste · Theke & Siebträger',
+              '',
+              '## Öffnen (07:30 Uhr)',
+              '1. Siebträgermaschine (La Marzocco 2-gruppig) spülen, Kesseldruck (1,2 bar) und Brühdruck (9,0 bar) prüfen.',
+              '2. Mühle einmahlen: **18,5 g In → 38 g Out in 27 Sekunden**.',
+              '3. Kuchenvitrine mit frischen Zimtschnecken und Bananenbrot bestücken.',
+              '',
+              '## Schließen (18:00 Uhr)',
+              '1. Beide Brühgruppen mit Blindsieb und Kaffeefettlöser rückspülen.',
+              '2. Dampflanzen entlüften und Düsen reinigen.',
+              '3. Kassensturz durchführen und Z-Bon im Kassenbuch ablegen.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 'a-schicht',
+        name: 'Schichtplan',
+        docs: [
+          {
+            id: 'sch-1',
+            title: 'Schichtplan KW 45 & Übergabe',
+            content: [
+              '# Schichtplan KW 45 · Café Morgenrot',
+              '',
+              '- **Mittwoch**: Tarek (06:30–14:30) · Lena (07:30–16:00) · Jonas (11:00–18:00)',
+              '- **Donnerstag**: Tarek (06:30–14:30) · Lena übernimmt Spätschicht (09:30–18:00) für Jonas',
+              '- **Freitag & Samstag**: Doppelbesetzung an der Siebträgermaschine ab 09:30 Uhr.',
+            ].join('\n'),
+          },
+        ],
+      },
+    ],
+    tasks: [
+      { id: 'demo-t-th1', title: 'Mahlgrad & Brühdruck (9,0 bar) an der Siebträgermaschine einmahlen', folderId: 'a-check', assignee: 'Jonas W.', dueOffsetDays: 0, priority: 'high' },
+      { id: 'demo-t-th2', title: 'Schichttausch Donnerstag (Jonas → Lena 09:30–18:00) bestätigen', folderId: 'a-schicht', assignee: 'Lena K.', dueOffsetDays: 0, priority: 'medium' },
+    ],
+    crew: [
+      { id: 'cafe-jonas-t', name: 'Jonas W.', role: 'Head Barista', status: 'online', isCaptain: true },
+      { id: 'cafe-tarek-t', name: 'Tarek B.', role: 'Frühschicht & Röstung', status: 'online' },
+      { id: 'cafe-lena-t', name: 'Lena K.', role: 'Spätschicht & Service', status: 'online' },
+    ],
+  },
+  {
+    id: 'd-verw',
+    name: 'Verwaltung & Büro',
+    spaceId: 'sp-verw',
+    spaceName: 'Kontor & Einkauf',
+    folders: [
+      {
+        id: 'v-zahl',
+        name: 'Zahlen & Kasse',
+        docs: [
+          {
+            id: 'num-1',
+            title: 'Kassenbericht & Monatsziel',
+            content: [
+              '# Kassenbericht & Monatsübersicht · Café Morgenrot',
+              '',
+              '- **Tagesumsatz gestern**: **1.842,00 €** (+9 % gegenüber Vorwoche).',
+              '- **Zahlungsarten**: 71 % Kartenzahlung (1.307,80 €), 29 % Barzahlung (534,20 €) – Kasse stimmt auf den Cent.',
+              '- **Stärkste Stunde**: 12:00–13:00 Uhr (Mittagsgeschäft & Flat White to go).',
+              '- **Monatsstand**: 38.410,00 € von 42.000,00 € Ziel.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 'v-lief',
+        name: 'Lieferanten & Einkauf',
+        docs: [
+          {
+            id: 'sup-1',
+            title: 'Lieferanten-Rahmen: Rösterei Hügel & Hofmolkerei',
+            content: [
+              '# Lieferanten & Bestellfristen',
+              '',
+              '- **Rösterei Hügel**: Espresso-Röstung (6 kg zu 138,00 €) · Bestellschluss Mittwoch 14:00 Uhr für Donnerstag-Lieferung.',
+              '- **Hofmolkerei Sonnental**: Barista-Hafermilch (24 L zu 52,00 €) & Bio-Vollmilch (12 L zu 23,00 €) · Lieferung Mo & Do.',
+            ].join('\n'),
+          },
+        ],
+      },
+      {
+        id: 'v-team',
+        name: 'Team & Verträge',
+        docs: [
+          {
+            id: 'team-1',
+            title: 'Urlaubsplanung & Ladenlokal-Verträge',
+            content: [
+              '# Team-Urlaub & Verträge',
+              '',
+              '- **Offener Urlaubsantrag**: Lena K. (18.–22.11., 5 Urlaubstage) – Vertretung durch Jonas & Tarek gesichert.',
+              '- **Mietvertrag Ladenlokal**: Festlaufzeit bis 2029, Nebenkostenabrechnung geprüft.',
+            ].join('\n'),
+          },
+        ],
+      },
+    ],
+    tasks: [
+      { id: 'demo-t0', title: 'Donnerstag-Bestellung bei Rösterei Hügel & Hofmolkerei (213 €) freigeben', folderId: 'v-lief', assignee: 'Marius', dueOffsetDays: 0, priority: 'high' },
+      { id: 'demo-t-v2', title: 'Tagesabschluss (1.842,00 € · 71 % Karte) im Kassenbuch gegenzeichnen', folderId: 'v-zahl', assignee: 'Marius', dueOffsetDays: 0, priority: 'medium' },
+      { id: 'demo-t-v3', title: 'Urlaubsantrag Lena K. (18.–22.11.) im Kontor genehmigen', folderId: 'v-team', assignee: 'Marius', dueOffsetDays: 2, priority: 'low' },
+    ],
+    crew: [
+      { id: 'cafe-marius', name: 'Marius', role: 'Inhaber & Geschäftsführung', status: 'online', isCaptain: true },
+      { id: 'cafe-lena-v', name: 'Lena K.', role: 'Betriebsleitung', status: 'online' },
+    ],
+  },
+];
+
+function buildWorldFromSeeds(seeds: ShipDepartmentSeed[], now = new Date()): {
   departments: WorldDepartment[];
   folders: FFolder[];
   nodes: FNode[];
@@ -308,7 +598,7 @@ export function buildCanonicalShipWorld(now = new Date()): {
   const nodes: FNode[] = [];
   const tasks: WorldTask[] = [];
 
-  for (const dept of CANONICAL_SHIP_DEPARTMENTS) {
+  for (const dept of seeds) {
     departments.push({
       id: dept.id,
       name: dept.name,
@@ -348,8 +638,21 @@ export function buildCanonicalShipWorld(now = new Date()): {
   return { departments, folders, nodes, tasks };
 }
 
+export function buildCanonicalShipWorld(now = new Date()) {
+  return buildWorldFromSeeds(CANONICAL_SHIP_DEPARTMENTS, now);
+}
+
+export function buildCanonicalMorgenrotWorld(now = new Date()) {
+  return buildWorldFromSeeds(CANONICAL_MORGENROT_DEPARTMENTS, now);
+}
+
+const ALL_CANONICAL_DEPARTMENTS: ShipDepartmentSeed[] = [
+  ...CANONICAL_SHIP_DEPARTMENTS,
+  ...CANONICAL_MORGENROT_DEPARTMENTS,
+];
+
 export function getShipNodeById(nodeId: string): { id: string; title: string; name: string; type: string; folder_id: string; content: string } | null {
-  for (const dept of CANONICAL_SHIP_DEPARTMENTS) {
+  for (const dept of ALL_CANONICAL_DEPARTMENTS) {
     for (const folder of dept.folders) {
       for (const doc of folder.docs) {
         if (doc.id === nodeId) {
@@ -370,7 +673,7 @@ export function getShipNodeById(nodeId: string): { id: string; title: string; na
 
 export function getShipDepartmentCrew(deptIdOrName: string): DeptMember[] | null {
   const key = deptIdOrName.trim().toLowerCase();
-  const match = CANONICAL_SHIP_DEPARTMENTS.find(
+  const match = ALL_CANONICAL_DEPARTMENTS.find(
     (d) => d.id.toLowerCase() === key || d.name.toLowerCase() === key
   );
   return match ? match.crew : null;

@@ -72,6 +72,8 @@ export function LiveCockpit({
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
   const demoId = useDemoStore((s) => s.demoCompanyId);
+  const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
+  const isCafeScope = demoId === 'demo-morgenrot';
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
@@ -360,6 +362,60 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
+          <div
+            className="ck-scope-switch"
+            role="group"
+            aria-label="Arbeitswelt wählen"
+            data-testid="home-scope-switcher"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: 3,
+              borderRadius: 999,
+              background: 'rgba(6, 16, 20, 0.76)',
+              border: '1px solid rgba(184, 212, 202, 0.22)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setDemoCompany(null)}
+              aria-pressed={!isCafeScope}
+              data-testid="home-scope-hq"
+              title="SAIMÔR HQ Raumschiff (Kommando, Technik, Atelier, Betrieb, Kontor)"
+              style={{
+                fontSize: 12,
+                fontWeight: !isCafeScope ? 600 : 500,
+                padding: '4px 12px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                background: !isCafeScope ? 'rgba(214, 168, 72, 0.26)' : 'transparent',
+                color: !isCafeScope ? '#f6d992' : 'rgba(220, 232, 226, 0.72)',
+              }}
+            >
+              SAIMÔR HQ
+            </button>
+            <button
+              type="button"
+              onClick={() => setDemoCompany('demo-morgenrot')}
+              aria-pressed={isCafeScope}
+              data-testid="home-scope-cafe"
+              title="Café-Betrieb (Küche & Backstube, Service & Gastraum, Theke & Schicht, Verwaltung)"
+              style={{
+                fontSize: 12,
+                fontWeight: isCafeScope ? 600 : 500,
+                padding: '4px 12px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                background: isCafeScope ? 'rgba(111, 199, 164, 0.26)' : 'transparent',
+                color: isCafeScope ? '#a7f3d0' : 'rgba(220, 232, 226, 0.72)',
+              }}
+            >
+              Café-Demo
+            </button>
+          </div>
           <span className="ck-time">{timeHeader}</span>
           <span>aus CORE</span>
           {effectiveIsDemo ? (
