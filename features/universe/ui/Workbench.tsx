@@ -361,11 +361,13 @@ export function WorkSurface({
   }, [size]);
 
 
+  // Dock-Kollaps erst nach der Landung, Rückfahrt setzt ihn zu Beginn von „out“ wieder frei.
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.setAttribute('data-os-work', size);
+    if (phase === 'in') root.setAttribute('data-os-work', size);
+    else root.removeAttribute('data-os-work');
     return () => { root.removeAttribute('data-os-work'); };
-  }, [size]);
+  }, [size, phase]);
 
   return (
     <section

@@ -578,12 +578,11 @@ html[data-dock='c'] .ck-focus__card[data-tone='red'] b { color:#f0a49a; }
 /* ─── Arbeitsmodus (nur wenn html[data-os-work] gesetzt) ─────────────────
    Oberer Dock-Rumpf gleitet weg: Karten, Wasser, Herz, Ask.
    Zurückbleiben: Icon-Leiste + Uhr + Fokus. Ohne data-os-work: unverändert. */
-html[data-os-work] {
-  --os-dock-space: 92px;
-}
+/* --os-dock-space bleibt 304px: sonst springt die See-Komposition in einem Frame. */
 html[data-os-work] .bridge__body {
   height: 92px;
-  transition: height .55s cubic-bezier(.2,.7,.2,1);
+  transition: height .3s cubic-bezier(0,0,.2,1);
+  overflow: visible;
 }
 html[data-os-work] .bridge__hull,
 html[data-os-work] .bridge__water,
@@ -595,7 +594,7 @@ html[data-os-work] .bridge__ripple {
   opacity: 0 !important;
   transform: translateY(48px);
   pointer-events: none;
-  transition: opacity .45s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+  transition: opacity .3s cubic-bezier(0,0,.2,1), transform .3s cubic-bezier(0,0,.2,1);
 }
 html[data-os-work] .bridge__deck,
 html[data-os-work] .bridge__inst,
@@ -610,7 +609,7 @@ html[data-os-work] .bridge__mora-reflect {
   visibility: hidden;
   pointer-events: none !important;
   transform: translateY(56px);
-  transition: opacity .4s ease, transform .55s cubic-bezier(.2,.7,.2,1), visibility .4s;
+  transition: opacity .3s cubic-bezier(0,0,.2,1), transform .3s cubic-bezier(0,0,.2,1), visibility 0s linear .3s;
 }
 html[data-os-work] .bridge__pill {
   opacity: 1;

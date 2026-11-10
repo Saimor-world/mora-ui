@@ -198,6 +198,11 @@ html[data-os-work="full"] .bridge__inst{
 .ck-universe-unified[data-work="full"] > .ck-scene{filter:blur(5px) brightness(.28) saturate(.65); transform:none}
 /* kein zoom auf .bridge__mora – bricht die Dock-Flugmathematik; Parken außerhalb oder goHome */
 .ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
+/* Ohne Glass-Face wäre die Fläche in „from“ ein leerer dunkler Kasten – unsichtbar anfliegen. */
+.ws-surface--folio[data-phase="from"],
+.ws-surface--task[data-phase="from"],
+.ws-surface--full[data-phase="from"]{opacity:0}
+
 .ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
 .ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
 .ws-surface[data-phase="from"] > :not(.ws-face),.ws-surface[data-phase="out"] > :not(.ws-face){opacity:0;transition-delay:0s}
