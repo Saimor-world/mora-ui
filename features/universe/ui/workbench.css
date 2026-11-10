@@ -383,3 +383,160 @@ html[data-os-work] .bridge__heart .jade-mora__glow{opacity:.35;transition:opacit
 .ws-group > summary::-webkit-details-marker{display:none}
 
 .ws-cal__quick button:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.03)}
+
+
+/* ── Papierschicht (Stufe 2) ───────────────────────────────────────────
+   Nur die Fläche ist warmes Papier. Kein Filter, Schleier oder Wash über der Szene.
+   Licht und Tiefe sitzen am Blatt: kühler Nachtschatten, weicher Rand, leichte Faser. */
+.ws-surface--folio,
+.ws-surface--task,
+.ws-surface--full{
+  --surface:#f4f1ea;
+  --surface-2:#ece7dc;
+  --ink:#1a1f1c;
+  --ink-muted:#3e4a44;
+  --accent:#205a48;
+  --hairline:rgba(28,34,30,.12);
+  color:var(--ink);
+  width:min(1100px,calc(100% - 120px));
+  top:calc(var(--ws-top,56px) + 6px);
+  bottom:calc(var(--ws-bottom,100px) + 8px);
+  padding:28px 36px 24px;
+  border-radius:12px;
+  overflow:visible;
+  background-color:var(--surface);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(165deg,rgba(210,226,236,.28) 0%,transparent 36%),
+    linear-gradient(180deg,#f7f4ee 0%,var(--surface) 42%,var(--surface-2) 100%);
+  background-blend-mode:multiply,normal,normal;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.62),
+    inset 0 0 0 1px rgba(255,255,255,.2),
+    0 1px 2px rgba(8,20,24,.06),
+    0 18px 48px -14px rgba(4,16,24,.42),
+    0 6px 18px rgba(4,16,24,.16);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.ws-surface--folio .ws-docview,
+.ws-surface--full .ws-desk,
+.ws-surface--task .ws-task,
+.ws-surface--folio .ws-head,
+.ws-surface--full .ws-head,
+.ws-surface--task .ws-head{min-width:0}
+.ws-surface--folio .ws-docview{min-height:0;overflow:hidden;border-radius:0 0 8px 8px}
+.ws-surface--full .ws-desk{min-height:0;overflow:hidden}
+
+/* Tinte auf Papier: Fließtext ≥4,5:1, sekundär ≥3:1 (Tokens liegen darüber). */
+.ws-surface--folio,
+.ws-surface--task,
+.ws-surface--full,
+.ws-surface--folio .ws-head,
+.ws-surface--folio .ws-head p,
+.ws-surface--task .ws-head,
+.ws-surface--full .ws-head,
+.ws-surface--folio .ws-doc__title,
+.ws-surface--folio .ws-doc__read,
+.ws-surface--folio .ws-doc__body,
+.ws-surface--folio .ws-md__h1,
+.ws-surface--folio .ws-md__h2,
+.ws-surface--folio .ws-md__h3,
+.ws-surface--folio .ws-md__p,
+.ws-surface--folio .ws-md__ul,
+.ws-surface--folio .ws-md__ol,
+.ws-surface--folio .ws-md__table,
+.ws-surface--task .ws-task__title,
+.ws-surface--full .ws-row__t,
+.ws-surface--full .ws-row--doc b{color:var(--ink)}
+.ws-surface--folio .ws-head p,
+.ws-surface--folio .ws-docview__toc-label,
+.ws-surface--folio .ws-docview__toc li button,
+.ws-surface--folio .ws-md__fig figcaption,
+.ws-surface--task .ws-head__ctx,
+.ws-surface--task .ws-facts dt,
+.ws-surface--task .ws-facts dd,
+.ws-surface--full .ws-head p,
+.ws-surface--full .ws-col h3,
+.ws-surface--full .ws-group__label,
+.ws-surface--full .ws-who,
+.ws-surface--full .ws-due,
+.ws-surface--full .ws-new input::placeholder{color:var(--ink-muted)}
+.ws-surface--full .ws-group__label span{color:var(--ink-muted);opacity:1}
+.ws-surface--folio .ws-md__a{color:var(--accent)}
+.ws-surface--folio .ws-md__table th,
+.ws-surface--folio .ws-md__table td{border-color:var(--hairline);color:var(--ink)}
+.ws-surface--folio .ws-md__table th{background:rgba(28,34,30,.04);color:var(--ink)}
+.ws-surface--folio .ws-md__code{background:rgba(28,34,30,.06);color:var(--ink)}
+.ws-surface--folio .ws-md__pre{background:rgba(28,34,30,.05);color:var(--ink)}
+
+/* Schlanke Kopfzeile: Zurück + Meta + Aktion, Titel nur einmal im Blatt. */
+.ws-surface--folio .ws-head{
+  width:100%;margin:0 0 18px;text-align:left;align-items:center;
+}
+.ws-surface--folio .ws-head[data-actions]::before{display:none}
+.ws-surface--folio .ws-head__t{padding-right:0;text-align:left}
+.ws-surface--folio .ws-head .ws-doc__title{text-align:left}
+.ws-surface--folio .ws-head p{margin:0;font-size:13px}
+.ws-surface--folio .ws-back,
+.ws-surface--task .ws-back,
+.ws-surface--full .ws-back{
+  border:1px solid var(--hairline);background:transparent;color:var(--ink);border-radius:10px;
+}
+.ws-surface--folio .ws-back:hover,
+.ws-surface--folio .ws-back:focus-visible,
+.ws-surface--task .ws-back:hover,
+.ws-surface--full .ws-back:hover{background:rgba(28,34,30,.05)}
+
+/* TOC: schmal, ohne graue Spalte, klare Hierarchie. */
+.ws-surface--folio .ws-docview{gap:28px}
+.ws-surface--folio .ws-docview__toc{
+  flex:0 0 168px;padding:2px 8px 16px 0;border-right:0;background:none;
+}
+.ws-surface--folio .ws-docview__toc-label{
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;margin:0 0 10px;color:var(--ink-muted);
+}
+.ws-surface--folio .ws-docview__toc li button{
+  color:var(--ink-muted);font-size:13px;line-height:1.35;padding:5px 6px;border-radius:6px;
+}
+.ws-surface--folio .ws-docview__toc li[data-level="1"] button{font-weight:600;color:var(--ink);font-size:13.5px;padding-left:6px}
+.ws-surface--folio .ws-docview__toc li[data-level="2"] button{padding-left:12px}
+.ws-surface--folio .ws-docview__toc li[data-level="3"] button{padding-left:22px;font-size:12.5px;color:var(--ink-muted)}
+.ws-surface--folio .ws-docview__toc li button:hover,
+.ws-surface--folio .ws-docview__toc li button:focus-visible{background:rgba(28,34,30,.05);color:var(--ink)}
+
+/* Weiches Auslaufen am unteren Rand des Lesebereichs – Papier scheint durch. */
+.ws-surface--folio .ws-docview__main{
+  padding:0 4px 64px;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 56px),transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 56px),transparent 100%);
+}
+.ws-surface--folio .ws-doc__read{color:var(--ink);padding:0 0 32px}
+
+/* Fälligkeit / Checkbox auf Papier */
+.ws-surface--folio .ws-due-btn,
+.ws-surface--task .ws-due-btn,
+.ws-surface--full .ws-due-btn{
+  color:var(--ink);border-color:var(--hairline);background:rgba(28,34,30,.03);
+}
+.ws-surface--task .ws-due-btn[data-overdue],
+.ws-surface--full .ws-row--task[data-overdue] .ws-due,
+.ws-surface--full .ws-group[data-group="overdue"] .ws-group__label,
+.ws-surface--task [data-overdue]{
+  color:#8a3b10;
+}
+.ws-surface--task .ws-check,
+.ws-surface--full .ws-check{border-color:rgba(28,34,30,.28);background:transparent;color:var(--ink)}
+.ws-surface--task .ws-check[aria-pressed="true"],
+.ws-surface--full .ws-check[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#f4f1ea}
+.ws-surface--full .ws-row--task[data-done] .ws-row__t,
+.ws-surface--task[data-done] .ws-task__title{color:var(--ink-muted)}
+.ws-surface--full .ws-new input{color:var(--ink)}
+.ws-surface--folio .ws-md__h1{margin-top:.2em}
+
+@media (max-width:1100px){
+  .ws-surface--folio,.ws-surface--task,.ws-surface--full{width:min(100% - 48px,1100px);padding:22px 22px 18px}
+}
+@media (max-width:390px){
+  .ws-surface--folio,.ws-surface--task,.ws-surface--full{width:calc(100% - 16px)}
+}

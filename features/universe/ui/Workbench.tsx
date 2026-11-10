@@ -637,7 +637,9 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
           <button type="button" className="ws-back" aria-label="Lesen" onClick={() => { save(); onFolio(); }} data-testid="work-doc-open"><Maximize2 size={15} /></button>
         )}
       </>}>
-        <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
+        {folio && !editing ? null : (
+          <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
+        )}
         <p>{clean(moon.title)}{fileName && fileName !== t ? ` · ${fileName}` : ''}{origin ? ` · ${origin}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
       </Head>
       <div className="ws-docview" data-folio={folio ? '1' : undefined} data-pdf={pdf ? '1' : undefined} data-editing={editing ? '1' : undefined}>
