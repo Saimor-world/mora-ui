@@ -412,7 +412,17 @@ export function WorkSurface({
           onBack={back} onFolio={() => setView({ kind: 'doc', id: view.id, folio: true })} flushRef={flushDoc} />
       ) : null}
       {view.kind === 'task' && current ? (
-        <TaskDesk task={current} planet={planet} folder={folderOf(current)} owner={current.assignee ?? owner} companyId={companyId} onBack={back} backLabel={clean(planet.title)} />
+        <TaskDesk
+          task={current}
+          planet={planet}
+          folder={folderOf(current)}
+          docs={(current.folderId ? work.moons.get(current.folderId)?.docs : undefined) ?? []}
+          owner={current.assignee ?? owner}
+          companyId={companyId}
+          onBack={back}
+          backLabel={clean(planet.title)}
+          onOpenDoc={moon ? (id) => setView({ kind: 'doc', id }) : undefined}
+        />
       ) : null}
       {phase === 'in' ? (
         <WorkBar
@@ -541,7 +551,12 @@ function TaskList({ open, done, expanded, owner, companyId, onToggle, onOpen }: 
   let idx = 0;
   return (
     <div className="ws-list ws-list--tasks" ref={listRef} tabIndex={0} role="listbox" aria-label="Aufgaben" onKeyDown={onKey} data-testid="work-task-list">
-      {groups.map((g) => (
+      {groups.map((g) => g.key === 'later' ? (
+        <details key={g.key} className="ws-group" data-group={g.key}>
+          <summary className="ws-group__label">{g.label} <span>{g.items.length}</span></summary>
+          {g.items.map((t) => { const i = idx++; return row(t, i); })}
+        </details>
+      ) : (
         <div key={g.key} className="ws-group" data-group={g.key}>
           <p className="ws-group__label">{g.label} <span>{g.items.length}</span></p>
           {g.items.map((t) => { const i = idx++; return row(t, i); })}
@@ -589,18 +604,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
         <p>{clean(planet.title)}{w?.overdue ? <em> · {w.overdue} überfällig</em> : null}</p>
       </Head>
       <div className="ws-desk">
-        <div className="ws-col" data-testid="work-docs">
-          <h3>Dokumente <span>{docs.length}</span></h3>
-          <div className="ws-list">
-            {docs.map((d) => (
-              <button key={d.id} type="button" className="ws-row ws-row--doc" onClick={() => onDoc(d.id)} data-testid={`work-doc-${d.id}`}>
-                {/note/i.test(d.meta) ? <StickyNote size={15} aria-hidden /> : <FileText size={15} aria-hidden />}
-                <b>{clean(d.name)}</b><span>{kindLabel(d.meta, d.name)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="ws-col" data-testid="work-tasks">
+        <div className="ws-col ws-col--tasks" data-testid="work-tasks">
           <h3>Aufgaben <span>{open.length}</span></h3>
           <TaskList
             open={open}
@@ -616,6 +620,17 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-clear-on-esc="1" data-testid="work-new-title" />
             <DueDate value={due || null} onChange={(v) => setDue(v ?? '')} clearable testId="work-new-due" />
           </form>
+        </div>
+        <div className="ws-col ws-col--docs" data-testid="work-docs">
+          <h3>Dokumente <span>{docs.length}</span></h3>
+          <div className="ws-list">
+            {docs.map((d) => (
+              <button key={d.id} type="button" className="ws-row ws-row--doc" onClick={() => onDoc(d.id)} data-testid={`work-doc-${d.id}`}>
+                {/note/i.test(d.meta) ? <StickyNote size={15} aria-hidden /> : <FileText size={15} aria-hidden />}
+                <b>{clean(d.name)}</b><span>{kindLabel(d.meta, d.name)}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </>
@@ -745,14 +760,22 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   );
 }
 
-function TaskDesk({ task, planet, folder, owner, companyId, onBack, backLabel }: {
-  task: WorkTask; planet: DemoPlanet; folder: DemoMoon | null; owner: string; companyId: string | null; onBack: () => void; backLabel: string;
+function TaskDesk({ task, planet, folder, docs, owner, companyId, onBack, backLabel, onOpenDoc }: {
+  task: WorkTask; planet: DemoPlanet; folder: DemoMoon | null; docs: { id: string; name: string; meta: string }[];
+  owner: string; companyId: string | null; onBack: () => void; backLabel: string; onOpenDoc?: (id: string) => void;
 }) {
   const { setDone, update } = useDayActions(companyId);
   const [title, setTitle] = useState(task.title);
   useEffect(() => setTitle(task.title), [task.title]);
   const commitTitle = () => { const v = title.trim(); if (v && v !== task.title) void update(task.raw, { title: v }); else setTitle(task.title); };
   const crumb = [clean(planet.title), folder ? clean(folder.title) : null].filter(Boolean).join(' · ');
+  const status = task.done ? 'done' : task.status === 'in_progress' ? 'in_progress' : 'open';
+  const cycleStatus = () => {
+    if (status === 'open') void update(task.raw, { status: 'in_progress' });
+    else if (status === 'in_progress') void setDone(task.raw, true);
+    else void setDone(task.raw, false);
+  };
+  const statusLabel = status === 'done' ? 'erledigt' : status === 'in_progress' ? 'in Arbeit' : 'offen';
   return (
     <>
       <Head onBack={onBack} backLabel={backLabel}>
@@ -764,7 +787,32 @@ function TaskDesk({ task, planet, folder, owner, companyId, onBack, backLabel }:
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
           aria-label="Aufgabe" data-testid="work-task-title" />
       </div>
+      {task.overdue && !task.done ? (
+        <p className="ws-overdue-flag" data-testid="work-task-overdue">Überfällig seit {task.due ? shortDate(task.due) : '–'}</p>
+      ) : null}
       <TaskFacts task={task} owner={owner} companyId={companyId} />
+      <div className="ws-task-actions">
+        <button type="button" className="ws-action" data-testid="work-task-erledigt" onClick={() => void setDone(task.raw, !task.done)}>{task.done ? 'Wieder öffnen' : 'Erledigt'}</button>
+        <button type="button" className="ws-action" data-testid="work-task-status" onClick={cycleStatus} aria-label={`Status: ${statusLabel}, umschalten`}>Status: {statusLabel}</button>
+      </div>
+      <div className="ws-task-context">
+        {docs.length ? (
+          <section>
+            <h3>Verknüpfte Dokumente</h3>
+            <ul>
+              {docs.slice(0, 6).map((d) => (
+                <li key={d.id}>
+                  <button type="button" onClick={() => onOpenDoc?.(d.id)}>{clean(d.name)}</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        <section>
+          <h3>Verlauf</h3>
+          <p>{task.due ? (task.overdue ? `Fällig gewesen ${shortDate(task.due)}` : `Fällig ${shortDate(task.due)}`) : 'Ohne Fälligkeit'}{owner ? ` · ${owner}` : ''}</p>
+        </section>
+      </div>
     </>
   );
 }

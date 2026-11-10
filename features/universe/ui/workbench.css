@@ -602,3 +602,60 @@ html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-quiet='
 @media (max-width:1100px){.ws-workbar{max-width:min(480px,calc(100vw - 380px));gap:6px}}
 @media (max-width:1024px){.ws-workbar{max-width:min(400px,calc(100vw - 360px));height:44px}}
 @media (prefers-reduced-motion:reduce){.ws-workbar{transition:none}}
+
+
+/* ── Stufe 4: Aufgabe auf Lesehöhe, Liste als Aufgabenfläche + Doc-Regal */
+.ws-surface--task{
+  top:max(var(--ws-top,56px),16vh);
+  bottom:auto;
+  width:min(760px,calc(100% - 120px));
+  max-height:calc(100% - 18vh - var(--ws-bottom,108px));
+  overflow:auto;
+  translate:-50% 0;
+}
+.ws-overdue-flag{
+  margin:0 0 14px;padding:8px 12px;border-radius:8px;
+  background:rgba(138,59,16,.1);color:#8a3b10;font-size:13.5px;font-weight:550;
+  border:1px solid rgba(138,59,16,.22);
+}
+.ws-task-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px}
+.ws-action{
+  height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--hairline,rgba(28,34,30,.14));
+  background:transparent;color:var(--ink,#1a1f1c);font:inherit;font-size:13.5px;cursor:pointer;
+}
+.ws-action:hover,.ws-action:focus-visible{background:rgba(28,34,30,.05);outline:none}
+.ws-action[data-testid='work-task-erledigt']{background:var(--accent,#205a48);color:#f4f1ea;border-color:transparent}
+.ws-task-context{margin-top:22px;padding-top:16px;border-top:1px solid var(--hairline,rgba(28,34,30,.12));display:flex;flex-direction:column;gap:16px}
+.ws-task-context h3{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--ink-muted,#3e4a44)}
+.ws-task-context p,.ws-task-context li,.ws-task-context button{margin:0;color:var(--ink,#1a1f1c);font:inherit;font-size:13.5px}
+.ws-task-context ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.ws-task-context li button{border:0;background:none;padding:4px 0;cursor:pointer;text-align:left}
+.ws-task-context li button:hover,.ws-task-context li button:focus-visible{text-decoration:underline;outline:none}
+
+.ws-surface--full .ws-desk{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 200px;
+  gap:28px 36px;
+  align-items:stretch;
+}
+.ws-surface--full .ws-col--docs{
+  border-left:1px solid var(--hairline,rgba(28,34,30,.1));
+  padding-left:16px;min-width:0;
+}
+.ws-surface--full .ws-col--docs h3{white-space:nowrap}
+.ws-surface--full .ws-row__t,
+.ws-surface--full .ws-row--doc b{
+  white-space:normal !important;text-overflow:clip;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;
+}
+.ws-surface--full .ws-group[data-group='later'] > summary.ws-group__label{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  color:var(--ink-muted,#3e4a44);font-size:12.5px;font-weight:500;
+}
+.ws-surface--full .ws-group[data-group='later'] > summary::-webkit-details-marker{display:none}
+.ws-surface--full .ws-group[data-group='later'] > summary::before{content:"›";display:inline-block;transition:transform .2s}
+.ws-surface--full .ws-group[data-group='later'][open] > summary::before{transform:rotate(90deg)}
+@media (max-width:900px){
+  .ws-surface--full .ws-desk{grid-template-columns:1fr;gap:18px}
+  .ws-surface--full .ws-col--docs{border-left:0;padding-left:0;border-top:1px solid var(--hairline,rgba(28,34,30,.1));padding-top:12px}
+}

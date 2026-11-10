@@ -86,7 +86,7 @@ export function useDayActions(companyId: string | null) {
   }, [qc, companyId]);
 
   /** Titel oder Fälligkeit ändern – derselbe Endpunkt POST /v3/tasks/{id} (TaskUpdate: title, status, priority, due_date). */
-  const update = useCallback(async (task: WorldTask, change: { title?: string; due_date?: string }) => {
+  const update = useCallback(async (task: WorldTask, change: { title?: string; due_date?: string; status?: string }) => {
     const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, ...change } : t)));
     try {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, change);
