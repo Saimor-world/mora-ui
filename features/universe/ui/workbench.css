@@ -540,3 +540,65 @@ html[data-os-work] .bridge__heart .jade-mora__glow{opacity:.35;transition:opacit
 @media (max-width:390px){
   .ws-surface--folio,.ws-surface--task,.ws-surface--full{width:calc(100% - 16px)}
 }
+
+
+/* ── Kontextleiste im Arbeitsmodus (Stufe 3). Dock-Quellen unangetastet. */
+html[data-os-work] .bridge__pill .bridge__app{display:none !important}
+html[data-os-work] .bridge__badge{
+  width:8px;height:8px;min-width:8px;padding:0;border-radius:50%;
+  background:#e8b86a;color:transparent;font-size:0;line-height:0;
+  box-shadow:0 0 6px rgba(232,184,106,.4);top:2px;right:2px;
+}
+html[data-os-work] .bridge__badge[data-alert='true']{background:#e8b86a}
+html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-tone] span{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);
+}
+html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-tone]::after{
+  content:"";width:7px;height:7px;border-radius:50%;background:#e8b86a;
+  box-shadow:0 0 6px rgba(232,184,106,.5);
+}
+html[data-os-work] .bridge__legacy,
+html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-quiet='true']{display:none}
+.ws-surface[data-filter='open'] .ws-group[data-group='later'],
+.ws-surface[data-filter='open'] .ws-group[data-group='done']{display:none}
+
+.ws-workbar{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+  z-index:80;display:flex;align-items:center;gap:10px;
+  height:48px;padding:4px 8px 4px 6px;
+  max-width:min(640px,calc(100vw - 520px));
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(16,28,32,.72),rgba(8,18,22,.82));
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.16),0 10px 28px rgba(0,0,0,.28);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);
+  color:rgba(236,244,240,.92);font:500 13px/1 var(--os-font,inherit);
+}
+.ws-workbar__mora{
+  display:flex;align-items:center;gap:6px;height:40px;padding:0 10px 0 6px;
+  border:0;border-radius:12px;background:rgba(255,255,255,.06);color:inherit;cursor:pointer;font:inherit;
+}
+.ws-workbar__mora img{display:block;width:18px;height:24px;object-fit:contain}
+.ws-workbar__mora:hover,.ws-workbar__mora:focus-visible{background:rgba(255,255,255,.12);outline:none}
+.ws-workbar__group{display:flex;align-items:center;gap:4px}
+.ws-workbar__btn{
+  display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 11px;
+  border:0;border-radius:11px;background:transparent;color:inherit;cursor:pointer;font:inherit;white-space:nowrap;
+}
+.ws-workbar__btn:hover,.ws-workbar__btn:focus-visible{background:rgba(255,255,255,.08);outline:none}
+.ws-workbar__more{margin-left:2px}
+.ws-workbar__menu{
+  position:absolute;bottom:calc(100% + 8px);right:8px;
+  min-width:180px;padding:6px;border-radius:12px;
+  background:rgba(10,20,24,.94);border:1px solid rgba(214,232,226,.12);
+  box-shadow:0 12px 28px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:2px;
+}
+.ws-workbar__menu button{
+  display:block;width:100%;text-align:left;border:0;background:none;color:inherit;
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;cursor:pointer;
+}
+.ws-workbar__menu button:hover,.ws-workbar__menu button:focus-visible{background:rgba(255,255,255,.08);outline:none}
+.ws-workbar__hint{margin:0;padding:8px 10px;font-size:13px;color:rgba(214,232,226,.75)}
+@media (max-width:1280px){.ws-workbar{max-width:min(560px,calc(100vw - 460px))}}
+@media (max-width:1100px){.ws-workbar{max-width:min(480px,calc(100vw - 380px));gap:6px}}
+@media (max-width:1024px){.ws-workbar{max-width:min(400px,calc(100vw - 360px));height:44px}}
+@media (prefers-reduced-motion:reduce){.ws-workbar{transition:none}}

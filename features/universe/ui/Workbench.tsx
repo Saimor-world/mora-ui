@@ -3,7 +3,7 @@ import './workbench.css';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, FileText, Maximize2, PenLine, StickyNote } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Filter, Maximize2, MoreHorizontal, PenLine, Plus, StickyNote } from 'lucide-react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
 import { planetColor } from '@/features/home/cockpit/Scene';
 import type { DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
@@ -16,6 +16,7 @@ import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 const ORB = 260;
 const MOON = 104;
@@ -413,7 +414,80 @@ export function WorkSurface({
       {view.kind === 'task' && current ? (
         <TaskDesk task={current} planet={planet} folder={folderOf(current)} owner={current.assignee ?? owner} companyId={companyId} onBack={back} backLabel={clean(planet.title)} />
       ) : null}
+      {phase === 'in' ? (
+        <WorkBar
+          kind={view.kind === 'task' ? 'task' : view.kind === 'doc' ? 'doc' : 'list'}
+          task={current}
+          owner={owner}
+          companyId={companyId}
+          folders={planet.moons}
+        />
+      ) : null}
     </section>
+  );
+}
+
+
+function WorkBar({ kind, task, owner, companyId, folders }: {
+  kind: 'task' | 'list' | 'doc';
+  task?: WorkTask | null;
+  owner: string;
+  companyId: string | null;
+  folders: DemoMoon[];
+}) {
+  const { setDone, assignFolder } = useDayActions(companyId);
+  const [more, setMore] = useState<null | 'more' | 'move' | 'assign'>(null);
+  const askMora = () => useOsShellStore.getState().setMoraOpen(true);
+  const actions = kind === 'task' ? [
+    { id: 'done', label: task?.done ? 'Wieder öffnen' : 'Erledigen', run: () => { if (task) void setDone(task.raw, !task.done); } },
+    { id: 'assign', label: 'Zuweisen', run: () => setMore((v) => v === 'assign' ? null : 'assign') },
+    { id: 'move', label: 'Verschieben', run: () => setMore((v) => v === 'move' ? null : 'move') },
+  ] : kind === 'list' ? [
+    { id: 'new', label: 'Neue Aufgabe', Icon: Plus, run: () => document.querySelector<HTMLInputElement>('[data-testid="work-new-title"]')?.focus() },
+    { id: 'filter', label: 'Filter', Icon: Filter, run: () => {
+      const el = document.querySelector<HTMLElement>('.ws-surface');
+      if (!el) return;
+      el.dataset.filter = el.dataset.filter === 'open' ? '' : 'open';
+    } },
+  ] : [
+    { id: 'edit', label: 'Bearbeiten', run: () => document.querySelector<HTMLButtonElement>('[data-testid="work-doc-edit"]')?.click() },
+    { id: 'ask', label: 'MÔRA fragen', run: askMora },
+  ];
+  return createPortal(
+    <div className="ws-workbar" role="toolbar" aria-label="Aktionen zur offenen Fläche" data-testid="work-bar">
+      <button type="button" className="ws-workbar__mora" onClick={askMora} aria-label="MÔRA zur offenen Sache fragen" data-testid="work-bar-mora">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/mora/jade-01.png" alt="" width={22} height={28} draggable={false} />
+        <span>MÔRA</span>
+      </button>
+      <span className="ws-workbar__group">
+        {actions.map((a) => (
+          <button key={a.id} type="button" className="ws-workbar__btn" data-testid={`work-bar-${a.id}`} onClick={a.run}>{'Icon' in a && a.Icon ? <a.Icon size={15} strokeWidth={1.75} /> : null}{a.label}</button>
+        ))}
+      </span>
+      <button type="button" className="ws-workbar__btn ws-workbar__more" aria-expanded={more === 'more'} onClick={() => setMore((v) => v === 'more' ? null : 'more')} data-testid="work-bar-more">
+        <MoreHorizontal size={16} strokeWidth={1.75} />
+        <span>Mehr</span>
+      </button>
+      {more === 'more' ? (
+        <div className="ws-workbar__menu" role="menu">
+          <button type="button" role="menuitem" onClick={() => { setMore(null); askMora(); }}>MÔRA fragen</button>
+        </div>
+      ) : null}
+      {more === 'assign' ? (
+        <div className="ws-workbar__menu" role="menu">
+          <p className="ws-workbar__hint">Zuständig: {owner || '–'}</p>
+        </div>
+      ) : null}
+      {more === 'move' && task && folders.length ? (
+        <div className="ws-workbar__menu" role="menu">
+          {folders.map((f) => (
+            <button key={f.id} type="button" role="menuitem" onClick={() => { void assignFolder(task.raw, f.id); setMore(null); }}>{clean(f.title)}</button>
+          ))}
+        </div>
+      ) : null}
+    </div>,
+    document.body,
   );
 }
 
