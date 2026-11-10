@@ -70,6 +70,9 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
     setLayout(layoutBook(blocks, measure, TEXT_H, MIN_H));
     probes.forEach((el) => el.remove());
   }, [blocks, fontsTick]);
+  // Stabile HTML-Objekte je Stück: das React 19 des App Routers vergleicht dangerouslySetInnerHTML nach Identität – ein neues Objekt
+  // bei jedem Rendern würde Markierung und Schreibmarke im Text bei jeder Kleinigkeit (z. B. Formatleiste) löschen.
+  const htmlOf = useMemo(() => new Map(pieces.map((p) => [p.key, { __html: inlineToHtml(p.text) }])), [pieces]);
   /** Die Stücke eines Blocks im aktuellen Satz (mit Entwürfen). */
   const partsOf = (blockId: string) => layoutRef.current.pieces.filter((p) => p.blockId === blockId);
 
@@ -93,13 +96,16 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
   const caret = useRef<{ blockId: string; offset: number } | null>(null);
   const dirty = useRef(false);
 
+  const lastSaved = useRef<string | null>(null);
   const save = useCallback((next: Block[]) => {
     dirty.current = false;
     const content = serializeBlocks(next);
+    if (content === (lastSaved.current ?? serializeBlocks(parseBlocks(node?.content ?? '')))) return;
+    lastSaved.current = content;
     upd.mutate({ id, payload: { content } }, {
       onSuccess: () => qc.setQueryData(['node', id], (old: object | undefined) => ({ ...(old ?? {}), content })),
     });
-  }, [id, upd, qc]);
+  }, [id, upd, qc, node]);
   const saveTimer = useRef<number | null>(null);
   const scheduleSave = useCallback((next: Block[]) => {
     dirty.current = true;
@@ -286,7 +292,7 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
                     onInput={live && editing ? (e) => onInput(p, e.currentTarget) : undefined}
                     onKeyDown={live && editing ? (e) => onKey(p, e) : undefined}
                     onDoubleClick={live && !editing ? () => setEditing(true) : undefined}
-                    dangerouslySetInnerHTML={{ __html: inlineToHtml(p.text) }} />
+                    dangerouslySetInnerHTML={htmlOf.get(p.key)} />
                 );
               })}
             </div>

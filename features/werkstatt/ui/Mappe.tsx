@@ -52,13 +52,16 @@ export function Mappe({ weeks, folderId, companyId, today, back }: {
     const content = serializeWeek(p.s);
     upd.mutate({ id: p.id, payload: { content } }, { onSuccess: () => qc.setQueryData(['node', p.id], (o: object | undefined) => ({ ...(o ?? {}), content })) });
   }, [upd, qc]);
-  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); flush(); }, [flush]);
+  // Beim Verlassen: Ausstehendes sichern – nur einmal beim Abbau (flush wechselt mit jedem Rendern seine Identität).
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); flushRef.current(); }, []);
   const change = (s: WeekSheet) => {
     setSheet(s);
     if (!wk) return;
     pending.current = { id: wk.id, s };
     if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(flush, 800);
+    timer.current = window.setTimeout(() => flushRef.current(), 800);
   };
   const switchTo = (i: number) => {
     if (i < 0 || i >= all.length || i === idx) return;

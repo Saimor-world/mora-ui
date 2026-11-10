@@ -473,7 +473,11 @@ export function UnifiedUniverse({
   const [fromHome, setFromHome] = useState(false);
   useEffect(() => {
     const t = useUniverseFocus.getState().take();
-    if (t?.planetId) { setPlanetId(t.planetId); setMoonId(t.taskId ? null : (t.moonId ?? null)); setTaskId(t.taskId ?? null); setFromHome(t.from === 'home'); }
+    if (!t?.planetId) return;
+    setPlanetId(t.planetId); setFromHome(t.from === 'home');
+    // Von Home: durchs Fenster in den Raum der Abteilung, bei einer Aufgabe gleich weiter zu ihr auf den Schreibtisch.
+    if (t.from === 'home') { setRoom({ place: t.taskId ? { kind: 'task', id: t.taskId } : null, fromSpace: true }); return; }
+    setMoonId(t.taskId ? null : (t.moonId ?? null)); setTaskId(t.taskId ?? null);
   }, []);
 
   // Leise Zeichen auf den Monden: überfällige Aufgaben dieses Ordners (folder_id), offene Nachtwache an einem seiner Einträge (node_id).

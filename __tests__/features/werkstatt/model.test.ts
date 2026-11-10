@@ -123,6 +123,13 @@ describe('layoutBook – Seiten wie im Buch', () => {
     const hPage = L.pages.findIndex((pg) => pg.some((i) => L.pieces[i].blockId === 'h'));
     expect(hPage).toBe(1);
   });
+  it('lässt keine einzelne Zeile am Seitenanfang oder -ende stehen', () => {
+    const words = Array.from({ length: 21 }, (_, i) => `w${String(i).padStart(3, '0')}`); // 21 Wörter = 11 Zeilen
+    const L = layoutBook([{ id: 'p', kind: 'p', text: words.join(' ') }], measure, 100, 20);
+    const parts = L.pieces.map((p) => measure('p', p.text));
+    expect(parts.length).toBe(2);
+    expect(Math.min(...parts)).toBeGreaterThanOrEqual(20);
+  });
   it('teilt nicht mitten in **fett**', () => {
     const text = 'aaaa bbbb cccc **dddd eeee ffff gggg** hhhh iiii jjjj kkkk llll mmmm nnnn oooo pppp';
     const L = layoutBook([{ id: 'p', kind: 'p', text: 'z'.repeat(70) }, { id: 'q', kind: 'p', text }], measure, 100, 20);

@@ -49,6 +49,11 @@ const CLOSE = {
 };
 const focusOf = (p: Place): Rect => (p.kind === 'task' ? ROOM.desk : p.kind === 'doc' ? ROOM.lecternBook : p.kind === 'planung' ? ROOM.folder : ROOM.board);
 const EASE = 'cubic-bezier(.45,0,.2,1)';
+/** Kamera in Ruhelage: Inline-Transform setzen (null = unverändert) und alle Fahrten auf dem Element beenden. */
+function settle(el: HTMLElement, transform: string | null) {
+  el.getAnimations().forEach((x) => x.cancel());
+  if (transform !== null) el.style.transform = transform;
+}
 const reduced = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 const clean = (s: string) => stripFiktiv(s) || s;
 const box = (r: Rect): React.CSSProperties => ({ left: r.x, top: r.y, width: r.w, height: r.h });
@@ -93,7 +98,9 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const roomRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLDivElement>(null);
-  const [stack, setStack] = useState<Place[]>(() => (initial && initial.kind !== 'room' ? [{ kind: 'room' }, initial] : [{ kind: 'room' }]));
+  // Direkt (Deep-Link): gleich am Ort. Mit Anflug: erst in den Raum, dann zum Ort hinein (siehe unten).
+  const [stack, setStack] = useState<Place[]>(() => (initial && initial.kind !== 'room' && !fromSpace ? [{ kind: 'room' }, initial] : [{ kind: 'room' }]));
+  const afterLanding = useRef<Place | null>(initial && initial.kind !== 'room' && fromSpace ? initial : null);
   const [busy, setBusy] = useState(false);
   const [landed, setLanded] = useState(!fromSpace || reduced());
   const top = stack[stack.length - 1];
@@ -121,10 +128,11 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   // Arbeitsmodus am Dock + Welt (Dock folgt Licht der Welt).
   useLayoutEffect(() => {
     const root = document.documentElement;
-    if (landed) root.setAttribute('data-os-work', 'werkstatt'); else root.removeAttribute('data-os-work');
+    // Arbeitsmodus ab dem Anflug: das große Dock zieht sich zurück, während die Kamera durchs Fenster fährt.
+    root.setAttribute('data-os-work', 'werkstatt');
     root.dataset.world = world;
     return () => { root.removeAttribute('data-os-work'); delete root.dataset.world; };
-  }, [landed, world]);
+  }, [world]);
 
   // MÔRA setzt sich an den Ort, an dem man gerade ist.
   useEffect(() => {
@@ -150,9 +158,9 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
     const room = roomRef.current, rootEl = rootRef.current;
     if (!room || !rootEl || typeof room.animate !== 'function') { setLanded(true); return; }
     const c = camFor(ROOM.window, 1.5, 9);
-    const a = room.animate([{ transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }, { transform: 'none' }], { duration: 1500, easing: EASE, fill: 'both' });
-    rootEl.animate([{ opacity: 0 }, { opacity: 1, offset: 0.28 }, { opacity: 1 }], { duration: 1500, easing: 'linear', fill: 'both' });
-    a.onfinish = () => setLanded(true);
+    const a = room.animate([{ transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }, { transform: 'none' }], { duration: 1500, easing: EASE, fill: 'backwards' });
+    rootEl.animate([{ opacity: 0 }, { opacity: 1, offset: 0.28 }, { opacity: 1 }], { duration: 1500, easing: 'linear', fill: 'backwards' });
+    a.onfinish = () => { settle(room, ''); setLanded(true); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -180,9 +188,17 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
     const camA = [{ transform: 'none' }, { transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }];
     const layA = [{ transform: from, opacity: 0 }, { transform: from, opacity: 0, offset: 0.25 }, { transform: 'none', opacity: 1 }];
     const opt = { duration: dir === 'in' ? 950 : 800, easing: EASE, fill: 'forwards' as FillMode };
+    const camEnd = `translate(${c.tx}px, ${c.ty}px) scale(${c.k})`;
+    // Die Ruhelage steht immer als Inline-Stil; Fahrten laufen nur dazwischen und werden danach entfernt
+    // (keine fill:forwards-Reste, die unter späteren Fahrten weiterwirken).
+    settle(room, null);
     const a = room.animate(dir === 'in' ? camA : [...camA].reverse(), opt);
-    if (layer) layer.animate(dir === 'in' ? layA : [...layA].reverse().map((k, i) => ({ ...k, offset: i === 1 ? 0.75 : undefined })), opt);
-    a.onfinish = () => { if (dir === 'out') a.cancel(); done(); };
+    const l = layer ? layer.animate(dir === 'in' ? layA : [...layA].reverse().map((k, i) => ({ ...k, offset: i === 1 ? 0.75 : undefined })), opt) : null;
+    a.onfinish = () => {
+      settle(room, dir === 'in' ? camEnd : '');
+      if (layer && l && dir === 'in') { l.cancel(); layer.style.transform = ''; layer.style.opacity = ''; }
+      done();
+    };
   }, [camFor]);
 
   const pendingIn = useRef<Place | null>(null);
@@ -216,6 +232,15 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
     });
   }, [busy, stack, exit, zoom]);
 
+  // Mit Anflug und Ziel (z. B. von Home zur obersten Aufgabe): nach der Landung zum Objekt hineinfahren.
+  useEffect(() => {
+    if (!landed || !afterLanding.current) return;
+    const p = afterLanding.current;
+    afterLanding.current = null;
+    const t = window.setTimeout(() => open(p), 250);
+    return () => window.clearTimeout(t);
+  }, [landed, open]);
+
   // Esc: eine Ebene zurück (Zettel schließen zuerst sich selbst).
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -239,7 +264,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const [draft, setDraft] = useState<string | null>(null);
   const [docSlip, setDocSlip] = useState(false);
   const { addTask } = useDayActions(companyId);
-  const laterPages = useMemo(() => { const p: WorkTask[][] = []; for (let i = 0; i < board.later.length; i += 7) p.push(board.later.slice(i, i + 7)); return p.length ? p : [[]]; }, [board.later]);
+  const laterPages = useMemo(() => { const p: WorkTask[][] = []; for (let i = 0; i < board.later.length; i += PER_PAGE) p.push(board.later.slice(i, i + PER_PAGE)); return p.length ? p : [[]]; }, [board.later]);
   const pages = later ? laterPages : board.pages;
   const pg = Math.min(page, pages.length - 1);
   const cards = pages[pg] ?? [];

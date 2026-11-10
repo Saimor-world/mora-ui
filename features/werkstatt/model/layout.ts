@@ -45,7 +45,10 @@ export function layoutBook(blocks: Block[], measure: Measure, pageH: number, min
           if (measure(b.kind, words.slice(0, mid).join(' '), cont, true) <= room) lo = mid; else hi = mid - 1;
         }
         let k = lo;
-        while (k > 0 && !balanced(words.slice(0, k).join(' '))) k--;
+        // Keine Hurenkinder: auf der nächsten Seite stehen mindestens zwei Zeilen; kein Schusterjunge: hier auch.
+        const ok = (n: number) => balanced(words.slice(0, n).join(' ')) && measure(b.kind, words.slice(n).join(' '), true, false) >= minH;
+        while (k > 0 && !ok(k)) k--;
+        if (k > 0 && measure(b.kind, words.slice(0, k).join(' '), cont, true) < minH) k = 0;
         if (k > 0) {
           const head = words.slice(0, k).join(' ');
           push({ key: `${b.id}:${part}`, blockId: b.id, part, kind: b.kind, text: head, last: false }, measure(b.kind, head, cont, true));
