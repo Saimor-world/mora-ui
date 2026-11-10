@@ -21,6 +21,15 @@
 .wk-room, .wk-close { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
 .wk-close { z-index: 2; }
 .wk-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.wk-stage__ext { position: absolute; left: 0; width: 1920px; height: 200px; pointer-events: none; user-select: none; }
+.wk-stage__ext--top { top: -200px; }
+.wk-stage__ext--bottom { top: 1080px; }
+/* Messingschild am Pult: graviert, kein Aufkleber */
+.wk-plate { position: absolute; display: flex; align-items: center; justify-content: center; height: 30px; padding: 0 14px; border-radius: var(--r); pointer-events: none;
+  background: linear-gradient(180deg, #d9b574 0%, #b48a45 45%, #9b733a 100%); box-shadow: inset 0 1px 0 rgba(255, 240, 200, .55), inset 0 -1px 0 rgba(60, 40, 10, .4), 0 1px 2px rgba(30, 20, 5, .45);
+  font: 500 var(--t-s)/1 'Werk Serif', Georgia, serif; color: rgba(58, 38, 12, .82); text-shadow: 0 1px 0 rgba(255, 236, 190, .45); white-space: nowrap; }
+/* Sitzplatz von MÔRA: weicher Kontaktschatten auf der Fläche */
+.wk-seat-shadow { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(25, 15, 5, .42), rgba(25, 15, 5, .18) 55%, rgba(25, 15, 5, 0)); }
 .wk-stage__img { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; user-select: none; }
 .wk-seat { position: absolute; pointer-events: none; }
 
@@ -75,9 +84,8 @@
 .wk-tag { position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 16px; font: 500 var(--t-s)/1.2 'Werk Serif', Georgia, serif; white-space: nowrap; rotate: -.4deg; }
 .wk-tag .wk-dot { width: 10px; height: 10px; }
 .wk-tag--pager { padding: 0 6px; rotate: .5deg; }
-.wk-tag--pager button { width: 64px; height: 64px; border: 0; background: none; font-size: var(--t-l); cursor: pointer; }
+.wk-tag--pager button { width: 74px; height: 74px; /* 74u × 0,602 (Raum bei 4:3) ≥ 44 px */ border: 0; background: none; font-size: var(--t-l); cursor: pointer; }
 .wk-tag--pager button:disabled { opacity: .3; cursor: default; }
-.wk-tag--obj { pointer-events: none; max-width: 330px; overflow: hidden; text-overflow: ellipsis; }
 
 .wk-hit { position: absolute; border: 0; padding: 0; background: transparent; border-radius: var(--r); cursor: pointer; transition: box-shadow .4s; }
 .wk-hit:hover { box-shadow: inset 0 0 60px rgba(255, 226, 170, .16); }
@@ -226,6 +234,8 @@ html[data-os-work='werkstatt'] .bridge__deck { opacity: 1 !important; visibility
 html[data-os-work='werkstatt'] .bridge__deck::before { display: none !important; }
 html[data-os-work='werkstatt'] .bridge__heart { opacity: 1 !important; visibility: visible !important; transform: none !important; pointer-events: none !important; }
 html[data-os-work='werkstatt'] .bridge__mora[data-flying='true'] { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; animation: none !important; transition-duration: .9s; }
+/* MÔRA sitzt: Größe nach Perspektive des Platzes, Füße unten auf der Fläche (Dock unverändert, nur hier skaliert). */
+html[data-os-work='werkstatt'] .bridge__mora[data-flying='true'] > * { transform: scale(var(--wk-mora-scale, 1)); transform-origin: 50% 100%; transition: transform .9s cubic-bezier(.2, .7, .2, 1); }
 html[data-os-work='werkstatt'] .jade-mora__glow { animation: none !important; opacity: .55; }
 html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__body::after { background: linear-gradient(180deg, rgba(240, 234, 222, 0), rgba(240, 234, 222, .0)) !important; }
 html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status { color: #2b2a26; }
@@ -243,3 +253,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   .wk-card, .wk-hit, .wk-corner { transition: none; }
   .ck-universe-unified[data-werkstatt] .ck-scene { transition: none; }
 }
+
+/* Sitzend statt schwebend: kein Spiegelbild, kein Flug-Schatten – der Kontaktschatten liegt im Raum. */
+html[data-os-work='werkstatt'] .bridge__mora[data-flying='true'] { -webkit-box-reflect:below 0 linear-gradient(transparent,transparent) !important; filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)) !important; }
+html[data-os-work='werkstatt'] .bridge__mora-reflect { display:none; }

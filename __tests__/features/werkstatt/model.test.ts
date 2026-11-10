@@ -136,3 +136,17 @@ describe('layoutBook – Seiten wie im Buch', () => {
     for (const p of L.pieces.filter((x) => x.blockId === 'q')) expect((p.text.match(/\*\*/g) ?? []).length % 2).toBe(0);
   });
 });
+
+import { roomStage } from '@/features/werkstatt/model/stage';
+describe('Raumbühne', () => {
+  it('4:3 (1024×768): Regal (x 20) und Pult (x 1720) beide im Bild, Höhe vom Rand gedeckt', () => {
+    const s = roomStage(coverStage(1024, 768));
+    expect(s.x + 20 * s.k).toBeGreaterThanOrEqual(-0.5);
+    expect(s.x + 1720 * s.k).toBeLessThanOrEqual(1024.5);
+    expect(-s.y / s.k).toBeLessThanOrEqual(200);
+  });
+  it('16:9 bleibt cover', () => {
+    const c = coverStage(1920, 1080);
+    expect(roomStage(c)).toEqual(c);
+  });
+});

@@ -16,13 +16,21 @@ export function useStage(): StageBox {
   return s;
 }
 
-export function StageLayer({ stage, img, label, under, children, className, testId }: {
+export function StageLayer({ stage, img, label, under, children, className, testId, ext }: {
   stage: StageBox; img: string; label?: string; under?: React.ReactNode; children?: React.ReactNode; className?: string; testId?: string;
+  /** Gespiegelter Bildrand oben/unten (für schmale Fenster), Pfad ohne -top/-bottom.webp. */
+  ext?: string;
 }) {
   return (
     <div className={`wk-stage${className ? ` ${className}` : ''}`} data-testid={testId}
       style={{ width: STAGE_W, height: STAGE_H, transform: `translate(${stage.x}px, ${stage.y}px) scale(${stage.k})` }}>
       {under}
+      {ext ? <>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="wk-stage__ext wk-stage__ext--top" src={`${ext}-top.webp`} alt="" draggable={false} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="wk-stage__ext wk-stage__ext--bottom" src={`${ext}-bottom.webp`} alt="" draggable={false} />
+      </> : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="wk-stage__img" src={img} alt={label ?? ''} width={STAGE_W} height={STAGE_H} draggable={false} decoding="async" />
       {children}

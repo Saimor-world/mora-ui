@@ -10,7 +10,7 @@ import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { sceneFor } from '@/lib/os-prototype/scene';
 import { arrangeBoard } from '../model/board';
-import { STAGE_W, cameraTo, toScreen, worldFor, type Rect, type Stage, type World } from '../model/stage';
+import { cameraTo, roomStage, toScreen, worldFor, type Rect, type Stage, type World } from '../model/stage';
 import { StageLayer, useStage } from './Stage';
 import { WindowUniverse, type SkyPlanet } from './WindowUniverse';
 import { WorkDock } from './WorkDock';
@@ -40,7 +40,10 @@ const ROOM = {
   folder: { x: 853, y: 641, w: 193, h: 53 },
   shelf: { x: 0, y: 60, w: 112, h: 560 },
   desk: { x: 120, y: 560, w: 640, h: 120 },
-  moraOnDesk: { x: 745, y: 618 },
+  /** MÔRA sitzt auf der Fensterbank, links vom Pult; Größe in Einheiten passend zur Perspektive. */
+  moraSeat: { x: 1150, y: 641, size: 112 },
+  /** Messingschild vorn am Pultbrett. */
+  plate: { x: 1556, y: 628 },
 };
 const CLOSE = {
   task: { img: '/werkstatt/room-schreibtisch.webp', sky: { x: 0, y: 0, w: 1920, h: 150 }, mora: { x: 420, y: 930 } },
@@ -74,10 +77,29 @@ function useWorld(): World {
   return worldFor(phase);
 }
 
-/** MÔRA-Anker: die eine Dock-MÔRA fliegt hierher und sitzt still (unten auf der Fläche abgesetzt). */
-function MoraSeat({ at, stage, name }: { at: { x: number; y: number }; stage: Stage; name: string }) {
-  const w = 82 / stage.k, h = 98 / stage.k;
-  return <span className="wk-seat" data-mora-anchor={name} style={{ left: at.x - w / 2, top: at.y - h, width: w, height: h }} aria-hidden />;
+/**
+ * MÔRA-Platz: die eine Dock-MÔRA fliegt hierher und sitzt still auf der Fläche. Der Anker ist so gesetzt, dass ihre
+ * Unterkante auf `at.y` liegt; `size` (Einheiten) gibt ihre Höhe passend zur Perspektive (CSS-Variable fürs Dock-Bild).
+ * Darunter ein weicher Kontaktschatten auf dem Holz.
+ */
+const MORA_PX = 95;
+const FEET_PAD = 17; // transparenter Rand unter MÔRAs Füßen im Asset (px)
+ // Höhe der fliegenden Dock-MÔRA in px (bei flightScale 0,7)
+function MoraSeat({ at, stage, name }: { at: { x: number; y: number; size?: number }; stage: Stage; name: string }) {
+  const size = at.size ?? 120;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--wk-mora-scale', String(((size * stage.k) / MORA_PX).toFixed(3)));
+    return () => { root.style.removeProperty('--wk-mora-scale'); };
+  }, [size, stage.k]);
+  const w = 82 / stage.k, h = MORA_PX / stage.k;
+  const sw = size * 0.78, sh = size * 0.16;
+  return (
+    <>
+      <span className="wk-seat-shadow" aria-hidden style={{ left: at.x - sw / 2, top: at.y - sh / 2, width: sw, height: sh }} />
+      <span className="wk-seat" data-mora-anchor={name} style={{ left: at.x - w / 2, top: at.y - h + FEET_PAD / stage.k, width: w, height: h }} aria-hidden />
+    </>
+  );
 }
 
 export interface WerkstattProps {
@@ -95,6 +117,8 @@ export interface WerkstattProps {
 
 export function Werkstatt({ planet, work, planets, companyId, today, initial, fromSpace = true, onExit }: WerkstattProps) {
   const stage = useStage();
+  // Der Raum hat seine eigene Bühne (bei 4:3 verkleinert, damit Regal und Pult beide sichtbar bleiben).
+  const room = useMemo(() => roomStage(stage), [stage]);
   const world = useWorld();
   const title = clean(planet.title);
   const roomRef = useRef<HTMLDivElement>(null);
@@ -147,12 +171,12 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
 
   // Kamera ------------------------------------------------------------------------------------------
   const camFor = useCallback((r: Rect, fill: number, cap = 3.4) => {
-    const s = toScreen(stage, r);
+    const s = toScreen(room, r);
     const c = cameraTo(s, window.innerWidth, window.innerHeight, fill);
     const k = Math.min(cap, c.scale);
     const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
     return { k, tx: window.innerWidth / 2 - cx * k, ty: window.innerHeight / 2 - cy * k, s };
-  }, [stage]);
+  }, [room]);
 
   // Anflug durch das Fenster: Kamera startet draußen (Scheiben füllen das Bild) und fährt in den Raum zurück.
   useLayoutEffect(() => {
@@ -288,7 +312,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   return (
     <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
       <div ref={roomRef} className="wk-room" aria-hidden={close ? true : undefined}>
-        <StageLayer stage={stage} img={roomImg} label={`Werkstatt ${title}`} testId="wk-room"
+        <StageLayer stage={room} img={roomImg} ext={roomImg.replace('.webp', '')} label={`Werkstatt ${title}`} testId="wk-room"
           under={<WindowUniverse rect={ROOM.window} world={world} planets={planets} focusId={planet.id} />}>
           {/* Brett */}
           <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
@@ -322,9 +346,6 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
               </button>
             ) : null}
           </div>
-          <div className="wk-tag wk-tag--board" style={{ left: B.x, top: B.y + B.h + 22 }}>
-            <span>{later ? 'später' : 'aufgaben'} · {board.open} offen</span>
-          </div>
           {pages.length > 1 ? (
             <div className="wk-tag wk-tag--pager" style={{ left: B.x + 214, top: B.y + B.h + 14 }}>
               <button type="button" onClick={() => setPage(Math.max(0, pg - 1))} disabled={pg === 0} aria-label="Blatt zurück" data-testid="wk-board-prev">‹</button>
@@ -334,9 +355,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
           ) : null}
           {/* Gegenstände */}
           <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />
-          {lecternDoc ? <div className="wk-tag wk-tag--obj" style={{ right: STAGE_W - ROOM.lectern.x + 10, top: ROOM.lectern.y + 150 }}>{clean(lecternDoc.name)}</div> : null}
+          {lecternDoc ? <div className="wk-plate" aria-hidden style={{ left: ROOM.plate.x, top: ROOM.plate.y, translate: '-50% 0' }}>{clean(lecternDoc.name)}</div> : null}
           <button type="button" className="wk-hit" style={box(ROOM.table)} onClick={() => open({ kind: 'planung' })} aria-label="Mappe Planung" data-testid="wk-hit-mappe" />
-          <div className="wk-tag wk-tag--obj" style={{ left: ROOM.table.x + 40, top: ROOM.folder.y - 70 }}>planung</div>
           <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
           {docSlip ? (
             <PaperSlip x={1060} y={120} w={420} label="Dokumente" onClose={() => setDocSlip(false)} testId="wk-doc-slip">
@@ -345,7 +365,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
               </ul>
             </PaperSlip>
           ) : null}
-          {!close ? <MoraSeat at={ROOM.moraOnDesk} stage={stage} name="wk-room" /> : null}
+          {!close ? <MoraSeat at={ROOM.moraSeat} stage={room} name="wk-room" /> : null}
         </StageLayer>
       </div>
 
