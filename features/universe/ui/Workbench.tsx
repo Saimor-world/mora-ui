@@ -166,22 +166,34 @@ export function WorkSurface({
   const ref = useRef<HTMLElement>(null);
   const flushDoc = useRef<(() => void) | null>(null);
   const [vars, setVars] = useState<React.CSSProperties>({});
+  const qc = useQueryClient();
 
-  // Anflug vom Objekt: Startpunkt = Ort des Mondes/Lichts relativ zur Mitte der Fläche.
+  // Inhalte vor dem Aufblenden laden, damit die Fläche nicht leer aufsitzt.
+  useEffect(() => {
+    const ids = new Set<string>();
+    work.moons.forEach((m) => m.docs.forEach((d) => ids.add(d.id)));
+    ids.forEach((id) => {
+      void qc.prefetchQuery({ queryKey: ['node', id], queryFn: () => fetchNodeDetails(id), staleTime: 30_000 });
+    });
+  }, [work, qc]);
+
+  // Anflug vom Objekt: Layout-Box ohne Transform, sonst landet der Startpunkt falsch.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const b = el.getBoundingClientRect();
-    const o = origin ?? { x: b.left + b.width / 2, y: b.top + b.height / 2, r: 80 };
-    const bridge = document.querySelector('.bridge')?.getBoundingClientRect().top;
-    // Der Mond selbst wächst zur Scheibe: Start als Kreis in Mondgröße an seinem Ort.
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const top = parseFloat(getComputedStyle(el).top) || 0;
+    const left = (window.innerWidth - width) / 2;
+    const cx = left + width / 2;
+    const cy = top + height / 2;
+    const o = origin ?? { x: cx, y: cy, r: 80 };
     const k = (n: number) => Math.max(0.04, Math.min(0.5, o.r / Math.max(1, n))).toFixed(3);
     setVars({
-      ['--fx' as string]: `${Math.round(o.x - (b.left + b.width / 2))}px`,
-      ['--fy' as string]: `${Math.round(o.y - (b.top + b.height / 2))}px`,
-      ['--fkx' as string]: k(el.offsetWidth),
-      ['--fky' as string]: k(el.offsetHeight),
-      ...(bridge && bridge > 300 ? { ['--ws-bottom' as string]: `${Math.round(window.innerHeight - bridge + 120)}px` } : {}),
+      ['--fx' as string]: `${Math.round(o.x - cx)}px`,
+      ['--fy' as string]: `${Math.round(o.y - cy)}px`,
+      ['--fkx' as string]: k(width),
+      ['--fky' as string]: k(height),
     });
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setPhase('in')));
     return () => cancelAnimationFrame(raf);
@@ -298,7 +310,7 @@ export function WorkSurface({
     flushDoc.current?.();
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { onClose(); return; }
     setPhase('out');
-    window.setTimeout(onClose, 380);
+    window.setTimeout(onClose, 320);
   }, [onClose]);
   const back = useCallback(() => {
     if (view.kind === 'doc' && view.folio) { flushDoc.current?.(); setView({ kind: 'doc', id: view.id }); return; }
@@ -384,6 +396,10 @@ export function WorkSurface({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="ws-face__glass" src={`/universe/glass/${glassVariantFor(clean(planet.title))}.png`} alt="" draggable={false} />
         <i className="ws-face__shade" />
+      </span>
+      <span className="ws-morph" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="ws-morph__glass" src={`/universe/glass/${glassVariantFor(clean(planet.title))}.png`} alt="" draggable={false} />
       </span>
       {rest ? createPortal(<span key={`${rest.x},${rest.y}`} className="mora-anchor mora-anchor--rest" data-mora-anchor="work" style={{ left: rest.x, top: rest.y }} aria-hidden />, document.body) : null}
       {view.kind === 'moon' && moon ? (

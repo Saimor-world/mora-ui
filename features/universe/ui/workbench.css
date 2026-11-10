@@ -19,17 +19,15 @@
 .ws-title__n em,.ws-head em{font-style:normal;color:rgba(240,196,132,.92)}
 .ws-station.is-leaving .ws-moon,.ws-station.is-leaving .ws-light,.ws-station.is-leaving .ws-path{animation:none;opacity:0!important;scale:.4;transition:opacity .34s ease,scale .36s cubic-bezier(.5,0,.75,0)}
 
-/* Nahansicht: der Himmel wird nur leiser, der angeklickte Mond kommt nach vorn und wird selbst zur Arbeitsfläche –
-   eine weich beleuchtete Scheibe im Raum, kein Kasten. Die Ränder lösen sich in den Himmel auf. */
-.ck-universe-unified[data-work] > .ck-scene{filter:blur(4px) brightness(.38) saturate(.75);transform:scale(1.02);transition:transform .7s cubic-bezier(.2,.7,.2,1),filter .7s ease}
-.ck-universe-unified[data-work] > .ck-scene .mora-anchor{opacity:.0}
+/* Nahansicht: die Szene bleibt in ihren eigenen Farben (kein Schleier, kein Dim, keine Färbung).
+   Nur das angeklickte Objekt ist unsichtbar – es ist die fliegende Fläche. Fokus über Schatten der Fläche, optional leichte Unschärfe. */
+.ck-universe-unified[data-work] > .ck-scene{filter:none;transform:none;transition:filter .3s cubic-bezier(0,0,.2,1)}
+html[data-os-work] .ck-universe-unified[data-work] > .ck-scene{filter:blur(2px)}
+.ck-universe-unified[data-work] > .ck-scene .mora-anchor{opacity:0}
 .ck-universe-unified[data-work] .ws-moon[data-active] .ws-moon__btn{opacity:0;transition:opacity .3s ease}
-.ck-universe-unified[data-work] .ck-open__core,.ck-universe-unified[data-work] .ws-moon:not([data-active]),.ck-universe-unified[data-work] .ws-title,.ck-universe-unified[data-work] .ck-horizon__title{opacity:.05;transition:opacity .5s ease}
-.ck-universe-unified[data-work] .ws-light,.ck-universe-unified[data-work] .ws-path,.ck-universe-unified[data-work] .ck-horizon{opacity:.15;transition:opacity .5s ease}
-.ck-universe-unified[data-work] > .ck-top{opacity:.35;transition:opacity .5s ease;pointer-events:none}
 .ws-surface{position:absolute;z-index:8;left:50%;top:var(--ws-top,36px);bottom:var(--ws-bottom,300px);width:min(1080px,calc(100% - 120px));translate:-50% 0;display:flex;flex-direction:column;
   border-radius:28px;padding:28px 32px 24px;color:rgba(236,244,240,.94);outline:none;isolation:isolate;min-height:0;overflow:hidden;
-  transform-origin:50% 50%;transition:transform .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
+  transform-origin:50% 50%;transition:transform .3s cubic-bezier(0,0,.2,1),opacity .3s cubic-bezier(0,0,.2,1),border-radius .3s cubic-bezier(0,0,.2,1)}
 .ws-surface .ws-face,.ws-surface .ws-face__shade,.ws-surface .ws-face__shade::after{border-radius:28px}
 .ws-surface::after{border-radius:28px}
 /* Lesemodus: ruhige gerade Fläche – kein Oval, kein Glow, volle Höhe Topbar→Dock. */
@@ -46,7 +44,6 @@
 }
 .ws-surface--folio .ws-face{display:none}
 .ws-surface--folio::before,.ws-surface--folio::after{content:none!important;opacity:0}
-.ck-universe-unified[data-work="folio"] > .ck-scene{filter:blur(5px) brightness(.26) saturate(.6); transform:none}
 /* Dock-Karten in der Leseansicht absenken – nur CSS-Schicht, Dock-Quellen unverändert. */
 html[data-os-work="folio"] .bridge__inst{
   opacity:0; transform:translateY(32px); pointer-events:none;
@@ -195,17 +192,25 @@ html[data-os-work="full"] .bridge__inst{
   transition:opacity .45s ease, transform .45s ease;
 }
 /* B: full-Oberteil via Dock-Kollaps */
-.ck-universe-unified[data-work="full"] > .ck-scene{filter:blur(5px) brightness(.28) saturate(.65); transform:none}
 /* kein zoom auf .bridge__mora – bricht die Dock-Flugmathematik; Parken außerhalb oder goHome */
-.ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));opacity:.35}
-/* Ohne Glass-Face wäre die Fläche in „from“ ein leerer dunkler Kasten – unsichtbar anfliegen. */
-.ws-surface--folio[data-phase="from"],
-.ws-surface--task[data-phase="from"],
-.ws-surface--full[data-phase="from"]{opacity:0}
-
-.ws-surface[data-phase="out"]{transition:transform .4s cubic-bezier(.5,0,.75,0),opacity .32s ease .06s}
-.ws-surface > :not(.ws-face){transition:opacity .35s ease .32s}
-.ws-surface[data-phase="from"] > :not(.ws-face),.ws-surface[data-phase="out"] > :not(.ws-face){opacity:0;transition-delay:0s}
+/* Shared-Element: Objekt fliegt als Kreis an und wird zur Fläche. Verlassen = exakte Umkehrung. */
+.ws-surface[data-phase="from"],.ws-surface[data-phase="out"]{
+  transform:translate(var(--fx,0),var(--fy,0)) scale(var(--fkx,.1),var(--fky,.1));
+  opacity:1;
+  border-radius:50%;
+}
+.ws-surface[data-phase="out"]{
+  transition:transform .3s cubic-bezier(.8,0,1,1),opacity .3s cubic-bezier(.8,0,1,1),border-radius .3s cubic-bezier(.8,0,1,1);
+}
+.ws-surface > :not(.ws-face):not(.ws-morph){transition:opacity .3s cubic-bezier(0,0,.2,1)}
+.ws-surface[data-phase="from"] > :not(.ws-face):not(.ws-morph),
+.ws-surface[data-phase="out"] > :not(.ws-face):not(.ws-morph){opacity:0;transition:opacity .2s cubic-bezier(.8,0,1,1)}
+.ws-morph{position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;overflow:hidden;opacity:1;transition:opacity .3s cubic-bezier(0,0,.2,1)}
+.ws-surface[data-phase="in"] .ws-morph{opacity:0}
+.ws-surface[data-phase="out"] .ws-morph{opacity:1;transition:opacity .18s cubic-bezier(.8,0,1,1)}
+.ws-morph__glass{position:absolute;inset:-18%;width:136%;height:136%;max-width:none;object-fit:cover;pointer-events:none}
+/* Folio/Task/Liste: Morph während des Flugs sichtbar, im Stand unsichtbar */
+.ws-surface--folio .ws-face,.ws-surface--task .ws-face,.ws-surface--full .ws-face{display:none}
 /* Die Scheibe: klareres Kristallglas – kein Specular-Bogen, Rand weich, Kern lesbar. */
 .ws-face{position:absolute;inset:0;z-index:-1;border-radius:50%;pointer-events:none;overflow:hidden;
   -webkit-mask-image:radial-gradient(closest-side,#000 90%,rgba(0,0,0,.88) 95%,rgba(0,0,0,.35) 98%,transparent 100%);mask-image:radial-gradient(closest-side,#000 90%,rgba(0,0,0,.88) 95%,rgba(0,0,0,.35) 98%,transparent 100%);
