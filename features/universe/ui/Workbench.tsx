@@ -347,9 +347,10 @@ export function WorkSurface({
     const el = ref.current;
     if (!el) return;
     const apply = () => {
-      const topbar = document.querySelector('.ck-top')?.getBoundingClientRect();
-      const topRight = document.querySelector('.ck-top__r')?.getBoundingClientRect();
-      const topEdge = Math.max(topbar?.bottom ?? 0, topRight?.bottom ?? 0, 48) + 8;
+      const work = document.documentElement.hasAttribute('data-os-work');
+      const topbar = work ? null : document.querySelector('.ck-top')?.getBoundingClientRect();
+      const topRight = work ? null : document.querySelector('.ck-top__r')?.getBoundingClientRect();
+      const topEdge = work ? 24 : Math.max(topbar?.bottom ?? 0, topRight?.bottom ?? 0, 48) + 8;
       // Plane deckt Dock-Chrome (z-index 70): Unterkante knapp über Icon-Leiste → max. Lesehöhe.
       const pill = document.querySelector('.bridge__pill')?.getBoundingClientRect();
       const hull = document.querySelector('.bridge__hull')?.getBoundingClientRect()
@@ -371,7 +372,7 @@ export function WorkSurface({
     if (pillEl && ro) ro.observe(pillEl);
     ro?.observe(el);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', apply); ro?.disconnect(); };
-  }, [size]);
+  }, [size, phase]);
 
 
   // Dock-Kollaps erst nach der Landung, Rückfahrt setzt ihn zu Beginn von „out“ wieder frei.
@@ -697,7 +698,8 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   }, [t, c, save]);
   useEffect(() => () => { flushRef.current = null; }, [flushRef]);
   const edited = node?.updated_at ? new Date(node.updated_at) : null;
-  const origin = typeof node?.metadata?.origin === 'string' ? node.metadata.origin : null;
+  const originRaw = typeof node?.metadata?.origin === 'string' ? node.metadata.origin : null;
+  const origin = originRaw && /docx?/i.test(originRaw) ? 'Word' : originRaw;
   const jump = (hid: string) => {
     const root = readRef.current;
     const el = root?.querySelector(`#${CSS.escape(hid)}`) as HTMLElement | null;

@@ -129,7 +129,6 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     );
 
     expect(screen.getByTestId('universe-unified')).toBeInTheDocument();
-    expect(screen.getByTestId('world-view-toggle')).toBeInTheDocument();
     expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
     expect(screen.getByTestId('planet-system')).toBeInTheDocument();
     unmountUniverse();
@@ -159,21 +158,8 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
     expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
     expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
 
-    // Umschalten per Version-B-Toggle (.wd-view auf der linken Seite)
-    const toggleBtn = screen.getByTestId('world-view-toggle');
-    fireEvent.click(toggleBtn);
-
-    // Jetzt im Pixel-Modus, aber Planet Küche ist IMMER NOCH geöffnet!
-    expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'pixel');
+    expect(screen.queryByTestId('world-view-toggle')).not.toBeInTheDocument();
     expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
-    expect(localStorage.getItem('mora.planet_style')).toBe('pixel');
-
-    // Erneut umschalten per Toggle-Button (Glas)
-    fireEvent.click(toggleBtn);
-
-    expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
-    expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
-    expect(localStorage.getItem('mora.planet_style')).toBe('glas');
 
     // Zurück zum System per Back-Button
     const backBtn = screen.getByTestId('world-planet-close');

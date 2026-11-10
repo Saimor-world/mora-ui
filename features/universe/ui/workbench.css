@@ -659,3 +659,16 @@ html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-quiet='
   .ws-surface--full .ws-desk{grid-template-columns:1fr;gap:18px}
   .ws-surface--full .ws-col--docs{border-left:0;padding-left:0;border-top:1px solid var(--hairline,rgba(28,34,30,.1));padding-top:12px}
 }
+
+
+/* ── Stufe 5: Chrom im Arbeitsmodus aus, Uhr bei 1024 frei */
+html[data-os-work] .ck-top,
+.ck-universe-unified[data-work] > .ck-top{
+  opacity:0 !important;visibility:hidden !important;pointer-events:none !important;
+  height:0 !important;overflow:hidden !important;margin:0 !important;padding:0 !important;
+}
+@media (max-width:1024px){
+  html[data-os-work] .bridge__clock b{font:500 18px/20px var(--br-font,inherit);letter-spacing:0}
+  html[data-os-work] .bridge__clock{margin-left:28px;margin-right:8px;min-width:4.5ch}
+  html[data-os-work] .bridge__status[data-side='left']{left:10px;align-items:center;gap:8px}
+}

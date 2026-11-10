@@ -667,38 +667,6 @@ export function UnifiedUniverse({
         <div className="ck-top__r flex items-center gap-2">
           <button
             type="button"
-            className="ck-btn ck-style-toggle"
-            style={{
-              fontSize: 12,
-              padding: '5px 12px',
-              borderRadius: 999,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.16)',
-              color: 'inherit',
-              cursor: 'pointer',
-            }}
-            aria-pressed={planetStyle === 'pixel'}
-            onClick={() => toggleStyle()}
-            data-testid="world-view-toggle"
-            title={planetStyle === 'pixel' ? 'Zurück zur Gesamtansicht (Glas)' : 'Zur Pixel-Ansicht'}
-          >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: planetStyle === 'pixel' ? 0 : '50%',
-                background: 'currentColor',
-                display: 'inline-block',
-              }}
-              aria-hidden
-            />
-            {planetStyle === 'pixel' ? 'Glas-Ansicht' : 'Pixel-Ansicht'}
-          </button>
-          <button
-            type="button"
             className="ck-btn"
             style={{ fontSize: 13, padding: '6px 14px', borderRadius: 999 }}
             onClick={() => setWizardOpen(true)}
