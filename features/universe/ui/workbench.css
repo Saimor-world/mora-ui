@@ -667,8 +667,92 @@ html[data-os-work] .ck-top,
   opacity:0 !important;visibility:hidden !important;pointer-events:none !important;
   height:0 !important;overflow:hidden !important;margin:0 !important;padding:0 !important;
 }
-@media (max-width:1024px){
-  html[data-os-work] .bridge__clock b{font:500 18px/20px var(--br-font,inherit);letter-spacing:0}
-  html[data-os-work] .bridge__clock{margin-left:28px;margin-right:8px;min-width:4.5ch}
-  html[data-os-work] .bridge__status[data-side='left']{left:10px;align-items:center;gap:8px}
+/* Uhr: kein eigener Versatz mehr. Das „N“ war das Next-Dev-Abzeichen (next.config devIndicators:false). */
+
+
+/* ── v14 Stufe 2: Blatt statt Karte, Reste aufgeräumt ─────────────────────
+   Das Blatt liegt im Licht der Szene: matte Faser, haarfeine Kante, Licht von oben,
+   Kontaktschatten statt Kastenschatten. Nichts davon liegt über der Szene. */
+.ws-surface--folio,
+.ws-surface--task,
+.ws-surface--full{
+  --surface:#efebe3;
+  --surface-2:#e5e0d5;
+  --ink:#1b201d;
+  --ink-muted:#4a5650;
+  --hairline:rgba(27,32,29,.13);
+  --edge-light:rgba(255,255,255,.55);
+  border-radius:3px;
+  background-color:var(--surface);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.40 0 0 0 0 0.35 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 22%),
+    linear-gradient(180deg,var(--surface) 0%,var(--surface) 55%,var(--surface-2) 100%);
+  background-blend-mode:multiply,normal,normal;
+  box-shadow:
+    inset 0 1px 0 var(--edge-light),
+    inset 0 0 0 .5px rgba(27,32,29,.10),
+    0 0 0 .5px rgba(0,0,0,.22),
+    0 1px 1px rgba(0,8,12,.22),
+    0 3px 8px -4px rgba(0,8,12,.35),
+    0 22px 36px -30px rgba(0,8,12,.55);
 }
+.ws-surface--folio .ws-docview{border-radius:0}
+/* Hairline-Kante der Papierkante, leicht kühler an den Seiten (Mondlicht), wärmer oben. */
+.ws-surface--folio::before,.ws-surface--task::before,.ws-surface--full::before{
+  content:""!important;opacity:1!important;position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(90deg,rgba(190,210,225,.10),transparent 3%,transparent 97%,rgba(190,210,225,.10));
+}
+.ws-surface--folio > *,.ws-surface--task > *,.ws-surface--full > *{position:relative;z-index:1}
+.ws-surface--folio > .ws-morph,.ws-surface--task > .ws-morph,.ws-surface--full > .ws-morph{position:absolute;z-index:2}
+
+/* Tinte auf jedem Blatt, nicht nur im Lesemodus (Dokument, Bearbeiten, Erledigt). */
+.ws-surface :is(.ws-doc__read,.ws-doc__body,.ws-doc__title,.ws-md__h1,.ws-md__h2,.ws-md__h3,.ws-md__p,.ws-md__ul,.ws-md__ol,.ws-md__table){color:var(--ink)}
+.ws-surface .ws-doc__body{box-shadow:none}
+.ws-surface .ws-doc__body:focus{box-shadow:none}
+.ws-surface--task .ws-task[data-done] .ws-task__title{color:var(--ink-muted);text-decoration-color:var(--hairline)}
+.ws-surface .ws-row--task[data-done] .ws-row__t{color:var(--ink-muted);text-decoration-color:rgba(27,32,29,.35)}
+.ws-surface .ws-row--doc:hover,.ws-surface .ws-row--doc:focus-visible,.ws-surface .ws-row--task:hover{background:rgba(27,32,29,.045)}
+.ws-surface .ws-row--task[data-focus="1"]{background:rgba(27,32,29,.05);box-shadow:inset 2px 0 0 var(--accent)}
+.ws-surface .ws-row--task:has(.ws-row__more){background:rgba(27,32,29,.035)}
+
+/* „Später“ und „erledigt“: globale summary-Farbe der Palette (world.css) gilt nicht auf Papier. */
+html[data-palette] .ws-surface summary,
+html .ws-surface summary{background:transparent!important;color:var(--ink-muted)!important}
+.ws-surface .ws-group > summary,
+.ws-surface--full .ws-group[data-group='later'] > summary.ws-group__label{
+  font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;padding:0;margin:8px 0 3px;border-radius:0;
+}
+.ws-surface--full .ws-group[data-group='later'] > summary::before{content:"";width:5px;height:5px;margin:0 2px 0 1px;border:solid currentColor;border-width:0 1.25px 1.25px 0;transform:rotate(-45deg);transition:transform .2s ease}
+.ws-surface--full .ws-group[data-group='later'][open] > summary::before{transform:rotate(45deg)}
+.ws-surface .ws-group > summary:focus-visible{outline:none;text-decoration:underline;text-underline-offset:3px}
+
+/* Regal: Titel bis zwei Zeilen mit Trennung, Art als eigene leise Zeile – nichts abgeschnitten. */
+.ws-surface--full .ws-desk{grid-template-columns:minmax(0,1fr) clamp(196px,19vw,248px)}
+.ws-surface--full .ws-col--docs{padding-left:18px}
+.ws-surface--full .ws-row--doc{align-items:flex-start;gap:9px;padding:6px 8px;margin:0 -8px;border-radius:4px}
+.ws-surface--full .ws-row--doc svg{margin-top:2px;color:var(--ink-muted);opacity:.7}
+.ws-shelf__txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ws-surface--full .ws-shelf__txt b{
+  font-size:14px;font-weight:500;line-height:1.3;color:var(--ink);
+  white-space:normal!important;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;
+}
+.ws-shelf__txt small{font-size:12px;line-height:1.3;color:var(--ink-muted);white-space:nowrap}
+
+/* Liste: das Blatt ist so hoch wie sein Inhalt (keine leere untere Hälfte), höchstens bis zur Leiste. */
+.ws-surface--full[data-view="moon"]{
+  bottom:auto;
+  max-height:calc(100% - var(--ws-top,56px) - 6px - var(--ws-bottom,100px) - 8px);
+}
+.ws-surface--full[data-view="moon"] .ws-desk{flex:0 1 auto;min-height:0;grid-template-rows:minmax(0,auto)}
+.ws-surface--full[data-view="moon"] .ws-col--tasks{min-height:0}
+.ws-surface--full[data-view="moon"] .ws-list--tasks{flex:0 1 auto;min-height:0;height:auto}
+.ws-surface--full .ws-new{margin-top:6px;padding-top:8px;border-top:1px solid var(--hairline)}
+/* Zähler und Hinweise in Tinte statt Nacht-Hell; Tastaturfokus nur, solange die Liste den Fokus hat. */
+.ws-surface .ws-col h3 span,.ws-surface .ws-group__label span{color:var(--ink-muted)}
+.ws-surface .ws-head em{color:#8a3b10}
+.ws-surface .ws-row--task[data-focus="1"]{background:none;box-shadow:none}
+.ws-surface .ws-list--tasks:focus-visible .ws-row--task[data-focus="1"],
+.ws-surface .ws-list--tasks:focus .ws-row--task[data-focus="1"]{background:rgba(27,32,29,.05);box-shadow:inset 2px 0 0 var(--accent)}
+.ws-surface .ws-list--tasks:focus,.ws-surface .ws-list--tasks:focus-visible{outline:none}

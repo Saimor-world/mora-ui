@@ -22,7 +22,7 @@ const ORB = 260;
 const MOON = 104;
 const clean = (s: string) => stripFiktiv(s) || s;
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const kindLabel = (meta: string, name = '') => {
+export const kindLabel = (meta: string, name = '') => {
   const s = `${meta} ${name}`;
   if (/\.pdf\b|\bpdf\b/i.test(s)) return 'PDF';
   if (/\.docx?\b|\bdocx?\b|\bword\b/i.test(s)) return 'Word';
@@ -30,6 +30,18 @@ const kindLabel = (meta: string, name = '') => {
   if (/document|file|\bdoc\b/i.test(s)) return 'Dokument';
   return 'Dokument';
 };
+type DocNode = { id?: string; title?: string; name?: string; content?: string; type?: string; updated_at?: string; metadata?: Record<string, unknown>; folder_id?: string | null };
+/** Eine Art je Dokument, gleich im Regal und im Blattkopf: Herkunft (Word/PDF) vor Typ vor Dateiname. */
+export const docKind = (meta: string, name = '', node?: DocNode | null) => {
+  const origin = typeof node?.metadata?.origin === 'string' ? node.metadata.origin : '';
+  return kindLabel([origin, node?.type ?? '', meta].join(' '), node?.name || name);
+};
+/** Titel ohne angehängte Art („Wochenplan (PDF)“ + Art PDF → „Wochenplan“). */
+export const docTitle = (name: string, kind: string) => name.replace(new RegExp(`\\s*\\(${kind}\\)\\s*$`, 'i'), '') || name;
+/** Kopfzeile eines Dokuments: Ort · Art · Stand. Nie der Dateiname. */
+export const docMetaLine = (place: string, kind: string, saved: string | null, edited: Date | null) =>
+  [place, kind, saved ? `gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : null]
+    .filter(Boolean).join(' · ');
 const dueLabel = (t: WorkTask) => (!t.due ? '' : t.dueToday ? 'heute' : t.overdue ? `seit ${shortDate(t.due)}` : shortDate(t.due));
 
 /** Wohin ein Objekt fliegt: Mittelpunkt des angeklickten Elements im Fenster. */
@@ -222,7 +234,8 @@ export function WorkSurface({
           const bottomClear = parseFloat(surfaceEl.style.getPropertyValue('--ws-bottom')) || 0;
           const width = surfaceEl.offsetWidth;
           const left = (window.innerWidth - width) / 2;
-          const height = size === 'task' ? surfaceEl.offsetHeight : Math.max(0, window.innerHeight - top - bottomClear);
+          // Aufgabe und Liste sind so hoch wie ihr Inhalt; Dokumente reichen bis zur Leiste.
+          const height = size === 'task' || view.kind === 'moon' ? surfaceEl.offsetHeight : Math.max(0, window.innerHeight - top - bottomClear);
           surface = { left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON() {} } as DOMRect;
         } else {
           surface = r;
@@ -388,6 +401,7 @@ export function WorkSurface({
       ref={ref}
       tabIndex={-1}
       className={`ws-surface ws-surface--${size}`}
+      lang="de"
       data-phase={phase}
       data-testid="work-surface"
       data-view={view.kind}
@@ -625,16 +639,27 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
         <div className="ws-col ws-col--docs" data-testid="work-docs">
           <h3>Dokumente <span>{docs.length}</span></h3>
           <div className="ws-list">
-            {docs.map((d) => (
-              <button key={d.id} type="button" className="ws-row ws-row--doc" onClick={() => onDoc(d.id)} data-testid={`work-doc-${d.id}`}>
-                {/note/i.test(d.meta) ? <StickyNote size={15} aria-hidden /> : <FileText size={15} aria-hidden />}
-                <b>{clean(d.name)}</b><span>{kindLabel(d.meta, d.name)}</span>
-              </button>
-            ))}
+            {docs.map((d) => <ShelfDoc key={d.id} doc={d} onOpen={onDoc} />)}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+/** Ein Dokument im Regal: Titel bis zwei Zeilen (Silbentrennung), Art als eigene leise Zeile darunter. */
+function ShelfDoc({ doc, onOpen }: { doc: { id: string; name: string; meta: string }; onOpen: (id: string) => void }) {
+  const q = useQuery({ queryKey: ['node', doc.id], queryFn: () => fetchNodeDetails(doc.id), staleTime: 30_000 });
+  const kind = docKind(doc.meta, doc.name, q.data as DocNode | undefined);
+  const title = docTitle(clean(doc.name), kind);
+  return (
+    <button type="button" className="ws-row ws-row--doc" onClick={() => onOpen(doc.id)} data-testid={`work-doc-${doc.id}`} title={title}>
+      {kind === 'Notiz' ? <StickyNote size={15} aria-hidden /> : <FileText size={15} aria-hidden />}
+      <span className="ws-shelf__txt">
+        <b>{title}</b>
+        <small data-testid={`work-doc-kind-${doc.id}`}>{kind}</small>
+      </span>
+    </button>
   );
 }
 
@@ -673,7 +698,7 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   const [saved, setSaved] = useState<string | null>(null);
   const dirty = useRef(false);
   const readRef = useRef<HTMLDivElement>(null);
-  const node = q.data as ({ id?: string; title?: string; name?: string; content?: string; type?: string; updated_at?: string; metadata?: Record<string, unknown>; folder_id?: string | null } | undefined);
+  const node = q.data as DocNode | undefined;
   const t = title ?? (node?.title || name);
   const c = body ?? (node?.content ?? '');
   const fileName = node?.name || name;
@@ -698,8 +723,7 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
   }, [t, c, save]);
   useEffect(() => () => { flushRef.current = null; }, [flushRef]);
   const edited = node?.updated_at ? new Date(node.updated_at) : null;
-  const originRaw = typeof node?.metadata?.origin === 'string' ? node.metadata.origin : null;
-  const origin = originRaw && /docx?/i.test(originRaw) ? 'Word' : originRaw;
+  const kind = docKind('', fileName, node);
   const jump = (hid: string) => {
     const root = readRef.current;
     const el = root?.querySelector(`#${CSS.escape(hid)}`) as HTMLElement | null;
@@ -731,7 +755,7 @@ function DocDesk({ id, moon, name, folio, onBack, onFolio, flushRef }: {
         {folio && !editing ? null : (
           <input className="ws-doc__title" value={t} onChange={(e) => { dirty.current = true; setTitle(e.target.value); }} aria-label="Titel" data-testid="work-doc-title" />
         )}
-        <p>{clean(moon.title)}{fileName && fileName !== t ? ` · ${fileName}` : ''}{origin ? ` · ${origin}` : ''}{saved ? ` · gesichert ${saved}` : edited && !Number.isNaN(edited.getTime()) ? ` · ${edited.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}` : ''}</p>
+        <p data-testid="work-doc-meta">{docMetaLine(clean(moon.title), kind, saved, edited)}</p>
       </Head>
       <div className="ws-docview" data-folio={folio ? '1' : undefined} data-pdf={pdf ? '1' : undefined} data-editing={editing ? '1' : undefined}>
         {folio && headings.length > 1 ? (
