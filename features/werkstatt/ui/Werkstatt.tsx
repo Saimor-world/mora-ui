@@ -10,7 +10,7 @@ import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { sceneFor } from '@/lib/os-prototype/scene';
 import { arrangeBoard } from '../model/board';
-import { cameraTo, toScreen, worldFor, type Rect, type Stage, type World } from '../model/stage';
+import { STAGE_W, cameraTo, toScreen, worldFor, type Rect, type Stage, type World } from '../model/stage';
 import { StageLayer, useStage } from './Stage';
 import { WindowUniverse, type SkyPlanet } from './WindowUniverse';
 import { WorkDock } from './WorkDock';
@@ -59,6 +59,8 @@ const clean = (s: string) => stripFiktiv(s) || s;
 const box = (r: Rect): React.CSSProperties => ({ left: r.x, top: r.y, width: r.w, height: r.h });
 /** 3 × 2 Plätze am Brett: 5 Karten + der Stapel „später“ – Karten breit genug für ganze Wörter und Namen. */
 const PER_PAGE = 5;
+/** Nahsicht im Licht der Welt: morgens Tageslicht und Lampe aus, nachts Lampenlicht. */
+const closeImg = (kind: keyof typeof CLOSE, world: World) => (world === 'morgennebel' ? CLOSE[kind].img.replace('.webp', '-morgen.webp') : CLOSE[kind].img);
 const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; };
 
 function useWorld(): World {
@@ -332,7 +334,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
           ) : null}
           {/* Gegenstände */}
           <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />
-          {lecternDoc ? <div className="wk-tag wk-tag--obj" style={{ left: ROOM.lectern.x + ROOM.lectern.w + 8, top: ROOM.lectern.y + 150 }}>{clean(lecternDoc.name)}</div> : null}
+          {lecternDoc ? <div className="wk-tag wk-tag--obj" style={{ right: STAGE_W - ROOM.lectern.x + 10, top: ROOM.lectern.y + 150 }}>{clean(lecternDoc.name)}</div> : null}
           <button type="button" className="wk-hit" style={box(ROOM.table)} onClick={() => open({ kind: 'planung' })} aria-label="Mappe Planung" data-testid="wk-hit-mappe" />
           <div className="wk-tag wk-tag--obj" style={{ left: ROOM.table.x + 40, top: ROOM.folder.y - 70 }}>planung</div>
           <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
@@ -349,7 +351,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
 
       {close ? (
         <div ref={closeRef} key={`${close.kind}-${"id" in close ? close.id : ""}`} className="wk-close" data-testid={`wk-close-${close.kind}`}>
-          <StageLayer stage={stage} img={CLOSE[close.kind].img} label={nameOf(close)}
+          <StageLayer stage={stage} img={closeImg(close.kind, world)} label={nameOf(close)}
             under={<WindowUniverse rect={CLOSE[close.kind].sky} world={world} planets={planets} focusId={planet.id} />}>
             {close.kind === 'task' && taskOf(close.id) ? (
               <TaskSheet key={close.id} task={taskOf(close.id) as WorkTask} companyId={companyId}
