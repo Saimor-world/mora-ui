@@ -9,6 +9,7 @@ import { invalidateToday } from '@/lib/os/useScopedToday';
 import type { WorkTask } from '@/lib/universe/deptWork';
 import { PaperSlip } from './PaperSlip';
 import { WorkDock } from './WorkDock';
+import { CrewRelicAvatar } from '@/components/world/CrewRelicAvatar';
 
 /** Blatt unter der Lampe (Bühnen-Einheiten im Schreibtisch-Bild). */
 export const TASK_SHEET = { x: 600, y: 262, w: 780, h: 650 };
@@ -78,7 +79,7 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
         </div>
         <div>
           <dt>zuständig</dt>
-          <dd><button type="button" className="wk-ink wk-hand" onClick={() => setSlip('who')} data-testid="wk-task-who">{who ?? 'niemand'}</button>
+          <dd><button type="button" className="wk-ink wk-hand" onClick={() => setSlip('who')} data-testid="wk-task-who">{who ? <CrewRelicAvatar name={who} size={22} /> : null}{who ?? 'niemand'}</button>
             {stub ? <small className="wk-sheet__stub" data-testid="wk-assign-stub">nur hier vermerkt</small> : null}</dd>
         </div>
         <div>
@@ -100,7 +101,7 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
         <PaperSlip x={300} y={250} w={300} label="Wer übernimmt?" onClose={() => setSlip(null)} testId="wk-who-slip">
           <ul className="wk-slip__list wk-slip__list--hand">
             {people.length ? people.map((n) => (
-              <li key={n}><button type="button" onClick={() => void pick(n)} aria-pressed={n === who}>{n}</button></li>
+              <li key={n}><button type="button" onClick={() => void pick(n)} aria-pressed={n === who}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><CrewRelicAvatar name={n} size={22} />{n}</span></button></li>
             )) : <li><span className="wk-slip__empty">{team.isLoading ? '…' : 'Noch niemand im Team'}</span></li>}
           </ul>
         </PaperSlip>

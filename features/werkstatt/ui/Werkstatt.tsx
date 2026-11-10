@@ -18,6 +18,7 @@ import { PaperSlip } from './PaperSlip';
 import { Book } from './Book';
 import { Mappe, weekNodesFrom } from './Mappe';
 import { TaskSheet } from './TaskSheet';
+import { CrewRelicAvatar, deriveCrewRelic } from '@/components/world/CrewRelicAvatar';
 import type { DeptMember, RoomKind } from '@/features/universe/ui/Workbench';
 
 export type Place = { kind: 'room' } | { kind: 'task'; id: string } | { kind: 'doc'; id: string } | { kind: 'planung' };
@@ -369,10 +370,15 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
             <div className="wk-board" role="list" aria-label={`Bar ${title}`} data-testid="wk-board" data-room-mode="bar">
               {crew.slice(0, 5).map((c, i) => {
                 const openCount = allTasks.filter((t) => !t.done && t.assignee && t.assignee.toLowerCase() === c.name.toLowerCase()).length;
+                const relic = deriveCrewRelic(c.id || c.name, Boolean(c.isCaptain));
                 return (
                   <div key={c.id} role="listitem" className="wk-card" data-testid={`wk-crew-${c.id}`} style={{ ...slot(i), cursor: 'default' }}>
                     <i className="wk-pin" aria-hidden />
-                    <span className="wk-card__t">{c.isCaptain ? `Captain ${clean(c.name)}` : clean(c.name)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CrewRelicAvatar id={c.id} name={clean(c.name)} isCaptain={c.isCaptain} status={c.status} size={34} testId={`wk-crew-avatar-${c.id}`} />
+                      <span className="wk-card__t">{c.isCaptain ? `Captain ${clean(c.name)}` : clean(c.name)}</span>
+                    </div>
+                    <span className="wk-card__f" style={{ fontSize: 16 }}>#{relic.instance} · {relic.mineralName}</span>
                     <span className="wk-card__f">
                       {c.role ? clean(c.role) : (c.isCaptain ? 'Abteilungsleitung' : 'Crew')}
                       {openCount ? <em>{openCount} offen</em> : null}
@@ -403,7 +409,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 
                     style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
                     <i className="wk-pin" aria-hidden />
                     <span className="wk-card__t">{t.title}</span>
-                    <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em>{t.assignee}</em> : null}</span>
+                    <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CrewRelicAvatar name={t.assignee} size={18} />{t.assignee}</em> : null}</span>
                   </button>
                 );
               })}

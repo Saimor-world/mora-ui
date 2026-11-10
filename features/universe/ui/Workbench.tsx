@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, FileText, Filter, Maximize2, MoreHorizontal, PenLine, Plus, StickyNote } from 'lucide-react';
 import { GlassOrb, glassVariantFor } from '@/components/world/GlassOrb';
+import { CrewRelicAvatar } from '@/components/world/CrewRelicAvatar';
 import { planetColor } from '@/features/home/cockpit/Scene';
 import type { DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
@@ -184,14 +185,14 @@ export function StationPlanet({
           <div className="ws-crew" data-testid="dept-crew" aria-label={`Crew ${title}`}>
             {captain ? (
               <span className="ws-crew__chip ws-crew__chip--captain" data-online={captain.status === 'online' ? '1' : undefined} data-testid="dept-captain">
-                <i aria-hidden />
+                <CrewRelicAvatar id={captain.id} name={clean(captain.name)} isCaptain status={captain.status} size={22} testId={`crew-avatar-${captain.id}`} />
                 <b>Captain {clean(captain.name)}</b>
                 {captain.role ? <small>{clean(captain.role)}</small> : null}
               </span>
             ) : null}
             {members.slice(0, 5).map((m) => (
               <span key={m.id} className="ws-crew__chip" data-online={m.status === 'online' ? '1' : undefined}>
-                <i aria-hidden />
+                <CrewRelicAvatar id={m.id} name={clean(m.name)} status={m.status} size={20} testId={`crew-avatar-${m.id}`} />
                 <span>{clean(m.name)}</span>
                 {m.role ? <small>{clean(m.role)}</small> : null}
               </span>

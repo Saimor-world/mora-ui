@@ -229,11 +229,16 @@ describe('Abteilungsräume (Werkstatt, Studio, Bar) & echte Ordner', () => {
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Studio');
     expect(screen.getByTestId('wk-doc-card-n-hb')).toHaveTextContent('Betriebshandbuch');
 
-    // Wechsel in die Bar zeigt Captain, Crew und MÔRA (Das Schiff)
+    // Wechsel in die Bar zeigt Captain, Crew, deterministische Relikt-Avatare (ORIGIN-Seed 1001–1111) und MÔRA (Das Schiff)
     fireEvent.click(screen.getByRole('button', { name: 'Bar' }));
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Bar');
     expect(screen.getByTestId('wk-crew-c1')).toHaveTextContent('Captain Marius');
     expect(screen.getByTestId('wk-crew-c2')).toHaveTextContent('Lea');
+    const c1Avatar = screen.getByTestId('wk-crew-avatar-c1');
+    const c2Avatar = screen.getByTestId('wk-crew-avatar-c2');
+    expect(Number(c1Avatar.getAttribute('data-origin-seed'))).toBeGreaterThanOrEqual(1001);
+    expect(Number(c1Avatar.getAttribute('data-origin-seed'))).toBeLessThanOrEqual(1111);
+    expect(c1Avatar.getAttribute('data-origin-seed')).not.toBe(c2Avatar.getAttribute('data-origin-seed'));
     expect(screen.getByTestId('wk-mora-ship')).toHaveTextContent('MÔRA · Das Schiff');
   });
 });
