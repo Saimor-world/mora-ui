@@ -212,21 +212,27 @@ describe('Mappe – Wochenblatt von Hand', () => {
   });
 });
 
-describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 Raum)', () => {
-  it('zeigt für Produkt & Technik / Küche ihren eigenen Werkstatt-Raum (room-werkstatt.webp) mit echten Ordnern', () => {
+describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & echte Arbeitsstation)', () => {
+  it('zeigt für Produkt & Technik / Küche ihren eigenen Werkstatt-Raum (room-werkstatt.webp) mit echten Ordnern und Backstuben-Werkbank', () => {
+    const kuechePlanet = { ...planet, id: 'dept-kueche', title: 'Küche & Backstube' };
     const crew = [
       { id: 'c1', name: 'Marius', role: 'Abteilungsleitung', status: 'online' as const, isCaptain: true },
       { id: 'c2', name: 'Lea', role: 'Küche', status: 'online' as const },
     ];
-    wrap(<Werkstatt planet={planet} work={work} planets={[]} companyId="c" today={TODAY} crew={crew} backLabel="Laden" fromSpace={false} onExit={jest.fn()} />);
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Werkstatt');
+    wrap(<Werkstatt planet={kuechePlanet} work={work} planets={[]} companyId="c" today={TODAY} crew={crew} backLabel="Küche & Backstube" fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Küche & Backstube · Backstube & Werkstatt');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-werkstatt');
     expect(screen.getByTestId('wk-folders')).toBeInTheDocument();
     expect(screen.getByTestId('wk-folder-f-plan')).toHaveTextContent('Planung');
     expect(screen.getByTestId('wk-folder-f-hb')).toHaveTextContent('Handbuch');
+
+    // Klick auf die Werkbank öffnet die echte Café-Backstuben-Station (Bestandszähler + Kühlhaus-Protokoll)
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
+    expect(screen.getByTestId('wk-station-kueche')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-inv-val-inv-hafer')).toHaveTextContent('18 Liter');
   });
 
-  it('öffnet für Design & Studio automatisch das ORIGIN-Atelier & Lesepult (Basalt & Glas) mit Folio-Editor', () => {
+  it('öffnet für Design & Studio das physische Basalt-Atelier (room-atelier.webp) und am Zeichentisch den ORIGIN // 001 Prüfsockel & Folio-Editor', () => {
     const studioPlanet = {
       ...planet,
       id: 'dept-studio',
@@ -238,7 +244,10 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     wrap(<Werkstatt planet={studioPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} crew={crew} backLabel="Design & Studio" fromSpace={false} onExit={jest.fn()} />);
 
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · ORIGIN-Atelier & Lesepult');
-    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-pult');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-atelier');
+
+    // Klick auf den Atelier-Zeichentisch mit ORIGIN-Sockel öffnet die echte Atelier-Station
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
     expect(screen.getByTestId('wk-studio-lectern')).toBeInTheDocument();
     expect(screen.getByTestId('wk-studio-focus')).toHaveTextContent('SAIMÔR // ORIGIN // 001 · Material-Spektrum');
     fireEvent.click(screen.getByTestId('wk-studio-edit-toggle'));
@@ -248,7 +257,7 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     expect(screen.getByTestId('wk-studio-doc-preview')).toHaveTextContent('Basalt & Quarzglas freigegeben.');
   });
 
-  it('öffnet für Betrieb & Kunden automatisch die Panorama-Bar & Crew-Salon mit Relikt-Avataren (1001–1111), Crew-Filter und Inline-Funk', () => {
+  it('öffnet für Betrieb & Kunden den physischen Bar-Raum (room-bar.webp) und an der Theke den Crew-Tresen mit Relikt-Avataren (1001–1111)', () => {
     const barPlanet = {
       ...planet,
       id: 'dept-betrieb',
@@ -261,7 +270,10 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     wrap(<Werkstatt planet={barPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} crew={crew} backLabel="Betrieb & Kunden" fromSpace={false} onExit={jest.fn()} />);
 
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Betrieb & Kunden · Panorama-Bar & Crew-Salon');
-    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-schreibtisch');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-bar');
+
+    // Klick auf die Theke öffnet das Crew-Logbuch & Funk
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
     expect(screen.getByTestId('wk-crew-c1')).toHaveTextContent('Captain Marius');
     expect(screen.getByTestId('wk-crew-c2')).toHaveTextContent('Lea');
     const c1Avatar = screen.getByTestId('wk-crew-avatar-c1');
@@ -276,7 +288,7 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Filter: Marius');
   });
 
-  it('öffnet für Kommando & Strategie die Kommandobrücke (bridge) und für Finanzen & Recht das Treasury-Kontor (kontor)', () => {
+  it('öffnet für Kommando & Strategie und Finanzen & Recht das physische Smaragd-Walnuss-Kontor (room-kontor.webp)', () => {
     const bridgePlanet = {
       ...planet,
       id: 'dept-leitung',
@@ -285,6 +297,7 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     const { unmount } = wrap(<Werkstatt planet={bridgePlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} backLabel="Kommando & Strategie" fromSpace={false} onExit={jest.fn()} />);
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Kommando & Strategie · Kommandobrücke & Strategie-Kanzel');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('bridge');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
     unmount();
 
     const kontorPlanet = {
@@ -295,5 +308,6 @@ describe('Jede Abteilung hat ihren eigenen kontextuellen Raum (1 Abteilung = 1 R
     wrap(<Werkstatt planet={kontorPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} backLabel="Finanzen & Recht" fromSpace={false} onExit={jest.fn()} />);
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Finanzen & Recht · Treasury-Kontor & Vertrags-Archiv');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('kontor');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
   });
 });

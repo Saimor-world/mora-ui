@@ -23,14 +23,16 @@ import { PaperSlip } from './PaperSlip';
 import { Book } from './Book';
 import { Mappe, weekNodesFrom } from './Mappe';
 import { TaskSheet } from './TaskSheet';
-import { CrewRelicAvatar, deriveCrewRelic } from '@/components/world/CrewRelicAvatar';
+import { DeskWorkstation, resolveStationKind } from './DeskWorkstation';
+import { CrewRelicAvatar } from '@/components/world/CrewRelicAvatar';
 import type { DeptMember, RoomKind } from '@/features/universe/ui/Workbench';
 
-export type Place = { kind: 'room' } | { kind: 'task'; id: string } | { kind: 'doc'; id: string } | { kind: 'planung' };
+export type Place = { kind: 'room' } | { kind: 'task'; id: string } | { kind: 'doc'; id: string } | { kind: 'planung' } | { kind: 'station' };
 export const placeFromParam = (p: string | null): Place | null => {
   if (!p) return null;
   if (p === 'werkstatt' || p === 'studio' || p === 'bar') return { kind: 'room' };
   if (p === 'planung') return { kind: 'planung' };
+  if (p === 'station' || p === 'arbeitsplatz') return { kind: 'station' };
   const [k, id] = p.split(':');
   if (k === 'aufgabe' && id) return { kind: 'task', id };
   if (k === 'dokument' && id) return { kind: 'doc', id };
@@ -47,7 +49,7 @@ const ROOM = {
   table: { x: 830, y: 630, w: 250, h: 300 },
   folder: { x: 853, y: 641, w: 193, h: 53 },
   shelf: { x: 0, y: 60, w: 112, h: 560 },
-  desk: { x: 120, y: 560, w: 640, h: 120 },
+  desk: { x: 120, y: 560, w: 640, h: 140 },
   /** MÔRA sitzt auf der Fensterbank, links vom Pult; Größe in Einheiten passend zur Perspektive. */
   moraSeat: { x: 1150, y: 641, size: 112 },
   /** Messingschild vorn am Pultbrett. */
@@ -57,8 +59,9 @@ const CLOSE = {
   task: { img: '/werkstatt/room-schreibtisch.webp', sky: { x: 0, y: 0, w: 1920, h: 150 }, mora: { x: 420, y: 930 } },
   doc: { img: '/werkstatt/room-pult.webp', sky: { x: 200, y: 0, w: 1560, h: 720 }, mora: { x: 1640, y: 738 } },
   planung: { img: '/werkstatt/room-mappe.webp', sky: { x: 0, y: 0, w: 1920, h: 120 }, mora: { x: 360, y: 960 } },
+  station: { img: '/werkstatt/room-schreibtisch.webp', sky: { x: 0, y: 0, w: 1920, h: 150 }, mora: { x: 420, y: 930 } },
 };
-const focusOf = (p: Place): Rect => (p.kind === 'task' ? ROOM.desk : p.kind === 'doc' ? ROOM.lecternBook : p.kind === 'planung' ? ROOM.folder : ROOM.board);
+const focusOf = (p: Place): Rect => ((p.kind === 'task' || p.kind === 'station') ? ROOM.desk : p.kind === 'doc' ? ROOM.lecternBook : p.kind === 'planung' ? ROOM.folder : ROOM.board);
 const EASE = 'cubic-bezier(.45,0,.2,1)';
 /** Kamera in Ruhelage: Inline-Transform setzen (null = unverändert) und alle Fahrten auf dem Element beenden. */
 function settle(el: HTMLElement, transform: string | null) {
@@ -246,8 +249,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     if (landed) return;
     const roomEl = roomRef.current, rootEl = rootRef.current;
     if (!roomEl || !rootEl || typeof roomEl.animate !== 'function') { setLanded(true); return; }
-    const winRect = activeRoom === 'studio' ? CLOSE.doc.sky : activeRoom === 'bar' ? CLOSE.task.sky : ROOM.window;
-    const c = camFor(winRect, 1.35, 5);
+    const c = camFor(ROOM.window, 1.35, 5);
     const a = roomEl.animate([{ transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }, { transform: 'none' }], { duration: 380, easing: EASE, fill: 'backwards' });
     rootEl.animate([{ opacity: 0 }, { opacity: 1, offset: 0.35 }, { opacity: 1 }], { duration: 380, easing: 'linear', fill: 'backwards' });
     a.onfinish = () => { settle(roomEl, ''); setLanded(true); };
@@ -261,37 +263,16 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     if (!roomEl || !rootEl || reduced() || typeof roomEl.animate !== 'function') { onExit(); return; }
     setBusy(true);
     document.documentElement.removeAttribute('data-os-work');
-    const winRect = activeRoom === 'studio' ? CLOSE.doc.sky : activeRoom === 'bar' ? CLOSE.task.sky : ROOM.window;
-    const c = camFor(winRect, 1.35, 5);
+    const c = camFor(ROOM.window, 1.35, 5);
     roomEl.animate([{ transform: 'none' }, { transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.k})` }], { duration: 320, easing: EASE, fill: 'forwards' });
     const f = rootEl.animate([{ opacity: 1 }, { opacity: 1, offset: 0.65 }, { opacity: 0 }], { duration: 320, easing: 'linear', fill: 'forwards' });
     f.onfinish = () => onExit();
-  }, [busy, camFor, onExit, activeRoom]);
+  }, [busy, camFor, onExit]);
 
-  // In ein Objekt hinein / wieder heraus (flüssig & direkt, ohne doppelten Hintergrund im Studio/Bar).
+  // In ein Objekt im physischen Raum hinein / wieder heraus (flüssiger Kamerazoom auf Tisch, Pult oder Mappe).
   const zoom = useCallback((into: Place, dir: 'in' | 'out', done: () => void) => {
     const roomEl = roomRef.current, layer = closeRef.current;
     if (!roomEl || reduced() || typeof roomEl.animate !== 'function') { done(); return; }
-    // Im Studio und in der Bar liegt kein Holz-Pult/Tisch an den Koordinaten von room-werkstatt.webp:
-    // Dort blenden wir sauber und direkt um (200 ms), damit sich niemals 2x derselbe Raum im Hintergrund öffnet!
-    if (activeRoom !== 'werkstatt') {
-      settle(roomEl, '');
-      if (layer && typeof layer.animate === 'function') {
-        const l = layer.animate(
-          dir === 'in'
-            ? [{ opacity: 0, transform: 'scale(0.97)' }, { opacity: 1, transform: 'none' }]
-            : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }],
-          { duration: 190, easing: EASE, fill: 'forwards' as FillMode }
-        );
-        l.onfinish = () => {
-          if (dir === 'in') { l.cancel(); layer.style.transform = ''; layer.style.opacity = ''; }
-          done();
-        };
-      } else {
-        done();
-      }
-      return;
-    }
     const c = camFor(focusOf(into), 0.9);
     const vw = window.innerWidth, vh = window.innerHeight;
     const k0 = c.s.w / vw;
@@ -308,7 +289,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
       if (layer && l && dir === 'in') { l.cancel(); layer.style.transform = ''; layer.style.opacity = ''; }
       done();
     };
-  }, [camFor, activeRoom]);
+  }, [camFor]);
 
   const pendingIn = useRef<Place | null>(null);
   const open = useCallback((p: Place) => {
@@ -361,7 +342,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   }, [back]);
 
   const roomLabel = currentRoomMeta.shortLabel;
-  const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : 'Planung');
+  const stationMeta = useMemo(() => resolveStationKind(planet.id, title, roomCtx.archetype), [planet.id, title, roomCtx.archetype]);
+  const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
   // Brett & Aktionen -----------------------------------------------------------------------------------
@@ -370,16 +352,6 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const [later, setLater] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const [docSlip, setDocSlip] = useState(false);
-  const [studioTaskDraft, setStudioTaskDraft] = useState('');
-  const [newDocOpen, setNewDocOpen] = useState(false);
-  const [newDocTitle, setNewDocTitle] = useState('');
-  const [newDocBody, setNewDocBody] = useState('');
-  const [studioEditing, setStudioEditing] = useState(false);
-  const [studioEditDraft, setStudioEditDraft] = useState('');
-  const [studioSaved, setStudioSaved] = useState(false);
-  const [handoverDraft, setHandoverDraft] = useState('');
-  const [selectedCrewName, setSelectedCrewName] = useState<string | null>(null);
-  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const { addTask, setDone } = useDayActions(companyId);
   const laterPages = useMemo(() => { const p: WorkTask[][] = []; for (let i = 0; i < board.later.length; i += PER_PAGE) p.push(board.later.slice(i, i + PER_PAGE)); return p.length ? p : [[]]; }, [board.later]);
   const pages = later ? laterPages : board.pages;
@@ -388,35 +360,43 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const order = useMemo(() => [...board.pages.flat(), ...board.later], [board]);
   const newTaskFolder = activeFolder ?? planFolder ?? planet.moons[0]?.id ?? null;
 
-  useEffect(() => {
-    setStudioEditing(false);
-    setStudioEditDraft(lecternContent);
-  }, [lecternDoc?.id, lecternContent]);
-
-  const saveStudioDoc = async () => {
+  const saveLecternContent = async (text: string) => {
     if (!lecternDoc) return;
-    const text = studioEditDraft.trim() || lecternContent;
+    const nextText = text.trim() || lecternContent;
     setCreatedDocs((prev) => {
       const idx = prev.findIndex((d) => d.id === lecternDoc.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], content: text };
+        next[idx] = { ...next[idx], content: nextText };
         return next;
       }
-      return [{ id: lecternDoc.id, name: clean(lecternDoc.name), meta: lecternDoc.meta, folderId: lecternDoc.folderId, content: text }, ...prev];
+      return [{ id: lecternDoc.id, name: clean(lecternDoc.name), meta: lecternDoc.meta, folderId: lecternDoc.folderId, content: nextText }, ...prev];
     });
     qc.setQueryData(['node', lecternDoc.id], (old: Record<string, unknown> | null | undefined) => ({
       ...(old ?? { id: lecternDoc.id, title: clean(lecternDoc.name) }),
-      content: text,
+      content: nextText,
     }));
     try {
-      await updateNode(lecternDoc.id, { content: text, title: clean(lecternDoc.name), folder_id: lecternDoc.folderId || undefined });
+      await updateNode(lecternDoc.id, { content: nextText, title: clean(lecternDoc.name), folder_id: lecternDoc.folderId || undefined });
     } catch {
-      // Lokal im Studio & Query-Cache bereits aktualisiert
+      // Lokal im Raum & Query-Cache bereits aktualisiert
     }
-    setStudioEditing(false);
-    setStudioSaved(true);
-    window.setTimeout(() => setStudioSaved(false), 2200);
+  };
+
+  const createDepartmentDoc = async (t: string, body: string) => {
+    const fid = newTaskFolder ?? planet.moons[0]?.id ?? 'f-default';
+    const content = `# ${t}\n\n${body || `Konzept & Dokumentation für ${title}.`}`;
+    const localId = `doc-local-${Date.now().toString(36)}`;
+    let createdId = localId;
+    try {
+      const res = await createNode({ folder_id: fid, title: t, name: t, type: 'document', content } as Parameters<typeof createNode>[0]);
+      if (res && typeof (res as { id?: string }).id === 'string') createdId = (res as { id: string }).id;
+    } catch {
+      // Fallback: lokal sofort verfügbar
+    }
+    setCreatedDocs((prev) => [{ id: createdId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
+    qc.setQueryData(['node', createdId], { id: createdId, title: t, name: t, content });
+    setLectern(createdId);
   };
 
   const submitDraft = async () => {
@@ -425,43 +405,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     const ok = await addTask(v, newTaskFolder, null, planet.id);
     if (ok) setDraft(null);
   };
-  const submitStudioTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const v = studioTaskDraft.trim();
-    if (!v) return;
-    const ok = await addTask(v, newTaskFolder, null, planet.id);
-    if (ok) setStudioTaskDraft('');
-  };
-  const submitNewDoc = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const t = newDocTitle.trim();
-    if (!t) return;
-    const fid = newTaskFolder ?? planet.moons[0]?.id ?? 'f-default';
-    const content = `# ${t}\n\n${newDocBody.trim() || `Konzept & Dokumentation für ${title}.`}`;
-    const localId = `doc-local-${Date.now().toString(36)}`;
-    let createdId = localId;
-    try {
-      const res = await createNode({ folder_id: fid, title: t, name: t, type: 'document', content } as Parameters<typeof createNode>[0]);
-      if (res && typeof (res as { id?: string }).id === 'string') createdId = (res as { id: string }).id;
-    } catch {
-      // Fallback: lokal im Studio sofort verfügbar
-    }
-    setCreatedDocs((prev) => [{ id: createdId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
-    qc.setQueryData(['node', createdId], { id: createdId, title: t, name: t, content });
-    setLectern(createdId);
-    setNewDocTitle('');
-    setNewDocBody('');
-    setNewDocOpen(false);
-  };
-  const submitHandover = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const v = handoverDraft.trim();
-    if (!v) return;
-    const created = await addTask(v, newTaskFolder, today, planet.id, selectedCrewName);
-    if (created) setHandoverDraft('');
-  };
 
-  // Signale (Post & Termine) für die Bar der Abteilung (0ms synchron aus TodaySnapshot)
+  // Signale (Post & Termine) für die Abteilung (0ms synchron aus TodaySnapshot)
   const todaySnap = useMemo(
     () => (companyId?.startsWith('demo-')
       ? demoTodaySnapshot(companyId, 'demo', 'tenant-demo')
@@ -483,34 +428,29 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const cw = (B.w - PAD * 2 - GAP * (COLS - 1)) / COLS, ch = (B.h - PAD * 2 - GAP) / 2;
   const slot = (i: number) => ({ left: B.x + PAD + (i % COLS) * (cw + GAP), top: B.y + PAD + Math.floor(i / COLS) * (ch + GAP), width: cw, height: ch });
 
-  // Jeder Raum hat seine eigene architektonische Bühne & Materialität:
-  // - Werkstatt: Warme Holz-Werkbank & Pinnwand (room-werkstatt.webp)
-  // - Studio: Dunkler Basalt, Optisches Quarzglas & großes Panorama-Fenster ins Universum
-  // - Bar: Abendliche Panorama-Deck-Lounge am kosmischen See (Rauchglas, Messing & Amber-Licht)
+  // Jeder Raum besitzt sein EIGENES illustriertes 1920×1080 Raumbild mit eigenen Möbeln, eigenem Licht und transparentem Fenster ins Universum:
+  // - werkstatt: room-werkstatt.webp (Holz-Werkbank, Kork-Pinnwand, Runder Tisch, Lesepult)
+  // - studio (Atelier): room-atelier.webp (Dunkler Basalt, Messing-Leinentafel, Zeichentisch mit ORIGIN-Sockel, Atelier-Pult)
+  // - bar (Gastraum / Theke / Crew-Bar): room-bar.webp (Schiefer-Tafel, Espresso-Holztheke mit Siebträger, Bistro-Tisch, Empfangspult)
+  // - bridge / kontor (Kommandobrücke / Verwaltung / Kontor): room-kontor.webp (Smaragd-Walnuss-Kontor, Bankierlampe & Waage, Kontor-Pult)
   const activeStageImg = useMemo(() => {
-    if (activeRoom === 'studio') return world === 'morgennebel' ? '/werkstatt/room-pult-morgen.webp' : '/werkstatt/room-pult.webp';
-    if (activeRoom === 'bar') return world === 'morgennebel' ? '/werkstatt/room-schreibtisch-morgen.webp' : '/werkstatt/room-schreibtisch.webp';
-    return world === 'morgennebel' ? '/werkstatt/room-werkstatt-morgen.webp' : '/werkstatt/room-werkstatt.webp';
-  }, [activeRoom, world]);
-  const activeSkyRect = activeRoom === 'werkstatt' ? ROOM.window : { x: 0, y: 0, w: 1920, h: 1080 };
-  const activeMoraSeat = activeRoom === 'studio'
-    ? { x: 1640, y: 928, size: 104 }
-    : activeRoom === 'bar'
-      ? { x: 960, y: 942, size: 104 }
-      : ROOM.moraSeat;
+    const arch = roomCtx.archetype;
+    const base =
+      arch === 'studio'
+        ? '/werkstatt/room-atelier.webp'
+        : arch === 'bar'
+          ? '/werkstatt/room-bar.webp'
+          : arch === 'bridge' || arch === 'kontor'
+            ? '/werkstatt/room-kontor.webp'
+            : '/werkstatt/room-werkstatt.webp';
+    return world === 'morgennebel' ? base.replace('.webp', '-morgen.webp') : base;
+  }, [roomCtx.archetype, world]);
+  const activeSkyRect = ROOM.window;
+  const activeMoraSeat = ROOM.moraSeat;
 
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
   const folderName = (t: WorkTask | null) => (t?.folderId ? clean(planet.moons.find((m) => m.id === t.folderId)?.title ?? '') : '');
   const folderTitleById = (fid: string) => clean(planet.moons.find((m) => m.id === fid)?.title ?? '');
-
-  const barFilteredTasks = useMemo(() => {
-    if (!selectedCrewName) return allTasks;
-    const target = selectedCrewName.toLowerCase();
-    return allTasks.filter((t) => (t.assignee ?? '').toLowerCase() === target);
-  }, [allTasks, selectedCrewName]);
-
-  const activeSignalMail = useMemo(() => barMails.find((m) => m.id === selectedSignalId) ?? null, [barMails, selectedSignalId]);
-  const activeSignalEvent = useMemo(() => barEvents.find((ev) => ev.id === selectedSignalId) ?? null, [barEvents, selectedSignalId]);
 
   return (
     <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-archetype={roomCtx.archetype} data-dept={planet.id} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
@@ -518,478 +458,99 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
         <StageLayer
           stage={room}
           img={activeStageImg}
-          ext={activeRoom === 'werkstatt' ? activeStageImg.replace('.webp', '') : undefined}
+          ext={activeStageImg.replace('.webp', '')}
           label={`${roomLabel} ${title}`}
           testId="wk-room"
           under={<WindowUniverse rect={activeSkyRect} world={world} planets={planets} focusId={planet.id} />}
         >
           {/* =====================================================================================
-              ABTEILUNGS-RAUM TYP: STUDIO / KOMMANDOBRÜCKE / TREASURY-KONTOR
+              PHYSISCHER ABTEILUNGS-RAUM (Jede Abteilung hat ihr eigenes Zimmer mit Möbeln & Fenster!)
              ===================================================================================== */}
-          {activeRoom === 'studio' ? (
-            <>
-              <div className={`wk-arch-backdrop wk-arch-backdrop--studio wk-arch-backdrop--${roomCtx.archetype}`} aria-hidden />
-              <div className="wk-room-bar wk-room-bar--studio" style={{ left: 48, top: 24, width: 1824 }} data-testid="wk-room-bar">
-                <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-workflow-pill"><b>{roomCtx.roomName}:</b> Links Dossier wählen · Mitte direkt lesen & schreiben · Rechts Aufgaben der Abteilung</span>
-                {planet.moons.length > 0 ? (
-                  <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders" style={{ marginLeft: 'auto' }}>
-                    <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
-                      onClick={() => { setActiveFolder(null); setPage(0); }}>Alle Ordner</button>
-                    {planet.moons.map((m) => (
-                      <button key={m.id} type="button" className="wk-folder-tab" aria-pressed={activeFolder === m.id} data-testid={`wk-folder-${m.id}`}
-                        onClick={() => { setActiveFolder(m.id); setPage(0); }}>{clean(m.title)}</button>
-                    ))}
-                  </div>
-                ) : null}
+          <div className="wk-room-bar" style={{ left: B.x, top: B.y - 46, width: 1560 }} data-testid="wk-room-bar">
+            <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
+            {planet.moons.length > 0 ? (
+              <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders">
+                <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
+                  onClick={() => { setActiveFolder(null); setPage(0); }}>Alle</button>
+                {planet.moons.map((m) => (
+                  <button key={m.id} type="button" className="wk-folder-tab" aria-pressed={activeFolder === m.id} data-testid={`wk-folder-${m.id}`}
+                    onClick={() => { setActiveFolder(m.id); setPage(0); }}>{clean(m.title)}</button>
+                ))}
               </div>
+            ) : null}
+            <span className="wk-workflow-pill wk-workflow-pill--wood">
+              <b>{roomCtx.roomName}:</b> Wandtafel für Aufgaben · Tisch links für {stationMeta.badgeText} · Beistelltisch für Wochenmappe · Pult rechts für Buch
+            </span>
+          </div>
 
-              <div className="wk-studio-stage" role="list" aria-label={`Studio ${title}`} data-testid="wk-board" data-room-mode="studio">
-                {/* Linke Spalte: Dossier-Regal aus dunklem Basalt & Rauchglas */}
-                <aside className="wk-studio-panel wk-studio-panel--docs" style={{ left: 48, top: 80, width: 396, height: 842 }}>
-                  <div className="wk-studio-panel__head">
-                    <div>
-                      <span className="wk-studio-eyebrow">{roomCtx.studio.tag}</span>
-                      <h3>Dossiers & Konzepte ({docs.length})</h3>
-                    </div>
-                    <button type="button" className="wk-studio-btn" onClick={() => setNewDocOpen((v) => !v)} data-testid="wk-studio-new-doc-toggle">
-                      {newDocOpen ? 'Schließen' : '+ Neues Dossier'}
-                    </button>
-                  </div>
-
-                  {newDocOpen ? (
-                    <form className="wk-studio-form" onSubmit={(e) => void submitNewDoc(e)} data-testid="wk-studio-new-doc-form">
-                      <input
-                        value={newDocTitle}
-                        onChange={(e) => setNewDocTitle(e.target.value)}
-                        placeholder="Titel des Dossiers / Konzepts…"
-                        aria-label="Titel des Dossiers"
-                        data-testid="wk-studio-new-doc-title"
-                        autoFocus
-                      />
-                      <textarea
-                        value={newDocBody}
-                        onChange={(e) => setNewDocBody(e.target.value)}
-                        placeholder="Kernaussage, Spezifikation oder Entwurf…"
-                        aria-label="Inhalt des Dossiers"
-                        rows={3}
-                      />
-                      <button type="submit" className="wk-studio-btn wk-studio-btn--primary">Im Studio anlegen</button>
-                    </form>
-                  ) : null}
-
-                  <div className="wk-studio-doc-list">
-                    {docs.map((d) => {
-                      const isSelected = lecternDoc?.id === d.id;
-                      return (
-                        <div key={d.id} role="listitem" className={`wk-studio-doc-item${isSelected ? ' is-active' : ''}`}>
-                          <button
-                            type="button"
-                            className="wk-studio-doc-card"
-                            data-testid={`wk-doc-card-${d.id}`}
-                            onClick={() => setLectern(d.id)}
-                          >
-                            <span className="wk-card__t">{clean(d.name)}</span>
-                            <span className="wk-card__f">{folderTitleById(d.folderId) || 'Dokument'}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="wk-studio-doc-open"
-                            onClick={() => { setLectern(d.id); open({ kind: 'doc', id: d.id }); }}
-                            aria-label={`${clean(d.name)} im Vollbild-Buch öffnen`}
-                          >
-                            Buch →
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </aside>
-
-                {/* Mitte vor dem Panorama-Fenster: Aufgeschlagenes Studio-Folio (direkt lesbar & direkt beschreibbar!) */}
-                <section className="wk-studio-lectern" style={{ left: 468, top: 112, width: 984, height: 810 }} data-testid="wk-studio-lectern">
-                  <div className="wk-studio-book">
-                    {/* Linke Buchseite: Direkt lesbares & direkt bearbeitbares Dossier */}
-                    <div className="wk-studio-page wk-studio-page--left">
-                      <header className="wk-studio-page__head">
-                        <span>{lecternDoc ? (folderTitleById(lecternDoc.folderId) || title) : title}{studioSaved ? ' · Gespeichert ✓' : ''}</span>
-                        {lecternDoc ? (
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button
-                              type="button"
-                              className="wk-studio-btn"
-                              data-testid="wk-studio-edit-toggle"
-                              onClick={() => setStudioEditing((v) => !v)}
-                            >
-                              {studioEditing ? 'Vorschau' : '✎ Direkt schreiben'}
-                            </button>
-                            <button
-                              type="button"
-                              className="wk-studio-btn wk-studio-btn--primary"
-                              data-testid="wk-studio-open-book"
-                              onClick={() => open({ kind: 'doc', id: lecternDoc.id })}
-                            >
-                              Vollbild-Buch →
-                            </button>
-                          </div>
-                        ) : null}
-                      </header>
-                      {lecternDoc ? (
-                        studioEditing ? (
-                          <div className="wk-studio-inline-editor">
-                            <textarea
-                              value={studioEditDraft}
-                              onChange={(e) => setStudioEditDraft(e.target.value)}
-                              aria-label="Dossier direkt im Studio bearbeiten"
-                              data-testid="wk-studio-editor"
-                            />
-                            <div className="wk-studio-inline-editor__bar">
-                              <span>Markdown wird unterstützt (# Überschrift, - Liste)</span>
-                              <button type="button" className="wk-studio-btn wk-studio-btn--primary" data-testid="wk-studio-save" onClick={() => void saveStudioDoc()}>
-                                Änderungen speichern ✓
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            className="wk-studio-markdown"
-                            data-testid="wk-studio-doc-preview"
-                            dangerouslySetInnerHTML={{ __html: renderMarkdown(lecternContent) }}
-                          />
-                        )
-                      ) : (
-                        <p className="wk-studio-empty">Noch kein Dossier in diesem Ordner. Legen Sie links ein neues Konzept an.</p>
-                      )}
-                    </div>
-
-                    {/* Rechte Buchseite: Abteilungs-spezifischer Fokus & Leitplanken */}
-                    <div className="wk-studio-page wk-studio-page--right" data-testid="wk-studio-focus">
-                      <header className="wk-studio-page__head">
-                        <span>Abteilungs-Kontext · {title}</span>
-                        <span>{roomCtx.studio.shortLabel}</span>
-                      </header>
-                      <h3 className="wk-studio-focus__title">{roomCtx.studio.focusTitle}</h3>
-                      <div className="wk-studio-focus__grid">
-                        {roomCtx.studio.focusItems.map((item, idx) => (
-                          <div key={idx} className="wk-studio-focus__card">
-                            <div className="wk-studio-focus__top">
-                              <b>{item.label}</b>
-                              {item.status ? <span className="wk-studio-badge">{item.status}</span> : null}
-                            </div>
-                            <p>{item.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="wk-studio-focus__footer">
-                        <span>Aktiver Ordner: <b>{activeFolder ? folderTitleById(activeFolder) : 'Alle Ordner'}</b></span>
-                        <button type="button" className="wk-studio-btn" onClick={() => open({ kind: 'planung' })}>
-                          Wochenmappe öffnen →
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Rechte Spalte: Verknüpfte Aufgaben & Ableitung aus dem Konzept */}
-                <aside className="wk-studio-panel wk-studio-panel--tasks" style={{ left: 1476, top: 80, width: 396, height: 842 }}>
-                  <div className="wk-studio-panel__head">
-                    <div>
-                      <span className="wk-studio-eyebrow">Umsetzung · {title}</span>
-                      <h3>Aufgaben zum Konzept ({tasks.filter((t) => !t.done).length})</h3>
-                    </div>
-                  </div>
-                  <form className="wk-studio-task-form" onSubmit={(e) => void submitStudioTask(e)}>
-                    <input
-                      value={studioTaskDraft}
-                      onChange={(e) => setStudioTaskDraft(e.target.value)}
-                      placeholder="Aufgabe aus Dossier ableiten…"
-                      aria-label="Aufgabe aus Dossier ableiten"
-                      data-testid="wk-studio-new-task"
-                    />
-                    <button type="submit" className="wk-studio-btn wk-studio-btn--primary">+</button>
-                  </form>
-                  <div className="wk-studio-task-list">
-                    {tasks.slice(0, 7).map((t) => (
-                      <div key={t.id} className="wk-studio-task-row" data-done={t.done ? '1' : undefined}>
-                        <button
-                          type="button"
-                          className="wk-studio-check"
-                          aria-pressed={t.done}
-                          onClick={() => void setDone(t.raw, !t.done)}
-                          aria-label={t.done ? `${t.title} wieder öffnen` : `${t.title} erledigen`}
-                        >
-                          {t.done ? '✓' : ''}
-                        </button>
-                        <button type="button" className="wk-studio-task-title" onClick={() => open({ kind: 'task', id: t.id })}>
-                          <span>{t.title}</span>
-                          <small>{[folderName(t), t.assignee, t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''].filter(Boolean).join(' · ')}</small>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </aside>
+          <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
+            {draft !== null ? (
+              <div className="wk-card wk-card--new" style={slot(0)} role="listitem">
+                <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
+                  onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
               </div>
-            </>
-          ) : activeRoom === 'bar' ? (
-            /* =====================================================================================
-               RAUM 03 · BAR & CREW-SALON (Abendliche Panorama-Lounge am kosmischen See: Crew, Übergabe & Funk)
-               ===================================================================================== */
-            <>
-              <div className="wk-arch-backdrop wk-arch-backdrop--bar" aria-hidden />
-              <div className="wk-room-bar wk-room-bar--bar" style={{ left: 64, top: 28, width: 1792 }} data-testid="wk-room-bar">
-                <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                <span className="wk-workflow-pill"><b>{roomCtx.roomName}:</b> Links Crew-Mitglied zum Filtern wählen · Mitte Übergabe & Aufgaben · Rechts Funk & Termine</span>
-              </div>
+            ) : null}
+            {cards.slice(0, draft !== null ? PER_PAGE - 1 : PER_PAGE).map((t, i) => {
+              const k = i + (draft !== null ? 1 : 0);
+              return (
+                <button key={t.id} type="button" role="listitem" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
+                  style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
+                  <i className="wk-pin" aria-hidden />
+                  <span className="wk-card__t">{t.title}</span>
+                  <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CrewRelicAvatar name={t.assignee} size={18} />{t.assignee}</em> : null}</span>
+                </button>
+              );
+            })}
+            {!later && board.later.length ? (
+              <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Aufgaben`}>
+                <i className="wk-bundle__clip" aria-hidden />
+                <span className="wk-card__t">später</span>
+                <span className="wk-bundle__n">{board.later.length}</span>
+              </button>
+            ) : later ? (
+              <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Aufgaben">
+                <span className="wk-card__t">jetzt</span>
+              </button>
+            ) : null}
+          </div>
+          {pages.length > 1 ? (
+            <div className="wk-tag wk-tag--pager" style={{ left: B.x + 214, top: B.y + B.h + 14 }}>
+              <button type="button" onClick={() => setPage(Math.max(0, pg - 1))} disabled={pg === 0} aria-label="Blatt zurück" data-testid="wk-board-prev">‹</button>
+              <span data-testid="wk-board-page">{pg + 1} / {pages.length}</span>
+              <button type="button" onClick={() => setPage(Math.min(pages.length - 1, pg + 1))} disabled={pg >= pages.length - 1} aria-label="Blatt weiter" data-testid="wk-board-next">›</button>
+            </div>
+          ) : null}
 
-              <div className="wk-bar-stage" role="list" aria-label={`Bar ${title}`} data-testid="wk-board" data-room-mode="bar">
-                {/* Linke Spalte: Captain, Crew & Relic-Identitäten (#001–#111) + MÔRA */}
-                <section className="wk-bar-panel wk-bar-panel--crew" style={{ left: 64, top: 228, width: 552, height: 692 }}>
-                  <header className="wk-bar-panel__head">
-                    <div>
-                      <span className="wk-studio-eyebrow">{roomCtx.bar.tag}</span>
-                      <h3>Captain & Crew an Bord ({crew.length})</h3>
-                    </div>
-                    {selectedCrewName ? (
-                      <button type="button" className="wk-studio-btn" onClick={() => setSelectedCrewName(null)}>
-                        Alle zeigen
-                      </button>
-                    ) : null}
-                  </header>
-                  <div className="wk-bar-crew-list">
-                    {crew.map((c) => {
-                      const cleanName = clean(c.name);
-                      const openCount = allTasks.filter((t) => !t.done && t.assignee && t.assignee.toLowerCase() === cleanName.toLowerCase()).length;
-                      const relic = deriveCrewRelic(c.id || c.name, Boolean(c.isCaptain));
-                      const isSelected = selectedCrewName?.toLowerCase() === cleanName.toLowerCase();
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          role="listitem"
-                          className={`wk-bar-crew-card${isSelected ? ' is-active' : ''}`}
-                          data-testid={`wk-crew-${c.id}`}
-                          onClick={() => setSelectedCrewName((prev) => (prev?.toLowerCase() === cleanName.toLowerCase() ? null : cleanName))}
-                        >
-                          <CrewRelicAvatar id={c.id} name={cleanName} isCaptain={c.isCaptain} status={c.status} size={42} testId={`wk-crew-avatar-${c.id}`} />
-                          <div className="wk-bar-crew-card__body">
-                            <div className="wk-bar-crew-card__top">
-                              <span className="wk-card__t">{c.isCaptain ? `Captain ${cleanName}` : cleanName}</span>
-                              <span className="wk-bar-status" data-online={c.status !== 'offline' ? '1' : undefined}>
-                                {c.status === 'offline' ? 'Pause' : 'An Bord'}
-                              </span>
-                            </div>
-                            <span className="wk-bar-relic">ORIGIN #{relic.instance} · {relic.mineralName}</span>
-                            <span className="wk-card__f">
-                              {c.role ? clean(c.role) : (c.isCaptain ? 'Abteilungsleitung' : 'Crew')}
-                              {openCount ? <em>{openCount} offen</em> : <em>Bereit</em>}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      role="listitem"
-                      className="wk-bar-mora-card"
-                      onClick={() => useOsShellStore.getState().setMoraOpen(true)}
-                      data-testid="wk-mora-ship"
-                      aria-label="MÔRA (Das Schiff) rufen"
-                    >
-                      <div className="wk-bar-mora-card__body">
-                        <span className="wk-card__t">MÔRA · Das Schiff</span>
-                        <span className="wk-card__f">Verbindet alle Abteilungen, Kanäle & das Universum</span>
-                      </div>
-                      <span className="wk-studio-badge">Rufen →</span>
-                    </button>
-                  </div>
-                </section>
+          {/* Physische Möbel & Gegenstände im Raum:
+              1. Haupttisch / Theke / Werkbank / Zeichentisch links unter der Lampe -> Echte Arbeitsstation der Abteilung!
+              2. Runder Beistelltisch in der Mitte -> Wochenmappe
+              3. Stehpult vor dem Fenster rechts -> Gebundenes Vollbild-Buch
+              4. Wandregal / Archivschrank ganz links -> Dokumenten-Auswahl */}
+          <button
+            type="button"
+            className="wk-hit wk-hit--desk"
+            style={box(ROOM.desk)}
+            onClick={() => open({ kind: 'station' })}
+            aria-label={stationMeta.deskLabel}
+            data-testid="wk-hit-station"
+          />
+          <button
+            type="button"
+            className="wk-plate wk-plate--desk"
+            style={{ left: ROOM.desk.x + ROOM.desk.w / 2, top: ROOM.desk.y + 24, translate: '-50% 0' }}
+            onClick={() => open({ kind: 'station' })}
+            data-testid="wk-desk-plate"
+          >
+            <b>{stationMeta.deskLabel}</b>
+            <small>{stationMeta.deskHint} →</small>
+          </button>
 
-                {/* Mittlere Spalte: Schicht-Übergabe & Tages-Logbuch an der Lounge-Konsole */}
-                <section className="wk-bar-panel wk-bar-panel--handover" style={{ left: 644, top: 228, width: 632, height: 692 }} data-testid="wk-bar-handover">
-                  <header className="wk-bar-panel__head">
-                    <div>
-                      <span className="wk-studio-eyebrow">Schichtwechsel & Logbuch</span>
-                      <h3>{roomCtx.bar.loungeTitle}</h3>
-                    </div>
-                    {selectedCrewName ? (
-                      <span className="wk-studio-badge">Filter: {selectedCrewName}</span>
-                    ) : null}
-                  </header>
-                  <form className="wk-studio-task-form" onSubmit={(e) => void submitHandover(e)} data-testid="wk-bar-handover-form">
-                    <input
-                      value={handoverDraft}
-                      onChange={(e) => setHandoverDraft(e.target.value)}
-                      placeholder={selectedCrewName ? `Übergabe an ${selectedCrewName} notieren…` : roomCtx.bar.handoverPrompt}
-                      aria-label="Übergabe-Notiz oder Aufgabe"
-                      data-testid="wk-bar-handover-input"
-                    />
-                    <button type="submit" className="wk-studio-btn wk-studio-btn--primary">Festhalten</button>
-                  </form>
-                  <div className="wk-bar-handover-stats">
-                    <span>{selectedCrewName ? `Aufgaben von ${selectedCrewName}` : `Offen in ${title}`}: <b>{barFilteredTasks.filter((t) => !t.done).length}</b></span>
-                    <span>Erledigt: <b>{barFilteredTasks.filter((t) => t.done).length}</b></span>
-                  </div>
-                  <div className="wk-studio-task-list" data-testid="wk-bar-tasks">
-                    {barFilteredTasks.slice(0, 7).map((t) => (
-                      <div key={t.id} className="wk-studio-task-row" data-done={t.done ? '1' : undefined}>
-                        <button
-                          type="button"
-                          className="wk-studio-check"
-                          aria-pressed={t.done}
-                          onClick={() => void setDone(t.raw, !t.done)}
-                          aria-label={t.done ? `${t.title} wieder öffnen` : `${t.title} erledigen`}
-                        >
-                          {t.done ? '✓' : ''}
-                        </button>
-                        <button type="button" className="wk-studio-task-title" onClick={() => open({ kind: 'task', id: t.id })}>
-                          <span>{t.title}</span>
-                          <small>{[t.assignee ? `Zuständig: ${t.assignee}` : '', folderName(t), t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''].filter(Boolean).join(' · ')}</small>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                {/* Rechte Spalte: Abteilungs-Funk (Post & Termine heute mit Direkt-Vorschau in der Bar!) */}
-                <section className="wk-bar-panel wk-bar-panel--signals" style={{ left: 1304, top: 228, width: 552, height: 692 }} data-testid="wk-bar-signals">
-                  <header className="wk-bar-panel__head">
-                    <div>
-                      <span className="wk-studio-eyebrow">Abteilungs-Funk & Brücke</span>
-                      <h3>Post & Termine für {title}</h3>
-                    </div>
-                    <button
-                      type="button"
-                      className="wk-studio-btn"
-                      data-testid="wk-bar-open-post"
-                      onClick={() => useOsShellStore.getState().setActiveFeature('post')}
-                    >
-                      Post & Kalender →
-                    </button>
-                  </header>
-
-                  {activeSignalMail ? (
-                    <div className="wk-bar-signal-detail" data-testid="wk-bar-signal-detail">
-                      <div className="wk-bar-signal-detail__top">
-                        <b>{clean(activeSignalMail.subject ?? '')}</b>
-                        <button type="button" className="wk-studio-btn" onClick={() => setSelectedSignalId(null)}>Schließen</button>
-                      </div>
-                      <small>{clean(activeSignalMail.from || activeSignalMail.from_addr || 'Eingang')} · {(activeSignalMail.received_at ?? '').slice(11, 16) || 'heute'}</small>
-                      <p>{clean(activeSignalMail.snippet ?? 'Nachricht für diese Abteilung liegt im Posteingang bereit.')}</p>
-                      <button type="button" className="wk-studio-btn wk-studio-btn--primary" onClick={() => useOsShellStore.getState().setActiveFeature('post')}>
-                        In Post beantworten →
-                      </button>
-                    </div>
-                  ) : activeSignalEvent ? (
-                    <div className="wk-bar-signal-detail" data-testid="wk-bar-signal-detail">
-                      <div className="wk-bar-signal-detail__top">
-                        <b>{clean(activeSignalEvent.title)}</b>
-                        <button type="button" className="wk-studio-btn" onClick={() => setSelectedSignalId(null)}>Schließen</button>
-                      </div>
-                      <small>{activeSignalEvent.time || (activeSignalEvent.start ?? '').slice(11, 16) || 'Heute'} Uhr · {activeSignalEvent.location || title}</small>
-                      <p>Synchronisierter Abteilungstermin im Schiffskalender.</p>
-                      <button type="button" className="wk-studio-btn wk-studio-btn--primary" onClick={() => useOsShellStore.getState().setActiveFeature('post')}>
-                        Im Kalender öffnen →
-                      </button>
-                    </div>
-                  ) : null}
-
-                  <div className="wk-bar-signal-group">
-                    <h4>Eingegangene Nachrichten ({barMails.length})</h4>
-                    {barMails.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className={`wk-bar-signal-card${selectedSignalId === m.id ? ' is-active' : ''}`}
-                        onClick={() => setSelectedSignalId((prev) => (prev === m.id ? null : m.id))}
-                      >
-                        <b>{clean(m.subject ?? '')}</b>
-                        <small>{clean(m.from || m.from_addr || 'Eingang')} · {(m.received_at ?? '').slice(11, 16) || 'heute'}</small>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="wk-bar-signal-group">
-                    <h4>Heutige Termine & Runden ({barEvents.length})</h4>
-                    {barEvents.map((ev) => (
-                      <button
-                        key={ev.id}
-                        type="button"
-                        className={`wk-bar-signal-card${selectedSignalId === ev.id ? ' is-active' : ''}`}
-                        onClick={() => setSelectedSignalId((prev) => (prev === ev.id ? null : ev.id))}
-                      >
-                        <b>{clean(ev.title)}</b>
-                        <small>{ev.time || (ev.start ?? '').slice(11, 16) || 'Heute'} Uhr</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            </>
-          ) : (
-            /* =====================================================================================
-               RAUM 01 · WERKSTATT (Warme Holz-Werkbank, Pinnwand, Wochenmappe & Lesepult)
-               ===================================================================================== */
-            <>
-              <div className="wk-room-bar" style={{ left: B.x, top: B.y - 46, width: 1560 }} data-testid="wk-room-bar">
-                <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{roomSignText}</span>
-                {planet.moons.length > 0 ? (
-                  <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders">
-                    <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
-                      onClick={() => { setActiveFolder(null); setPage(0); }}>Alle</button>
-                    {planet.moons.map((m) => (
-                      <button key={m.id} type="button" className="wk-folder-tab" aria-pressed={activeFolder === m.id} data-testid={`wk-folder-${m.id}`}
-                        onClick={() => { setActiveFolder(m.id); setPage(0); }}>{clean(m.title)}</button>
-                    ))}
-                  </div>
-                ) : null}
-                <span className="wk-workflow-pill wk-workflow-pill--wood"><b>{roomCtx.roomName}:</b> Pinnwand für Aufgaben · Tisch für Wochenmappe · Pult rechts für Handbuch</span>
-              </div>
-
-              <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
-                {draft !== null ? (
-                  <div className="wk-card wk-card--new" style={slot(0)} role="listitem">
-                    <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
-                      onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
-                  </div>
-                ) : null}
-                {cards.slice(0, draft !== null ? PER_PAGE - 1 : PER_PAGE).map((t, i) => {
-                  const k = i + (draft !== null ? 1 : 0);
-                  return (
-                    <button key={t.id} type="button" role="listitem" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
-                      style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
-                      <i className="wk-pin" aria-hidden />
-                      <span className="wk-card__t">{t.title}</span>
-                      <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CrewRelicAvatar name={t.assignee} size={18} />{t.assignee}</em> : null}</span>
-                    </button>
-                  );
-                })}
-                {!later && board.later.length ? (
-                  <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Aufgaben`}>
-                    <i className="wk-bundle__clip" aria-hidden />
-                    <span className="wk-card__t">später</span>
-                    <span className="wk-bundle__n">{board.later.length}</span>
-                  </button>
-                ) : later ? (
-                  <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Aufgaben">
-                    <span className="wk-card__t">jetzt</span>
-                  </button>
-                ) : null}
-              </div>
-              {pages.length > 1 ? (
-                <div className="wk-tag wk-tag--pager" style={{ left: B.x + 214, top: B.y + B.h + 14 }}>
-                  <button type="button" onClick={() => setPage(Math.max(0, pg - 1))} disabled={pg === 0} aria-label="Blatt zurück" data-testid="wk-board-prev">‹</button>
-                  <span data-testid="wk-board-page">{pg + 1} / {pages.length}</span>
-                  <button type="button" onClick={() => setPage(Math.min(pages.length - 1, pg + 1))} disabled={pg >= pages.length - 1} aria-label="Blatt weiter" data-testid="wk-board-next">›</button>
-                </div>
-              ) : null}
-              {/* Gegenstände der Werkstatt */}
-              <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />
-              {lecternDoc ? <div className="wk-plate" aria-hidden style={{ left: ROOM.plate.x, top: ROOM.plate.y, translate: '-50% 0' }}>{clean(lecternDoc.name)}</div> : null}
-              <button type="button" className="wk-hit" style={box(ROOM.table)} onClick={() => open({ kind: 'planung' })} aria-label="Mappe Planung" data-testid="wk-hit-mappe" />
-              <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
-            </>
-          )}
+          <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />
+          {lecternDoc ? <div className="wk-plate" aria-hidden style={{ left: ROOM.plate.x, top: ROOM.plate.y, translate: '-50% 0' }}>{clean(lecternDoc.name)}</div> : null}
+          <button type="button" className="wk-hit" style={box(ROOM.table)} onClick={() => open({ kind: 'planung' })} aria-label="Mappe Planung" data-testid="wk-hit-mappe" />
+          <div className="wk-plate wk-plate--sub" aria-hidden style={{ left: ROOM.table.x + ROOM.table.w / 2, top: ROOM.table.y + 62, translate: '-50% 0' }}>Wochenmappe</div>
+          <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
 
           {docSlip ? (
             <PaperSlip x={1060} y={120} w={420} label="Dokumente" onClose={() => setDocSlip(false)} testId="wk-doc-slip">
@@ -1019,6 +580,34 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo} />
             ) : null}
             {close.kind === 'planung' ? <Mappe weeks={weeks} folderId={planFolder} companyId={companyId} today={today} defaultRows={defaultWeekRows} back={backTo} /> : null}
+            {close.kind === 'station' ? (
+              <>
+                <DeskWorkstation
+                  stationKind={stationMeta.kind}
+                  planetId={planet.id}
+                  planetTitle={title}
+                  crew={crew}
+                  tasks={allTasks}
+                  docs={docs.map((d) => ({ ...d, name: clean(d.name) }))}
+                  activeDocTitle={lecternDoc ? clean(lecternDoc.name) : ''}
+                  activeDocContent={lecternContent}
+                  onSaveDoc={(txt) => void saveLecternContent(txt)}
+                  onOpenBook={(id) => { setLectern(id); open({ kind: 'doc', id }); }}
+                  onSelectDoc={(id) => setLectern(id)}
+                  onCreateDoc={(t, b) => void createDepartmentDoc(t, b)}
+                  onAddTask={(t, who) => void addTask(t, newTaskFolder, today, planet.id, who)}
+                  onToggleTask={(t) => void setDone(t.raw, !t.done)}
+                  onOpenTask={(id) => open({ kind: 'task', id })}
+                  mails={barMails}
+                  events={barEvents}
+                  onClose={back}
+                />
+                <WorkDock back={backTo} actions={[
+                  { id: 'buch', label: 'Buch am Pult', run: () => lecternDoc && open({ kind: 'doc', id: lecternDoc.id }), disabled: !lecternDoc },
+                  { id: 'planung', label: 'Wochenmappe', run: () => open({ kind: 'planung' }) },
+                ]} />
+              </>
+            ) : null}
             <MoraSeat at={CLOSE[close.kind].mora} stage={stage} name={`wk-close-${close.kind}`} />
           </StageLayer>
         </div>
@@ -1026,18 +615,11 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
 
       {!close && landed ? (
         <WorkDock back={backTo} actions={[
+          { id: 'station', label: stationMeta.badgeText, run: () => open({ kind: 'station' }) },
           {
             id: 'neue-aufgabe',
             label: 'Neue Aufgabe',
-            run: () => {
-              if (activeRoom === 'werkstatt') {
-                setLater(false); setPage(0); setDraft('');
-              } else if (activeRoom === 'studio') {
-                document.querySelector<HTMLInputElement>('[data-testid="wk-studio-new-task"]')?.focus();
-              } else {
-                document.querySelector<HTMLInputElement>('[data-testid="wk-bar-handover-input"]')?.focus();
-              }
-            },
+            run: () => { setLater(false); setPage(0); setDraft(''); },
           },
           { id: 'dokumente', label: 'Dokumente', run: () => setDocSlip((v) => !v), pressed: docSlip },
           { id: 'planung', label: 'Planung', run: () => open({ kind: 'planung' }) },
