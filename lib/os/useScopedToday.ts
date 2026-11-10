@@ -6,6 +6,7 @@ import { CoreError } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
+import { buildShipTodaySnapshot } from '@/lib/universe/shipDepartments';
 
 const CACHE_PREFIX = 'saimor.today.last.v1:';
 /** Letzter echter Stand je Mandant/Person/Firma: Kacheln werden nie leer, wenn CORE kurz nicht antwortet. */
@@ -15,9 +16,10 @@ export function readCachedToday(key: string): TodaySnapshot | null {
 function writeCachedToday(key: string, data: TodaySnapshot): void {
   try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data)); } catch { /* privat */ }
 }
-/** Ersatzstand: Demo-Scope bekommt den fiktiven Datensatz, eigener Scope den letzten echten Stand. */
+/** Ersatzstand: Demo-Scope bekommt den fiktiven Datensatz, lokales HQ die Schiffs-Abteilungen, eigener Scope den letzten echten Stand. */
 export function fallbackToday(cacheKey: string, companyId: string | null, userId: string | null, tenantId: string | null): TodaySnapshot | null {
   if (companyId?.startsWith('demo-')) return demoTodaySnapshot(companyId, userId ?? 'demo', tenantId ?? 'tenant-demo');
+  if (companyId === 'company-local-demo') return buildShipTodaySnapshot(companyId, userId ?? 'user-local-demo', tenantId ?? 'tenant-local-demo');
   return readCachedToday(cacheKey);
 }
 
@@ -82,9 +84,9 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
     } catch (error) {
       if (requestGeneration !== requestGenerationRef.current) return;
       setSnapshotState(null);
-      if (error instanceof CoreError && error.status === 401) {
+      if (error instanceof CoreError && error.status === 401 && activeCompanyId !== 'company-local-demo') {
         setLoadError('unauthorized');
-      } else if (error instanceof CoreError && error.status === 403) {
+      } else if (error instanceof CoreError && error.status === 403 && activeCompanyId !== 'company-local-demo') {
         setLoadError('forbidden');
       } else {
         const fb = userId ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
@@ -107,7 +109,13 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
     }
     requestGenerationRef.current += 1;
     // Sofort mit dem letzten Stand füllen statt leer zu starten; der Live-Abruf ersetzt ihn.
-    const seed = userId ? (activeCompanyId?.startsWith('demo-') ? null : readCachedToday(cacheKey)) : null;
+    const seed = userId
+      ? activeCompanyId === 'company-local-demo'
+        ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId)
+        : activeCompanyId?.startsWith('demo-')
+        ? null
+        : readCachedToday(cacheKey)
+      : null;
     setSnapshotState(seed ? { key: contextKey, data: seed } : null);
     setLoadError(null);
     setLoading(true);

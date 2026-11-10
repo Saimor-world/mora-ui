@@ -17,10 +17,10 @@
 .ws-title small{font-size:13px;font-weight:400;color:var(--mute);letter-spacing:.02em}
 .ws-title__n{font-size:12.5px;font-weight:500;color:rgba(236,244,240,.62);letter-spacing:.02em}
 .ws-title__n em,.ws-head em{font-style:normal;color:rgba(240,196,132,.92)}
-.ws-station .ck-open__core > .glass-orb{top:22%!important;transform:translate(-50%,-50%) scale(.72)!important}
-.ws-station .ws-enter{top:22%!important}
-.ws-station .ws-path{top:calc(22% - 130px);height:260px}
-.ws-deck{position:absolute;left:50%;top:calc(20% + 104px);translate:-50% 0;z-index:6;display:flex;flex-direction:column;align-items:stretch;gap:12px;width:min(780px,calc(100% - 48px));padding:18px 24px 20px;border-radius:16px;background:linear-gradient(180deg,rgba(13,21,26,.94) 0%,rgba(8,13,17,.97) 100%);border:1px solid rgba(218,182,116,.26);box-shadow:0 24px 64px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,244,218,.1);pointer-events:auto}
+.ws-station .ck-open__core > .glass-orb{top:18%!important;transform:translate(-50%,-50%) scale(.66)!important}
+.ws-station .ws-enter{top:18%!important}
+.ws-station .ws-path{top:calc(18% - 120px);height:240px}
+.ws-deck{position:absolute;left:50%;top:calc(18% + 92px);translate:-50% 0;z-index:6;display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(780px,calc(100% - 48px));padding:15px 22px 17px;border-radius:16px;background:linear-gradient(180deg,rgba(13,21,26,.94) 0%,rgba(8,13,17,.97) 100%);border:1px solid rgba(218,182,116,.26);box-shadow:0 24px 64px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,244,218,.1);pointer-events:auto}
 .ws-deck__head{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .ws-deck__eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(218,182,116,.82)}
 .ws-deck__title{display:flex;flex-direction:column;align-items:center;gap:3px;color:#f4f7f5}
@@ -570,23 +570,31 @@ html[data-os-work] .bridge__heart .jade-mora__glow{opacity:.35;transition:opacit
 }
 
 
-/* ── Kontextleiste im Arbeitsmodus (Stufe 3). Dock-Quellen unangetastet. */
-html[data-os-work] .bridge__pill .bridge__app{display:none !important}
+/* ── Kontextleiste im Arbeitsmodus (Stufe 3). Dock-Quellen unangetastet.
+   Im Abteilungs-Deck (deck) und in den Räumen (werkstatt) bleibt die App-Leiste (.bridge__pill) sichtbar am gewohnten Platz unten mittig. */
+html:is([data-os-work="folio"],[data-os-work="task"],[data-os-work="full"]) .bridge__pill .bridge__app{display:none !important}
+html[data-os-work="deck"] .bridge__body{transition:none !important}
+html[data-os-work="deck"] .bridge__pill{max-width:none !important}
+.ck-universe-unified .ck-scene--planet .mora-anchor--planet{right:auto !important;left:calc(50% + 128px) !important;top:calc(18% - 54px) !important}
+html[data-os-work="deck"] .bridge__deck,
+html[data-os-work="deck"] .bridge__heart{opacity:1 !important;visibility:visible !important;transform:none !important;pointer-events:none !important}
+html[data-os-work="deck"] .bridge__deck::before{display:none !important}
+html[data-os-work="deck"] .bridge__mora[data-flying="true"]{opacity:1 !important;visibility:visible !important;pointer-events:auto !important}
 html[data-os-work] .bridge__badge{
   width:8px;height:8px;min-width:8px;padding:0;border-radius:50%;
   background:#e8b86a;color:transparent;font-size:0;line-height:0;
   box-shadow:0 0 6px rgba(232,184,106,.4);top:2px;right:2px;
 }
 html[data-os-work] .bridge__badge[data-alert='true']{background:#e8b86a}
-html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-tone] span{
+html:is([data-os-work="folio"],[data-os-work="task"],[data-os-work="full"]) .bridge__status[data-side='right'] .bridge__chip[data-tone] span{
   position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);
 }
-html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-tone]::after{
+html:is([data-os-work="folio"],[data-os-work="task"],[data-os-work="full"]) .bridge__status[data-side='right'] .bridge__chip[data-tone]::after{
   content:"";width:7px;height:7px;border-radius:50%;background:#e8b86a;
   box-shadow:0 0 6px rgba(232,184,106,.5);
 }
-html[data-os-work] .bridge__legacy,
-html[data-os-work] .bridge__status[data-side='right'] .bridge__chip[data-quiet='true']{display:none}
+html:is([data-os-work="folio"],[data-os-work="task"],[data-os-work="full"]) .bridge__legacy,
+html:is([data-os-work="folio"],[data-os-work="task"],[data-os-work="full"]) .bridge__status[data-side='right'] .bridge__chip[data-quiet='true']{display:none}
 .ws-surface[data-filter='open'] .ws-group[data-group='later'],
 .ws-surface[data-filter='open'] .ws-group[data-group='done']{display:none}
 

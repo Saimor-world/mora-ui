@@ -1,6 +1,7 @@
 import type { FFolder, FNode } from '@/lib/lea/finder';
 import type { WorldDepartment, WorldTask } from '@/lib/lea/world';
 import type { DeptMember } from '@/features/universe/ui/Workbench';
+import type { TodaySnapshot } from '@/lib/api/todayClient';
 
 export interface ShipDepartmentSeed {
   id: string;
@@ -373,4 +374,95 @@ export function getShipDepartmentCrew(deptIdOrName: string): DeptMember[] | null
     (d) => d.id.toLowerCase() === key || d.name.toLowerCase() === key
   );
   return match ? match.crew : null;
+}
+
+export function buildShipTodaySnapshot(
+  companyId: string,
+  userId: string,
+  tenantId: string,
+  now = new Date()
+): TodaySnapshot {
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(now);
+  const iso = now.toISOString();
+  const meta = (source: string) => ({
+    status: 'ok' as const,
+    source,
+    connection: 'local-hq',
+    complete: true,
+    as_of: iso,
+    stale_after_seconds: 3600,
+    scope: { level: 'company' as const, tenant_id: tenantId, user_id: userId, company_id: companyId },
+  });
+  const at = (h: string) => `${date}T${h}:00`;
+  const mails: Array<[string, string, string, string]> = [
+    ['OS v15 Abteilungs-Decks & Räume bereit zur Abnahme', 'Kaito R. · Produkt & Technik', 'dept-produkt', '09:15'],
+    ['ORIGIN // 001 Material-Manifest finalisiert', 'Sorel M. · Design & Studio', 'dept-studio', '08:40'],
+    ['Pilotkunde Kooperationsvertrag zur Freigabe', 'Elena V. · Kommando & Strategie', 'dept-kommando', '08:05'],
+  ];
+  const events: Array<[string, string, string]> = [
+    ['Captains-Runde auf der Brücke', '10:00', 'dept-kommando'],
+    ['Review: OS v15 Abteilungsräume (Werkstatt & Studio)', '14:30', 'dept-produkt'],
+    ['Übergabe in der Bar (alle Abteilungen)', '17:30', 'dept-betrieb'],
+  ];
+  const allTasks = CANONICAL_SHIP_DEPARTMENTS.flatMap((dept) =>
+    dept.tasks.map((t) => {
+      const due = new Date(now.getTime() + t.dueOffsetDays * 86_400_000);
+      const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+      return {
+        id: t.id,
+        title: t.title,
+        status: 'open',
+        due_date: dueIso,
+        department_id: dept.id,
+        folder_id: t.folderId,
+      };
+    })
+  );
+  const dueToday = allTasks.filter((t) => t.due_date === date);
+  const restItems = allTasks.filter((t) => t.due_date !== date);
+  return {
+    status: 'ok',
+    date,
+    timezone: 'Europe/Berlin',
+    generated_at: iso,
+    requested_scope: { tenant_id: tenantId, user_id: userId, company_id: companyId, level: 'company' },
+    mail: {
+      ...meta('local-hq'),
+      inbox_loaded: mails.length,
+      sample_limit: 20,
+      unread_count: mails.length,
+      total: 18,
+      items: mails.map(([subject, from, department_id, t], i) => ({
+        id: `ship-mail-${i}`,
+        subject,
+        from,
+        from_addr: from,
+        read: false,
+        received_at: at(t),
+        department_id,
+      })),
+    },
+    calendar: {
+      ...meta('local-hq'),
+      date,
+      count: events.length,
+      next_event: { id: 'ship-ev-1', title: events[1][0], date, time: events[1][1], start: at(events[1][1]), department_id: events[1][2] },
+      events: events.map(([title, time, department_id], i) => ({
+        id: `ship-ev-${i}`,
+        title,
+        date,
+        time,
+        start: at(time),
+        department_id,
+      })),
+    },
+    tasks: {
+      ...meta('local-hq'),
+      counts: { open: allTasks.length, in_progress: 3, due_today: dueToday.length, overdue: 0 },
+      due_today: dueToday,
+      overdue: [],
+      items: restItems,
+    },
+    nightwatch: { ...meta('local-hq'), open_incidents: 0, health_score: 100, incidents: [] },
+  } as unknown as TodaySnapshot;
 }
