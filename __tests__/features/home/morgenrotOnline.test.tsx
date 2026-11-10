@@ -75,9 +75,10 @@ describe('Café Morgenrot from CORE', () => {
       : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
     render(<MorgenrotHome navigate={navigate} />);
     fireEvent.click(await screen.findByTestId('open-d-k'));
-    expect(navigate).toHaveBeenCalledTimes(1);
+    // Erst fliegt die Kamera auf den Planeten zu (≤ 1,6 s), dann wechselt das OS ins Universe.
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-k' });
+    await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1), { timeout: 2500 });
     expect(navigate).toHaveBeenCalledWith('universe');
-    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k' });
     expect(screen.queryByTestId('planet-d-k')).toBeNull();
     expect(screen.queryByTestId('switch-pixel')).toBeNull();
   });
@@ -92,11 +93,11 @@ describe('Café Morgenrot from CORE', () => {
     render(<MorgenrotHome navigate={navigate} />);
     await waitFor(() => expect(screen.getByTestId('home')).toHaveAttribute('data-phone', '1'));
     fireEvent.click(screen.getByTestId('open-d-s'));
-    expect(navigate).toHaveBeenLastCalledWith('universe');
-    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-s' });
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-s' });
+    await waitFor(() => expect(navigate).toHaveBeenLastCalledWith('universe'), { timeout: 2500 });
     fireEvent.click(screen.getAllByRole('button', { name: /^Küche$/ }).find((b) => !b.classList.contains('ck-planet'))!);
-    expect(navigate).toHaveBeenCalledTimes(2);
-    expect(useUniverseFocus.getState().target).toEqual({ planetId: 'd-k' });
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-k' });
+    await waitFor(() => expect(navigate).toHaveBeenCalledTimes(2), { timeout: 2500 });
   });
 
   it('legacy Home deep links hand the real folder to the shared Finder instead of opening the old room', async () => {

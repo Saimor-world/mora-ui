@@ -14,6 +14,22 @@ import type { DayMoon } from '@/lib/universe/dayMoons';
 import { planetKind, seedOf } from '@/lib/universe/pixelArt';
 import { toneSlot } from '@/lib/universe/matteTone';
 
+/** Größe des offenen Planeten in der Abteilung; Home fliegt genau auf diese Größe zu (nahtlose Übergabe). */
+export const OPEN_PLANET_SIZE = 260;
+
+/**
+ * Die Farbe jedes Planeten, wie sie das Universe zeigt (bridge-concept.css färbt dort nach Position 7n+k;
+ * Planet i ist dort Kind i+3). Home und die Abteilung von innen benutzen genau diese Farbe.
+ */
+const PLANET_HUES: [number, number, string][] = [
+  [75, 1.3, '190,170,255'], [0, 1.35, '120,200,255'], [40, 1.4, '140,160,255'], [-50, 1.5, '120,230,190'],
+  [110, 1.3, '220,150,230'], [170, 1.3, '255,190,130'], [-90, 1.4, '150,230,140'],
+];
+export function planetColor(index: number): React.CSSProperties {
+  const [h, sat, glow] = PLANET_HUES[(Math.max(0, index) + 3) % 7];
+  return { ['--pf' as string]: `hue-rotate(${h}deg) saturate(${sat})`, ['--pg' as string]: `rgba(${glow},.32)` };
+}
+
 export interface PlanetSlot {
   x: number;
   y: number;
@@ -141,12 +157,23 @@ export function PlanetSystem({
   moons,
   onTaskDone,
   onMoonOpen,
+  onOpenTask,
   threads,
+  marks,
+  scale = 1,
+  skyScale = 1,
 }: {
   threads?: MyceliumThread[];
+  /** Leise Zeichen je Planet aus echten Daten: Zahl überfälliger Aufgaben, Ring bei offener Nachtwache. */
+  marks?: Map<string, { overdue: number; watch: boolean }>;
+  /** Universe: Planeten größer und näher. */
+  scale?: number;
+  /** Home-Himmel: Planeten größer (Layout rechnet mit der echten Größe). */
+  skyScale?: number;
   moons?: Map<string, DayMoon[]>;
   onTaskDone?: (taskId: string) => void;
   onMoonOpen?: (kind: DayMoon['kind']) => void;
+  onOpenTask?: (taskId: string) => void;
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
   attention: Set<string>;
@@ -190,14 +217,14 @@ export function PlanetSystem({
   const skySlots = useMemo(() => {
     if (!compact || strip || size.width < 600) return null;
     const weights = planets.map((p) => (signals?.get(p.id) ? 2 : 0) + (attention.has(p.id) ? 1 : 0) + Math.min(8, p.moons?.length ?? 0) / 8);
-    return skyLayout(weights, size.width, size.height);
-  }, [planets, signals, attention, compact, strip, size.width, size.height]);
+    return skyLayout(weights, size.width, size.height, skyScale);
+  }, [planets, signals, attention, compact, strip, size.width, size.height, skyScale]);
 
   return (
     <div
       ref={containerRef}
       onPointerMove={skySlots ? (e) => { const el = e.currentTarget, r = el.getBoundingClientRect(); el.style.setProperty('--px', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3)); el.style.setProperty('--py', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3)); } : undefined}
-      className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}`}
+      className={`ck-sys${compact ? ' ck-sys--compact' : ''}${strip ? ' ck-sys--strip' : ''}${scale > 1 ? ' ck-sys--big' : ''}`}
       data-testid="planet-system"
     >
       <svg className="ck-sys__orbit" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
@@ -213,16 +240,19 @@ export function PlanetSystem({
         const tint = tintForGlass(p.glass);
         const cleanTitle = stripFiktiv(p.title) || p.title;
         const active = !!(signals?.get(p.id) || attention.has(p.id));
-        const orbSize = strip ? 48 : sky ? sky.size : Math.round((compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active));
+        const orbSize = strip ? 48 : Math.round((sky ? sky.size : (compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active)) * scale);
+        const mark = marks?.get(p.id);
 
         const pm = !strip ? moons?.get(p.id) : undefined;
         return (
           <React.Fragment key={p.id}>
-          {pm?.length ? <DayMoons moons={pm} x={s.x} y={s.y} r={orbSize / 2 + 16} onTaskDone={onTaskDone} onOpen={onMoonOpen} /> : null}
+          {pm?.length ? <DayMoons moons={pm} x={s.x} y={s.y} r={orbSize / 2 + 16} onTaskDone={onTaskDone} onOpen={onMoonOpen} onOpenTask={onOpenTask} /> : null}
           <button
             type="button"
             className={active ? 'ck-planet ck-planet--active' : 'ck-planet'}
             data-active={active ? 'true' : undefined}
+            data-watch={mark?.watch ? 'true' : undefined}
+            data-planet-key={p.id}
             data-depth={sky ? (sky.depth >= 0.5 ? 'near' : 'far') : undefined}
             style={{
               left: `${s.x}px`,
@@ -230,6 +260,8 @@ export function PlanetSystem({
               ['--strip-x' as string]: `${((i + 0.5) / planets.length) * 100}%`,
               ['--drift' as string]: `${-(i * 2.7).toFixed(1)}s`,
               ...(sky ? { zIndex: 1 + Math.round(sky.depth * 10), ['--pd' as string]: (3 + 9 * sky.depth).toFixed(1) } : null),
+              ['--orb' as string]: `${orbSize}px`,
+              ...(skyScale > 1 ? planetColor(i) : null),
             }}
             onClick={() => onOpen(p.id)}
             data-testid={`open-${p.id}`}
@@ -250,7 +282,7 @@ export function PlanetSystem({
                 <PixelSphere size={orbSize} lit={0.8} tint={tint} variant="A" seed={i + 1} />
               </div>
             ) : sky ? (
-              <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} className="ck-opal">
+              <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} className={skyScale > 1 ? 'ck-opal ck-opal--true' : 'ck-opal'}>
                 <span className="ck-opal__milk" data-testid="planet-opal" aria-hidden />
                 <span className="ck-opal__iris" aria-hidden />
                 <span className="ck-opal__spec" aria-hidden />
@@ -258,6 +290,8 @@ export function PlanetSystem({
             ) : (
               <GlassOrb size={orbSize} variant={glassVariantFor(cleanTitle)} />
             )}
+            {mark?.watch ? <span className="ck-planet__ring" data-testid={`planet-ring-${p.id}`} aria-hidden /> : null}
+            {mark?.overdue ? <span className="ck-planet__count" data-testid={`planet-count-${p.id}`} aria-label={`${mark.overdue} überfällig`}>{mark.overdue}</span> : null}
             <b>{cleanTitle}</b>
             {(() => {
               const sig = signals?.get(p.id) ?? null;
@@ -309,7 +343,7 @@ export function PlanetSystem({
 const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
 
 /** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
-export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void }) {
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void; onOpenTask?: (taskId: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
   return (
@@ -329,8 +363,12 @@ export function DayMoons({ moons, x, y, r, onTaskDone, onOpen }: { moons: DayMoo
                 <b>{m.title}</b>
                 {m.when ? <time>{m.when}</time> : null}
                 {m.kind === 'task' && m.taskId ? (
-                  <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
-                    onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                  <>
+                    <button type="button" className="ck-daymoon__act" aria-label="Öffnen" data-testid={`day-moon-open-${m.id}`}
+                      onClick={() => onOpenTask?.(m.taskId!)}>→</button>
+                    <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
+                      onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                  </>
                 ) : onOpen ? (
                   <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>
                 ) : null}
@@ -351,6 +389,9 @@ export function OpenPlanet({
   activeMoon,
   onOpenDept,
   style = 'glas',
+  moonMarks,
+  leaving,
+  colorIndex,
 }: {
   planet: DemoPlanet;
   showMoons: boolean;
@@ -358,20 +399,40 @@ export function OpenPlanet({
   activeMoon: string | null;
   onOpenDept?: () => void;
   style?: 'glas' | 'pixel';
+  /** Leise Zeichen je Mond (Ordner) aus echten Daten: Aufgaben mit folder_id, Nachtwache mit node_id. */
+  moonMarks?: Map<string, { overdue: number; watch: boolean }>;
+  /** Rückflug: Monde ziehen sich zurück, bevor die Kamera hinausfährt. */
+  leaving?: boolean;
+  /** Position im Universe → dieselbe Planetenfarbe innen wie außen. */
+  colorIndex?: number;
 }) {
   const n = planet.moons?.length ?? 0;
   const tint = tintForGlass(planet.glass);
   const cleanPlanetTitle = stripFiktiv(planet.title) || planet.title;
 
   return (
-    <div className="ck-open" data-testid={`planet-${planet.id}`}>
+    <div className={`ck-open ck-open--orbit${leaving ? ' is-leaving' : ''}`} data-testid={`planet-${planet.id}`} style={colorIndex !== undefined ? planetColor(colorIndex) : undefined}>
+      {style !== 'pixel' && showMoons && n > 0 ? <i className="ck-open__path" aria-hidden /> : null}
+      {style !== 'pixel' ? (
+        <div className="ck-open__core" aria-hidden>
+          <GlassOrb size={OPEN_PLANET_SIZE} variant={glassVariantFor(cleanPlanetTitle)} className="ck-opal ck-opal--true">
+            <span className="ck-opal__milk" aria-hidden />
+            <span className="ck-opal__iris" aria-hidden />
+            <span className="ck-opal__spec" aria-hidden />
+          </GlassOrb>
+        </div>
+      ) : null}
       {showMoons ? (
         n > 0 ? (
           <div className="ck-moons">
             {planet.moons.map((m, i) => {
+              // Monde (echte Ordner/Spaces) kreisen um den Planeten – derselbe Raum wie Home.
+              const deg = n <= 3 ? (n === 1 ? 180 : 196 + i * (148 / (n - 1))) : 270 + (i * 360) / n;
+              const a = (deg * Math.PI) / 180;
+              const x = 50 + Math.cos(a) * 25;
+              const y = 30 + Math.sin(a) * 19;
+              const mark = moonMarks?.get(m.id);
               const t = n === 1 ? 0.5 : i / (n - 1);
-              const x = 50 + (t - 0.5) * (n > 3 ? 64 : 48);
-              const y = 36 + Math.pow((t - 0.5) * 2, 2) * 18;
               const phoneY = 30 + Math.pow((t - 0.5) * 2, 2) * (n > 3 ? 36 : 18);
               const isError = Boolean(m.loadError || m.disabled);
               return (
@@ -385,11 +446,14 @@ export function OpenPlanet({
                     left: `${x}%`,
                     ['--moon-y' as string]: `${y}%`,
                     ['--moon-y-phone' as string]: `${phoneY}%`,
+                    ['--i' as string]: i,
+                    ['--orb' as string]: '96px',
                     cursor: isError ? 'not-allowed' : 'pointer',
                     opacity: isError ? 0.65 : 1,
                   }}
                   onClick={isError ? undefined : () => onMoon(m.id)}
                   data-testid={`moon-${m.id}`}
+                  data-watch={mark?.watch ? 'true' : undefined}
                   title={isError ? (m.hint || 'Ordner gerade nicht ladbar') : undefined}
                 >
                   {style === 'pixel' ? (
@@ -405,7 +469,17 @@ export function OpenPlanet({
                       />
                     </div>
                   ) : (
-                    <GlassOrb size={90} variant={planet.glass} />
+                    <span className="ck-moon__body">
+                      <GlassOrb size={96} variant={glassVariantFor(cleanPlanetTitle)} className="ck-opal ck-opal--true" />
+                      {/* Die echten Einträge des Ordners als kleine Begleiter. */}
+                      {m.files.slice(0, 6).map((f, k, all) => {
+                        // oben links auf der Bahn, frei von Zahl (oben rechts) und Beschriftung (unten)
+                        const b = ((188 + (k + 0.5) * (96 / all.length)) * Math.PI) / 180;
+                        return <i key={f.id} className="ck-moon__doc" title={f.name} style={{ ['--bx' as string]: `${Math.cos(b) * 66}px`, ['--by' as string]: `${Math.sin(b) * 60}px` }} aria-hidden />;
+                      })}
+                      {mark?.watch ? <span className="ck-planet__ring" data-testid={`moon-ring-${m.id}`} aria-hidden /> : null}
+                      {mark?.overdue ? <span className="ck-planet__count" data-testid={`moon-count-${m.id}`} aria-label={`${mark.overdue} überfällig`}>{mark.overdue}</span> : null}
+                    </span>
                   )}
                   <b>{stripFiktiv(m.title) || m.title}</b>
                   <small style={isError ? { color: 'var(--amber, #f59e0b)' } : undefined}>

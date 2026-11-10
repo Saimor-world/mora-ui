@@ -63,7 +63,7 @@ function isPublicPath(pathname: string): boolean {
 
     if (PUBLIC_FILES.includes(pathname)) return true;
 
-    if (pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    if (pathname.match(/\.(js|css|png|jpg|jpeg|webp|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
         return true;
     }
 

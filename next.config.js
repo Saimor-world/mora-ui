@@ -17,6 +17,8 @@ const coreRewriteTarget = shouldRewriteCore ? coreApiUrl.replace(/\/$/, '') : nu
 
 const nextConfig = {
   reactStrictMode: false,
+  // Kein Next-Dev-Abzeichen: es lag als „N“ unten links über der Dock-Uhr und verfälschte jede Bildprüfung.
+  devIndicators: false,
   allowedDevOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",

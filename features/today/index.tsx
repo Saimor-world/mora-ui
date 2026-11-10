@@ -22,6 +22,7 @@ import { useWorld } from '@/lib/lea/useWorld';
 import { taskLineOf, formatTaskLine } from '@/lib/lea/live';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { nextOpenToday } from '@/lib/lea/day';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { localISO } from '@/lib/lea/world';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
@@ -72,6 +73,13 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
   const world = useWorld();
+  const openWorkTask = (task?: { id: string; department_id?: string | null; folder_id?: string | null } | null) => {
+    if (!task?.id) { navigate('universe'); return; }
+    const planetId = task.department_id || world.finder.find((p) => p.moons.some((m) => m.id === task.folder_id))?.id;
+    if (!planetId) { navigate('universe'); return; }
+    useUniverseFocus.getState().show({ planetId, taskId: task.id, from: 'home' });
+    navigate('universe');
+  };
   // Eine Quelle der Wahrheit: mit Sitzung zählen Heute, Universe, Horizont und MÔRA dieselben Aufgaben (taskLineOf).
   const tc = world.enabled && !world.loading && !world.tasksUnavailable ? taskLineOf(world.tasks, new Date(), world.calendar?.window.timezone) : null;
   const phases = useDayStore((s) => s.phases);
@@ -141,7 +149,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')]] as const : []),
-              ['Aufgaben · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Aufgabenstand nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
+              ['Aufgaben · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Aufgabenstand nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openWorkTask((snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0])],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
@@ -179,7 +187,14 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 {attention.map((a) => (
                   <div key={a.id} className="os-list-row">
                     <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
-                    <Button size="sm" variant="ghost" onClick={() => (a.target === 'today' ? openLegacyApp('tasks') : navigate(a.target))}>Ansehen</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      if (a.target !== 'today') { navigate(a.target); return; }
+                      const tid = a.id.startsWith('t-') ? a.id.slice(2) : null;
+                      const task = tid
+                        ? [...(snapshot.tasks.overdue ?? []), ...(snapshot.tasks.due_today ?? []), ...(snapshot.tasks.items ?? [])].find((x) => x.id === tid)
+                        : (snapshot.tasks.overdue ?? [])[0] ?? (snapshot.tasks.due_today ?? [])[0];
+                      openWorkTask(task);
+                    }}>Ansehen</Button>
                   </div>
                 ))}
               </div>
@@ -219,7 +234,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               )}
             </Section> : null}
 
-            <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('tasks')}>Aufgaben</Button>}>
+            <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openWorkTask((snapshot.tasks.overdue ?? [])[0] ?? (snapshot.tasks.due_today ?? [])[0])}>Aufgaben</Button>}>
               <SourceState status={snapshot.tasks.status} label="Aufgaben" />
               {snapshot.tasks.status !== 'disconnected' && snapshot.tasks.status !== 'unavailable' ? (
                 <Stack direction="row" gap={6} wrap>
@@ -252,7 +267,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         <div className="os-today-launch">
           {([
             ['Universe', 'Raum & Zusammenhänge', Compass, () => navigate('universe')],
-            ['Arbeit', 'Offene Arbeit und nächste Schritte', ListTodo, () => openLegacyApp('tasks')],
+            ['Arbeit', 'Offene Arbeit und nächste Schritte', ListTodo, () => openWorkTask((snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0])],
             ['Mail', 'Lesen, antworten, sortieren', Mail, () => navigate('post')],
             ['Kalender', 'Termine und feste Punkte', CalendarDays, () => navigate('post')],
             ['Dateien', 'Dokumente im Arbeitskontext', BookOpen, () => navigate('knowledge')],

@@ -2,12 +2,17 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { corePost } from '@/lib/api/http';
+import { invalidateToday } from '@/lib/os/useScopedToday';
 import { localISO, type WorldTask } from './world';
 
 /**
  * Aufgaben abhaken, zurücknehmen und für morgen anlegen – über die bestehenden
  * CORE-Endpunkte POST /v3/tasks/{id} und POST /v3/tasks. Optimistisch, bei Fehler zurück.
+ * Nach jeder Änderung wird auch der Heute-Schnappschuss (Dock: Heute-Zahl) neu geladen.
  */
+/** Merkt den Status vor dem Abhaken, damit „wieder öffnen“ in_progress etc. zurückbringt (clientseitig). */
+const priorStatus = new Map<string, string>();
+
 export function useDayActions(companyId: string | null) {
   const qc = useQueryClient();
   const key = ['lea-world', 'tasks', companyId];
@@ -19,12 +24,21 @@ export function useDayActions(companyId: string | null) {
   };
 
   const setDone = useCallback(async (task: WorldTask, done: boolean) => {
-    const status = done ? 'done' : 'backlog';
+    let status: string;
+    if (done) {
+      const cur = (task.status && !/^(done|erledigt|closed|completed)$/i.test(task.status)) ? task.status : 'backlog';
+      priorStatus.set(task.id, cur);
+      status = 'done';
+    } else {
+      status = priorStatus.get(task.id) || 'backlog';
+      priorStatus.delete(task.id);
+    }
     const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, status } : t)));
     try {
       const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { status });
       if (!res) throw new Error('no response');
       qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
       return true;
     } catch {
       qc.setQueryData(key, prev);
@@ -41,6 +55,7 @@ export function useDayActions(companyId: string | null) {
     if (!created?.id) return false;
     patch((l) => [...l, created]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -52,6 +67,7 @@ export function useDayActions(companyId: string | null) {
     if (!created?.id) return false;
     patch((l) => [...l, created]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
@@ -64,9 +80,26 @@ export function useDayActions(companyId: string | null) {
     if (!upd || upd.folder_id !== folderId) return false;
     patch((l) => l.map((t) => (t.id === task.id ? { ...t, folder_id: folderId } : t)));
     qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
 
-  return { setDone, addForTomorrow, addTask, assignFolder };
+  /** Titel oder Fälligkeit ändern – derselbe Endpunkt POST /v3/tasks/{id} (TaskUpdate: title, status, priority, due_date). */
+  const update = useCallback(async (task: WorldTask, change: { title?: string; due_date?: string; status?: string }) => {
+    const prev = patch((l) => l.map((t) => (t.id === task.id ? { ...t, ...change } : t)));
+    try {
+      const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, change);
+      if (!res) throw new Error('no response');
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateToday();
+      return true;
+    } catch {
+      qc.setQueryData(key, prev);
+      return false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qc, companyId]);
+
+  return { setDone, addForTomorrow, addTask, assignFolder, update };
 }
