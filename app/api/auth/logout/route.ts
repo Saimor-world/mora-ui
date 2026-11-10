@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { CORE_BASE_URL } from '@/lib/api/coreBase';
 
@@ -46,6 +46,7 @@ async function logoutCore(request: NextRequest) {
       headers,
       body: "{}",
       redirect: "manual",
+      signal: AbortSignal.timeout(2000),
     });
 
     upstreamBody = await upstream.json().catch(() => upstreamBody);

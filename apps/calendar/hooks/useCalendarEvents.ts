@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { coreGet, corePost } from '@/lib/api/coreClient';
-import { normalizeList } from '@/lib/api/http';
+import { isLocalDemoFallback, normalizeList } from '@/lib/api/http';
+import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { fallbackToday } from '@/lib/os/useScopedToday';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 
 export interface CalendarEvent {
@@ -24,12 +26,38 @@ export function useCalendarEvents() {
     else setIsLoading(true);
     setError(null);
 
+    const demoOrLocal = isDemoScopeActive() || isLocalDemoFallback();
+    const buildFallbackEvents = (): CalendarEvent[] => {
+      const snap = fallbackToday('', isDemoScopeActive() ? 'demo-morgenrot' : 'company-local-demo', 'user-local', 'tenant-demo');
+      return (snap?.calendar?.events ?? []).map((e) => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        time: e.time,
+        duration: 60,
+        color: 'bg-emerald-500',
+      }));
+    };
+
+    if (demoOrLocal && process.env.NODE_ENV !== 'test') {
+      setEvents(buildFallbackEvents());
+      setAvailable(true);
+      setIsLoading(false);
+      setIsRefreshing(false);
+      return;
+    }
+
     try {
       const data = await coreGet('/v3/calendar/events', {
         isOptional: true,
         throwAuthErrors: true,
       });
       if (data == null) {
+        if (demoOrLocal) {
+          setEvents(buildFallbackEvents());
+          setAvailable(true);
+          return;
+        }
         setAvailable(false);
         return;
       }

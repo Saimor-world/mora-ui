@@ -1,16 +1,19 @@
 'use client';
 import { localISO, shortDate } from '@/lib/lea/world';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
 import { MailClient } from './MailClient';
 import { Button, SampleTag, FailureState, Loading, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
-import { usePostCalendar, usePostInbox } from './data/usePost';
+import { usePostCalendar, usePostInbox, type PostEvent, type PostMessage } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
+import { useScopedToday } from '@/lib/os/useScopedToday';
+import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { isLocalDemoFallback } from '@/lib/api/http';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -36,13 +39,54 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
 
 export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const demo = useDemoScopeActive();
+  const localFallback = isLocalDemoFallback();
   const sample = Boolean(preview) && !hasSession;
+  const { snapshot } = useScopedToday();
   const liveInbox = usePostInbox();
   const liveCalendar = usePostCalendar();
   const today = localISO(new Date());
-  // Demos laufen über echte is_demo-Firmen in CORE – keine lokale Kopie mehr.
-  const inbox = liveInbox;
-  const calendar = liveCalendar;
+
+  const snapshotMessages = useMemo<PostMessage[]>(() => {
+    const items = snapshot?.mail?.items ?? [];
+    return items.map((m) => ({
+      id: m.id,
+      subject: m.subject,
+      from: m.from,
+      from_addr: m.from_addr || m.from,
+      date: m.received_at,
+      read: m.read ?? false,
+      snippet: m.snippet || `Nachricht von ${m.from || m.from_addr || 'Team'} – im Tagesstand deiner Abteilung hinterlegt.`,
+      body_text:
+        (m as { body_text?: string }).body_text ||
+        m.snippet ||
+        `${m.subject}\n\nAbsender: ${m.from || m.from_addr || 'Intern'}\nEingang: ${m.received_at ? new Date(m.received_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'Heute'}\n\nDiese Nachricht gehört zum aktiven Arbeitskontext und kann direkt mit MÔRA beantwortet oder in die Abteilungsarbeit übernommen werden.`,
+    }));
+  }, [snapshot?.mail?.items]);
+
+  const snapshotEvents = useMemo<PostEvent[]>(() => {
+    const events = snapshot?.calendar?.events ?? [];
+    return events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      date: e.date,
+      time: e.time,
+    }));
+  }, [snapshot?.calendar?.events]);
+
+  const useSnapshotInbox =
+    snapshotMessages.length > 0 &&
+    (demo || localFallback || liveInbox.isError || !liveInbox.data || liveInbox.data.length === 0);
+  const useSnapshotCalendar =
+    snapshotEvents.length > 0 &&
+    (demo || localFallback || liveCalendar.isError || !liveCalendar.data || liveCalendar.data.length === 0);
+
+  const inbox = useSnapshotInbox
+    ? { ...liveInbox, isLoading: false, isError: false, error: null, fetchStatus: 'idle', data: snapshotMessages }
+    : liveInbox;
+  const calendar = useSnapshotCalendar
+    ? { ...liveCalendar, isLoading: false, isError: false, error: null, fetchStatus: 'idle', data: snapshotEvents }
+    : liveCalendar;
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-post">
@@ -68,7 +112,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
         </Column>
       </div>
       {/* V1.5: Kalender-Fäden aus dem Legacy-Home (CalendarContinuity, /v3/continuity) – vorbereitende Aufgaben zu Terminen, nur mit deiner Freigabe. */}
-      {sample ? (
+      {sample || demo || localFallback ? (
         <Surface padding={5} data-testid="post-continuity">
           <Text variant="eyebrow">Kalender-Fäden</Text>
           <Text className="mt-2">Vorbereitungs-Aufgaben zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>

@@ -16,6 +16,7 @@ import { extractHeadings, renderMarkdown } from '@/lib/docs/markdown';
 import { shortDate } from '@/lib/lea/world';
 import { DueDate } from './DueDate';
 import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
+import { getDepartmentRoomContext } from '@/lib/universe/shipDepartments';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
@@ -125,6 +126,7 @@ export function StationPlanet({
   };
   const captain = crew.find((c) => c.isCaptain) ?? crew[0] ?? null;
   const members = crew.filter((c) => c !== captain);
+  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title), [planet.id, title]);
 
   // Im Abteilungs-Deck zieht sich der große Wasser-Rumpf des Docks zurück, damit Deck, Ordner und Räume frei stehen.
   useLayoutEffect(() => {
@@ -240,22 +242,22 @@ export function StationPlanet({
         {(onEnter || onEnterRoom) ? (
           <nav className="ws-rooms" aria-label={`Räume in ${title}`} data-testid="dept-rooms">
             <button type="button" className="ws-room-door" data-room="werkstatt" onClick={() => enterRoom('werkstatt')} data-testid="room-enter-werkstatt">
-              <span className="ws-room-door__tag">Raum 01 · Arbeit</span>
-              <b>Werkstatt</b>
-              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} am Brett` : 'Brett, Schreibtisch & Wochenmappe'}</small>
-              <span className="ws-room-door__go" aria-hidden>Werkstatt betreten →</span>
+              <span className="ws-room-door__tag">{roomCtx.werkstatt.tag}</span>
+              <b>{roomCtx.werkstatt.name}</b>
+              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} · ${roomCtx.werkstatt.focusHint}` : roomCtx.werkstatt.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>{roomCtx.werkstatt.shortLabel} betreten →</span>
             </button>
             <button type="button" className="ws-room-door" data-room="studio" onClick={() => enterRoom('studio')} data-testid="room-enter-studio">
-              <span className="ws-room-door__tag">Raum 02 · Wissen</span>
-              <b>Studio</b>
-              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} im Buch` : `${plural(planet.moons.length, 'Ordner', 'Ordner')} & Entwürfe`}</small>
-              <span className="ws-room-door__go" aria-hidden>Studio betreten →</span>
+              <span className="ws-room-door__tag">{roomCtx.studio.tag}</span>
+              <b>{roomCtx.studio.name}</b>
+              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} · ${roomCtx.studio.focusTitle}` : roomCtx.studio.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>{roomCtx.studio.shortLabel} betreten →</span>
             </button>
             <button type="button" className="ws-room-door" data-room="bar" onClick={() => enterRoom('bar')} data-testid="room-enter-bar">
-              <span className="ws-room-door__tag">Raum 03 · Crew</span>
-              <b>Bar</b>
-              <small>{crew.length ? `${crew.length} an Bord · Übergabe` : 'Crew-Lounge & Übergabe'}</small>
-              <span className="ws-room-door__go" aria-hidden>Bar betreten →</span>
+              <span className="ws-room-door__tag">{roomCtx.bar.tag}</span>
+              <b>{roomCtx.bar.name}</b>
+              <small>{crew.length ? `${crew.length} an Bord · ${roomCtx.bar.loungeTitle}` : roomCtx.bar.subtitle}</small>
+              <span className="ws-room-door__go" aria-hidden>{roomCtx.bar.shortLabel} betreten →</span>
             </button>
           </nav>
         ) : null}

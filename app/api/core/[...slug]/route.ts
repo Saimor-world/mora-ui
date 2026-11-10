@@ -110,6 +110,24 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
   const headers = copyRequestHeaders(request);
   attachAuthFromCookie(request, headers);
 
+  const rawSessionCookie = request.cookies.get('mora_session')?.value;
+  const rawAuthCookie = request.cookies.get('mora_auth_token')?.value;
+  const isLocalFallbackCookie =
+    rawSessionCookie === 'local_demo_fallback' || rawAuthCookie === 'local_demo_fallback';
+
+  if (isLocalFallbackCookie && !headers.get('authorization')) {
+    if (slug === 'health' || slug === 'v1/health') {
+      return NextResponse.json(
+        { status: 'ok', state: 'online', mode: 'local_demo_fallback' },
+        { status: 200, headers: { 'cache-control': 'no-store' } }
+      );
+    }
+    return NextResponse.json(
+      { detail: 'Local demo fallback active — using client-side canonical data.' },
+      { status: 401, headers: { 'cache-control': 'no-store' } }
+    );
+  }
+
   const method = request.method.toUpperCase();
   const hasBody = method !== 'GET' && method !== 'HEAD';
   const body = hasBody ? await request.arrayBuffer() : undefined;
@@ -121,6 +139,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
       headers,
       body: body ? body : undefined,
       redirect: 'manual',
+      signal: AbortSignal.timeout(4000),
     });
   } catch (error: any) {
     console.error(`[core proxy error] ${method} ${finalUrl}:`, error?.message || error);

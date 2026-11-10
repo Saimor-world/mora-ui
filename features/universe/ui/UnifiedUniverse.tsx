@@ -472,11 +472,14 @@ export function UnifiedUniverse({
       list.push(m);
     };
     const canonical = getShipDepartmentCrew(planet.id) ?? getShipDepartmentCrew(planet.title);
-    if (canonical) canonical.forEach((c) => add(c));
-    teamMembers.forEach((m, idx) => {
-      const isLead = /owner|admin|lead|captain|leitung/i.test(m.role) || idx === 0;
-      add({ id: m.id, name: m.name, role: isLead ? 'Abteilungsleitung' : m.role, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });
-    });
+    if (canonical && canonical.length > 0) {
+      canonical.forEach((c) => add(c));
+    } else {
+      teamMembers.forEach((m, idx) => {
+        const isLead = /owner|admin|lead|captain|leitung/i.test(m.role) || idx === 0;
+        add({ id: m.id, name: m.name, role: isLead ? 'Abteilungsleitung' : m.role, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });
+      });
+    }
     const assignees = new Set<string>();
     work.loose.forEach((t) => { if (t.assignee) assignees.add(t.assignee); });
     work.moons.forEach((mw) => [...mw.open, ...mw.done].forEach((t) => { if (t.assignee) assignees.add(t.assignee); }));

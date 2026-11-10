@@ -214,7 +214,7 @@ export function LiveCockpit({
     const go = () => { if (done) return; cleanup(); navigate('universe'); };
     const onEnd = (e: TransitionEvent) => { if (e.target === sceneEl && e.propertyName === 'transform') go(); };
     sceneEl?.addEventListener('transitionend', onEnd);
-    timer = window.setTimeout(go, 1600);
+    timer = window.setTimeout(go, 360);
     diveCleanupRef.current = cleanup;
   }, [planets, navigate, diveFor]);
   // Die Abteilungen schon im Ruhezustand vorladen, damit der Anflug ohne Ladepause in den Planeten übergeht.
@@ -304,9 +304,9 @@ export function LiveCockpit({
       if (t && planetId) openTaskMoon(planetId, t.id);
       else navigate('today');
     } else if (widgetId === 'calendar') {
-      navigate('calendar');
+      navigate('post');
     } else if (widgetId === 'mail') {
-      navigate('mora');
+      navigate('post');
     } else {
       navigate('universe');
     }

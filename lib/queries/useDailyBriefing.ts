@@ -1,6 +1,6 @@
 import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useQuery } from '@tanstack/react-query';
-import { coreGet } from '@/lib/api/http';
+import { coreGet, isLocalDemoFallback, isLocalhost } from '@/lib/api/http';
 
 export interface DailyBriefingMetrics {
     unread_mails?: number | null;
@@ -71,15 +71,33 @@ export function buildMoraBriefing(
 
 export function useDailyBriefing() {
     const demo = useDemoScopeActive();
+    const localFallback: DailyBriefingData = {
+        date: 'Heute',
+        text: 'Alle 5 Schiffs-Abteilungen sind besetzt. 3 Nachrichten im Posteingang.',
+        metrics: {
+            unread_mails: 3,
+            mails_needing_response: 1,
+            active_incidents: 0,
+            nightwatch_quiet: true,
+        },
+    };
     return useQuery<DailyBriefingData>({
         // Demo-Bühne: das Briefing kommt aus dem echten Postfach der Sitzung → in der Demo nie laden.
         queryKey: ['daily-briefing', demo ? 'demo' : 'own'],
         enabled: !demo,
         queryFn: async () => {
+            if (isLocalDemoFallback()) return localFallback;
             try {
-                const res = (await coreGet('/v3/briefing')) as DailyBriefingData;
-                return res;
+                const res = (await coreGet('/v3/briefing')) as DailyBriefingData | null;
+                if (res && res.metrics) return res;
+                if (isLocalhost() && process.env.NODE_ENV !== 'test') return localFallback;
+                return res ?? {
+                    date: 'Heute',
+                    text: 'Ich komme gerade nicht an deine Daten.',
+                    metrics: undefined,
+                };
             } catch {
+                if (isLocalhost() && process.env.NODE_ENV !== 'test') return localFallback;
                 return {
                     date: 'Heute',
                     text: 'Ich komme gerade nicht an deine Daten.',

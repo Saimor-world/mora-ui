@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
-import { CoreError } from '@/lib/api/http';
+import { CoreError, isLocalDemoFallback } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
@@ -16,10 +16,17 @@ export function readCachedToday(key: string): TodaySnapshot | null {
 function writeCachedToday(key: string, data: TodaySnapshot): void {
   try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data)); } catch { /* privat */ }
 }
+const isLocalhostRuntime = (): boolean =>
+  typeof window !== 'undefined' &&
+  process.env.NODE_ENV !== 'test' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 /** Ersatzstand: Demo-Scope bekommt den fiktiven Datensatz, lokales HQ die Schiffs-Abteilungen, eigener Scope den letzten echten Stand. */
 export function fallbackToday(cacheKey: string, companyId: string | null, userId: string | null, tenantId: string | null): TodaySnapshot | null {
   if (companyId?.startsWith('demo-')) return demoTodaySnapshot(companyId, userId ?? 'demo', tenantId ?? 'tenant-demo');
-  if (companyId === 'company-local-demo') return buildShipTodaySnapshot(companyId, userId ?? 'user-local-demo', tenantId ?? 'tenant-local-demo');
+  if (companyId === 'company-local-demo' || isLocalhostRuntime()) {
+    return buildShipTodaySnapshot(companyId ?? 'company-local-demo', userId ?? 'user-local-demo', tenantId ?? 'tenant-local-demo');
+  }
   return readCachedToday(cacheKey);
 }
 
@@ -64,6 +71,15 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
 
   const refresh = useCallback(async (showLoading = false) => {
     const requestGeneration = ++requestGenerationRef.current;
+    if (activeCompanyId === 'company-local-demo' || isLocalDemoFallback()) {
+      const fb = fallbackToday(cacheKey, activeCompanyId ?? 'company-local-demo', userId, tenantId);
+      if (fb) setSnapshotState({ key: contextKey, data: fb });
+      setLoadError(null);
+      setLoading(false);
+      setRefreshing(false);
+      lastSuccessfulRefreshRef.current = Date.now();
+      return;
+    }
     if (showLoading) setLoading(true);
     setRefreshing(true);
 
@@ -77,19 +93,20 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
         setLoadError(null);
         lastSuccessfulRefreshRef.current = Date.now();
       } else {
-        const fb = userId ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
+        const fb = (userId || isLocalhostRuntime()) ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
         setSnapshotState(fb ? { key: contextKey, data: fb } : null);
         setLoadError('unavailable');
       }
     } catch (error) {
       if (requestGeneration !== requestGenerationRef.current) return;
       setSnapshotState(null);
-      if (error instanceof CoreError && error.status === 401 && activeCompanyId !== 'company-local-demo') {
+      const allowLocalFallback = activeCompanyId === 'company-local-demo' || isLocalhostRuntime();
+      if (error instanceof CoreError && error.status === 401 && !allowLocalFallback) {
         setLoadError('unauthorized');
-      } else if (error instanceof CoreError && error.status === 403 && activeCompanyId !== 'company-local-demo') {
+      } else if (error instanceof CoreError && error.status === 403 && !allowLocalFallback) {
         setLoadError('forbidden');
       } else {
-        const fb = userId ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
+        const fb = (userId || allowLocalFallback) ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId) : null;
         if (fb) setSnapshotState({ key: contextKey, data: fb });
         setLoadError('unavailable');
       }
@@ -109,8 +126,9 @@ export function useScopedToday({ backgroundRefresh = false, enabled = true }: Sc
     }
     requestGenerationRef.current += 1;
     // Sofort mit dem letzten Stand füllen statt leer zu starten; der Live-Abruf ersetzt ihn.
-    const seed = userId
-      ? activeCompanyId === 'company-local-demo'
+    const allowLocalFallback = activeCompanyId === 'company-local-demo' || isLocalhostRuntime();
+    const seed = (userId || allowLocalFallback)
+      ? allowLocalFallback
         ? fallbackToday(cacheKey, activeCompanyId, userId, tenantId)
         : activeCompanyId?.startsWith('demo-')
         ? null

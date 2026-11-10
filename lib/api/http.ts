@@ -33,6 +33,21 @@ export function isLocalhost(): boolean {
     return h === 'localhost' || h === '127.0.0.1' || h === '::1';
 }
 
+export function isLocalDemoFallback(): boolean {
+    if (!isLocalhost() || process.env.NODE_ENV === 'test') return false;
+    if (readCookie(AUTH_COOKIE) === 'local_demo_fallback') return true;
+    if (readCookie('mora_session') === 'local_demo_fallback') return true;
+    if (typeof window !== 'undefined') {
+        try {
+            if (window.localStorage.getItem('saimor_dev_token') === 'local_demo_fallback') return true;
+            if (window.localStorage.getItem('last_company_id') === 'company-local-demo') return true;
+        } catch {
+            // ignore storage errors
+        }
+    }
+    return false;
+}
+
 export class CoreError extends Error {
     status: number;
     details?: any;
@@ -127,6 +142,11 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
             } else {
                 headers['Authorization'] = `Bearer ${finalToken}`;
             }
+        } else if (isLocalDemoFallback()) {
+            if (options.throwAuthErrors) {
+                throw new CoreError('Local demo fallback active', 401);
+            }
+            return null;
         }
     }
 
@@ -152,6 +172,18 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     }
 
     const isAuthError = response.status === 401 || response.status === 403;
+
+    if (response.status === 401 && isLocalhost() && process.env.NODE_ENV !== 'test' && typeof window !== 'undefined') {
+        try {
+            document.cookie = `${AUTH_COOKIE}=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax`;
+            document.cookie = 'mora_session=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+            window.localStorage.setItem('saimor_dev_token', 'local_demo_fallback');
+            window.localStorage.setItem('last_company_id', 'company-local-demo');
+            window.localStorage.setItem('saimor_active_company', 'company-local-demo');
+        } catch {
+            // ignore storage errors
+        }
+    }
 
     // Legacy/background callers remain tolerant. Callers that explicitly need
     // to distinguish authentication/authorization failures opt in below.

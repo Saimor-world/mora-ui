@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { coreGet } from '@/lib/api/coreClient';
+import { coreGet, isLocalDemoFallback, isLocalhost } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
+import { CANONICAL_SHIP_DEPARTMENTS } from '@/lib/universe/shipDepartments';
 import { queryKeys, STALE_TIMES } from './queryKeys';
 
 export type TeamMemberPresence = {
@@ -11,6 +12,18 @@ export type TeamMemberPresence = {
     role: string;
     status: 'online' | 'offline';
 };
+
+function buildLocalShipTeamMembers(): TeamMemberPresence[] {
+    return CANONICAL_SHIP_DEPARTMENTS.flatMap((dept) =>
+        dept.crew.map((member) => ({
+            id: member.id,
+            name: member.name,
+            email: `${member.id.replace(/^crew-/, '')}@saimor.world`,
+            role: member.role || (member.isCaptain ? 'Captain' : 'Crew'),
+            status: member.status === 'offline' ? 'offline' : 'online',
+        }))
+    );
+}
 
 function mapTeamMembers(raw: unknown): TeamMemberPresence[] {
     if (!Array.isArray(raw)) return [];
@@ -57,8 +70,13 @@ export function useTeamMembers(enabled = true) {
     return useQuery({
         queryKey: queryKeys.teamMembers(),
         queryFn: async () => {
+            if (isLocalDemoFallback()) return buildLocalShipTeamMembers();
             const res = await coreGet('/v3/team/members?include_inactive=false', { isOptional: true });
-            return mapTeamMembers(res);
+            const mapped = mapTeamMembers(res);
+            if (mapped.length === 0 && isLocalhost() && process.env.NODE_ENV !== 'test') {
+                return buildLocalShipTeamMembers();
+            }
+            return mapped;
         },
         enabled,
         staleTime: STALE_TIMES.teamMembers,

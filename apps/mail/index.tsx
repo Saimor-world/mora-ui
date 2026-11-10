@@ -20,7 +20,9 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import { mailFilterLabels, parseMailCounts, type MailCounts } from '@/lib/mail/mailCounts';
-import { CoreError, normalizeList } from '@/lib/api/http';
+import { CoreError, isLocalDemoFallback, normalizeList } from '@/lib/api/http';
+import { isDemoScopeActive } from '@/lib/demo/demoSourceGuard';
+import { fallbackToday } from '@/lib/os/useScopedToday';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
@@ -123,6 +125,42 @@ export default function MailApp({ paneId }: AppProps) {
         const request = ++listRequest.current;
         setLoading(true);
         setError(null);
+        const demoOrLocal = isDemoScopeActive() || isLocalDemoFallback() || activeCompanyId === 'company-local-demo' || activeCompanyId?.startsWith('demo-');
+        const buildFallbackMails = (): MailObject[] => {
+            const snap = fallbackToday(
+                '',
+                activeCompanyId ?? (isDemoScopeActive() ? 'demo-morgenrot' : 'company-local-demo'),
+                'user-local',
+                'tenant-demo'
+            );
+            return (snap?.mail?.items ?? []).map((m) => ({
+                id: m.id,
+                message_id: m.id,
+                from_addr: m.from_addr || m.from || 'Team <team@saimor.world>',
+                subject: m.subject || '(Kein Betreff)',
+                date: m.received_at || m.date || new Date().toISOString(),
+                snippet: m.snippet || `Nachricht von ${m.from || m.from_addr || 'Team'} – im Tagesstand erfasst.`,
+                body_text:
+                    (m as { body_text?: string }).body_text ||
+                    m.snippet ||
+                    `${m.subject || '(Kein Betreff)'}\n\nAbsender: ${m.from || m.from_addr || 'Intern'}\n\nDiese Nachricht ist Teil des aktuellen Arbeits- und Demo-Stands und kann direkt im OS gelesen oder mit MÔRA beantwortet werden.`,
+                has_html: false,
+                attachments: [],
+                attachment_count: 0,
+                read: m.read ?? false,
+            }));
+        };
+        if (demoOrLocal && process.env.NODE_ENV !== 'test') {
+            const fallbackMails = buildFallbackMails();
+            setMails(fallbackMails);
+            setMailCounts(parseMailCounts({
+                total: fallbackMails.length,
+                unread_count: fallbackMails.filter((m) => !m.read).length,
+            }));
+            setLoadedAt(new Date());
+            setLoading(false);
+            return;
+        }
         try {
             const [response, countsRaw] = await Promise.all([
                 coreGet('/v3/mail/messages'),
@@ -131,6 +169,12 @@ export default function MailApp({ paneId }: AppProps) {
             if (request !== listRequest.current) return;
             setMailCounts(parseMailCounts(countsRaw));
             const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
+            if (fetchedMails.length === 0 && demoOrLocal) {
+                const fallbackMails = buildFallbackMails();
+                setMails(fallbackMails);
+                setLoadedAt(new Date());
+                return;
+            }
             setMails(fetchedMails);
             setLoadedAt(new Date());
             setSelectedIds(new Set());
@@ -233,8 +277,13 @@ export default function MailApp({ paneId }: AppProps) {
     };
 
     const openMail = async (mail: MailObject) => {
-        setViewingMail(mail);
+        setViewingMail({ ...mail, read: true });
         const id = mailKey(mail);
+        if (mail.body_text || id.startsWith('ship-mail-') || isDemoScopeActive() || isLocalDemoFallback()) {
+            setMails((current) => current.map((item) => mailKey(item) === id ? { ...item, read: true } : item));
+            setDetailState({ id, status: 'ready' });
+            return;
+        }
         const request = ++detailRequest.current;
         setDetailState({ id, status: 'loading' });
         try {

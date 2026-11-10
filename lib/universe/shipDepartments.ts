@@ -376,6 +376,233 @@ export function getShipDepartmentCrew(deptIdOrName: string): DeptMember[] | null
   return match ? match.crew : null;
 }
 
+export interface DeptRoomFocusItem {
+  label: string;
+  value: string;
+  status?: string;
+}
+
+export interface DeptRoomContext {
+  werkstatt: {
+    tag: string;
+    name: string;
+    shortLabel: string;
+    subtitle: string;
+    focusHint: string;
+  };
+  studio: {
+    tag: string;
+    name: string;
+    shortLabel: string;
+    subtitle: string;
+    focusTitle: string;
+    focusItems: DeptRoomFocusItem[];
+  };
+  bar: {
+    tag: string;
+    name: string;
+    shortLabel: string;
+    subtitle: string;
+    loungeTitle: string;
+    handoverPrompt: string;
+  };
+}
+
+export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: string): DeptRoomContext {
+  const raw = `${deptIdOrName || ''} ${deptTitle || ''}`.toLowerCase();
+  const label = deptTitle || deptIdOrName || 'Abteilung';
+
+  if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('führung')) {
+    return {
+      werkstatt: {
+        tag: 'Raum 01 · Führung',
+        name: 'Kommandobrücke',
+        shortLabel: 'Werkstatt',
+        subtitle: 'Strategische Entscheidungen, Prioritäten & Wochen-Taktung',
+        focusHint: 'Führungsaufgaben, Freigaben & Meilensteine',
+      },
+      studio: {
+        tag: 'Raum 02 · Charta & Dossiers',
+        name: 'Kartenraum & Dossiers',
+        shortLabel: 'Studio',
+        subtitle: 'Architektur-Charta, Quartalsziele & Partner-Verträge am Lesepult',
+        focusTitle: 'Strategischer Kompass & Leitplanken',
+        focusItems: [
+          { label: 'Phase 01 Fokus', value: 'ORIGIN // 001 Master & feste Abteilungsräume', status: 'Aktiv' },
+          { label: 'Führungs-Takt', value: 'Tägliche Captains-Runde (10:00 Uhr)', status: 'Stabil' },
+          { label: 'Kooperationen', value: 'Pilotkunden & Partner-Rahmenverträge', status: 'In Prüfung' },
+        ],
+      },
+      bar: {
+        tag: 'Raum 03 · Captains-Runde',
+        name: 'Offiziersmesse & Bar',
+        shortLabel: 'Bar',
+        subtitle: 'Abstimmung der Captains, Schicht-Übergabe & direkte Führungs-Signale',
+        loungeTitle: 'Captains-Tisch & Führungs-Übergabe',
+        handoverPrompt: 'Strategische Übergabe oder Auftrag an die Crew notieren…',
+      },
+    };
+  }
+
+  if (raw.includes('technik') || raw.includes('produkt') || raw.includes('maschine') || raw.includes('core')) {
+    return {
+      werkstatt: {
+        tag: 'Raum 01 · Engineering',
+        name: 'Maschinenraum & Labor',
+        shortLabel: 'Werkstatt',
+        subtitle: 'Umsetzung, Core-Schnittstellen, Releases & technische Aufgaben',
+        focusHint: 'Sprints, Architektur & System-Verifikation',
+      },
+      studio: {
+        tag: 'Raum 02 · Architektur',
+        name: 'System-Studio & Blaupausen',
+        shortLabel: 'Studio',
+        subtitle: 'Spezifikationen, Core v3 Verträge & System-Dokumentation am Pult',
+        focusTitle: 'System-Architektur & Core v3 Status',
+        focusItems: [
+          { label: 'Saimôr OS v15', value: 'Feste Abteilungen, echte Ordner & kontextuelle Räume', status: 'Bereit' },
+          { label: 'Mora Core v3', value: '/v3/tree · /v3/tasks · /v3/nodes deterministisch', status: 'Verifiziert' },
+          { label: 'Local Dev-Master', value: 'Sofort-Start (0 ms) ohne externe Netzwerk-Blocker', status: 'Aktiv' },
+        ],
+      },
+      bar: {
+        tag: 'Raum 03 · Bereitschaft',
+        name: 'Technik-Kajüte & Bar',
+        shortLabel: 'Bar',
+        subtitle: 'Release-Übergabe, Bereitschaftsdienst & schneller Engineering-Sync',
+        loungeTitle: 'Engineering-Lounge & Release-Übergabe',
+        handoverPrompt: 'Technische Übergabe oder Prüfpunkt für die Schicht…',
+      },
+    };
+  }
+
+  if (raw.includes('studio') || raw.includes('design') || raw.includes('atelier') || raw.includes('origin')) {
+    return {
+      werkstatt: {
+        tag: 'Raum 01 · Formbau',
+        name: 'Formbau-Werkstatt',
+        shortLabel: 'Werkstatt',
+        subtitle: 'Material-Abnahmen, Raum-Licht, 3D-Assets & handwerklicher Feinschliff',
+        focusHint: 'Werkstücke, Lichtstimmung & Oberflächenprüfung',
+      },
+      studio: {
+        tag: 'Raum 02 · Atelier',
+        name: 'ORIGIN-Atelier & Lesepult',
+        shortLabel: 'Studio',
+        subtitle: 'ORIGIN // 001 Material-Manifest, Gestaltungskonzepte & Entwürfe',
+        focusTitle: 'SAIMÔR // ORIGIN // 001 · Material-Spektrum',
+        focusItems: [
+          { label: 'Körper & Stein', value: 'Dunkler Basalt mit mikro-taktilem Relief (Seed 1001)', status: 'Kanonisch' },
+          { label: 'Optischer Kern', value: 'Geschmolzener Quarz · Echte Brechung & ruhige Kaustik', status: 'AgX Cycles' },
+          { label: 'Präzisionsfassung', value: 'Gebürstetes Messing (Captain) / Ruthenium-Titan (Crew)', status: 'Freigegeben' },
+          { label: 'Raumhaltung (Ma)', value: 'Asymmetrische Ruhe · Frei von künstlichem Nebel', status: 'Geprüft' },
+        ],
+      },
+      bar: {
+        tag: 'Raum 03 · Kritik & Salon',
+        name: 'Atelier-Salon & Bar',
+        shortLabel: 'Bar',
+        subtitle: 'Werkkritik, Abnahmen im Team & ruhiger gestalterischer Austausch',
+        loungeTitle: 'Atelier-Salon & Werk-Übergabe',
+        handoverPrompt: 'Gestaltungs-Impuls oder Abnahme-Aufgabe festhalten…',
+      },
+    };
+  }
+
+  if (raw.includes('betrieb') || raw.includes('kunde') || raw.includes('projekt') || raw.includes('service')) {
+    return {
+      werkstatt: {
+        tag: 'Raum 01 · Leitstand',
+        name: 'Deck-Leitstand & Werkstatt',
+        shortLabel: 'Werkstatt',
+        subtitle: 'Laufende Kundenprojekte, Onboarding-Aufgaben & operativer Fluss',
+        focusHint: 'Projekt-Steuerung & tägliche Umsetzung',
+      },
+      studio: {
+        tag: 'Raum 02 · Playbooks',
+        name: 'Playbook-Studio & Leitfäden',
+        shortLabel: 'Studio',
+        subtitle: 'Onboarding-Leitfäden, Projektübersichten & Prozess-Handbücher',
+        focusTitle: 'Operative Playbooks & Projekt-Status',
+        focusItems: [
+          { label: 'Team-Onboarding', value: 'Feste Abteilungen, Captains & Ordner in 3 Schritten', status: 'Bereit' },
+          { label: 'Wochen-Rhythmus', value: 'Wochenmappe + tägliche Übergabe in der Bar', status: 'Aktiv' },
+          { label: 'Kunden-Betreuung', value: 'Verbindliche Übergaben ohne Informationsverlust', status: 'Stabil' },
+        ],
+      },
+      bar: {
+        tag: 'Raum 03 · Empfang & Crew',
+        name: 'Bord-Bar & Schichtwechsel',
+        shortLabel: 'Bar',
+        subtitle: 'Tägliche Schicht-Übergabe, Kunden-Signale & Abstimmung der Crew',
+        loungeTitle: 'Bord-Bar & Schicht-Übergabe',
+        handoverPrompt: 'Übergabe für die nächste Schicht oder Kunden-Aufgabe…',
+      },
+    };
+  }
+
+  if (raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury') || raw.includes('büro') || raw.includes('verwaltung')) {
+    return {
+      werkstatt: {
+        tag: 'Raum 01 · Kontor',
+        name: 'Treasury-Kontor & Werkstatt',
+        shortLabel: 'Werkstatt',
+        subtitle: 'Budgets, Freigaben, Prüfaufträge & laufende Fristen',
+        focusHint: 'Liquidität, Controlling & Freigaben',
+      },
+      studio: {
+        tag: 'Raum 02 · Tresor-Archiv',
+        name: 'Tresor-Archiv & Richtlinien',
+        shortLabel: 'Studio',
+        subtitle: 'Finanzübersicht, Sicherheitsrichtlinien & Compliance-Dossiers',
+        focusTitle: 'Treasury- & Sicherheits-Matrix',
+        focusItems: [
+          { label: 'Budget & Rücklagen', value: 'Klare Trennung von Betrieb und strategischer Reserve', status: 'Geprüft' },
+          { label: 'XRPL Guardrails', value: 'Entwicklung strikt auf Testnet · Mainnet nur mit Freigabe', status: 'Geschützt' },
+          { label: 'Compliance-Stand', value: 'Freigaberichtlinien & Verträge dokumentiert', status: 'Synchron' },
+        ],
+      },
+      bar: {
+        tag: 'Raum 03 · Kuratorium',
+        name: 'Kontor-Lounge & Bar',
+        shortLabel: 'Bar',
+        subtitle: 'Freigabe-Runde, Budget-Abstimmung & vertrauliche Übergaben',
+        loungeTitle: 'Kontor-Lounge & Freigabe-Tisch',
+        handoverPrompt: 'Prüfauftrag oder Freigabe-Notiz für das Kontor…',
+      },
+    };
+  }
+
+  return {
+    werkstatt: {
+      tag: 'Raum 01 · Umsetzung',
+      name: `${label} · Werkstatt`,
+      shortLabel: 'Werkstatt',
+      subtitle: 'Aufgabenbrett, Schreibtisch & Wochenmappe der Abteilung',
+      focusHint: 'Tägliche Aufgaben & Wochenplanung',
+    },
+    studio: {
+      tag: 'Raum 02 · Wissen & Buch',
+      name: `${label} · Studio`,
+      shortLabel: 'Studio',
+      subtitle: 'Lesepult, Handbücher, Konzepte & Dokumente der Abteilung',
+      focusTitle: `Wissens- & Qualitätsfokus · ${label}`,
+      focusItems: [
+        { label: 'Dokumentation', value: 'Alle Konzepte und Handbücher direkt am Lesepult editierbar', status: 'Aktiv' },
+        { label: 'Ordner-Struktur', value: 'Jedes Dokument fest mit seinem Abteilungs-Ordner verknüpft', status: 'Synchron' },
+      ],
+    },
+    bar: {
+      tag: 'Raum 03 · Crew & Übergabe',
+      name: `${label} · Bar`,
+      shortLabel: 'Bar',
+      subtitle: 'Captain, Crew, Schicht-Übergabe & laufende Signale am Tisch',
+      loungeTitle: `Crew-Tisch & Übergabe · ${label}`,
+      handoverPrompt: 'Übergabe-Notiz oder Aufgabe für das Team festhalten…',
+    },
+  };
+}
+
 export function buildShipTodaySnapshot(
   companyId: string,
   userId: string,

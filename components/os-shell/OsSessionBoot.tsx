@@ -4,7 +4,8 @@ import { useUserProfile } from '@/lib/queries/useUserProfile';
 import { mapProfileToUser } from '@/lib/hooks/useAuthBootstrapper';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
-import { readCookie } from '@/lib/auth/cookies';
+import { useDemoStore } from '@/lib/demo/demoStore';
+import { isLocalDemoFallback, readCookie } from '@/lib/api/http';
 
 /**
  * V1.6: /os lädt die CORE-Sitzung jetzt selbst (vorher nur über die klassische
@@ -20,16 +21,33 @@ export function OsSessionBoot() {
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
+    const isLocalhost =
+      process.env.NODE_ENV !== 'test' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (
+      isLocalhost &&
+      useDemoStore.getState().demoCompanyId &&
+      !new URLSearchParams(window.location.search).get('firma')
+    ) {
+      useDemoStore.getState().setDemoCompany(null);
+    }
     const isLocalFallback =
+      isLocalhost ||
+      isLocalDemoFallback() ||
       readCookie('mora_session') === 'local_demo_fallback' ||
       readCookie('mora_auth_token') === 'local_demo_fallback';
-    if (isLocalFallback && !useSessionStore.getState().user) {
+    const currentUser = useSessionStore.getState().user;
+    if (isLocalFallback && (!currentUser || !currentUser.active_company_id || isLocalDemoFallback())) {
+      if (isLocalhost && !readCookie('mora_auth_token')) {
+        document.cookie = 'mora_session=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+        document.cookie = 'mora_auth_token=local_demo_fallback; path=/; max-age=2592000; SameSite=Lax';
+      }
       setUser({
-        id: 'user-demo-local',
-        name: 'Marius',
-        email: 'marius@saimor.world',
-        role: 'owner',
-        tenant_id: 'tenant-demo',
+        id: currentUser?.id || 'user-demo-local',
+        name: currentUser?.name || 'Marius',
+        email: currentUser?.email || 'marius@saimor.world',
+        role: currentUser?.role || 'owner',
+        tenant_id: currentUser?.tenant_id || 'tenant-demo',
         is_demo: false,
         operational_state: 'operational',
         setup_required: false,
@@ -38,15 +56,16 @@ export function OsSessionBoot() {
         company_count: 1,
         scope_source: 'persisted',
       });
-      if (!useNavStore.getState().activeCompanyId) {
-        setActiveCompany('company-local-demo');
-      }
+      setActiveCompany('company-local-demo');
     }
   }, [setUser, setActiveCompany]);
 
   useEffect(() => {
-    if (profile && !hasUser) setUser(mapProfileToUser(profile));
-    if (profile?.active_company_id && !activeCompanyId) {
+    if (!profile) return;
+    if (!hasUser || profile.user_id !== 'local-demo-user') {
+      setUser(mapProfileToUser(profile));
+    }
+    if (profile.active_company_id && (!activeCompanyId || profile.user_id === 'local-demo-user')) {
       setActiveCompany(profile.active_company_id);
     }
   }, [profile, hasUser, setUser, activeCompanyId, setActiveCompany]);

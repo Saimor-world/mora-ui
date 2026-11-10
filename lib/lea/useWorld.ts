@@ -25,10 +25,15 @@ export function useWorld() {
   const demoCompany = useDemoStore((s) => s.demoCompanyId);
   const navCompany = useNavStore((s) => s.activeCompanyId);
   const sessionCompany = useSessionStore((s) => (s.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    process.env.NODE_ENV !== 'test' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   // Die Firma der Sitzung zuerst: navStore kann noch eine alte Firma aus localStorage halten.
-  const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
-  const tenantId = useSessionStore((s) => s.user?.tenant_id);
-  const userId = useSessionStore((s) => s.user?.id);
+  const rawCompanyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
+  const companyId = rawCompanyId || (isLocalhost ? 'company-local-demo' : null);
+  const tenantId = useSessionStore((s) => s.user?.tenant_id) || (isLocalhost ? 'tenant-demo' : undefined);
+  const userId = useSessionStore((s) => s.user?.id) || (isLocalhost ? 'user-demo-local' : undefined);
   const generation = useSessionStore((s) => s.sessionGeneration);
   const hasSession = Boolean(tenantId && userId);
   const enabled = hasSession && Boolean(companyId);
@@ -39,44 +44,54 @@ export function useWorld() {
     return () => clearInterval(timer);
   }, []);
   const isLocalShipCompany = companyId === 'company-local-demo';
-  const shipFallback = useMemo(() => (isLocalShipCompany ? buildCanonicalShipWorld(now) : null), [isLocalShipCompany, now]);
+  const useShipFallback = isLocalShipCompany || (isLocalhost && !String(companyId ?? '').startsWith('demo-'));
+  const shipFallback = useMemo(() => (useShipFallback ? buildCanonicalShipWorld(now) : null), [useShipFallback, now]);
   const loadDayStatus = useDayStore((s) => s.loadCompany);
   useEffect(() => {
-    const activeDayCompany = enabled && !isLocalShipCompany ? companyId : null;
+    const activeDayCompany = enabled && !isLocalShipCompany && !isLocalhost ? companyId : null;
     const refresh = () => { if (document.visibilityState !== 'hidden') void loadDayStatus(activeDayCompany); };
     void loadDayStatus(activeDayCompany);
     if (!activeDayCompany) return;
     const timer = setInterval(refresh, 30_000);
     window.addEventListener('focus', refresh);
     return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
-  }, [enabled, isLocalShipCompany, companyId, loadDayStatus, generation]);
+  }, [enabled, isLocalShipCompany, isLocalhost, companyId, loadDayStatus, generation]);
   const tree = useQuery({
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
     staleTime: 30_000,
+    initialData: useShipFallback && shipFallback ? { departments: shipFallback.departments, unassigned: [] } : undefined,
     queryFn: async () => {
       if (isLocalShipCompany && shipFallback) return { departments: shipFallback.departments, unassigned: [] };
-      const raw = await coreGet(`/v3/tree?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true });
+      const raw = await coreGet(`/v3/tree?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }).catch(() => null);
       const unassigned = raw && typeof raw === 'object' && !Array.isArray(raw) ? list<FSpace>((raw as Record<string, unknown>).unassigned_spaces) : [];
-      return { departments: list<WorldDepartment>(raw, ['departments']), unassigned };
+      const departments = list<WorldDepartment>(raw, ['departments']);
+      if (departments.length === 0 && unassigned.length === 0 && shipFallback) {
+        return { departments: shipFallback.departments, unassigned: [] };
+      }
+      return { departments, unassigned };
     },
   });
   const folders = useQuery({
     queryKey: ['lea-world', 'folders', companyId],
     enabled,
     staleTime: 30_000,
+    initialData: useShipFallback && shipFallback ? shipFallback.folders : undefined,
     queryFn: async () => {
       if (isLocalShipCompany && shipFallback) return shipFallback.folders;
-      return list<FFolder>(await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['folders']);
+      const res = list<FFolder>(await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }).catch(() => null), ['folders']);
+      return res.length === 0 && shipFallback ? shipFallback.folders : res;
     },
   });
   const nodes = useQuery({
     queryKey: ['lea-world', 'nodes', companyId],
     enabled,
     staleTime: 30_000,
+    initialData: useShipFallback && shipFallback ? shipFallback.nodes : undefined,
     queryFn: async () => {
       if (isLocalShipCompany && shipFallback) return shipFallback.nodes;
-      return list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']);
+      const res = list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }).catch(() => null), ['nodes']);
+      return res.length === 0 && shipFallback ? shipFallback.nodes : res;
     },
   });
   // Hochgeladene Dateien (GET /v3/files) sind ebenfalls Sterne ihres Ordners; mit Knoten verknüpfte zählen dort.
@@ -85,7 +100,7 @@ export function useWorld() {
     enabled,
     staleTime: 30_000,
     queryFn: async () => {
-      if (isLocalShipCompany) return [];
+      if (isLocalShipCompany || isLocalhost) return [];
       return (await listCompanyFiles(companyId!).catch(() => []))
         .filter((f) => f.folder_id && !f.linked_node_id)
         .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } }));
@@ -94,7 +109,7 @@ export function useWorld() {
   const events = useQuery({
     queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
     // Demo-Bühne: nie einen echten Kalender lesen.
-    enabled: enabled && !String(companyId ?? '').startsWith('demo-') && !isLocalShipCompany,
+    enabled: enabled && !String(companyId ?? '').startsWith('demo-') && !isLocalShipCompany && !isLocalhost,
     staleTime: 30_000,
     refetchInterval: 30_000,
     retry: false,
@@ -104,11 +119,21 @@ export function useWorld() {
     queryKey: ['lea-world', 'tasks', companyId],
     enabled,
     staleTime: 30_000,
+    initialData: useShipFallback && shipFallback ? shipFallback.tasks : undefined,
     queryFn: async () => {
       if (isLocalShipCompany && shipFallback) return shipFallback.tasks;
-      const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
-      if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) throw new Error('Tasks unavailable');
-      return list<WorldTask>(raw, ['tasks', 'items']);
+      try {
+        const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
+        if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) {
+          if (shipFallback) return shipFallback.tasks;
+          throw new Error('Tasks unavailable');
+        }
+        const res = list<WorldTask>(raw, ['tasks', 'items']);
+        return res.length === 0 && shipFallback ? shipFallback.tasks : res;
+      } catch (e) {
+        if (shipFallback) return shipFallback.tasks;
+        throw e;
+      }
     },
   });
   const phases = useDayStore((s) => s.phases);

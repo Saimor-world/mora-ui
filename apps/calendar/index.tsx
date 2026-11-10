@@ -33,7 +33,7 @@ export default function CalendarApp({ paneId }: AppProps) {
   const isActive = usePaneStore((state) => state.activePaneId === paneId);
   const pane = getPane(paneId);
   const { summary } = useCommunicationSurface();
-  const showSetupState = !summary.calendarConfigured;
+  const showSetupState = !summary.calendarConfigured && !available && events.length === 0;
 
   const openIntegrations = () => {
     openPane({

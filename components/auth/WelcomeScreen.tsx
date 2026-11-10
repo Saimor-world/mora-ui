@@ -170,13 +170,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         saveAuthState('owner', cleanEmail, 'tenant-demo', 'local_demo_fallback');
         writeCookie('mora_session', 'local_demo_fallback', 7);
         writeCookie('mora_auth_token', 'local_demo_fallback', 7);
+        localStorage.setItem('saimor_dev_token', 'local_demo_fallback');
+        localStorage.setItem('last_company_id', 'company-local-demo');
+        localStorage.setItem('saimor_active_company', 'company-local-demo');
         localStorage.setItem('user_name', 'Marius');
         localStorage.setItem('last_workspace', 'SAIMÔR HQ');
         localStorage.setItem('saimor_product_tour_dismissed', '1');
         localStorage.setItem('saimor_first_run_tour_v1', 'done');
+        try {
+            window.sessionStorage.removeItem('saimor_demo_company');
+        } catch {
+            // ignore storage errors
+        }
+        useNavStore.getState().setActiveCompany('company-local-demo');
         toast.success('Willkommen an Bord, Marius!');
         setViewMode('workspace');
-        window.location.assign('/os#home');
+        window.location.assign('/os');
     };
 
     const handleDevMasterLogin = async () => {
@@ -430,6 +439,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (targetCompany) {
                 useNavStore.getState().setActiveCompany(targetCompany.id);
                 void queryClient.invalidateQueries({ queryKey: queryKeys.departments(targetCompany.id) });
+            } else if (typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+                activateLocalDevMasterSession(sessionInfo?.userEmail || 'marius@saimor.world');
+                return;
             } else {
                 if (process.env.NODE_ENV === 'development') {
                     console.warn('Keine Firma für Benutzer gefunden.');

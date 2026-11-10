@@ -2,7 +2,7 @@
 // Authentication and user profile functions extracted from coreClient.ts.
 
 import type { OperationalState } from '@/lib/types/session';
-import { coreGet, corePost, isLocalhost, readCookie } from './http';
+import { coreGet, corePost, isLocalDemoFallback, isLocalhost, readCookie } from './http';
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
@@ -89,47 +89,33 @@ export interface UserProfile {
 }
 
 function hasLocalDemoFallbackSession() {
-    return isLocalhost() && readCookie('mora_session') === 'local_demo_fallback';
+    return isLocalDemoFallback() || (isLocalhost() && readCookie('mora_session') === 'local_demo_fallback');
 }
 
 function localDemoFallbackProfile(): UserProfile {
-    const websiteEntryCompanyName = localWebsiteEntryCompanyName();
-    const companyName = websiteEntryCompanyName || 'SAIMÔR HQ';
-    const isWebsiteEntryFallback = Boolean(websiteEntryCompanyName);
     return {
         user_id: 'local-demo-user',
         email: 'marius@saimor.world',
         full_name: 'Marius',
         role: 'owner',
-        tenant_id: isWebsiteEntryFallback ? 'tenant-preview-local' : 'tenant-demo',
-        scope: isWebsiteEntryFallback ? 'website-preview' : 'local-preview',
+        tenant_id: 'tenant-demo',
+        scope: 'local-preview',
         demo_mode: false,
         operational_state: 'operational',
         setup_required: false,
-        active_company_id: isWebsiteEntryFallback ? 'company-website-entry-local' : 'company-local-demo',
-        active_company_name: companyName,
+        active_company_id: 'company-local-demo',
+        active_company_name: 'SAIMÔR HQ',
         company_count: 1,
-        scope_source: isWebsiteEntryFallback ? 'website_entry_local_fallback' : 'local_demo_fallback',
+        scope_source: 'local_demo_fallback',
     };
-}
-
-function localWebsiteEntryCompanyName() {
-    if (typeof window === 'undefined') return null;
-    try {
-        const raw = window.localStorage.getItem('saimor_website_entry_context');
-        const parsed = raw ? JSON.parse(raw) : null;
-        return typeof parsed?.companyName === 'string' && parsed.companyName.trim()
-            ? parsed.companyName.trim()
-            : null;
-    } catch {
-        return null;
-    }
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
     if (hasLocalDemoFallbackSession()) return localDemoFallbackProfile();
-    const profile = await coreGet('/v3/auth/session', { isOptional: true });
+    const profile = await coreGet('/v3/auth/session', { isOptional: true, timeoutMs: 3000 });
     if (profile) return profile as UserProfile;
-    if (hasLocalDemoFallbackSession()) return localDemoFallbackProfile();
+    if (hasLocalDemoFallbackSession() || (isLocalhost() && process.env.NODE_ENV !== 'test')) {
+        return localDemoFallbackProfile();
+    }
     return profile as UserProfile;
 }

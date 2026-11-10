@@ -32,10 +32,13 @@ export type TodaySourceMeta = {
 export type TodayMailItem = {
   id: string;
   subject?: string;
+  from?: string;
   from_addr?: string;
   date?: string;
+  received_at?: string;
   snippet?: string;
   read?: boolean;
+  department_id?: string | null;
 };
 
 export type TodayCalendarEvent = {
@@ -43,6 +46,7 @@ export type TodayCalendarEvent = {
   title: string;
   date: string;
   time?: string;
+  start?: string;
   duration?: number;
   location?: string;
   status?: string;
@@ -51,6 +55,7 @@ export type TodayCalendarEvent = {
   is_open?: boolean | null;
   open?: boolean | null;
   phase?: string;
+  department_id?: string | null;
 };
 
 export type TodayTask = {

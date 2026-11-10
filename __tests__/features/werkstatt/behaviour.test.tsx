@@ -241,4 +241,34 @@ describe('Abteilungsräume (Werkstatt, Studio, Bar) & echte Ordner', () => {
     expect(c1Avatar.getAttribute('data-origin-seed')).not.toBe(c2Avatar.getAttribute('data-origin-seed'));
     expect(screen.getByTestId('wk-mora-ship')).toHaveTextContent('MÔRA · Das Schiff');
   });
+
+  it('rendert für jede Abteilung eigene kontextuelle Raumnamen und drei visuell & funktional verschiedene Räume (Werkstatt, Studio-Lesepult, Bar-Tisch)', () => {
+    const studioPlanet = {
+      ...planet,
+      id: 'dept-studio',
+      title: 'Design & Studio',
+    };
+    const crew = [
+      { id: 'crew-sorel', name: 'Sorel M.', role: 'Art Direction', status: 'online' as const, isCaptain: true },
+    ];
+    wrap(<Werkstatt planet={studioPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} roomKind="werkstatt" crew={crew} backLabel="Design & Studio" fromSpace={false} onExit={jest.fn()} />);
+
+    // Raum 01: Formbau-Werkstatt auf room-werkstatt.webp
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · Formbau-Werkstatt');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-werkstatt');
+
+    // Raum 02: ORIGIN-Atelier & Lesepult auf room-pult.webp mit offenem Buch & ORIGIN // 001 Material-Spektrum
+    fireEvent.click(screen.getByRole('button', { name: 'Studio' }));
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · ORIGIN-Atelier & Lesepult');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-pult');
+    expect(screen.getByTestId('wk-studio-lectern')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-studio-focus')).toHaveTextContent('SAIMÔR // ORIGIN // 001 · Material-Spektrum');
+
+    // Raum 03: Atelier-Salon & Bar auf room-schreibtisch.webp mit Schicht-Übergabe & Abteilungs-Funk
+    fireEvent.click(screen.getByRole('button', { name: 'Bar' }));
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Design & Studio · Atelier-Salon & Bar');
+    expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-schreibtisch');
+    expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Atelier-Salon & Werk-Übergabe');
+    expect(screen.getByTestId('wk-bar-signals')).toBeInTheDocument();
+  });
 });
