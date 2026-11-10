@@ -1,8 +1,9 @@
-import { parseBlocks, serializeBlocks, htmlToInline, inlineToHtml, splitSentences } from '@/features/werkstatt/model/docBlocks';
+import { parseBlocks, serializeBlocks, htmlToInline, inlineToHtml } from '@/features/werkstatt/model/docBlocks';
 import { parseWeek, serializeWeek, setCell, addRow, isoWeek, mondayOf, weekRange } from '@/features/werkstatt/model/weekSheet';
 import { arrangeBoard } from '@/features/werkstatt/model/board';
 import { findHints } from '@/features/werkstatt/model/hints';
 import { coverStage, cameraTo, worldFor } from '@/features/werkstatt/model/stage';
+import { layoutBook } from '@/features/werkstatt/model/layout';
 import type { WorkTask } from '@/lib/universe/deptWork';
 
 describe('Dokument als Blöcke', () => {
@@ -17,25 +18,16 @@ describe('Dokument als Blöcke', () => {
     expect(inlineToHtml('a **b** _c_ <x>')).toBe('a <strong>b</strong> <em>c</em> &lt;x&gt;');
     expect(htmlToInline('a <strong>b</strong> <em>c</em>&nbsp;d<br>e')).toBe('a **b** _c_ d e');
   });
-  it('teilt lange Absätze an Satzgrenzen', () => {
-    const t = Array.from({ length: 20 }, (_, i) => `Satz ${i} ist da.`).join(' ');
-    const parts = splitSentences(t, 80);
-    expect(parts.length).toBeGreaterThan(3);
-    expect(parts.join(' ')).toBe(t);
-    expect(parts.every((p) => p.length <= 80)).toBe(true);
-  });
 });
 
 describe('Seiten', () => {
   it('ein 40-Seiten-Dokument ergibt 40 Seiten (20 Doppelseiten), verlustfrei', () => {
-    const { layoutBook } = jest.requireActual('@/features/werkstatt/model/layout') as typeof import('@/features/werkstatt/model/layout');
     const blocks = Array.from({ length: 400 }, (_, i) => ({ id: `b${i}`, kind: 'p' as const, text: 'x'.repeat(59) }));
     const L = layoutBook(blocks, (_k, t) => Math.ceil(t.length / 10) * 10, 600, 20);
     expect(L.pages).toHaveLength(40);
     expect(Math.ceil(L.pages.length / 2)).toBe(20);
     expect(L.pieces).toHaveLength(400);
   });
-});
 });
 
 describe('Wochenblatt', () => {
@@ -77,6 +69,10 @@ describe('Aufgabenbrett', () => {
     expect(b.pages.every((p) => p.length <= 6)).toBe(true);
     expect(b.pages.flat()).toHaveLength(22);
     expect(b.later).toHaveLength(18);
+    // Überfälliges zuerst, dann nach Datum
+    expect(b.pages[0].slice(0, 6).every((t) => t.overdue)).toBe(true);
+    const dues = b.pages.flat().filter((t) => !t.overdue).map((t) => t.due ?? '');
+    expect([...dues].sort()).toEqual(dues);
   });
 });
 
@@ -106,7 +102,6 @@ describe('Bühne und Kamera', () => {
   });
 });
 
-import { layoutBook } from '@/features/werkstatt/model/layout';
 describe('layoutBook – Seiten wie im Buch', () => {
   // 10 Zeichen = 1 Zeile = 10 Einheiten; Seite = 100 Einheiten (10 Zeilen).
   const measure = (_k: string, t: string) => Math.ceil(t.length / 10) * 10;

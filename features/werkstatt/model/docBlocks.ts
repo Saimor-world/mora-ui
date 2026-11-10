@@ -57,17 +57,3 @@ export function htmlToInline(html: string): string {
     .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
   return s.replace(/\*\*\*\*/g, '').replace(/__/g, '').replace(/\s+/g, ' ').trim();
 }
-
-/** Lange Absätze in Satzgruppen teilen, damit sie über eine Seitengrenze laufen können. */
-export function splitSentences(text: string, max = 320): string[] {
-  if (text.length <= max) return [text];
-  const sentences = text.match(/[^.!?]+[.!?]+["“”»«)]*\s*|[^.!?]+$/g) ?? [text];
-  const parts: string[] = [];
-  let cur = '';
-  for (const s of sentences) {
-    if (cur && (cur + s).length > max) { parts.push(cur.trim()); cur = ''; }
-    cur += s;
-  }
-  if (cur.trim()) parts.push(cur.trim());
-  return parts;
-}
