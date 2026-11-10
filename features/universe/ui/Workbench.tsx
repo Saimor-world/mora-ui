@@ -80,7 +80,7 @@ function arc(count: number, from: number, to: number, r: number) {
  * Dokumente als helle Punkte auf dem Mond, offene Aufgaben als warme Lichter, die ihn umkreisen.
  */
 export function StationPlanet({
-  planet, work, space, colorIndex, activeMoon, leaving, watch, onMoon, onTask, onOpenDept,
+  planet, work, space, colorIndex, activeMoon, leaving, watch, onMoon, onTask, onOpenDept, onEnter,
 }: {
   planet: DemoPlanet;
   work: DeptWork;
@@ -92,6 +92,8 @@ export function StationPlanet({
   onMoon: (id: string, origin: Origin | null) => void;
   onTask: (id: string, origin: Origin | null) => void;
   onOpenDept?: () => void;
+  /** In den Raum der Abteilung (Werkstatt): Klick auf den Planeten selbst. */
+  onEnter?: () => void;
 }) {
   const title = clean(planet.title);
   const variant = glassVariantFor(title);
@@ -107,6 +109,7 @@ export function StationPlanet({
           <span className="ck-opal__spec" aria-hidden />
         </GlassOrb>
       </div>
+      {onEnter ? <button type="button" className="ws-enter" onClick={onEnter} aria-label={`${title}: Werkstatt betreten`} data-testid="planet-enter" style={{ width: ORB, height: ORB }} /> : null}
       {work.loose.slice(0, 9).map((t, k) => (
         <button key={t.id} type="button" className="ws-light ws-light--planet" data-overdue={t.overdue ? '1' : undefined} data-testid={`task-light-${t.id}`}
           style={{ left: `calc(50% + ${loose[k].x}px)`, top: `calc(30% + ${loose[k].y}px)`, ['--d' as string]: `${k * 0.7}s` }}

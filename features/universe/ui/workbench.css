@@ -756,3 +756,7 @@ html .ws-surface summary{background:transparent!important;color:var(--ink-muted)
 .ws-surface .ws-list--tasks:focus-visible .ws-row--task[data-focus="1"],
 .ws-surface .ws-list--tasks:focus .ws-row--task[data-focus="1"]{background:rgba(27,32,29,.05);box-shadow:inset 2px 0 0 var(--accent)}
 .ws-surface .ws-list--tasks:focus,.ws-surface .ws-list--tasks:focus-visible{outline:none}
+
+/* v15: der Planet selbst ist die Tür in den Raum der Abteilung */
+.ws-enter{position:absolute;left:50%;top:30%;translate:-50% -50%;border:0;padding:0;border-radius:50%;background:transparent;cursor:pointer;z-index:3;transition:box-shadow .5s}
+.ws-enter:hover,.ws-enter:focus-visible{box-shadow:0 0 0 1px rgba(236,244,240,.18),0 0 60px rgba(200,236,222,.16);outline:none}

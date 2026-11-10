@@ -10,6 +10,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
 import { StationPlanet, WorkSurface, type Origin } from '@/features/universe/ui/Workbench';
 import { deptWork } from '@/lib/universe/deptWork';
+import { Werkstatt, placeFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
 import { localISO } from '@/lib/lea/world';
 import { CockpitWindow } from '@/features/home/cockpit/Window';
 import { deriveLiveAttention, finderToCockpitPlanets } from '@/features/home/cockpit/coreAdapter';
@@ -299,6 +300,8 @@ export function UnifiedUniverse({
   const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [mobileBriefingOpen, setMobileBriefingOpen] = useState(false);
+  // Raum der Abteilung (Werkstatt): offen, mit Startort und ob die Kamera von draußen durchs Fenster kommt.
+  const [room, setRoom] = useState<{ place: Place | null; fromSpace: boolean } | null>(null);
 
   // Style state: 'glas' (HQ-Gesamtansicht mit dunklen Glasplaneten) oder 'pixel' (HQ-Pixelansicht mit Mini-Monden)
   // Genau EIN Umschalter (.wd-view links auf halber Höhe)
@@ -342,6 +345,8 @@ export function UnifiedUniverse({
     if (ort && ort !== 'firma') setPlanetId(ort);
     const ordner = params.get('ordner');
     if (ordner) setMoonId(ordner);
+    const platz = placeFromParam(params.get('platz'));
+    if (ort && platz) setRoom({ place: platz, fromSpace: false });
   }, []);
 
   // Demo detection and company name
@@ -527,12 +532,14 @@ export function UnifiedUniverse({
   // Die eine MÔRA begleitet in den offenen Planeten und kehrt danach in den Dock zurück.
   useEffect(() => {
     const presence = useMoraPresence.getState();
+    // Im Raum setzt die Werkstatt MÔRA selbst an ihren Platz.
+    if (room) return;
     // Während du an etwas arbeitest, steht sie neben der Arbeitsfläche – nie darauf.
     if (planetId && (moonId || taskId)) presence.goTo('[data-mora-anchor="work"]', 'work');
     else if (planetId) presence.goTo('[data-mora-anchor="planet"]', 'planet');
     else presence.goHome();
     return () => useMoraPresence.getState().goHome();
-  }, [planetId, moonId, taskId]);
+  }, [planetId, moonId, taskId, room]);
 
   const handleBackToUniverse = () => {
     if (planetId && !moonId && !deptSheetOpen) { flyBack(); return; }
@@ -542,7 +549,7 @@ export function UnifiedUniverse({
   };
   // Esc: erst ein offenes Blatt schließen, sonst zurückfliegen.
   useEffect(() => {
-    if (!planetId) return;
+    if (!planetId || room) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
@@ -632,6 +639,7 @@ export function UnifiedUniverse({
       data-phone={phone ? '1' : '0'}
       data-folder="0"
       data-work={(moon || workTask) && planet ? '1' : undefined}
+      data-werkstatt={room && planet ? (room.fromSpace ? 'flight' : 'direct') : undefined}
     >
       {/* Background: PixelSky in pixel mode, ck-space in glass mode */}
       {planetStyle === 'pixel' ? (
@@ -767,6 +775,7 @@ export function UnifiedUniverse({
             onMoon={(id, o) => { setOrigin(o); setTaskId(null); setMoonId(id); setDeptSheetOpen(false); }}
             onTask={(id, o) => { setOrigin(o); setMoonId(null); setTaskId(id); setDeptSheetOpen(false); }}
             onOpenDept={() => setDeptSheetOpen(true)}
+            onEnter={() => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ place: null, fromSpace: true }); }}
           />
         ) : sceneMode === 'planet' && planet ? (
           <OpenPlanet
@@ -827,6 +836,20 @@ export function UnifiedUniverse({
             setMoonId(null); setTaskId(null);
             if (back) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-testid="moon-${CSS.escape(back)}"]`)?.focus({ preventScroll: true }));
           }}
+        />
+      ) : null}
+
+      {room && planet ? (
+        <Werkstatt
+          key={planet.id}
+          planet={planet}
+          work={work}
+          planets={planets.map((p) => ({ id: p.id, title: stripFiktiv(p.title) || p.title }))}
+          companyId={companyId}
+          today={localISO(new Date())}
+          initial={room.place}
+          fromSpace={room.fromSpace}
+          onExit={() => setRoom(null)}
         />
       ) : null}
 
