@@ -60,14 +60,26 @@ export function useDayActions(companyId: string | null) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
 
-  /** Neue Aufgabe mit Bereich (Ordner = Mond). CORE nimmt folder_id beim Anlegen an. */
-  const addTask = useCallback(async (title: string, folderId?: string | null, due?: string | null) => {
-    const res = await corePost('/v3/tasks', { title, due_date: due || undefined, folder_id: folderId || undefined, company_id: companyId ?? undefined }).catch(() => null);
+  /** Neue Aufgabe mit Bereich (Ordner = Mond) und Abteilung. CORE nimmt folder_id und department_id beim Anlegen an. */
+  const addTask = useCallback(async (title: string, folderId?: string | null, due?: string | null, departmentId?: string | null) => {
+    const payload: Record<string, unknown> = {
+      title,
+      due_date: due || undefined,
+      folder_id: folderId || undefined,
+      company_id: companyId ?? undefined,
+    };
+    if (departmentId) payload.department_id = departmentId;
+    const res = await corePost('/v3/tasks', payload).catch(() => null);
     const created = (res && (res.data ?? res)) as WorldTask | null;
     if (!created?.id) return false;
-    patch((l) => [...l, created]);
+    const nextTask: WorldTask = {
+      ...created,
+      ...(folderId && !created.folder_id ? { folder_id: folderId } : {}),
+      ...(departmentId && !(created as { department_id?: string | null }).department_id ? ({ department_id: departmentId } as Partial<WorldTask>) : {}),
+    };
+    patch((l) => [...l, nextTask]);
     qc.invalidateQueries({ queryKey: ['tasks'] });
-      invalidateToday();
+    invalidateToday();
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);

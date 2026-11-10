@@ -175,6 +175,12 @@ describe('Buch am Pult', () => {
     act(() => { window.getSelection()!.collapseToStart(); document.dispatchEvent(new Event('selectionchange')); });
     expect(screen.queryByTestId('wk-fmt')).toBeNull();
   });
+  it('hängt bei einer Datei oder fehlendem Knoten (/v3/files → 404) nicht endlos in aria-busy', async () => {
+    wrap(<Book id="file-pdf-1" fallbackTitle="Vertrag.pdf" folderId="f" stage={stage} back={null} />);
+    const book = screen.getByTestId('wk-book');
+    await waitFor(() => expect(book.getAttribute('aria-busy')).toBe('false'));
+    expect(Number(book.dataset.pages)).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('Mappe – Wochenblatt von Hand', () => {
@@ -191,5 +197,17 @@ describe('Mappe – Wochenblatt von Hand', () => {
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(mutate.mock.calls[0][0]).toEqual({ id: 'n-kw46', payload: { content: expect.stringContaining('| Theke | Lea | Nina | Samira |') } });
     jest.useRealTimers();
+  });
+  it('Erste Woche anlegen schreibt niemals Café-Zeilen (Theke/Küche/Einkauf) in fremde Abteilungen', async () => {
+    const { createNode } = jest.requireMock('@/lib/api/orgClient') as { createNode: jest.Mock };
+    createNode.mockResolvedValue({ id: 'n-new-week' });
+    wrap(<Mappe weeks={[]} folderId="f-plan" companyId="c-hq" today={TODAY} defaultRows={['Produkt', 'Technik']} back={null} />);
+    fireEvent.click(screen.getByRole('button', { name: /Erste Woche anlegen/i }));
+    await flush();
+    expect(createNode).toHaveBeenCalledTimes(1);
+    const createdContent = String(createNode.mock.calls[0][0].content);
+    expect(createdContent).not.toMatch(/Theke|Küche|Einkauf/);
+    expect(createdContent).toContain('| Produkt |');
+    expect(createdContent).toContain('| Technik |');
   });
 });

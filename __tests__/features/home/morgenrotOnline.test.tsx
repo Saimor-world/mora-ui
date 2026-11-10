@@ -75,8 +75,8 @@ describe('Café Morgenrot from CORE', () => {
       : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
     render(<MorgenrotHome navigate={navigate} />);
     fireEvent.click(await screen.findByTestId('open-d-k'));
-    // Erst fliegt die Kamera auf den Planeten zu (≤ 1,6 s), dann wechselt das OS ins Universe.
-    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-k' });
+    // Erst fliegt die Kamera auf den Planeten zu (≤ 1,6 s), dann wechselt das OS ins Universe – ohne ungefragten Task-Auto-Zoom.
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-k', taskId: null });
     await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1), { timeout: 2500 });
     expect(navigate).toHaveBeenCalledWith('universe');
     expect(screen.queryByTestId('planet-d-k')).toBeNull();

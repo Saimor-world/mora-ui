@@ -149,7 +149,11 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const planFolder = planet.moons.find((m) => /planung/i.test(m.title))?.id ?? weeksDocs[0]?.folderId ?? planet.moons[0]?.id ?? null;
   const weeks = useMemo(() => weekNodesFrom(weeksDocs, Number(today.slice(0, 4))), [weeksDocs, today]);
   const [lectern, setLectern] = useState<string | null>(null);
-  const lecternDoc = docs.find((d) => d.id === lectern) ?? docs[0] ?? null;
+  const lecternDoc = docs.find((d) => d.id === lectern) ?? docs.find((d) => d.meta !== 'file') ?? docs[0] ?? null;
+  const defaultWeekRows = useMemo(() => {
+    const names = planet.moons.map((m) => clean(m.title)).filter((n) => n && !/^planung$/i.test(n)).slice(0, 3);
+    return names.length > 0 ? names : [title || 'Aufgaben', 'Termine', 'Notizen'];
+  }, [planet.moons, title]);
 
   // Arbeitsmodus am Dock + Welt (Dock folgt Licht der Welt).
   useLayoutEffect(() => {
@@ -299,7 +303,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const submitDraft = async () => {
     const v = (draft ?? '').trim();
     if (!v) { setDraft(null); return; }
-    const ok = await addTask(v, newTaskFolder, null);
+    const ok = await addTask(v, newTaskFolder, null, planet.id);
     if (ok) setDraft(null);
   };
   const B = ROOM.board, COLS = 3, GAP = 18, PAD = 22;
@@ -385,7 +389,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
               <Book key={close.id} id={close.id} fallbackTitle={clean(allDocs.find((d) => d.id === close.id)?.name ?? '')}
                 folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo} />
             ) : null}
-            {close.kind === 'planung' ? <Mappe weeks={weeks} folderId={planFolder} companyId={companyId} today={today} back={backTo} /> : null}
+            {close.kind === 'planung' ? <Mappe weeks={weeks} folderId={planFolder} companyId={companyId} today={today} defaultRows={defaultWeekRows} back={backTo} /> : null}
             <MoraSeat at={CLOSE[close.kind].mora} stage={stage} name={`wk-close-${close.kind}`} />
           </StageLayer>
         </div>

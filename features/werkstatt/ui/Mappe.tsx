@@ -25,8 +25,8 @@ export function weekNodesFrom(docs: { id: string; name: string; meta: string }[]
   }).filter(Boolean).sort((a, b) => (a as WeekNode).monday.localeCompare((b as WeekNode).monday)) as WeekNode[];
 }
 
-export function Mappe({ weeks, folderId, companyId, today, back }: {
-  weeks: WeekNode[]; folderId: string | null; companyId: string | null; today: string; back: { label: string; run: () => void } | null;
+export function Mappe({ weeks, folderId, companyId, today, defaultRows, back }: {
+  weeks: WeekNode[]; folderId: string | null; companyId: string | null; today: string; defaultRows?: string[]; back: { label: string; run: () => void } | null;
 }) {
   const thisMonday = mondayOf(today);
   const start = Math.max(0, weeks.findIndex((w) => w.monday === thisMonday));
@@ -81,7 +81,8 @@ export function Mappe({ weeks, folderId, companyId, today, back }: {
     if (last) base.setDate(base.getDate() + 7);
     const monday = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
     const kw = isoWeek(monday);
-    const rows = sheet?.rows.map((r) => ({ label: r.label, cells: DAYS.map(() => '') })) ?? ['Theke', 'Küche', 'Einkauf'].map((label) => ({ label, cells: DAYS.map(() => '') }));
+    const fallbackLabels = defaultRows && defaultRows.length > 0 ? defaultRows : ['Aufgaben', 'Termine', 'Notizen'];
+    const rows = sheet?.rows.map((r) => ({ label: r.label, cells: DAYS.map(() => '') })) ?? fallbackLabels.map((label) => ({ label, cells: DAYS.map(() => '') }));
     const content = serializeWeek({ title: `Wochenplan KW ${kw}`, rows, open: [] });
     const created = await createNode({ folder_id: folderId ?? undefined, company_id: companyId ?? undefined, title: `Wochenplan KW ${kw}`, type: 'note', content, metadata: { kind: 'wochenplan', week_start: monday } }).catch(() => null);
     const id = (created as { id?: string } | null)?.id;

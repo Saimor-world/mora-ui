@@ -40,4 +40,16 @@ describe('deptWork', () => {
   it('erfindet nichts für leere Ordner', () => {
     expect(w.moons.get('f-empty')).toEqual({ docs: [], open: [], done: [], overdue: 0 });
   });
+  it('bindet heimatlose Aufgaben (ohne department_id und ohne bekannte folder_id) ein, wenn includeUnassigned gesetzt ist', () => {
+    const withGlobal = [
+      ...tasks,
+      { id: 't-global', title: 'Globale Firmenaufgabe', status: 'backlog', due_date: '2026-11-08', folder_id: null, department_id: null },
+    ];
+    const wPrimary = deptWork(planet, withGlobal as never, '2026-11-09', {
+      includeUnassigned: true,
+      knownDeptIds: ['dept-growth', 'dept-other'],
+      knownFolderIds: ['f-brief', 'f-empty', 'f-other'],
+    });
+    expect(wPrimary.loose.map((t) => t.id)).toEqual(['t-global', 't4']);
+  });
 });

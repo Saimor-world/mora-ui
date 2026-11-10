@@ -31,6 +31,15 @@ describe('Arbeitsfläche → CORE (dieselben Endpunkte wie Heute)', () => {
     expect(invalidateToday).toHaveBeenCalled();
   });
 
+  it('behält department_id beim Anlegen in einer Abteilung ohne Ordner: POST /v3/tasks', async () => {
+    corePost.mockResolvedValue({ data: { id: 'task_dept', title: 'Abteilungsaufgabe', status: 'backlog' } });
+    const { qc, result } = setup();
+    await act(async () => { expect(await result.current.addTask('Abteilungsaufgabe', null, null, 'dept-fin')).toBe(true); });
+    expect(corePost).toHaveBeenCalledWith('/v3/tasks', { title: 'Abteilungsaufgabe', due_date: undefined, folder_id: undefined, company_id: 'comp-1', department_id: 'dept-fin' });
+    const stored = (qc.getQueryData(['lea-world', 'tasks', 'comp-1']) as Array<{ id: string; department_id?: string }>);
+    expect(stored.find((t) => t.id === 'task_dept')?.department_id).toBe('dept-fin');
+  });
+
   it('hakt ab und nimmt zurück: POST /v3/tasks/{id} {status}', async () => {
     corePost.mockResolvedValue({ data: { ...(task as object), status: 'done' } });
     const { qc, result } = setup();

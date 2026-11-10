@@ -29,12 +29,22 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
   id: string; fallbackTitle: string; folderId: string | null; stage: Stage; back: { label: string; run: () => void } | null;
 }) {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ['node', id], queryFn: () => fetchNodeDetails(id), staleTime: 30_000 });
+  const q = useQuery({ queryKey: ['node', id], queryFn: async () => (await fetchNodeDetails(id).catch(() => null)) ?? null, staleTime: 30_000 });
   const upd = useUpdateNode(folderId ?? '');
-  const node = q.data as { title?: string; name?: string; content?: string } | undefined;
-  const title = node?.title || fallbackTitle;
+  const node = q.data as { title?: string; name?: string; content?: string; description?: string; body?: string[] } | null | undefined;
+  const title = node?.title || node?.name || fallbackTitle;
   const [blocks, setBlocks] = useState<Block[] | null>(null);
-  useEffect(() => { if (node && blocks === null) setBlocks(parseBlocks(node.content ?? '')); }, [node, blocks]);
+  useEffect(() => {
+    if (blocks !== null) return;
+    if (node) {
+      const raw = node.content ?? node.description ?? (Array.isArray(node.body) ? node.body.join('\n\n') : '');
+      const parsed = parseBlocks(raw);
+      setBlocks(parsed.length > 0 ? parsed : [{ id: 'b0', kind: 'p', text: '' }]);
+    } else if (!q.isLoading) {
+      const parsed = parseBlocks(fallbackTitle ? `# ${fallbackTitle}\n\n` : '');
+      setBlocks(parsed.length > 0 ? parsed : [{ id: 'b0', kind: 'p', text: '' }]);
+    }
+  }, [node, blocks, q.isLoading, fallbackTitle]);
 
   // Satz: eine unsichtbare Seite gleicher Breite misst; Absätze werden zeilengenau auf Seiten verteilt.
   const measureRef = useRef<HTMLDivElement>(null);

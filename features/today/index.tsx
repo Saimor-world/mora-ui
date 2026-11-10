@@ -74,9 +74,15 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
   const world = useWorld();
   const openWorkTask = (task?: { id: string; department_id?: string | null; folder_id?: string | null } | null) => {
-    if (!task?.id) { navigate('universe'); return; }
-    const planetId = task.department_id || world.finder.find((p) => p.moons.some((m) => m.id === task.folder_id))?.id;
-    if (!planetId) { navigate('universe'); return; }
+    const depts = world.finder.filter((p) => p.kind === 'department');
+    if (!task?.id) {
+      if (depts.length > 0) navigate('universe');
+      return;
+    }
+    const byDept = task.department_id && depts.some((p) => p.id === task.department_id) ? task.department_id : null;
+    const byFolder = task.folder_id ? depts.find((p) => p.moons.some((m) => m.id === task.folder_id))?.id : null;
+    const planetId = byDept || byFolder || depts[0]?.id || null;
+    if (!planetId) return;
     useUniverseFocus.getState().show({ planetId, taskId: task.id, from: 'home' });
     navigate('universe');
   };

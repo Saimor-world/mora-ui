@@ -441,7 +441,17 @@ export function UnifiedUniverse({
   }, [nightwatchIncidents, planet]);
 
   // Was in dieser Abteilung zu tun ist – aus useWorld (dieselben /v3/tasks- und Ordner-Daten wie Heute und Finder).
-  const work = useMemo(() => deptWork(planet, world.tasks, localISO(new Date())), [planet, world.tasks]);
+  const work = useMemo(() => {
+    const knownDeptIds = planets.map((p) => p.id);
+    const knownFolderIds = planets.flatMap((p) => p.moons.map((m) => m.id));
+    const isPrimary = Boolean(planet && planets[0]?.id === planet.id);
+    const hasFocusedTask = Boolean(taskId || (room?.place && room.place.kind === 'task'));
+    return deptWork(planet, world.tasks, localISO(new Date()), {
+      includeUnassigned: isPrimary || hasFocusedTask,
+      knownDeptIds,
+      knownFolderIds,
+    });
+  }, [planet, planets, world.tasks, taskId, room?.place]);
   const spaceName = useMemo(() => {
     const f = planet ? world.finder.find((p) => p.id === planet.id) : null;
     const names = Array.from(new Set((f?.spaces ?? []).map((sp) => sp.name).filter(Boolean)));

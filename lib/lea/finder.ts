@@ -95,13 +95,26 @@ export function buildFinder(input: { departments: FDept[]; unassigned?: FSpace[]
   const knownFolders = new Set(input.folders.map((f) => f.id));
   const placed = (t: WorldTask) => Boolean((t as { folder_id?: string | null }).folder_id && knownFolders.has((t as { folder_id?: string }).folder_id!));
   for (const t of input.tasks ?? []) if (placed(t)) (starsByFolder[(t as { folder_id: string }).folder_id] ||= []).push(taskStar(t, input.now));
+  const folderById = new Map(input.folders.filter((f) => f?.id).map((f) => [f.id, f]));
+  const resolveSpaceId = (folder: FFolder): string | null => {
+    let cur: FFolder | undefined = folder;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur.id)) {
+      if (cur.space_id && spaceOwner[cur.space_id]) return cur.space_id;
+      seen.add(cur.id);
+      cur = cur.parent_folder_id ? folderById.get(cur.parent_folder_id) : undefined;
+    }
+    return folder.space_id ?? null;
+  };
   const moonsByPlanet: Record<string, Moon[]> = {};
   for (const f of input.folders) {
-    if (!f?.id || !f.space_id) continue;
-    const owner = spaceOwner[f.space_id];
+    if (!f?.id) continue;
+    const resolvedSpaceId = resolveSpaceId(f);
+    if (!resolvedSpaceId) continue;
+    const owner = spaceOwner[resolvedSpaceId];
     if (!owner) continue;
     const stars = (starsByFolder[f.id] ?? []).sort((a, b) => a.name.localeCompare(b.name, 'de'));
-    (moonsByPlanet[owner] ||= []).push({ id: f.id, name: folderLabel(f), spaceId: f.space_id, spaceName: spaceName[f.space_id], stars, count: Math.max(stars.length, f.node_count ?? 0), modified: f.updated_at ?? null });
+    (moonsByPlanet[owner] ||= []).push({ id: f.id, name: folderLabel(f), spaceId: resolvedSpaceId, spaceName: spaceName[resolvedSpaceId], stars, count: Math.max(stars.length, f.node_count ?? 0), modified: f.updated_at ?? null });
   }
 
   const planets: FPlanet[] = depts.map((d) => {
