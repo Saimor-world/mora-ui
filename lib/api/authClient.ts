@@ -94,16 +94,16 @@ function hasLocalDemoFallbackSession() {
 
 function localDemoFallbackProfile(): UserProfile {
     const websiteEntryCompanyName = localWebsiteEntryCompanyName();
-    const companyName = websiteEntryCompanyName || 'Local Preview Workspace';
+    const companyName = websiteEntryCompanyName || 'SAIMÔR HQ';
     const isWebsiteEntryFallback = Boolean(websiteEntryCompanyName);
     return {
         user_id: 'local-demo-user',
-        email: 'demo@saimor.io',
-        full_name: 'Local Demo',
-        role: 'demo',
+        email: 'marius@saimor.world',
+        full_name: 'Marius',
+        role: 'owner',
         tenant_id: isWebsiteEntryFallback ? 'tenant-preview-local' : 'tenant-demo',
         scope: isWebsiteEntryFallback ? 'website-preview' : 'local-preview',
-        demo_mode: !isWebsiteEntryFallback,
+        demo_mode: false,
         operational_state: 'operational',
         setup_required: false,
         active_company_id: isWebsiteEntryFallback ? 'company-website-entry-local' : 'company-local-demo',
@@ -127,6 +127,7 @@ function localWebsiteEntryCompanyName() {
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
+    if (hasLocalDemoFallbackSession()) return localDemoFallbackProfile();
     const profile = await coreGet('/v3/auth/session', { isOptional: true });
     if (profile) return profile as UserProfile;
     if (hasLocalDemoFallbackSession()) return localDemoFallbackProfile();

@@ -5,6 +5,7 @@
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
 import { coreGet, corePost, corePatch, corePut, coreDelete, normalizeList, CoreError, getCoreBaseUrl, readCookie, isLocalhost, AUTH_COOKIE, isForwardableCoreToken } from './http';
 import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
+import { getShipNodeById } from '@/lib/universe/shipDepartments';
 
 // ========== COMPANY FUNCTIONS ==========
 
@@ -24,13 +25,15 @@ export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]
         const query = includeDemo ? '?include_demo=true' : '';
         const result = await coreGet(`/v3/companies${query}`);
         if (!result && hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
-        return normalizeList<CoreCompany>(result, ['companies']);
+        const list = normalizeList<CoreCompany>(result, ['companies']);
+        if (list.length === 0 && hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
+        return list;
     } catch (error: any) {
+        if (hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
         // Silent fallback for auth errors - return empty array
         if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
             return [];
         }
-        if (hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
         throw error;
     }
 }
@@ -52,7 +55,7 @@ function hasLocalDemoFallbackSession() {
 
 function localDemoFallbackCompany(): CoreCompany {
     const websiteEntryName = localWebsiteEntryCompanyName();
-    const name = websiteEntryName || 'Local Preview Workspace';
+    const name = websiteEntryName || 'SAIMÔR HQ';
     const isWebsiteEntryFallback = Boolean(websiteEntryName);
     return {
         id: isWebsiteEntryFallback ? 'company-website-entry-local' : 'company-local-demo',
@@ -189,6 +192,8 @@ export async function fetchNodesByCompany(
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
+    const shipNode = getShipNodeById(nodeId);
+    if (shipNode) return shipNode as unknown as CoreNode;
     return coreGet(`/v3/nodes/${nodeId}`);
 }
 

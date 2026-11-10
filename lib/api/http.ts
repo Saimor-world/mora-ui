@@ -108,9 +108,10 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
             ? (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null)
             : null;
 
-        if (authToken && !isForwardableCoreToken(authToken)) clearCoreAuthToken(AUTH_COOKIE);
-        if (sessionToken && !isForwardableCoreToken(sessionToken)) clearCoreAuthToken('mora_session');
-        if (devToken && !isForwardableCoreToken(devToken) && typeof window !== 'undefined') {
+        const isLocalFallback = (v: string | null | undefined) => isLocalhost() && v === 'local_demo_fallback';
+        if (authToken && !isForwardableCoreToken(authToken) && !isLocalFallback(authToken)) clearCoreAuthToken(AUTH_COOKIE);
+        if (sessionToken && !isForwardableCoreToken(sessionToken) && !isLocalFallback(sessionToken)) clearCoreAuthToken('mora_session');
+        if (devToken && !isForwardableCoreToken(devToken) && !isLocalFallback(devToken) && typeof window !== 'undefined') {
             localStorage.removeItem('saimor_dev_token');
         }
 

@@ -135,7 +135,7 @@ export function OsShell({ preview }: { preview: boolean }) {
 
   const active = getFeature(activeFeatureId) || FEATURE_MANIFESTS[0];
   // Ein Raum: beim Wechsel bleibt die alte Fläche stehen, bis die neue geladen ist (kein Lade-Blitz mitten im Flug).
-  const [shownId, setShownId] = useState(active.id);
+  const [shownId, setShownId] = useState(() => resolveFeatureId(readHash(), ctx));
   useEffect(() => { if (shownId !== active.id) startTransition(() => setShownId(active.id)); }, [active.id, shownId]);
   const surface = getFeature(shownId) || active;
   const ActiveSurface = lazyFor(surface);
@@ -168,7 +168,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   if (phone && !phoneUniverse && active.id !== 'home' && !demoFirma) {
     return (
       <>
-        {!preview ? <OsSessionBoot /> : null}
+        <OsSessionBoot />
         <PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} />
       </>
     );
@@ -177,7 +177,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
-      {!preview ? <OsSessionBoot /> : null}
+      <OsSessionBoot />
       <OsOnboarding live={hasSession} navigate={navigate} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">

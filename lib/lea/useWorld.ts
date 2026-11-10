@@ -12,6 +12,7 @@ import { buildLiveDay, calendarMeta } from './live';
 import { isCalendarDept, planetTraits, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
 import { buildFinder, COLLECT_PLANET, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
 import { matteTone, toneSlots } from '@/lib/universe/matteTone';
+import { buildCanonicalShipWorld } from '@/lib/universe/shipDepartments';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
   if (Array.isArray(raw)) return raw as T[];
@@ -37,20 +38,24 @@ export function useWorld() {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
+  const isLocalShipCompany = companyId === 'company-local-demo';
+  const shipFallback = useMemo(() => (isLocalShipCompany ? buildCanonicalShipWorld(now) : null), [isLocalShipCompany, now]);
   const loadDayStatus = useDayStore((s) => s.loadCompany);
   useEffect(() => {
-    const refresh = () => { if (document.visibilityState !== 'hidden') void loadDayStatus(enabled ? companyId : null); };
-    void loadDayStatus(enabled ? companyId : null);
-    if (!enabled) return;
+    const activeDayCompany = enabled && !isLocalShipCompany ? companyId : null;
+    const refresh = () => { if (document.visibilityState !== 'hidden') void loadDayStatus(activeDayCompany); };
+    void loadDayStatus(activeDayCompany);
+    if (!activeDayCompany) return;
     const timer = setInterval(refresh, 30_000);
     window.addEventListener('focus', refresh);
     return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
-  }, [enabled, companyId, loadDayStatus, generation]);
+  }, [enabled, isLocalShipCompany, companyId, loadDayStatus, generation]);
   const tree = useQuery({
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
     staleTime: 30_000,
     queryFn: async () => {
+      if (isLocalShipCompany && shipFallback) return { departments: shipFallback.departments, unassigned: [] };
       const raw = await coreGet(`/v3/tree?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true });
       const unassigned = raw && typeof raw === 'object' && !Array.isArray(raw) ? list<FSpace>((raw as Record<string, unknown>).unassigned_spaces) : [];
       return { departments: list<WorldDepartment>(raw, ['departments']), unassigned };
@@ -60,27 +65,36 @@ export function useWorld() {
     queryKey: ['lea-world', 'folders', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<FFolder>(await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['folders']),
+    queryFn: async () => {
+      if (isLocalShipCompany && shipFallback) return shipFallback.folders;
+      return list<FFolder>(await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['folders']);
+    },
   });
   const nodes = useQuery({
     queryKey: ['lea-world', 'nodes', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']),
+    queryFn: async () => {
+      if (isLocalShipCompany && shipFallback) return shipFallback.nodes;
+      return list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']);
+    },
   });
   // Hochgeladene Dateien (GET /v3/files) sind ebenfalls Sterne ihres Ordners; mit Knoten verknüpfte zählen dort.
   const files = useQuery({
     queryKey: ['lea-world', 'files', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => (await listCompanyFiles(companyId!).catch(() => []))
-      .filter((f) => f.folder_id && !f.linked_node_id)
-      .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
+    queryFn: async () => {
+      if (isLocalShipCompany) return [];
+      return (await listCompanyFiles(companyId!).catch(() => []))
+        .filter((f) => f.folder_id && !f.linked_node_id)
+        .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } }));
+    },
   });
   const events = useQuery({
     queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
     // Demo-Bühne: nie einen echten Kalender lesen.
-    enabled: enabled && !String(companyId ?? '').startsWith('demo-'),
+    enabled: enabled && !String(companyId ?? '').startsWith('demo-') && !isLocalShipCompany,
     staleTime: 30_000,
     refetchInterval: 30_000,
     retry: false,
@@ -91,6 +105,7 @@ export function useWorld() {
     enabled,
     staleTime: 30_000,
     queryFn: async () => {
+      if (isLocalShipCompany && shipFallback) return shipFallback.tasks;
       const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
       if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) throw new Error('Tasks unavailable');
       return list<WorldTask>(raw, ['tasks', 'items']);

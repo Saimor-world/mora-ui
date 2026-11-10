@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -162,16 +162,36 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
     }, []);
 
+    const activateLocalDevMasterSession = (loginEmail?: string) => {
+        const cleanEmail = loginEmail && loginEmail.includes('@') ? loginEmail : 'marius@saimor.world';
+        clearWebsiteEntryActiveContext();
+        clearWebsiteEntryPreviewSessionMarker();
+        setWebsiteEntryContext(null);
+        saveAuthState('owner', cleanEmail, 'tenant-demo', 'local_demo_fallback');
+        writeCookie('mora_session', 'local_demo_fallback', 7);
+        writeCookie('mora_auth_token', 'local_demo_fallback', 7);
+        localStorage.setItem('user_name', 'Marius');
+        localStorage.setItem('last_workspace', 'SAIMÔR HQ');
+        localStorage.setItem('saimor_product_tour_dismissed', '1');
+        localStorage.setItem('saimor_first_run_tour_v1', 'done');
+        toast.success('Willkommen an Bord, Marius!');
+        setViewMode('workspace');
+        window.location.assign('/os#home');
+    };
+
     const handleDevMasterLogin = async () => {
         // Defense in depth: never allow the dev bypass outside development,
         // even if this handler is somehow reached.
         if (!isDevLoginEnabled()) return;
-        const { email, password } = getDevLoginCredentials();
-        if (!email || !password) {
-            toast.error('DEV_LOGIN_EMAIL / DEV_LOGIN_PASSWORD nicht in .env.local gesetzt.');
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+        const { email: devEmail, password: devPassword } = getDevLoginCredentials();
+        if (isLocalhost || !devEmail || !devPassword || devEmail === 'demo@saimor.io') {
+            activateLocalDevMasterSession('marius@saimor.world');
             return;
         }
-        await handleLogin({ email, password });
+        await handleLogin({ email: devEmail, password: devPassword });
     };
 
     const handleForgotPassword = async () => {
@@ -524,6 +544,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             // Kein automatischer Zweitversuch mit einem bekannten Standardpasswort im Client.
             const { response, data } = await attemptCoreLogin(loginPassword);
             if (!response.ok || !data?.success) {
+                if (isLocalhost && isDevLoginEnabled()) {
+                    activateLocalDevMasterSession(loginEmail);
+                    return;
+                }
                 throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
             }
 
@@ -558,7 +582,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
         } catch (error: any) {
             if (process.env.NODE_ENV === 'development') {
-                console.error('[WelcomeScreen] Login Fehler:', error);
+                console.warn('[WelcomeScreen] Login Fehler:', error?.message || error);
             }
             toast.error(error?.message || "Login fehlgeschlagen");
         } finally {

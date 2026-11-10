@@ -10,6 +10,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
 import { StationPlanet, WorkSurface, type DeptMember, type Origin, type RoomKind } from '@/features/universe/ui/Workbench';
 import { deptWork } from '@/lib/universe/deptWork';
+import { getShipDepartmentCrew } from '@/lib/universe/shipDepartments';
 import { Werkstatt, placeFromParam, roomKindFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
 import { localISO } from '@/lib/lea/world';
 import { useTeamMembers } from '@/lib/queries/useTeamMembers';
@@ -364,7 +365,7 @@ export function UnifiedUniverse({
     (user as { active_company_id?: string | null } | null)?.active_company_id ||
     null;
 
-  const effectiveIsDemo = Boolean(
+  const effectiveIsDemo = companyId === 'company-local-demo' ? false : Boolean(
     activeCompanyIsDemo ||
     (user as { is_demo?: boolean } | null)?.is_demo ||
     user?.role === 'demo' ||
@@ -470,6 +471,8 @@ export function UnifiedUniverse({
       seen.add(k);
       list.push(m);
     };
+    const canonical = getShipDepartmentCrew(planet.id) ?? getShipDepartmentCrew(planet.title);
+    if (canonical) canonical.forEach((c) => add(c));
     teamMembers.forEach((m, idx) => {
       const isLead = /owner|admin|lead|captain|leitung/i.test(m.role) || idx === 0;
       add({ id: m.id, name: m.name, role: isLead ? 'Abteilungsleitung' : m.role, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });

@@ -126,6 +126,19 @@ export function StationPlanet({
   const captain = crew.find((c) => c.isCaptain) ?? crew[0] ?? null;
   const members = crew.filter((c) => c !== captain);
 
+  // Im Abteilungs-Deck zieht sich der große Wasser-Rumpf des Docks zurück, damit Deck, Ordner und Räume frei stehen.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (!leaving && !root.hasAttribute('data-os-work')) {
+      root.setAttribute('data-os-work', 'deck');
+    }
+    return () => {
+      if (root.getAttribute('data-os-work') === 'deck') {
+        root.removeAttribute('data-os-work');
+      }
+    };
+  }, [leaving]);
+
   return (
     <div className={`ck-open ck-open--orbit ws-station${leaving ? ' is-leaving' : ''}`} data-testid={`planet-${planet.id}`} style={colorIndex !== undefined ? planetColor(colorIndex) : undefined}>
       <i className="ws-path" aria-hidden />
@@ -139,7 +152,7 @@ export function StationPlanet({
       {(onEnter || onEnterRoom) ? <button type="button" className="ws-enter" onClick={() => enterRoom('werkstatt')} aria-label={`${title}: Werkstatt betreten`} data-testid="planet-enter" style={{ width: ORB, height: ORB }} /> : null}
       {work.loose.slice(0, 9).map((t, k) => (
         <button key={t.id} type="button" className="ws-light ws-light--planet" data-overdue={t.overdue ? '1' : undefined} data-testid={`task-light-${t.id}`}
-          style={{ left: `calc(50% + ${loose[k].x}px)`, top: `calc(30% + ${loose[k].y}px)`, ['--d' as string]: `${k * 0.7}s` }}
+          style={{ left: `calc(50% + ${loose[k].x}px)`, top: `calc(20% + ${loose[k].y}px)`, ['--d' as string]: `${k * 0.7}s` }}
           title={t.title} aria-label={t.title} onClick={(e) => onTask(t.id, originOf(e.currentTarget))}><i /></button>
       ))}
       <div className="ck-moons ws-moons">
@@ -152,7 +165,7 @@ export function StationPlanet({
           const docPts = arc(Math.min(docs.length, 7), 238, 302, MOON / 2 + 12);
           const lights = arc(Math.min(open.length, 7), s.x < 0 ? 212 : -32, s.x < 0 ? 140 : 40, MOON / 2 + 24);
           return (
-            <div key={m.id} className="ws-moon" style={{ left: `calc(50% + ${(s.x * 31).toFixed(2)}%)`, top: `calc(30% + ${Math.round(s.y * 175)}px)`, ['--i' as string]: i }} data-active={activeMoon === m.id ? '1' : undefined}>
+            <div key={m.id} className="ws-moon" style={{ left: `calc(50% + ${(s.x * 38).toFixed(2)}%)`, top: `calc(20% + ${Math.round(s.y * 120)}px)`, ['--i' as string]: i }} data-active={activeMoon === m.id ? '1' : undefined}>
               <button type="button" className="ck-moon ws-moon__btn" aria-pressed={activeMoon === m.id} disabled={disabled} data-testid={`moon-${m.id}`}
                 data-watch={watch?.has(m.id) ? 'true' : undefined} title={disabled ? (m.hint || 'Ordner gerade nicht ladbar') : undefined}
                 onClick={disabled ? undefined : (e) => onMoon(m.id, originOf(e.currentTarget.querySelector('.glass-orb')))}>
@@ -174,44 +187,75 @@ export function StationPlanet({
           );
         })}
       </div>
-      <div className="ck-horizon" style={{ ['--glass' as string]: `url(/universe/glass/half.png)` }}><div className="ck-horizon__img" /></div>
       <div className="ws-deck" data-testid="dept-deck">
-        <h2 className="ck-horizon__title ws-title" style={onOpenDept ? { cursor: 'pointer' } : undefined} onClick={onOpenDept}>
-          {title}
-          {space ? <small>{clean(space)}</small> : null}
-          {work.open ? <span className="ws-title__n">{work.open} offen{work.overdue ? <em> · {work.overdue} überfällig</em> : null}</span> : null}
-        </h2>
+        <div className="ws-deck__head">
+          <span className="ws-deck__eyebrow">Abteilungs-Deck · MÔRA Raumschiff</span>
+          <div className="ws-deck__title ws-title" style={onOpenDept ? { cursor: 'pointer' } : undefined} onClick={onOpenDept}>
+            <strong>{title}</strong>
+            {space ? <small>{clean(space)}</small> : null}
+            {work.open ? <span className="ws-title__n">{work.open} offen{work.overdue ? <em> · {work.overdue} überfällig</em> : null}</span> : null}
+          </div>
+        </div>
         {crew.length > 0 ? (
           <div className="ws-crew" data-testid="dept-crew" aria-label={`Crew ${title}`}>
             {captain ? (
               <span className="ws-crew__chip ws-crew__chip--captain" data-online={captain.status === 'online' ? '1' : undefined} data-testid="dept-captain">
-                <CrewRelicAvatar id={captain.id} name={clean(captain.name)} isCaptain status={captain.status} size={22} testId={`crew-avatar-${captain.id}`} />
+                <CrewRelicAvatar id={captain.id} name={clean(captain.name)} isCaptain status={captain.status} size={24} testId={`crew-avatar-${captain.id}`} />
                 <b>Captain {clean(captain.name)}</b>
                 {captain.role ? <small>{clean(captain.role)}</small> : null}
               </span>
             ) : null}
-            {members.slice(0, 5).map((m) => (
+            {members.slice(0, 6).map((m) => (
               <span key={m.id} className="ws-crew__chip" data-online={m.status === 'online' ? '1' : undefined}>
-                <CrewRelicAvatar id={m.id} name={clean(m.name)} status={m.status} size={20} testId={`crew-avatar-${m.id}`} />
+                <CrewRelicAvatar id={m.id} name={clean(m.name)} status={m.status} size={22} testId={`crew-avatar-${m.id}`} />
                 <span>{clean(m.name)}</span>
                 {m.role ? <small>{clean(m.role)}</small> : null}
               </span>
             ))}
           </div>
         ) : null}
+        {planet.moons.length > 0 ? (
+          <div className="ws-deck__folders" aria-label={`Ordner in ${title}`} data-testid="dept-folders">
+            {planet.moons.map((m) => {
+              const w = work.moons.get(m.id);
+              const docs = w?.docs ?? [];
+              const open = w?.open ?? [];
+              const disabled = Boolean(m.loadError || m.disabled);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="ws-deck__folder"
+                  disabled={disabled}
+                  onClick={disabled ? undefined : (e) => onMoon(m.id, originOf(e.currentTarget))}
+                  data-testid={`deck-folder-${m.id}`}
+                >
+                  <b>{clean(m.title)}</b>
+                  <small>{[plural(docs.length, 'Dokument', 'Dokumente'), open.length ? `${open.length} offen` : ''].filter(Boolean).join(' · ')}</small>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         {(onEnter || onEnterRoom) ? (
           <nav className="ws-rooms" aria-label={`Räume in ${title}`} data-testid="dept-rooms">
-            <button type="button" className="ws-room-door" onClick={() => enterRoom('werkstatt')} data-testid="room-enter-werkstatt">
+            <button type="button" className="ws-room-door" data-room="werkstatt" onClick={() => enterRoom('werkstatt')} data-testid="room-enter-werkstatt">
+              <span className="ws-room-door__tag">Raum 01 · Arbeit</span>
               <b>Werkstatt</b>
-              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'}` : 'Brett & Planung'}</small>
+              <small>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} am Brett` : 'Brett, Schreibtisch & Wochenmappe'}</small>
+              <span className="ws-room-door__go" aria-hidden>Werkstatt betreten →</span>
             </button>
-            <button type="button" className="ws-room-door" onClick={() => enterRoom('studio')} data-testid="room-enter-studio">
+            <button type="button" className="ws-room-door" data-room="studio" onClick={() => enterRoom('studio')} data-testid="room-enter-studio">
+              <span className="ws-room-door__tag">Raum 02 · Wissen</span>
               <b>Studio</b>
-              <small>{docCount ? plural(docCount, 'Dokument', 'Dokumente') : plural(planet.moons.length, 'Ordner', 'Ordner')}</small>
+              <small>{docCount ? `${plural(docCount, 'Dokument', 'Dokumente')} im Buch` : `${plural(planet.moons.length, 'Ordner', 'Ordner')} & Entwürfe`}</small>
+              <span className="ws-room-door__go" aria-hidden>Studio betreten →</span>
             </button>
-            <button type="button" className="ws-room-door" onClick={() => enterRoom('bar')} data-testid="room-enter-bar">
+            <button type="button" className="ws-room-door" data-room="bar" onClick={() => enterRoom('bar')} data-testid="room-enter-bar">
+              <span className="ws-room-door__tag">Raum 03 · Crew</span>
               <b>Bar</b>
-              <small>{crew.length ? `${crew.length} an Bord` : 'Crew & Übergabe'}</small>
+              <small>{crew.length ? `${crew.length} an Bord · Übergabe` : 'Crew-Lounge & Übergabe'}</small>
+              <span className="ws-room-door__go" aria-hidden>Bar betreten →</span>
             </button>
           </nav>
         ) : null}

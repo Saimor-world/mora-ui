@@ -81,7 +81,16 @@ export function MorgenrotHome({ navigate, initialView, preview = false }: { navi
         text={state.signedInElsewhere
           ? `Du bist gerade bei einer anderen Firma angemeldet. ${COMPANY} liegt in CORE unter ${MORGENROT.companyId} und braucht den eigenen Demo-Zugang.`
           : `${COMPANY} liegt in CORE. Melde dich mit dem Demo-Zugang an, dann siehst du den echten Stand.`}
-        action={<Link className="hm-btn hm-btn--p" href="/" data-testid="morgenrot-login">Zur Anmeldung</Link>}
+        action={
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Link className="hm-btn hm-btn--p" href="/" data-testid="morgenrot-login">Zur Anmeldung</Link>
+            {preview ? (
+              <button type="button" className="hm-btn" onClick={() => setState({ kind: 'offline' })} data-testid="morgenrot-local-preview">
+                Lokale Vorschau öffnen
+              </button>
+            ) : null}
+          </div>
+        }
       />
     </Shell>
   );
