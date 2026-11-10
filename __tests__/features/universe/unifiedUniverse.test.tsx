@@ -154,8 +154,14 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
       </QueryClientProvider>
     );
 
-    // Initial geöffnet: Planet Küche
+    // Initial geöffnet: Planet Küche mit Abteilungsansicht (Captain/Crew + Räume Werkstatt, Studio, Bar)
     expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
+    expect(screen.getByTestId('dept-deck')).toBeInTheDocument();
+    expect(screen.getByTestId('dept-crew')).toBeInTheDocument();
+    expect(screen.getByTestId('dept-rooms')).toBeInTheDocument();
+    expect(screen.getByTestId('room-enter-werkstatt')).toBeInTheDocument();
+    expect(screen.getByTestId('room-enter-studio')).toBeInTheDocument();
+    expect(screen.getByTestId('room-enter-bar')).toBeInTheDocument();
     expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
 
     expect(screen.queryByTestId('world-view-toggle')).not.toBeInTheDocument();

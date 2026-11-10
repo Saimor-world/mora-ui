@@ -18,17 +18,19 @@ import { PaperSlip } from './PaperSlip';
 import { Book } from './Book';
 import { Mappe, weekNodesFrom } from './Mappe';
 import { TaskSheet } from './TaskSheet';
+import type { DeptMember, RoomKind } from '@/features/universe/ui/Workbench';
 
 export type Place = { kind: 'room' } | { kind: 'task'; id: string } | { kind: 'doc'; id: string } | { kind: 'planung' };
 export const placeFromParam = (p: string | null): Place | null => {
   if (!p) return null;
-  if (p === 'werkstatt') return { kind: 'room' };
+  if (p === 'werkstatt' || p === 'studio' || p === 'bar') return { kind: 'room' };
   if (p === 'planung') return { kind: 'planung' };
   const [k, id] = p.split(':');
   if (k === 'aufgabe' && id) return { kind: 'task', id };
   if (k === 'dokument' && id) return { kind: 'doc', id };
   return null;
 };
+export const roomKindFromParam = (p: string | null): RoomKind => (p === 'studio' ? 'studio' : p === 'bar' ? 'bar' : 'werkstatt');
 
 /** Der Raum (Bühnen-Einheiten im Raumbild 1920×1080). */
 const ROOM = {
@@ -108,6 +110,12 @@ export interface WerkstattProps {
   planets: SkyPlanet[];
   companyId: string | null;
   today: string;
+  /** Welcher Raum der Abteilung betreten wurde (Werkstatt, Studio, Bar). */
+  roomKind?: RoomKind;
+  /** Crew / Captain der Abteilung für die Bar- und Abteilungsansicht. */
+  crew?: DeptMember[];
+  /** Beschriftung für den Rückweg aus dem Raum (z. B. Abteilungsname). */
+  backLabel?: string;
   /** Startort (Deep-Link ?platz=…) – ohne Anflug. */
   initial?: Place | null;
   /** Woher der Anflug kommt (Planet im Fenster). null = direkt. */
@@ -115,12 +123,15 @@ export interface WerkstattProps {
   onExit: () => void;
 }
 
-export function Werkstatt({ planet, work, planets, companyId, today, initial, fromSpace = true, onExit }: WerkstattProps) {
+export function Werkstatt({ planet, work, planets, companyId, today, roomKind = 'werkstatt', crew = [], backLabel, initial, fromSpace = true, onExit }: WerkstattProps) {
   const stage = useStage();
   // Der Raum hat seine eigene Bühne (bei 4:3 verkleinert, damit Regal und Pult beide sichtbar bleiben).
   const room = useMemo(() => roomStage(stage), [stage]);
   const world = useWorld();
   const title = clean(planet.title);
+  const [activeRoom, setActiveRoom] = useState<RoomKind>(roomKind);
+  useEffect(() => { setActiveRoom(roomKind); }, [roomKind]);
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLDivElement>(null);
@@ -133,11 +144,15 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const close = top.kind === 'room' ? null : top;
 
   // Aufgaben, Dokumente, Wochen – aus denselben Daten wie die Abteilung (useWorld → deptWork).
-  const tasks = useMemo(() => {
+  const allTasks = useMemo(() => {
     const l: WorkTask[] = [...work.loose];
     work.moons.forEach((m) => l.push(...m.open, ...m.done));
     return l;
   }, [work]);
+  const tasks = useMemo(
+    () => (activeFolder ? allTasks.filter((t) => t.folderId === activeFolder) : allTasks),
+    [allTasks, activeFolder]
+  );
   const board = useMemo(() => arrangeBoard(tasks, today, PER_PAGE), [tasks, today]);
   const allDocs = useMemo(() => {
     const l: { id: string; name: string; meta: string; folderId: string }[] = [];
@@ -145,7 +160,10 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
     return l;
   }, [work]);
   const weeksDocs = allDocs.filter((d) => /wochenplan[\s_-]*kw/i.test(d.name));
-  const docs = allDocs.filter((d) => !weeksDocs.includes(d));
+  const docs = useMemo(() => {
+    const base = allDocs.filter((d) => !weeksDocs.includes(d));
+    return activeFolder ? base.filter((d) => d.folderId === activeFolder) : base;
+  }, [allDocs, weeksDocs, activeFolder]);
   const planFolder = planet.moons.find((m) => /planung/i.test(m.title))?.id ?? weeksDocs[0]?.folderId ?? planet.moons[0]?.id ?? null;
   const weeks = useMemo(() => weekNodesFrom(weeksDocs, Number(today.slice(0, 4))), [weeksDocs, today]);
   const [lectern, setLectern] = useState<string | null>(null);
@@ -285,8 +303,9 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
     return () => window.removeEventListener('keydown', k, true);
   }, [back]);
 
-  const nameOf = (p: Place) => (p.kind === 'room' ? 'Werkstatt' : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : 'Planung');
-  const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: 'Universe', run: back };
+  const roomLabel = activeRoom === 'studio' ? 'Studio' : activeRoom === 'bar' ? 'Bar' : 'Werkstatt';
+  const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : 'Planung');
+  const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
   // Brett ----------------------------------------------------------------------------------------------
   const [page, setPage] = useState(0);
@@ -299,7 +318,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const pg = Math.min(page, pages.length - 1);
   const cards = pages[pg] ?? [];
   const order = useMemo(() => [...board.pages.flat(), ...board.later], [board]);
-  const newTaskFolder = planFolder ?? planet.moons[0]?.id ?? null;
+  const newTaskFolder = activeFolder ?? planFolder ?? planet.moons[0]?.id ?? null;
   const submitDraft = async () => {
     const v = (draft ?? '').trim();
     if (!v) { setDraft(null); return; }
@@ -310,47 +329,98 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
   const cw = (B.w - PAD * 2 - GAP * (COLS - 1)) / COLS, ch = (B.h - PAD * 2 - GAP) / 2;
   const slot = (i: number) => ({ left: B.x + PAD + (i % COLS) * (cw + GAP), top: B.y + PAD + Math.floor(i / COLS) * (ch + GAP), width: cw, height: ch });
   const roomImg = world === 'morgennebel' ? '/werkstatt/room-werkstatt-morgen.webp' : '/werkstatt/room-werkstatt.webp';
-  const taskOf = (id: string) => tasks.find((t) => t.id === id) ?? null;
+  const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
   const folderName = (t: WorkTask | null) => (t?.folderId ? clean(planet.moons.find((m) => m.id === t.folderId)?.title ?? '') : '');
+  const folderTitleById = (fid: string) => clean(planet.moons.find((m) => m.id === fid)?.title ?? '');
 
   return (
-    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
+    <div ref={rootRef} className="wk-root" lang="de" data-world={world} data-room={activeRoom} data-testid="werkstatt" data-place={top.kind} data-landed={landed ? '1' : undefined}>
       <div ref={roomRef} className="wk-room" aria-hidden={close ? true : undefined}>
-        <StageLayer stage={room} img={roomImg} ext={roomImg.replace('.webp', '')} label={`Werkstatt ${title}`} testId="wk-room"
+        <StageLayer stage={room} img={roomImg} ext={roomImg.replace('.webp', '')} label={`${roomLabel} ${title}`} testId="wk-room"
           under={<WindowUniverse rect={ROOM.window} world={world} planets={planets} focusId={planet.id} />}>
-          {/* Brett */}
-          <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
-            {draft !== null ? (
-              <div className="wk-card wk-card--new" style={slot(0)} role="listitem">
-                <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
-                  onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
+          {/* Abteilungs- & Raumschild + echte Ordner der Abteilung */}
+          <div className="wk-room-bar" style={{ left: B.x, top: B.y - 46, width: B.w }} data-testid="wk-room-bar">
+            <span className="wk-plate wk-plate--room" data-testid="wk-room-sign">{title} · {roomLabel}</span>
+            {planet.moons.length > 0 && activeRoom !== 'bar' ? (
+              <div className="wk-folders" role="group" aria-label={`Ordner in ${title}`} data-testid="wk-folders">
+                <button type="button" className="wk-folder-tab" aria-pressed={activeFolder === null} data-testid="wk-folder-all"
+                  onClick={() => { setActiveFolder(null); setPage(0); }}>Alle</button>
+                {planet.moons.map((m) => (
+                  <button key={m.id} type="button" className="wk-folder-tab" aria-pressed={activeFolder === m.id} data-testid={`wk-folder-${m.id}`}
+                    onClick={() => { setActiveFolder(m.id); setPage(0); }}>{clean(m.title)}</button>
+                ))}
               </div>
             ) : null}
-            {cards.slice(0, draft !== null ? PER_PAGE - 1 : PER_PAGE).map((t, i) => {
-              const k = i + (draft !== null ? 1 : 0);
-              return (
-                <button key={t.id} type="button" role="listitem" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
-                  style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
-                  <i className="wk-pin" aria-hidden />
-                  <span className="wk-card__t">{t.title}</span>
-                  <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em>{t.assignee}</em> : null}</span>
-                </button>
-              );
-            })}
-            {!later && board.later.length ? (
-              <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Aufgaben`}>
-                <i className="wk-bundle__clip" aria-hidden />
-                <span className="wk-card__t">später</span>
-                <span className="wk-bundle__n">{board.later.length}</span>
-              </button>
-            ) : later ? (
-              <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Aufgaben">
-                <span className="wk-card__t">jetzt</span>
-              </button>
-            ) : null}
           </div>
-          {pages.length > 1 ? (
+
+          {/* Brett je nach Raum-Modus: Werkstatt (Aufgaben), Studio (Dokumente & Konzepte), Bar (Captain, Crew & MÔRA) */}
+          {activeRoom === 'studio' ? (
+            <div className="wk-board" role="list" aria-label={`Studio ${title}`} data-testid="wk-board" data-room-mode="studio">
+              {docs.slice(0, 6).map((d, i) => (
+                <button key={d.id} type="button" role="listitem" className="wk-card" data-testid={`wk-doc-card-${d.id}`}
+                  style={{ ...slot(i), rotate: `${((hash(d.id) % 5) - 2) * 0.3}deg` }} onClick={() => { setLectern(d.id); open({ kind: 'doc', id: d.id }); }}>
+                  <i className="wk-pin" aria-hidden />
+                  <span className="wk-card__t">{clean(d.name)}</span>
+                  <span className="wk-card__f">{folderTitleById(d.folderId) || 'Dokument'}</span>
+                </button>
+              ))}
+            </div>
+          ) : activeRoom === 'bar' ? (
+            <div className="wk-board" role="list" aria-label={`Bar ${title}`} data-testid="wk-board" data-room-mode="bar">
+              {crew.slice(0, 5).map((c, i) => {
+                const openCount = allTasks.filter((t) => !t.done && t.assignee && t.assignee.toLowerCase() === c.name.toLowerCase()).length;
+                return (
+                  <div key={c.id} role="listitem" className="wk-card" data-testid={`wk-crew-${c.id}`} style={{ ...slot(i), cursor: 'default' }}>
+                    <i className="wk-pin" aria-hidden />
+                    <span className="wk-card__t">{c.isCaptain ? `Captain ${clean(c.name)}` : clean(c.name)}</span>
+                    <span className="wk-card__f">
+                      {c.role ? clean(c.role) : (c.isCaptain ? 'Abteilungsleitung' : 'Crew')}
+                      {openCount ? <em>{openCount} offen</em> : null}
+                    </span>
+                  </div>
+                );
+              })}
+              <button type="button" role="listitem" className="wk-card wk-bundle" style={slot(Math.min(crew.length, 5))}
+                onClick={() => useOsShellStore.getState().setMoraOpen(true)} data-testid="wk-mora-ship" aria-label="MÔRA (Das Schiff) rufen">
+                <i className="wk-bundle__clip" aria-hidden />
+                <span className="wk-card__t">MÔRA · Das Schiff</span>
+                <span className="wk-card__f">Universum & Räume steuern</span>
+              </button>
+            </div>
+          ) : (
+            <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
+              {draft !== null ? (
+                <div className="wk-card wk-card--new" style={slot(0)} role="listitem">
+                  <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
+                    onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
+                </div>
+              ) : null}
+              {cards.slice(0, draft !== null ? PER_PAGE - 1 : PER_PAGE).map((t, i) => {
+                const k = i + (draft !== null ? 1 : 0);
+                return (
+                  <button key={t.id} type="button" role="listitem" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
+                    style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
+                    <i className="wk-pin" aria-hidden />
+                    <span className="wk-card__t">{t.title}</span>
+                    <span className="wk-card__f">{t.due ? (t.dueToday ? 'heute' : shortDate(t.due)) : ''}{t.overdue ? <i className="wk-dot" aria-label="überfällig" /> : null}{t.assignee ? <em>{t.assignee}</em> : null}</span>
+                  </button>
+                );
+              })}
+              {!later && board.later.length ? (
+                <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Aufgaben`}>
+                  <i className="wk-bundle__clip" aria-hidden />
+                  <span className="wk-card__t">später</span>
+                  <span className="wk-bundle__n">{board.later.length}</span>
+                </button>
+              ) : later ? (
+                <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Aufgaben">
+                  <span className="wk-card__t">jetzt</span>
+                </button>
+              ) : null}
+            </div>
+          )}
+          {activeRoom === 'werkstatt' && pages.length > 1 ? (
             <div className="wk-tag wk-tag--pager" style={{ left: B.x + 214, top: B.y + B.h + 14 }}>
               <button type="button" onClick={() => setPage(Math.max(0, pg - 1))} disabled={pg === 0} aria-label="Blatt zurück" data-testid="wk-board-prev">‹</button>
               <span data-testid="wk-board-page">{pg + 1} / {pages.length}</span>
@@ -365,7 +435,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
           {docSlip ? (
             <PaperSlip x={1060} y={120} w={420} label="Dokumente" onClose={() => setDocSlip(false)} testId="wk-doc-slip">
               <ul className="wk-slip__list">
-                {docs.map((d) => <li key={d.id}><button type="button" onClick={() => { setDocSlip(false); setLectern(d.id); open({ kind: 'doc', id: d.id }); }}><span>{clean(d.name)}</span></button></li>)}
+                {docs.map((d) => <li key={d.id}><button type="button" onClick={() => { setDocSlip(false); setLectern(d.id); open({ kind: 'doc', id: d.id }); }}><span>{clean(d.name)}</span>{folderTitleById(d.folderId) ? <em>{folderTitleById(d.folderId)}</em> : null}</button></li>)}
               </ul>
             </PaperSlip>
           ) : null}
@@ -397,7 +467,10 @@ export function Werkstatt({ planet, work, planets, companyId, today, initial, fr
 
       {!close && landed ? (
         <WorkDock back={backTo} actions={[
-          { id: 'neue-aufgabe', label: 'Neue Aufgabe', run: () => { setLater(false); setPage(0); setDraft(''); } },
+          { id: 'raum-werkstatt', label: 'Werkstatt', run: () => setActiveRoom('werkstatt'), pressed: activeRoom === 'werkstatt' },
+          { id: 'raum-studio', label: 'Studio', run: () => setActiveRoom('studio'), pressed: activeRoom === 'studio' },
+          { id: 'raum-bar', label: 'Bar', run: () => setActiveRoom('bar'), pressed: activeRoom === 'bar' },
+          { id: 'neue-aufgabe', label: 'Neue Aufgabe', run: () => { setActiveRoom('werkstatt'); setLater(false); setPage(0); setDraft(''); } },
           { id: 'dokumente', label: 'Dokumente', run: () => setDocSlip((v) => !v), pressed: docSlip },
           { id: 'planung', label: 'Planung', run: () => open({ kind: 'planung' }) },
         ]} />

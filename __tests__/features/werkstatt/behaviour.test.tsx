@@ -211,3 +211,29 @@ describe('Mappe – Wochenblatt von Hand', () => {
     expect(createdContent).toContain('| Technik |');
   });
 });
+
+describe('Abteilungsräume (Werkstatt, Studio, Bar) & echte Ordner', () => {
+  it('zeigt die echten Ordner der Abteilung am Brett und wechselt zwischen Werkstatt, Studio und Bar', () => {
+    const crew = [
+      { id: 'c1', name: 'Marius', role: 'Abteilungsleitung', status: 'online' as const, isCaptain: true },
+      { id: 'c2', name: 'Lea', role: 'Küche', status: 'online' as const },
+    ];
+    wrap(<Werkstatt planet={planet} work={work} planets={[]} companyId="c" today={TODAY} roomKind="werkstatt" crew={crew} backLabel="Laden" fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Werkstatt');
+    expect(screen.getByTestId('wk-folders')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-folder-f-plan')).toHaveTextContent('Planung');
+    expect(screen.getByTestId('wk-folder-f-hb')).toHaveTextContent('Handbuch');
+
+    // Wechsel ins Studio zeigt die echten Dokumente der Abteilung
+    fireEvent.click(screen.getByRole('button', { name: 'Studio' }));
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Studio');
+    expect(screen.getByTestId('wk-doc-card-n-hb')).toHaveTextContent('Betriebshandbuch');
+
+    // Wechsel in die Bar zeigt Captain, Crew und MÔRA (Das Schiff)
+    fireEvent.click(screen.getByRole('button', { name: 'Bar' }));
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Laden · Bar');
+    expect(screen.getByTestId('wk-crew-c1')).toHaveTextContent('Captain Marius');
+    expect(screen.getByTestId('wk-crew-c2')).toHaveTextContent('Lea');
+    expect(screen.getByTestId('wk-mora-ship')).toHaveTextContent('MÔRA · Das Schiff');
+  });
+});

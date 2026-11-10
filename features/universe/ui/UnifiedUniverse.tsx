@@ -8,10 +8,11 @@ import { ArrowLeft } from 'lucide-react';
 import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
-import { StationPlanet, WorkSurface, type Origin } from '@/features/universe/ui/Workbench';
+import { StationPlanet, WorkSurface, type DeptMember, type Origin, type RoomKind } from '@/features/universe/ui/Workbench';
 import { deptWork } from '@/lib/universe/deptWork';
-import { Werkstatt, placeFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
+import { Werkstatt, placeFromParam, roomKindFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
 import { localISO } from '@/lib/lea/world';
+import { useTeamMembers } from '@/lib/queries/useTeamMembers';
 import { CockpitWindow } from '@/features/home/cockpit/Window';
 import { deriveLiveAttention, finderToCockpitPlanets } from '@/features/home/cockpit/coreAdapter';
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
@@ -300,8 +301,8 @@ export function UnifiedUniverse({
   const [deptSheetOpen, setDeptSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [mobileBriefingOpen, setMobileBriefingOpen] = useState(false);
-  // Raum der Abteilung (Werkstatt): offen, mit Startort und ob die Kamera von draußen durchs Fenster kommt.
-  const [room, setRoom] = useState<{ place: Place | null; fromSpace: boolean } | null>(null);
+  // Raum der Abteilung (Werkstatt, Studio, Bar): offen, mit Startort und ob die Kamera von draußen durchs Fenster kommt.
+  const [room, setRoom] = useState<{ kind: RoomKind; place: Place | null; fromSpace: boolean } | null>(null);
 
   // Style state: 'glas' (HQ-Gesamtansicht mit dunklen Glasplaneten) oder 'pixel' (HQ-Pixelansicht mit Mini-Monden)
   // Genau EIN Umschalter (.wd-view links auf halber Höhe)
@@ -345,8 +346,9 @@ export function UnifiedUniverse({
     if (ort && ort !== 'firma') setPlanetId(ort);
     const ordner = params.get('ordner');
     if (ordner) setMoonId(ordner);
-    const platz = placeFromParam(params.get('platz'));
-    if (ort && platz) setRoom({ place: platz, fromSpace: false });
+    const platzRaw = params.get('platz');
+    const platz = placeFromParam(platzRaw);
+    if (ort && platz) setRoom({ kind: roomKindFromParam(platzRaw), place: platz, fromSpace: false });
   }, []);
 
   // Demo detection and company name
@@ -457,6 +459,31 @@ export function UnifiedUniverse({
     const names = Array.from(new Set((f?.spaces ?? []).map((sp) => sp.name).filter(Boolean)));
     return names.length === 1 ? names[0] : null;
   }, [planet, world.finder]);
+  const { data: teamMembers = [] } = useTeamMembers(Boolean(planet));
+  const deptCrew = useMemo<DeptMember[]>(() => {
+    if (!planet) return [];
+    const seen = new Set<string>();
+    const list: DeptMember[] = [];
+    const add = (m: DeptMember) => {
+      const k = m.name.trim().toLowerCase();
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      list.push(m);
+    };
+    teamMembers.forEach((m, idx) => {
+      const isLead = /owner|admin|lead|captain|leitung/i.test(m.role) || idx === 0;
+      add({ id: m.id, name: m.name, role: isLead ? 'Abteilungsleitung' : m.role, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });
+    });
+    const assignees = new Set<string>();
+    work.loose.forEach((t) => { if (t.assignee) assignees.add(t.assignee); });
+    work.moons.forEach((mw) => [...mw.open, ...mw.done].forEach((t) => { if (t.assignee) assignees.add(t.assignee); }));
+    assignees.forEach((a) => add({ id: `assignee-${a}`, name: a, role: planet.jobRoles?.[0], status: 'online', isCaptain: list.length === 0 }));
+    if (list.length === 0) {
+      const me = firstName(user);
+      if (me) add({ id: user?.id || 'me', name: me, role: 'Abteilungsleitung', status: 'online', isCaptain: true });
+    }
+    return list;
+  }, [planet, teamMembers, work, user]);
   const workTask = useMemo(() => {
     if (!taskId) return null;
     let hit = work.loose.find((t) => t.id === taskId) ?? null;
@@ -479,14 +506,15 @@ export function UnifiedUniverse({
     return nightwatchIncidentsToIncidentStatusPanels(activeDeptIncidents);
   }, [activeDeptIncidents]);
 
-  // Von Home kommend: der angeflogene Planet ist sofort offen (vorher landete der Klick in der Übersicht).
+  // Von Home kommend: der angeflogene Planet öffnet zuerst die Abteilungsansicht (Captain, Crew, Ordner, Räume);
+  // nur bei Klick auf eine konkrete Aufgabe geht es direkt zu ihr in den Raum.
   const [fromHome, setFromHome] = useState(false);
   useEffect(() => {
     const t = useUniverseFocus.getState().take();
     if (!t?.planetId) return;
     setPlanetId(t.planetId); setFromHome(t.from === 'home');
-    // Von Home: durchs Fenster in den Raum der Abteilung, bei einer Aufgabe gleich weiter zu ihr auf den Schreibtisch.
-    if (t.from === 'home') { setRoom({ place: t.taskId ? { kind: 'task', id: t.taskId } : null, fromSpace: true }); return; }
+    if (t.from === 'home' && t.taskId) { setRoom({ kind: 'werkstatt', place: { kind: 'task', id: t.taskId }, fromSpace: true }); return; }
+    setRoom(null);
     setMoonId(t.taskId ? null : (t.moonId ?? null)); setTaskId(t.taskId ?? null);
   }, []);
 
@@ -782,6 +810,7 @@ export function UnifiedUniverse({
             planet={planet}
             work={work}
             space={spaceName}
+            crew={deptCrew}
             colorIndex={planets.findIndex((p) => p.id === planet.id)}
             activeMoon={moonId}
             leaving={leaving}
@@ -789,7 +818,8 @@ export function UnifiedUniverse({
             onMoon={(id, o) => { setOrigin(o); setTaskId(null); setMoonId(id); setDeptSheetOpen(false); }}
             onTask={(id, o) => { setOrigin(o); setMoonId(null); setTaskId(id); setDeptSheetOpen(false); }}
             onOpenDept={() => setDeptSheetOpen(true)}
-            onEnter={() => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ place: null, fromSpace: true }); }}
+            onEnter={() => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ kind: 'werkstatt', place: null, fromSpace: true }); }}
+            onEnterRoom={(kind) => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ kind, place: null, fromSpace: true }); }}
           />
         ) : sceneMode === 'planet' && planet ? (
           <OpenPlanet
@@ -855,12 +885,15 @@ export function UnifiedUniverse({
 
       {room && planet ? (
         <Werkstatt
-          key={planet.id}
+          key={`${planet.id}-${room.kind}`}
           planet={planet}
           work={work}
           planets={planets.map((p) => ({ id: p.id, title: stripFiktiv(p.title) || p.title }))}
           companyId={companyId}
           today={localISO(new Date())}
+          roomKind={room.kind}
+          crew={deptCrew}
+          backLabel={stripFiktiv(planet.title) || planet.title}
           initial={room.place}
           fromSpace={room.fromSpace}
           onExit={() => setRoom(null)}
