@@ -748,16 +748,16 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 }
 
 /* =====================================================================================
-   NAHANSICHT (.wk-close): Material-Abstimmung je Raum-Archetyp + Raum-Kontextleiste
+   NAHANSICHT (.wk-close): Echte Tisch-Illustrationen für station/task; Material-Abstimmung für Pult/Mappe
    ===================================================================================== */
-.wk-close[data-archetype='studio'] > .wk-stage > .wk-stage__img {
+.wk-close[data-archetype='studio']:not([data-close-kind='station']):not([data-close-kind='task']) > .wk-stage > .wk-stage__img {
   filter: saturate(0.42) contrast(1.08) brightness(0.84) hue-rotate(-14deg);
 }
-.wk-close[data-archetype='bar'] > .wk-stage > .wk-stage__img {
+.wk-close[data-archetype='bar']:not([data-close-kind='station']):not([data-close-kind='task']) > .wk-stage > .wk-stage__img {
   filter: saturate(1.14) contrast(1.06) brightness(0.92) hue-rotate(-8deg);
 }
-.wk-close[data-archetype='kontor'] > .wk-stage > .wk-stage__img,
-.wk-close[data-archetype='bridge'] > .wk-stage > .wk-stage__img {
+.wk-close[data-archetype='kontor']:not([data-close-kind='station']):not([data-close-kind='task']) > .wk-stage > .wk-stage__img,
+.wk-close[data-archetype='bridge']:not([data-close-kind='station']):not([data-close-kind='task']) > .wk-stage > .wk-stage__img {
   filter: saturate(0.78) contrast(1.08) brightness(0.88) hue-rotate(42deg);
 }
 

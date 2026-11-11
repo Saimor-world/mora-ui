@@ -73,8 +73,16 @@ const clean = (s: string) => stripFiktiv(s) || s;
 const box = (r: Rect): React.CSSProperties => ({ left: r.x, top: r.y, width: r.w, height: r.h });
 /** 3 × 2 Plätze am Brett: 5 Karten + der Stapel „später“ – Karten breit genug für ganze Wörter und Namen. */
 const PER_PAGE = 5;
-/** Nahsicht im Licht der Welt: morgens Tageslicht und Lampe aus, nachts Lampenlicht. */
-const closeImg = (kind: keyof typeof CLOSE, world: World) => (world === 'morgennebel' ? CLOSE[kind].img.replace('.webp', '-morgen.webp') : CLOSE[kind].img);
+/** Nahsicht im Licht der Welt & im echten Material des Raums (Basalt-Zeichentisch, Espresso-Theke, Smaragd-Walnuss-Kontor, Eichen-Werkbank). */
+const closeImg = (kind: keyof typeof CLOSE, world: World, archetype?: string) => {
+  let base = CLOSE[kind].img;
+  if (kind === 'station' || kind === 'task') {
+    if (archetype === 'studio') base = '/werkstatt/room-schreibtisch-atelier.webp';
+    else if (archetype === 'bar') base = '/werkstatt/room-schreibtisch-bar.webp';
+    else if (archetype === 'kontor' || archetype === 'bridge') base = '/werkstatt/room-schreibtisch-kontor.webp';
+  }
+  return world === 'morgennebel' ? base.replace('.webp', '-morgen.webp') : base;
+};
 const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; };
 
 function useWorld(): World {
@@ -596,8 +604,13 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
           data-archetype={roomCtx.archetype}
           data-close-kind={close.kind}
         >
-          <StageLayer stage={stage} img={closeImg(close.kind, world)} label={nameOf(close)}
-            under={<WindowUniverse rect={CLOSE[close.kind].sky} world={world} planets={planets} focusId={planet.id} />}>
+          <StageLayer
+            stage={stage}
+            img={closeImg(close.kind, world, roomCtx.archetype)}
+            ext={closeImg(close.kind, world, roomCtx.archetype).replace('.webp', '')}
+            label={nameOf(close)}
+            under={<WindowUniverse rect={CLOSE[close.kind].sky} world={world} planets={planets} focusId={planet.id} />}
+          >
             <div className="wk-close-bar" data-testid="wk-close-bar">
               <button
                 type="button"

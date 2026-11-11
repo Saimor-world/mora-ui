@@ -291,7 +291,38 @@ export function DeskWorkstation({
       { id: 'dec-3', title: 'Kooperationsrahmen für ersten Pilotkunden freigeben', owner: 'Elena V.', approved: false },
     ])
   );
+  const [newDirective, setNewDirective] = useState('');
+  const [newDirectiveOwner, setNewDirectiveOwner] = useState('Captain Marius');
   useEffect(() => writeLocal(`mora.station.bridge.dec.${planetId}`, bridgeDecisions), [bridgeDecisions, planetId]);
+
+  const [kontorBudgets, setKontorBudgets] = useState(() =>
+    readLocal(`mora.station.kontor.budgets.${planetId}`, [
+      { id: 'kb-origin', label: 'Phase 01 Produktion · ORIGIN // 001 Master', amount: 18500, owner: 'Sorel M.', approved: true },
+      { id: 'kb-core', label: 'Mora Core v3 & Raumschiff-Infrastruktur', amount: 12400, owner: 'Kaito R.', approved: true },
+      { id: 'kb-pilot', label: 'Pilotkunden-Onboarding & Partner-Rahmen', amount: 6800, owner: 'Tarek B.', approved: false },
+      { id: 'kb-reserve', label: 'Strategische Liquiditätsreserve (Q4)', amount: 45000, owner: 'Clara D.', approved: true },
+    ])
+  );
+  const [xrplChecks, setXrplChecks] = useState(() =>
+    readLocal(`mora.station.kontor.xrpl.${planetId}`, [
+      { id: 'xrpl-1', label: 'XRPL Testnet-Only aktiv (Mainnet-Sperre ohne Human-Approval)', ok: true },
+      { id: 'xrpl-2', label: 'Keine Private Keys oder Wallet-Seeds im Repository', ok: true },
+      { id: 'xrpl-3', label: 'Deterministischer Seed-Vertrag (1001–1111) SHA-256 verifiziert', ok: true },
+    ])
+  );
+  useEffect(() => writeLocal(`mora.station.kontor.budgets.${planetId}`, kontorBudgets), [kontorBudgets, planetId]);
+  useEffect(() => writeLocal(`mora.station.kontor.xrpl.${planetId}`, xrplChecks), [xrplChecks, planetId]);
+
+  const [techSystems, setTechSystems] = useState(() =>
+    readLocal(`mora.station.technik.sys.${planetId}`, [
+      { id: 'sys-tree', name: 'Core v3 · /v3/tree & Abteilungs-Räume', detail: '1 Abteilung = 1 physischer Raum + transparente Fenster', latency: '4 ms', ok: true },
+      { id: 'sys-tasks', name: 'Core v3 · /v3/tasks & Ordner-Bindung', detail: 'Karten an der Wandtafel + Direkt-Anlage im Raum', latency: '6 ms', ok: true },
+      { id: 'sys-nodes', name: 'Core v3 · /v3/nodes & Doppelseiten-Buch', detail: 'Stehpult-Satz & Wochenmappe synchron', latency: '5 ms', ok: true },
+      { id: 'sys-seed', name: 'Generator · Seed 1001 (ORIGIN // 001)', detail: 'Blender 4.2 LTS · Cycles AgX · Deterministisch', latency: 'Verifiziert', ok: true },
+    ])
+  );
+  const [techTaskDraft, setTechTaskDraft] = useState('');
+  useEffect(() => writeLocal(`mora.station.technik.sys.${planetId}`, techSystems), [techSystems, planetId]);
 
   const filteredTasks = useMemo(() => {
     if (!selectedCrewName) return tasks;
@@ -911,27 +942,51 @@ export function DeskWorkstation({
       ) : null}
 
       {/* =========================================================================================
-          7. KOMMANDOBRÜCKE / TREASURY-KONTOR / TECHNIK-WERKBANK
+          7. SAIMÔR // KOMMANDOBRÜCKE (Strategische Direktiven, Captains-Runde & Charta)
          ========================================================================================= */}
-      {(stationKind === 'bridge-station' || stationKind === 'kontor-station' || stationKind === 'technik-station') ? (
-        <div className="wk-ws-grid" data-testid={`wk-station-${stationKind}`}>
+      {stationKind === 'bridge-station' ? (
+        <div className="wk-ws-grid" data-testid="wk-station-bridge-station">
           <section className="wk-ws-sheet">
             <header className="wk-ws-head">
               <div>
-                <span className="wk-ws-eyebrow">{planetTitle} · Arbeitsstation am Pult</span>
-                <h2>
-                  {stationKind === 'bridge-station'
-                    ? 'Kommandopult · Strategische Freigaben & Charta'
-                    : stationKind === 'kontor-station'
-                      ? 'Treasury-Kontor · Budget-Freigaben & XRPL-Guardrails'
-                      : 'Technik-Werkbank · System-Prüfstand & Core v3'}
-                </h2>
+                <span className="wk-ws-eyebrow">Kommandobrücke · Führung & Strategie</span>
+                <h2>Strategische Direktiven & Freigaben</h2>
               </div>
               <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
             </header>
+            <p className="wk-ws-sub">Verbindliche Führungs-Entscheidungen und Meilenstein-Freigaben für alle Abteilungen an Bord von SAIMÔR HQ.</p>
+
+            <form
+              className="wk-ws-inline-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newDirective.trim()) return;
+                setBridgeDecisions((prev) => [
+                  { id: `dec-${Date.now()}`, title: newDirective.trim(), owner: newDirectiveOwner.trim() || 'Captain Marius', approved: false },
+                  ...prev,
+                ]);
+                onAddTask?.(newDirective.trim(), newDirectiveOwner.trim() || 'Marius');
+                setNewDirective('');
+              }}
+            >
+              <input
+                value={newDirective}
+                onChange={(e) => setNewDirective(e.target.value)}
+                placeholder="Neue strategische Direktive oder Freigabe…"
+                data-testid="wk-bridge-new-directive"
+              />
+              <input
+                value={newDirectiveOwner}
+                onChange={(e) => setNewDirectiveOwner(e.target.value)}
+                placeholder="Captain / Owner"
+                style={{ maxWidth: 165 }}
+              />
+              <button type="submit" className="wk-ws-btn">+ Direktive</button>
+            </form>
+
             <div className="wk-ws-list">
               {bridgeDecisions.map((d) => (
-                <div key={d.id} className="wk-ws-row">
+                <div key={d.id} className="wk-ws-row" data-testid={`wk-bridge-dec-${d.id}`}>
                   <div className="wk-ws-row__main">
                     <b>{d.title}</b>
                     <small>Verantwortlich: {d.owner}</small>
@@ -947,19 +1002,195 @@ export function DeskWorkstation({
               ))}
             </div>
           </section>
+
           <section className="wk-ws-side">
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Dokumente & Handbücher im Raum</span>
-              <h3>Direkt ins Vollbild-Buch am Lesepult</h3>
+              <span className="wk-ws-eyebrow">Captains-Runde · Schiffs-Status</span>
+              <h3>Abteilungen & Bereitschaft</h3>
+              <div className="wk-ws-list">
+                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Design & Studio (Atelier)</b><small>Captain Sorel M. · ORIGIN // 001 Seed 1001</small></div><span className="wk-ws-chip is-done">Kanonisch ✓</span></div>
+                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Produkt & Technik (Werkstatt)</b><small>Captain Kaito R. · Saimôr OS & Core v3</small></div><span className="wk-ws-chip is-done">Bereit ✓</span></div>
+                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Betrieb & Kunden (Panorama-Bar)</b><small>Captain Tarek B. · Pilot-Onboarding</small></div><span className="wk-ws-chip is-done">Aktiv ✓</span></div>
+                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Finanzen & Recht (Kontor)</b><small>Captain Clara D. · Treasury & XRPL Testnet</small></div><span className="wk-ws-chip is-done">Geschützt ✓</span></div>
+              </div>
+            </div>
+
+            <div className="wk-ws-card">
+              <span className="wk-ws-eyebrow">Charta & Dossiers am Stehpult</span>
+              <h3>Im gebundenen Buch öffnen</h3>
               <div className="wk-ws-list">
                 {docs.map((d) => (
                   <div key={d.id} className="wk-ws-row">
-                    <div className="wk-ws-row__main">
-                      <b>{d.name}</b>
-                    </div>
-                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>
-                      Buch öffnen →
+                    <div className="wk-ws-row__main"><b>{d.name}</b></div>
+                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {/* =========================================================================================
+          8. SAIMÔR // TREASURY-KONTOR (Budget-Freigaben, Liquidität & XRPL-Guardrails)
+         ========================================================================================= */}
+      {stationKind === 'kontor-station' ? (
+        <div className="wk-ws-grid" data-testid="wk-station-kontor-station">
+          <section className="wk-ws-sheet">
+            <header className="wk-ws-head">
+              <div>
+                <span className="wk-ws-eyebrow">Treasury & Controlling · Hauptbuch</span>
+                <h2>Abteilungs-Budgets & Rücklagen</h2>
+              </div>
+              <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
+            </header>
+            <p className="wk-ws-sub">Klare Trennung von operativem Projektbudget und strategischer Reserve. Änderungen werden sofort im Kontor-Hauptbuch verbucht.</p>
+            <div className="wk-ws-list">
+              {kontorBudgets.map((b) => (
+                <div key={b.id} className="wk-ws-row" data-testid={`wk-kontor-budget-${b.id}`}>
+                  <div className="wk-ws-row__main">
+                    <b>{b.label}</b>
+                    <small>Verantwortlich: {b.owner}</small>
+                  </div>
+                  <div className="wk-ws-counter">
+                    <button type="button" onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, amount: Math.max(0, x.amount - 500) } : x)))}>−</button>
+                    <span>{b.amount.toLocaleString('de-DE')} €</span>
+                    <button type="button" onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, amount: x.amount + 500 } : x)))}>+</button>
+                  </div>
+                  <button
+                    type="button"
+                    className={`wk-ws-chip${b.approved ? ' is-done' : ''}`}
+                    onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, approved: !x.approved } : x)))}
+                  >
+                    {b.approved ? 'Geprüft ✓' : 'Freigeben'}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <footer className="wk-ws-footer">
+              <div>
+                <span>Gesamtvolumen (Treasury & Budgets): </span>
+                <b>{kontorBudgets.reduce((s, x) => s + x.amount, 0).toLocaleString('de-DE')},00 €</b>
+              </div>
+              <span className="wk-ws-chip is-done">Alle Rücklagen gedeckt ✓</span>
+            </footer>
+          </section>
+
+          <section className="wk-ws-side">
+            <div className="wk-ws-card">
+              <span className="wk-ws-eyebrow">Sicherheits-Matrix & XRPL-Wächter</span>
+              <h3>Compliance & Ledger-Guardrails</h3>
+              <div className="wk-ws-list">
+                {xrplChecks.map((c) => (
+                  <div key={c.id} className="wk-ws-row">
+                    <div className="wk-ws-row__main"><b>{c.label}</b></div>
+                    <button
+                      type="button"
+                      className={`wk-ws-chip${c.ok ? ' is-done' : ''}`}
+                      onClick={() => setXrplChecks((l) => l.map((x) => (x.id === c.id ? { ...x, ok: !x.ok } : x)))}
+                    >
+                      {c.ok ? 'Geschützt ✓' : 'Prüfen'}
                     </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="wk-ws-card">
+              <span className="wk-ws-eyebrow">Vertrags- & Richtlinien-Archiv</span>
+              <h3>Am Kontor-Stehpult aufschlagen</h3>
+              <div className="wk-ws-list">
+                {docs.map((d) => (
+                  <div key={d.id} className="wk-ws-row">
+                    <div className="wk-ws-row__main"><b>{d.name}</b></div>
+                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {/* =========================================================================================
+          9. SAIMÔR // TECHNIK-WERKBANK (Core v3 Schnittstellen, Seed-Verifikation & Releases)
+         ========================================================================================= */}
+      {stationKind === 'technik-station' ? (
+        <div className="wk-ws-grid" data-testid="wk-station-technik-station">
+          <section className="wk-ws-sheet">
+            <header className="wk-ws-head">
+              <div>
+                <span className="wk-ws-eyebrow">Maschinenraum & Architektur · Werkbank</span>
+                <h2>System-Prüfstand & Mora Core v3</h2>
+              </div>
+              <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
+            </header>
+            <p className="wk-ws-sub">Technischer Prüfstand für Saimôr OS, deterministische Raum-Assets und Core-v3-Schnittstellen.</p>
+            <div className="wk-ws-list">
+              {techSystems.map((s) => (
+                <div key={s.id} className="wk-ws-row" data-testid={`wk-tech-sys-${s.id}`}>
+                  <div className="wk-ws-row__main">
+                    <b>{s.name}</b>
+                    <small>{s.detail} · Antwortzeit: {s.latency}</small>
+                  </div>
+                  <button
+                    type="button"
+                    className={`wk-ws-chip${s.ok ? ' is-done' : ''}`}
+                    onClick={() => setTechSystems((l) => l.map((x) => (x.id === s.id ? { ...x, ok: !x.ok } : x)))}
+                  >
+                    {s.ok ? 'Verifiziert ✓' : 'Neu prüfen'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <form
+              className="wk-ws-inline-form"
+              style={{ marginTop: 12 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!techTaskDraft.trim()) return;
+                onAddTask?.(techTaskDraft.trim(), 'Kaito R.');
+                setTechTaskDraft('');
+              }}
+            >
+              <input
+                value={techTaskDraft}
+                onChange={(e) => setTechTaskDraft(e.target.value)}
+                placeholder="Neues technisches Ticket / Prüfauftrag an die Pinnwand heften…"
+                data-testid="wk-tech-new-task"
+              />
+              <button type="submit" className="wk-ws-btn">+ Anheften</button>
+            </form>
+          </section>
+
+          <section className="wk-ws-side">
+            <div className="wk-ws-card">
+              <span className="wk-ws-eyebrow">Offene Engineering-Aufgaben ({tasks.filter((t) => !t.done).length})</span>
+              <h3>Aktueller Sprint an der Werkbank</h3>
+              <div className="wk-ws-list">
+                {tasks.slice(0, 4).map((t) => (
+                  <div key={t.id} className="wk-ws-row">
+                    <button type="button" className={`wk-ws-chip${t.done ? ' is-done' : ''}`} onClick={() => onToggleTask?.(t)}>
+                      {t.done ? '✓' : '○'}
+                    </button>
+                    <button type="button" className="wk-ws-row__main" style={{ textAlign: 'left', background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }} onClick={() => onOpenTask?.(t.id)}>
+                      <b>{t.title}</b>
+                      <small>{t.assignee || 'Engineering'}</small>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="wk-ws-card">
+              <span className="wk-ws-eyebrow">System-Dokumentation am Lesepult</span>
+              <h3>Spezifikationen im Buch öffnen</h3>
+              <div className="wk-ws-list">
+                {docs.map((d) => (
+                  <div key={d.id} className="wk-ws-row">
+                    <div className="wk-ws-row__main"><b>{d.name}</b></div>
+                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
                   </div>
                 ))}
               </div>

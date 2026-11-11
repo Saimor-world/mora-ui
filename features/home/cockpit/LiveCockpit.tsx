@@ -283,7 +283,7 @@ export function LiveCockpit({
     if (!t) return null;
     if (t.department_id && planets.some((p) => p.id === t.department_id)) return t.department_id;
     const byFolder = t.folder_id ? planets.find((p) => p.moons.some((m) => m.id === t.folder_id))?.id : null;
-    return byFolder || planets[0]?.id || null;
+    return byFolder || null;
   }, [planets]);
 
   const openFocus = (target: FocusCard['target']) => {
@@ -346,7 +346,7 @@ export function LiveCockpit({
             onTaskDone={onTaskDone}
             onOpenTask={(taskId) => {
               const t = [...(snapshot?.tasks?.overdue ?? []), ...(snapshot?.tasks?.due_today ?? []), ...(snapshot?.tasks?.items ?? [])].find((x) => x.id === taskId);
-              const planetId = resolveTaskPlanetId(t);
+              const planetId = resolveTaskPlanetId(t) || planets[0]?.id || null;
               if (planetId) openTaskMoon(planetId, taskId);
             }}
             onOpen={openDepartment}
