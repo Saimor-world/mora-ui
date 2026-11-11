@@ -25,6 +25,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useOperationalLedger } from '@/lib/universe/operationalLedger';
 
 /** „Mi., 4. Nov.“ aus dem Snapshot-Datum, sonst heute. Keine erfundene Uhrzeit. */
 export function headerDate(raw?: string | null, now: Date = new Date()): string {
@@ -74,6 +75,7 @@ export function LiveCockpit({
   const demoId = useDemoStore((s) => s.demoCompanyId);
   const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
   const isCafeScope = demoId === 'demo-morgenrot';
+  const { state: opLedger, record: recordOp } = useOperationalLedger(isCafeScope ? 'demo-morgenrot' : 'saimor-hq');
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
@@ -493,6 +495,75 @@ export function LiveCockpit({
                   null
                 )}
               </div>
+
+              {opLedger.auditTrail.length > 0 ? (
+                <div
+                  className="ck-bridge-ledger"
+                  data-testid="home-bridge-ledger-sync"
+                  style={{
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: 'rgba(10, 22, 26, 0.84)',
+                    border: '1px solid rgba(214, 168, 72, 0.38)',
+                    color: '#f3ece0',
+                    fontSize: 12.5,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <strong style={{ color: '#f6d992', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>
+                      {isCafeScope && opLedger.kanzleiWeber.step4Booked
+                        ? 'MÔRA · Vorgang Kanzlei Weber abgeschlossen'
+                        : `Raum-Synchronisation (${opLedger.auditTrail.length} Buchungen)`}
+                    </strong>
+                    {isCafeScope ? (
+                      <span>
+                        Kasse: <b>{(opLedger.baseTillEur + opLedger.bookedRevenueEur).toFixed(2).replace('.', ',')} €</b>
+                      </span>
+                    ) : null}
+                  </div>
+                  <p style={{ margin: '5px 0 0', lineHeight: 1.35 }}>
+                    {isCafeScope && opLedger.kanzleiWeber.step4Booked
+                      ? opLedger.kanzleiWeber.oatMilkReorderPrepared
+                        ? 'Die Reservierung Kanzlei Weber (142,00 €) ist verbucht & dokumentiert. Hafermilch-Nachbestellung (36 L) vorbereitet ✓'
+                        : 'Die Reservierung ist abgeschlossen. Der Umsatz (142,00 €) wurde verbucht, der Vorgang dokumentiert. Für morgen könnte Hafermilch knapp werden (16 / 24 L). Soll ich eine Nachbestellung vorbereiten?'
+                      : `${opLedger.auditTrail[0].timestamp} Uhr · ${opLedger.auditTrail[0].departmentTitle}: ${opLedger.auditTrail[0].action} → ${opLedger.auditTrail[0].result}`}
+                  </p>
+                  {isCafeScope && opLedger.kanzleiWeber.step4Booked && !opLedger.kanzleiWeber.oatMilkReorderPrepared ? (
+                    <button
+                      type="button"
+                      data-testid="home-mora-reorder-btn"
+                      onClick={() =>
+                        recordOp({
+                          idempotencyKey: 'mora-oatmilk-reorder-prep',
+                          actor: 'MÔRA & Marius',
+                          departmentId: 'd-verw',
+                          departmentTitle: 'Verwaltung & Büro',
+                          action: 'Hafermilch-Nachbestellung (36 L Barista) auf der Brücke freigegeben',
+                          result: 'Nachbestellung im Kontor-Lieferantenbogen hinterlegt & dokumentiert',
+                          safetyLevel: 'buchung',
+                          mutate: (d) => {
+                            d.kanzleiWeber.oatMilkReorderPrepared = true;
+                          },
+                        })
+                      }
+                      style={{
+                        marginTop: 7,
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        border: '1px solid #d6a848',
+                        background: '#2e5e3e',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Nachbestellung vorbereiten →
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </HomeOverview>
           </div>
         </section>

@@ -10,6 +10,13 @@ import { useDayActions } from '@/lib/lea/useDayActions';
 import { fetchNodeDetails, createNode, updateNode } from '@/lib/api/orgClient';
 import { renderMarkdown } from '@/lib/docs/markdown';
 import { buildShipTodaySnapshot, getDepartmentRoomContext, getShipNodeById } from '@/lib/universe/shipDepartments';
+import {
+  useOperationalLedger,
+  resolveScopeKey,
+  formatAuditMarkdownLine,
+  getShelfTemplatesForDepartment,
+  type AuditEntry,
+} from '@/lib/universe/operationalLedger';
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -329,6 +336,16 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     });
   }, [busy, stack, exit, zoom]);
 
+  const backToRoom = useCallback(() => {
+    if (busy || stack.length <= 1) return;
+    const leaving = stack[stack.length - 1];
+    setBusy(true);
+    zoom(leaving, 'out', () => {
+      setStack([{ kind: 'room' }]);
+      setBusy(false);
+    });
+  }, [busy, stack, zoom]);
+
   useEffect(() => {
     if (!landed || !afterLanding.current) return;
     const p = afterLanding.current;
@@ -361,46 +378,67 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     useOsShellStore.getState().setPhaseOverride(nextPhase);
   }, [world]);
 
+  const scopeKey = useMemo(() => resolveScopeKey(companyId, planet.id), [companyId, planet.id]);
+  const { state: opLedger, record: recordOp } = useOperationalLedger(scopeKey);
+  const shelfTemplates = useMemo(() => getShelfTemplatesForDepartment(planet.id, title), [planet.id, title]);
+  const [shelfQuery, setShelfQuery] = useState('');
+
   const moraImpulse = useMemo(() => {
+    if (scopeKey === 'demo-morgenrot' && opLedger.kanzleiWeber.step4Booked) {
+      return {
+        title: 'MÔRA · KANZLEI WEBER ABGESCHLOSSEN',
+        text: opLedger.kanzleiWeber.oatMilkReorderPrepared
+          ? 'Die Reservierung Kanzlei Weber (142,00 €) ist verbucht & dokumentiert. Die Hafermilch-Nachbestellung (36 L) für morgen liegt im Kontor bereit.'
+          : 'Die Reservierung ist abgeschlossen. Der Umsatz (142,00 €) wurde verbucht, der Vorgang dokumentiert. Für morgen könnte Hafermilch knapp werden (16 / 24 L). Soll ich eine Nachbestellung vorbereiten?',
+        cta: 'Tisch & Dossier öffnen →',
+        canReorderOatMilk: !opLedger.kanzleiWeber.oatMilkReorderPrepared,
+      };
+    }
     switch (stationMeta.kind) {
       case 'kueche-station':
         return {
           title: 'MÔRA · Backstuben-Impuls',
-          text: 'Hafermilch (18/24 L) & Espresso (4/6 kg) unter Soll · 36er Zimtschnecken-Charge für die Theke bereit.',
+          text: `Hafermilch (${opLedger.oatMilkLiters}/24 L) & Espresso (4/6 kg) unter Soll · ${opLedger.kanzleiWeber.step1Confirmed ? 'Auftrag Kanzlei Weber wartet auf Zimtschnecken-Charge!' : '36er Zimtschnecken-Charge für die Theke bereit.'}`,
           cta: 'Backofen & Bestand öffnen →',
+          canReorderOatMilk: false,
         };
       case 'service-station':
         return {
           title: 'MÔRA · Gastraum-Impuls',
           text: '12:30 Uhr: Kanzlei Weber (12 Pers., Tafel 4–6) · Interaktiver Grundriss & Tischkasse bereit.',
           cta: 'Tischplan & Kasse öffnen →',
+          canReorderOatMilk: false,
         };
       case 'theke-station':
         return {
           title: 'MÔRA · Barista-Impuls',
-          text: 'Siebträger 9,0 bar / 93,2 °C · Schnell-Bon für Laufkundschaft & Schichttausch (Jonas → Lena).',
+          text: `Siebträger 9,0 bar / 93,2 °C · ${opLedger.kanzleiWeber.step2Baked ? 'Frische Zimtschnecken aus der Backstube für Kanzlei Weber eingetroffen!' : 'Schnell-Bon für Laufkundschaft & Schichttausch (Jonas → Lena).'}`,
           cta: 'Schnell-Bon & Theke öffnen →',
+          canReorderOatMilk: false,
         };
       case 'verwaltung-station':
         return {
           title: 'MÔRA · Kontor-Impuls',
           text: 'Donnerstag-Bestellung (213,00 €) vor 14:00 Uhr fällig · Live-Tageskasse synchron mit Theke & Service.',
           cta: 'Hauptbuch & Einkauf öffnen →',
+          canReorderOatMilk: false,
         };
       case 'atelier-station':
         return {
           title: 'MÔRA · Atelier-Impuls',
           text: 'ORIGIN // 001 (Seed 1001): Streiflicht- & Quarz-Inspektor am Basalt-Zeichentisch bereit.',
           cta: 'ORIGIN-Inspektor öffnen →',
+          canReorderOatMilk: false,
         };
       default:
         return {
           title: `MÔRA · ${title}`,
           text: `${allTasks.filter((t) => !t.done).length} offene Aufgaben an der Tafel · ${docs.length} Dossiers im Raum.`,
           cta: `${stationMeta.badgeText} öffnen →`,
+          canReorderOatMilk: false,
         };
     }
-  }, [stationMeta.kind, stationMeta.badgeText, title, allTasks, docs.length]);
+  }, [scopeKey, opLedger.kanzleiWeber, opLedger.oatMilkLiters, stationMeta.kind, stationMeta.badgeText, title, allTasks, docs.length]);
 
   // Brett & Aktionen -----------------------------------------------------------------------------------
   const qc = useQueryClient();
@@ -408,7 +446,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const [later, setLater] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const [docSlip, setDocSlip] = useState(false);
-  const { addTask, setDone } = useDayActions(companyId);
+  const { addTask, setDone, update } = useDayActions(companyId);
   const laterPages = useMemo(() => { const p: WorkTask[][] = []; for (let i = 0; i < board.later.length; i += PER_PAGE) p.push(board.later.slice(i, i + PER_PAGE)); return p.length ? p : [[]]; }, [board.later]);
   const pages = later ? laterPages : board.pages;
   const pg = Math.min(page, pages.length - 1);
@@ -437,6 +475,16 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     } catch {
       // Lokal im Raum & Query-Cache bereits aktualisiert
     }
+  };
+
+  const appendAuditEntryToLectern = (entry: AuditEntry) => {
+    const line = formatAuditMarkdownLine(entry);
+    const base = lecternContent || `# ${lecternDoc ? clean(lecternDoc.name) : title}`;
+    const marker = '## Dokumentenspur (Verifizierte Buchungen)';
+    const nextContent = base.includes(marker)
+      ? `${base}\n${line}`
+      : `${base}\n\n${marker}\n${line}`;
+    void saveLecternContent(nextContent);
   };
 
   const createDepartmentDoc = async (t: string, body: string) => {
@@ -670,10 +718,69 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
           <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
 
           {docSlip ? (
-            <PaperSlip x={1060} y={120} w={420} label="Dokumente" onClose={() => setDocSlip(false)} testId="wk-doc-slip">
+            <PaperSlip x={116} y={108} w={480} label="Wandregal · Dossier- & Vorlagen-Archiv" onClose={() => setDocSlip(false)} testId="wk-doc-slip">
+              <div style={{ marginBottom: 8 }}>
+                <input
+                  value={shelfQuery}
+                  onChange={(e) => setShelfQuery(e.target.value)}
+                  placeholder="Unterlagen & Vorlagen im Regal suchen…"
+                  data-testid="wk-shelf-search"
+                  aria-label="Unterlagen im Regal suchen"
+                  style={{
+                    width: '100%',
+                    height: 30,
+                    padding: '0 10px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(90, 62, 30, 0.3)',
+                    background: '#fffcf5',
+                    fontSize: 13,
+                  }}
+                />
+              </div>
               <ul className="wk-slip__list">
-                {docs.map((d) => <li key={d.id}><button type="button" onClick={() => { setDocSlip(false); setLectern(d.id); open({ kind: 'doc', id: d.id }); }}><span>{clean(d.name)}</span>{folderTitleById(d.folderId) ? <em>{folderTitleById(d.folderId)}</em> : null}</button></li>)}
+                {docs
+                  .filter((d) => !shelfQuery.trim() || clean(d.name).toLowerCase().includes(shelfQuery.trim().toLowerCase()))
+                  .map((d) => (
+                    <li key={d.id}>
+                      <button type="button" onClick={() => { setDocSlip(false); setLectern(d.id); open({ kind: 'doc', id: d.id }); }}>
+                        <span>{clean(d.name)}</span>
+                        {folderTitleById(d.folderId) ? <em>{folderTitleById(d.folderId)}</em> : null}
+                      </button>
+                    </li>
+                  ))}
               </ul>
+              <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed rgba(90, 62, 30, 0.25)' }} data-testid="wk-shelf-templates">
+                <small style={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7b5514', marginBottom: 6 }}>
+                  Vorlagen aus dem Regal anlegen & aufs Stehpult legen
+                </small>
+                <ul className="wk-slip__list">
+                  {shelfTemplates.map((tpl) => (
+                    <li key={tpl.id}>
+                      <button
+                        type="button"
+                        data-testid={`wk-shelf-tpl-${tpl.id}`}
+                        onClick={async () => {
+                          setDocSlip(false);
+                          await createDepartmentDoc(tpl.title, tpl.body);
+                          const res = recordOp({
+                            idempotencyKey: `shelf-tpl-${tpl.id}`,
+                            actor: 'Marius',
+                            departmentId: planet.id,
+                            departmentTitle: title,
+                            action: `Vorlage "${tpl.title}" aus dem Wandregal angelegt`,
+                            result: 'Neues Dossier auf dem Stehpult aufgeschlagen',
+                            safetyLevel: 'routine',
+                          });
+                          if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
+                        }}
+                      >
+                        <span>+ {tpl.title}</span>
+                        <em>{tpl.category}</em>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </PaperSlip>
           ) : null}
           {!close ? (
@@ -694,14 +801,41 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 </button>
               </div>
               <p>{moraImpulse.text}</p>
-              <button
-                type="button"
-                className="wk-mora-companion__cta"
-                data-testid="wk-mora-action-btn"
-                onClick={() => open({ kind: 'station' })}
-              >
-                {moraImpulse.cta}
-              </button>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {moraImpulse.canReorderOatMilk ? (
+                  <button
+                    type="button"
+                    className="wk-mora-companion__cta"
+                    data-testid="wk-mora-reorder-btn"
+                    onClick={() => {
+                      const res = recordOp({
+                        idempotencyKey: 'mora-oatmilk-reorder-prep',
+                        actor: 'MÔRA & Marius',
+                        departmentId: planet.id,
+                        departmentTitle: title,
+                        action: 'Hafermilch-Nachbestellung (36 L Barista) für morgen vorbereitet',
+                        result: 'Nachbestellung im Kontor-Lieferantenbogen hinterlegt & dokumentiert',
+                        safetyLevel: 'buchung',
+                        mutate: (d) => {
+                          d.kanzleiWeber.oatMilkReorderPrepared = true;
+                        },
+                      });
+                      if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
+                      void addTask('Hafermilch-Nachbestellung (36 L Hofmolkerei) freigeben', newTaskFolder, today, planet.id, 'Clara D.');
+                    }}
+                  >
+                    Nachbestellung vorbereiten →
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="wk-mora-companion__cta"
+                  data-testid="wk-mora-action-btn"
+                  onClick={() => open({ kind: 'station' })}
+                >
+                  {moraImpulse.cta}
+                </button>
+              </div>
             </div>
           ) : null}
           {!close ? <MoraSeat at={activeMoraSeat} stage={room} name="wk-room" /> : null}
@@ -728,7 +862,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               <button
                 type="button"
                 className="wk-close-bar__back"
-                onClick={back}
+                onClick={backToRoom}
                 data-testid="wk-close-back-room"
               >
                 ← Zurück in den Raum ({roomCtx.roomName})
@@ -777,7 +911,21 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               <Book key={close.id} id={close.id} fallbackTitle={clean(allDocs.find((d) => d.id === close.id)?.name ?? '')}
                 folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo} />
             ) : null}
-            {close.kind === 'planung' ? <Mappe weeks={weeks} folderId={planFolder} companyId={companyId} today={today} defaultRows={defaultWeekRows} back={backTo} /> : null}
+            {close.kind === 'planung' ? (
+              <Mappe
+                weeks={weeks}
+                folderId={planFolder}
+                companyId={companyId}
+                today={today}
+                defaultRows={defaultWeekRows}
+                back={backTo}
+                tasks={allTasks}
+                events={barEvents}
+                onMoveTaskDate={(t, iso) => void update(t.raw, { due_date: iso })}
+                onToggleTask={(t) => void setDone(t.raw, !t.done)}
+                onAddTaskForDate={(txt, iso) => void addTask(txt, newTaskFolder, iso, planet.id)}
+              />
+            ) : null}
             {close.kind === 'station' ? (
               <>
                 <DeskWorkstation
@@ -798,6 +946,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                   onOpenTask={(id) => open({ kind: 'task', id })}
                   mails={barMails}
                   events={barEvents}
+                  onAppendAuditEntry={appendAuditEntryToLectern}
                   onClose={back}
                 />
                 <WorkDock back={backTo} actions={[

@@ -335,12 +335,16 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Kontor-Waage & Kassenbuch');
     fireEvent.click(screen.getByTestId('wk-hit-fixture'));
     expect(screen.getByTestId('wk-station-verwaltung')).toBeInTheDocument();
+    // Sicherheitsstufe [FREIGABE]: 1. Klick schaltet Freigabe-Bestätigung scharf, 2. Klick löst verbindlich aus
+    fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
+    expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('Freigabe bestätigen');
     fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
     expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('gesendet ✓');
     u3();
   });
 
   it('verbindet Räume über den Korridor, synchronisiert Live-Tageskasse zwischen Theke/Service/Verwaltung und zeigt den ORIGIN // 001 Licht-Inspektor', () => {
+    window.localStorage.clear();
     const onSwitch = jest.fn();
     const skyPlanets = [
       { id: 'd-kueche', title: 'Küche & Backstube' },
@@ -367,16 +371,19 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     fireEvent.click(screen.getByTestId('wk-corridor-d-theke'));
     expect(onSwitch).toHaveBeenCalledWith('d-theke');
 
-    // Öffne Service-Station -> Tisch 1 im Grundriss abkassieren (+14,60 € in Tageskasse)
+    // Öffne Service-Station -> Tisch 1 im Grundriss abkassieren (+14,60 € idempotent in Tageskasse)
     fireEvent.click(screen.getByTestId('wk-mora-action-btn'));
     expect(screen.getByTestId('wk-floorplan')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
     expect(screen.getByTestId('wk-floor-pay-t1')).toHaveTextContent('Verbucht ✓');
+    // Zweiter Klick auf denselben Tisch darf KEINE doppelte Buchung erzeugen (Idempotenz!)
+    fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
+    expect(screen.getByTestId('wk-service-live-till')).toHaveTextContent('1856,60 €');
     u1();
 
-    // In der Verwaltung ist der Live-Kassenstand um die 14,60 € gestiegen (1.856,60 €)
+    // In der Verwaltung ist der Live-Kassenstand exakt um die 14,60 € gestiegen (1.856,60 €)
     const verwPlanet = { ...planet, id: 'd-verw', title: 'Verwaltung & Büro' };
-    wrap(
+    const { unmount: u2 } = wrap(
       <Werkstatt
         planet={verwPlanet}
         work={work}
@@ -390,5 +397,66 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     );
     fireEvent.click(screen.getByTestId('wk-desk-plate'));
     expect(screen.getByTestId('wk-verwaltung-live-till')).toHaveTextContent('1856,60 €');
+    u2();
+  });
+
+  it('führt den durchgehenden Kanzlei-Weber-Vorgang durch 4 Räume aus, schützt idempotent vor Doppelbuchungen und aktiviert MÔRAs Hafermilch-Impuls', () => {
+    window.localStorage.clear();
+    const skyPlanets = [
+      { id: 'd-kueche', title: 'Küche & Backstube' },
+      { id: 'd-service', title: 'Service & Gastraum' },
+      { id: 'd-theke', title: 'Theke & Schicht' },
+      { id: 'd-verw', title: 'Verwaltung & Büro' },
+    ];
+
+    // 1. Raum: Gastraum (Reservierung Kanzlei Weber bestätigen)
+    const { unmount: u1 } = wrap(
+      <Werkstatt planet={{ ...planet, id: 'd-service', title: 'Service & Gastraum' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    fireEvent.click(screen.getByTestId('wk-weber-step-cta'));
+    expect(screen.getByTestId('wk-weber-state-1')).toHaveTextContent('1. Gastraum ✓');
+    u1();
+
+    // 2. Raum: Küche & Backstube (Zimtschnecken-Charge backen & an Theke melden)
+    const { unmount: u2 } = wrap(
+      <Werkstatt planet={{ ...planet, id: 'd-kueche', title: 'Küche & Backstube' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    fireEvent.click(screen.getByTestId('wk-weber-step-cta'));
+    expect(screen.getByTestId('wk-weber-state-2')).toHaveTextContent('2. Backstube ✓');
+    u2();
+
+    // 3. Raum: Theke & Schicht (Vitrinenbestand übernehmen & 12x Gedeck zuordnen)
+    const { unmount: u3 } = wrap(
+      <Werkstatt planet={{ ...planet, id: 'd-theke', title: 'Theke & Schicht' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    fireEvent.click(screen.getByTestId('wk-weber-step-cta'));
+    expect(screen.getByTestId('wk-weber-state-3')).toHaveTextContent('3. Theke ✓');
+    u3();
+
+    // 4. Raum: Verwaltung & Büro (142,00 € exakt einmalig verbuchen & MÔRAs Nachbestell-Moment prüfen)
+    const { unmount: u4 } = wrap(
+      <Werkstatt planet={{ ...planet, id: 'd-verw', title: 'Verwaltung & Büro' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    fireEvent.click(screen.getByTestId('wk-weber-step-cta'));
+    // Mehrfachklick-Test: darf die 142,00 € NICHT doppelt buchen (1842 + 142 = 1984,00 €)
+    fireEvent.click(screen.getByTestId('wk-weber-step-cta'));
+    expect(screen.getByTestId('wk-verwaltung-live-till')).toHaveTextContent('1984,00 €');
+    expect(screen.getByTestId('wk-audit-trail')).toHaveTextContent('Kanzlei Weber');
+    u4();
+
+    // Zurück im Raum: MÔRA meldet den Abschluss & schlägt die Hafermilch-Nachbestellung vor
+    const { unmount: u5 } = wrap(
+      <Werkstatt planet={{ ...planet, id: 'd-service', title: 'Service & Gastraum' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    expect(screen.getByTestId('wk-mora-bubble')).toHaveTextContent('Für morgen könnte Hafermilch knapp werden');
+    expect(screen.getByTestId('wk-mora-reorder-btn')).toBeInTheDocument();
+    // Außerdem zeigt das Wandregal die Abteilungs-Vorlagen (Priorität 4)
+    fireEvent.click(screen.getByTestId('wk-hit-shelf'));
+    expect(screen.getByTestId('wk-shelf-templates')).toBeInTheDocument();
+    u5();
   });
 });

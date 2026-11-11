@@ -946,6 +946,120 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   color: rgba(246, 231, 193, 0.72);
 }
 
+/* =====================================================================================
+   PRIORITÄT 0–3: DATENWAHRHEIT, IDEMPOTENTE DOKUMENTENSPUR, KANZLEI-WEBER-FLOW & WOCHENMAPPE
+   ===================================================================================== */
+.wk-ledger-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 7px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(20, 15, 10, 0.88);
+  border: 1px solid rgba(214, 168, 72, 0.44);
+  color: #f6e7c1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+}
+.wk-ledger-bar__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.wk-truth-badge {
+  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(214, 168, 72, 0.18);
+  border: 1px solid rgba(214, 168, 72, 0.42);
+  color: #f6e7c1;
+}
+.wk-audit-feedback {
+  font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #a7f3d0;
+}
+.wk-audit-count {
+  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgba(246, 231, 193, 0.75);
+}
+.wk-weber-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.wk-weber-flow__label {
+  font: 700 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f6d992;
+}
+.wk-weber-step {
+  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(246, 231, 193, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.wk-weber-step.is-done {
+  background: rgba(46, 94, 62, 0.88);
+  border-color: rgba(167, 243, 208, 0.5);
+  color: #f6fbf7;
+}
+.wk-audit-trail {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  background: rgba(252, 246, 233, 0.96);
+  border: 1.5px solid #b88428;
+  color: var(--ink);
+}
+.wk-audit-trail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: 450 13px/1.35 'Werk Serif', Georgia, serif;
+}
+
+.wk-week-live {
+  position: absolute;
+  padding: 20px 22px;
+  border-radius: 10px;
+  background: rgba(250, 242, 226, 0.96);
+  border: 1.5px solid rgba(120, 84, 34, 0.38);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+.wk-week-live__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wk-week-live__head h2 {
+  margin: 2px 0 0;
+  font: 600 20px/1.2 'Werk Serif', Georgia, serif;
+}
+.wk-week-live__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wk-week-live__events {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(90, 62, 30, 0.25);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wk-sky__drift, .wk-sky__planet, .wk-leaf, .wk-slip { animation: none !important; }
   .wk-card, .wk-hit, .wk-corner { transition: none; }
