@@ -324,6 +324,39 @@ export function DeskWorkstation({
   const [techTaskDraft, setTechTaskDraft] = useState('');
   useEffect(() => writeLocal(`mora.station.technik.sys.${planetId}`, techSystems), [techSystems, planetId]);
 
+  // 8. SHARED LIVE CAFÉ STATE (Verbindet Küche, Service, Theke & Verwaltung in Echtzeit!)
+  const [cafeShared, setCafeShared] = useState(() =>
+    readLocal('mora.cafe.shared.v1', {
+      extraRevenue: 0,
+      receiptsCount: 42,
+      vitrineStocked: false,
+      ovenStatus: 'idle' as 'idle' | 'baking' | 'fresh',
+      lastBonLabel: '2× Flat White · 1× Zimtschnecke (11,20 €)',
+    })
+  );
+  useEffect(() => writeLocal('mora.cafe.shared.v1', cafeShared), [cafeShared]);
+
+  // Visueller Gastraum-Grundriss (Service & Gastraum)
+  const [floorTables, setFloorTables] = useState(() =>
+    readLocal(`mora.station.service.floor.${planetId}`, [
+      { id: 't1', label: 'Tisch 1 · Fenster', pax: '2 Pers.', order: '2× Flat White, 2× Zimtschnecke', bill: 14.6, state: 'besetzt' as 'frei' | 'reserviert' | 'besetzt' | 'bezahlt' },
+      { id: 't2', label: 'Tisch 2 · Geburtstag', pax: '4 Pers. (15:00)', order: 'Kaffee-Tafel & Gedeck', bill: 38.5, state: 'reserviert' as 'frei' | 'reserviert' | 'besetzt' | 'bezahlt' },
+      { id: 't3', label: 'Tisch 3 · Nische', pax: '1 Pers. (Laptop)', order: '1× Hafer-Cappuccino, 1× Bananenbrot', bill: 7.7, state: 'besetzt' as 'frei' | 'reserviert' | 'besetzt' | 'bezahlt' },
+      { id: 't46', label: 'Tafel 4–6 · Kanzlei Weber', pax: '12 Pers. (12:30)', order: 'Mittagsmenü Kürbissuppe & Espresso', bill: 142.0, state: 'reserviert' as 'frei' | 'reserviert' | 'besetzt' | 'bezahlt' },
+    ])
+  );
+  useEffect(() => writeLocal(`mora.station.service.floor.${planetId}`, floorTables), [floorTables, planetId]);
+
+  // Barista Schnell-Bon an der Theke
+  const [posCart, setPosCart] = useState<Array<{ name: string; price: number }>>([
+    { name: 'Flat White (Hafer)', price: 3.9 },
+    { name: 'Zimtschnecke (warm)', price: 3.4 },
+  ]);
+  const posTotal = useMemo(() => posCart.reduce((s, x) => s + x.price, 0), [posCart]);
+
+  // ORIGIN // 001 Licht-Inspektor im Atelier
+  const [originLightMode, setOriginLightMode] = useState<'raking' | 'caustic' | 'frame'>('raking');
+
   const filteredTasks = useMemo(() => {
     if (!selectedCrewName) return tasks;
     const t = selectedCrewName.toLowerCase();
@@ -424,6 +457,37 @@ export function DeskWorkstation({
                 <li><span>Rohrohrzucker & Kardamom</span><b>{Math.round(120 * batchMultiplier)} g</b></li>
                 <li><span>Frische Hefe (45 Min. Gare · 180 °C)</span><b>{Math.round(42 * batchMultiplier)} g</b></li>
               </ul>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 8, borderTop: '1px dashed rgba(90,62,30,.24)' }}>
+                <small>
+                  Schwaden-Ofen (180 °C):{' '}
+                  <b>
+                    {cafeShared.ovenStatus === 'idle'
+                      ? 'Bereit für Einschub'
+                      : cafeShared.ovenStatus === 'baking'
+                        ? `${Math.round(24 * batchMultiplier)} Zimtschnecken backen (18 Min.)…`
+                        : `${Math.round(24 * batchMultiplier)} Zimtschnecken frisch an der Theke ✓`}
+                  </b>
+                </small>
+                <button
+                  type="button"
+                  className={`wk-ws-chip${cafeShared.vitrineStocked ? ' is-done' : cafeShared.ovenStatus === 'baking' ? ' is-active' : ''}`}
+                  data-testid="wk-kueche-oven-btn"
+                  onClick={() => {
+                    if (cafeShared.ovenStatus === 'idle') {
+                      setCafeShared((s) => ({ ...s, ovenStatus: 'baking', vitrineStocked: false }));
+                    } else {
+                      setCafeShared((s) => ({ ...s, ovenStatus: 'fresh', vitrineStocked: true }));
+                      setBarChecks((l) => l.map((x) => (x.id === 'chk-3' ? { ...x, done: true } : x)));
+                    }
+                  }}
+                >
+                  {cafeShared.ovenStatus === 'idle'
+                    ? 'In den Ofen schieben (180 °C)'
+                    : cafeShared.ovenStatus === 'baking'
+                      ? 'Frisch in die Theken-Vitrine geben →'
+                      : 'Theken-Vitrine bestückt ✓'}
+                </button>
+              </div>
             </div>
           </section>
         </div>
@@ -483,6 +547,53 @@ export function DeskWorkstation({
                   </button>
                 </div>
               ))}
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span className="wk-ws-eyebrow">Interaktiver Gastraum-Grundriss · Tischkasse</span>
+                <small>Live-Tageskasse: <b>{(1842 + cafeShared.extraRevenue).toFixed(2).replace('.', ',')} €</b></small>
+              </div>
+              <div className="wk-floorplan" data-testid="wk-floorplan">
+                {floorTables.map((tb) => (
+                  <div key={tb.id} className={`wk-floor-table is-${tb.state}`} data-testid={`wk-floor-${tb.id}`}>
+                    <div className="wk-floor-table__top">
+                      <b>{tb.label}</b>
+                      <span className="wk-floor-badge">{tb.pax}</span>
+                    </div>
+                    <small>{tb.order}</small>
+                    <div className="wk-floor-table__foot">
+                      <b>{tb.bill.toFixed(2).replace('.', ',')} €</b>
+                      <button
+                        type="button"
+                        className={`wk-ws-chip${tb.state === 'bezahlt' ? ' is-done' : tb.state === 'besetzt' ? ' is-active' : ''}`}
+                        data-testid={`wk-floor-pay-${tb.id}`}
+                        onClick={() => {
+                          if (tb.state === 'reserviert') {
+                            setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'besetzt' } : x)));
+                          } else if (tb.state === 'besetzt') {
+                            setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'bezahlt' } : x)));
+                            setCafeShared((s) => ({
+                              ...s,
+                              extraRevenue: Number((s.extraRevenue + tb.bill).toFixed(2)),
+                              receiptsCount: s.receiptsCount + 1,
+                              lastBonLabel: `${tb.label} (${tb.bill.toFixed(2).replace('.', ',')} €)`,
+                            }));
+                          } else {
+                            setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'besetzt' } : x)));
+                          }
+                        }}
+                      >
+                        {tb.state === 'reserviert'
+                          ? 'Platzieren'
+                          : tb.state === 'besetzt'
+                            ? 'Abkassieren → Kasse'
+                            : 'Verbucht ✓'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -552,6 +663,58 @@ export function DeskWorkstation({
           </section>
 
           <section className="wk-ws-side">
+            <div className="wk-ws-card" data-testid="wk-barista-pos">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span className="wk-ws-eyebrow">Siebträger (9,0 bar · 93,2 °C) & Schnell-Bon</span>
+                  <h3>Theken-Kasse & Direktverkauf</h3>
+                </div>
+                <span className={`wk-ws-chip${cafeShared.vitrineStocked ? ' is-done' : ''}`}>
+                  {cafeShared.vitrineStocked ? 'Vitrine frisch ✓' : 'Vitrine offen'}
+                </span>
+              </div>
+              <div className="wk-ws-pills" style={{ marginTop: 4 }}>
+                {[
+                  { name: 'Flat White', price: 3.9 },
+                  { name: 'Zimtschnecke', price: 3.4 },
+                  { name: 'Kürbissuppe', price: 6.5 },
+                  { name: 'Espresso Doppio', price: 2.9 },
+                ].map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    className="wk-ws-chip"
+                    onClick={() => setPosCart((c) => [...c, item])}
+                  >
+                    + {item.name} ({item.price.toFixed(2).replace('.', ',')} €)
+                  </button>
+                ))}
+              </div>
+              <div className="wk-ws-row" style={{ marginTop: 6 }}>
+                <div className="wk-ws-row__main">
+                  <b>Aktueller Bon ({posCart.length} Pos.): {posTotal.toFixed(2).replace('.', ',')} €</b>
+                  <small>Letzte Buchung: {cafeShared.lastBonLabel}</small>
+                </div>
+                <button
+                  type="button"
+                  className="wk-ws-btn is-done"
+                  data-testid="wk-theke-pos-book"
+                  onClick={() => {
+                    if (posTotal <= 0) return;
+                    setCafeShared((s) => ({
+                      ...s,
+                      extraRevenue: Number((s.extraRevenue + posTotal).toFixed(2)),
+                      receiptsCount: s.receiptsCount + 1,
+                      lastBonLabel: `${posCart.length}× Theken-Bon (${posTotal.toFixed(2).replace('.', ',')} €)`,
+                    }));
+                    setPosCart([{ name: 'Flat White (Hafer)', price: 3.9 }]);
+                  }}
+                >
+                  Bon buchen (+{posTotal.toFixed(2).replace('.', ',')} €)
+                </button>
+              </div>
+            </div>
+
             <div className="wk-ws-card">
               <span className="wk-ws-eyebrow">Schichtplan KW 44 · Anfrage heute 06:40</span>
               <h3>Schichttausch bestätigen</h3>
@@ -614,10 +777,12 @@ export function DeskWorkstation({
           </section>
 
           <section className="wk-ws-side">
-            <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Kassenbuch & Monatsziel</span>
-              <h3>Tagesabschluss: 1.842,00 € (+9 % zur Vorwoche)</h3>
-              <p className="wk-ws-sub">Kasse stimmt · 71 % Kartenzahlung · Stärkste Stunde: 12:00–13:00 Uhr · Oktober bisher: <b>38.410 € / 42.000 €</b>.</p>
+            <div className="wk-ws-card" data-testid="wk-verwaltung-live-till">
+              <span className="wk-ws-eyebrow">Kassenbuch & Live-Verbindung (Theke & Service)</span>
+              <h3>Tagesstand: {(1842 + cafeShared.extraRevenue).toFixed(2).replace('.', ',')} € (+9 % zur Vorwoche)</h3>
+              <p className="wk-ws-sub">
+                Basis-Kasse 1.842,00 € {cafeShared.extraRevenue > 0 ? `+ ${cafeShared.extraRevenue.toFixed(2).replace('.', ',')} € Live-Bons heute` : ''} · {cafeShared.receiptsCount} Belege · Zuletzt: <b>{cafeShared.lastBonLabel}</b>
+              </p>
             </div>
             <div className="wk-ws-card">
               <span className="wk-ws-eyebrow">Team & Personal</span>
@@ -744,8 +909,44 @@ export function DeskWorkstation({
 
           <section className="wk-ws-side" data-testid="wk-studio-focus">
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Werkstück-Sockel · Seed 1001</span>
-              <h3>SAIMÔR // ORIGIN // 001 · Material-Spektrum</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span className="wk-ws-eyebrow">Werkstück-Sockel · Seed 1001 · AgX Cycles</span>
+                  <h3>SAIMÔR // ORIGIN // 001 · Material-Spektrum</h3>
+                </div>
+                <div className="wk-ws-pills" role="group" aria-label="Licht-Inspektor">
+                  <button type="button" className={`wk-ws-chip${originLightMode === 'raking' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('raking')}>Streiflicht 15°</button>
+                  <button type="button" className={`wk-ws-chip${originLightMode === 'caustic' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('caustic')}>Quarz-Kaustik</button>
+                  <button type="button" className={`wk-ws-chip${originLightMode === 'frame' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('frame')}>Fassung</button>
+                </div>
+              </div>
+              <div className={`wk-origin-inspector is-${originLightMode}`} data-testid="wk-origin-inspector">
+                <svg viewBox="0 0 220 90" width="220" height="84" aria-hidden>
+                  <defs>
+                    <linearGradient id="basaltGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor={originLightMode === 'raking' ? '#49453f' : '#242322'} />
+                      <stop offset="100%" stopColor="#121211" />
+                    </linearGradient>
+                    <linearGradient id="quartzGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor={originLightMode === 'caustic' ? '#f6d992' : '#9ec5b8'} stopOpacity="0.88" />
+                      <stop offset="100%" stopColor="#2a483f" stopOpacity="0.45" />
+                    </linearGradient>
+                  </defs>
+                  <polygon points="36,78 78,12 132,12 158,78" fill="url(#basaltGrad)" stroke={originLightMode === 'frame' ? '#e5b85c' : '#6e5d3b'} strokeWidth={originLightMode === 'frame' ? '2.5' : '1.2'} />
+                  <polygon points="88,22 122,22 134,66 76,66" fill="url(#quartzGrad)" />
+                  <line x1="78" y1="12" x2="96" y2="78" stroke="#e5b85c" strokeOpacity="0.6" strokeWidth="1" />
+                </svg>
+                <div className="wk-origin-inspector__meta">
+                  <b>
+                    {originLightMode === 'raking'
+                      ? 'Streiflicht 15° · Mikro-taktiles Basalt-Relief aktiv'
+                      : originLightMode === 'caustic'
+                        ? 'Kaustik-Durchlicht · Optische Quarz-Brechung (IOR 1.544)'
+                        : 'Präzisionsfassung · Gebürstetes Messing / Ruthenium-Titan'}
+                  </b>
+                  <small>SEED 1001 · SHA-256: 8f4e2a9c…d101 · Phase 01 Master</small>
+                </div>
+              </div>
               <div className="wk-ws-list">
                 {originSpecs.map((s) => (
                   <div key={s.id} className="wk-ws-row">

@@ -331,11 +331,64 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     u2();
 
     const verwaltungPlanet = { ...planet, id: 'dept-verwaltung', title: 'Verwaltung' };
-    wrap(<Werkstatt planet={verwaltungPlanet} work={work} planets={[]} companyId="demo-morgenrot" today={TODAY} backLabel="Verwaltung" fromSpace={false} onExit={jest.fn()} />);
+    const { unmount: u3 } = wrap(<Werkstatt planet={verwaltungPlanet} work={work} planets={[]} companyId="demo-morgenrot" today={TODAY} backLabel="Verwaltung" fromSpace={false} onExit={jest.fn()} />);
     expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Kontor-Waage & Kassenbuch');
     fireEvent.click(screen.getByTestId('wk-hit-fixture'));
     expect(screen.getByTestId('wk-station-verwaltung')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
     expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('gesendet ✓');
+    u3();
+  });
+
+  it('verbindet Räume über den Korridor, synchronisiert Live-Tageskasse zwischen Theke/Service/Verwaltung und zeigt den ORIGIN // 001 Licht-Inspektor', () => {
+    const onSwitch = jest.fn();
+    const skyPlanets = [
+      { id: 'd-kueche', title: 'Küche & Backstube' },
+      { id: 'd-service', title: 'Service & Gastraum' },
+      { id: 'd-theke', title: 'Theke & Schicht' },
+      { id: 'd-verw', title: 'Verwaltung & Büro' },
+    ];
+    const servicePlanet = { ...planet, id: 'd-service', title: 'Service & Gastraum' };
+    const { unmount: u1 } = wrap(
+      <Werkstatt
+        planet={servicePlanet}
+        work={work}
+        planets={skyPlanets}
+        companyId="demo-morgenrot"
+        today={TODAY}
+        backLabel="Service & Gastraum"
+        fromSpace={false}
+        onSwitchPlanet={onSwitch}
+        onExit={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId('wk-corridor')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-mora-bubble')).toHaveTextContent('Gastraum-Impuls');
+    fireEvent.click(screen.getByTestId('wk-corridor-d-theke'));
+    expect(onSwitch).toHaveBeenCalledWith('d-theke');
+
+    // Öffne Service-Station -> Tisch 1 im Grundriss abkassieren (+14,60 € in Tageskasse)
+    fireEvent.click(screen.getByTestId('wk-mora-action-btn'));
+    expect(screen.getByTestId('wk-floorplan')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
+    expect(screen.getByTestId('wk-floor-pay-t1')).toHaveTextContent('Verbucht ✓');
+    u1();
+
+    // In der Verwaltung ist der Live-Kassenstand um die 14,60 € gestiegen (1.856,60 €)
+    const verwPlanet = { ...planet, id: 'd-verw', title: 'Verwaltung & Büro' };
+    wrap(
+      <Werkstatt
+        planet={verwPlanet}
+        work={work}
+        planets={skyPlanets}
+        companyId="demo-morgenrot"
+        today={TODAY}
+        backLabel="Verwaltung & Büro"
+        fromSpace={false}
+        onExit={jest.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    expect(screen.getByTestId('wk-verwaltung-live-till')).toHaveTextContent('1856,60 €');
   });
 });

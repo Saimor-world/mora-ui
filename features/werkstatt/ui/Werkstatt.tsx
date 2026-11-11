@@ -137,10 +137,12 @@ export interface WerkstattProps {
   initial?: Place | null;
   /** Woher der Anflug kommt (Planet im Fenster). null = direkt. */
   fromSpace?: boolean;
+  /** Direkt durch den Korridor in den Nachbarraum einer anderen Abteilung wechseln. */
+  onSwitchPlanet?: (planetId: string) => void;
   onExit: () => void;
 }
 
-export function Werkstatt({ planet, work, planets, companyId, today, roomKind, crew = [], backLabel, initial, fromSpace = true, onExit }: WerkstattProps) {
+export function Werkstatt({ planet, work, planets, companyId, today, roomKind, crew = [], backLabel, initial, fromSpace = true, onSwitchPlanet, onExit }: WerkstattProps) {
   const stage = useStage();
   // Der Raum hat seine eigene Bühne (bei 4:3 verkleinert, damit Regal und Pult beide sichtbar bleiben).
   const room = useMemo(() => roomStage(stage), [stage]);
@@ -354,6 +356,52 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
+  const toggleRoomLamp = useCallback(() => {
+    const nextPhase = world === 'morgennebel' ? 'night' : 'flow';
+    useOsShellStore.getState().setPhaseOverride(nextPhase);
+  }, [world]);
+
+  const moraImpulse = useMemo(() => {
+    switch (stationMeta.kind) {
+      case 'kueche-station':
+        return {
+          title: 'MÔRA · Backstuben-Impuls',
+          text: 'Hafermilch (18/24 L) & Espresso (4/6 kg) unter Soll · 36er Zimtschnecken-Charge für die Theke bereit.',
+          cta: 'Backofen & Bestand öffnen →',
+        };
+      case 'service-station':
+        return {
+          title: 'MÔRA · Gastraum-Impuls',
+          text: '12:30 Uhr: Kanzlei Weber (12 Pers., Tafel 4–6) · Interaktiver Grundriss & Tischkasse bereit.',
+          cta: 'Tischplan & Kasse öffnen →',
+        };
+      case 'theke-station':
+        return {
+          title: 'MÔRA · Barista-Impuls',
+          text: 'Siebträger 9,0 bar / 93,2 °C · Schnell-Bon für Laufkundschaft & Schichttausch (Jonas → Lena).',
+          cta: 'Schnell-Bon & Theke öffnen →',
+        };
+      case 'verwaltung-station':
+        return {
+          title: 'MÔRA · Kontor-Impuls',
+          text: 'Donnerstag-Bestellung (213,00 €) vor 14:00 Uhr fällig · Live-Tageskasse synchron mit Theke & Service.',
+          cta: 'Hauptbuch & Einkauf öffnen →',
+        };
+      case 'atelier-station':
+        return {
+          title: 'MÔRA · Atelier-Impuls',
+          text: 'ORIGIN // 001 (Seed 1001): Streiflicht- & Quarz-Inspektor am Basalt-Zeichentisch bereit.',
+          cta: 'ORIGIN-Inspektor öffnen →',
+        };
+      default:
+        return {
+          title: `MÔRA · ${title}`,
+          text: `${allTasks.filter((t) => !t.done).length} offene Aufgaben an der Tafel · ${docs.length} Dossiers im Raum.`,
+          cta: `${stationMeta.badgeText} öffnen →`,
+        };
+    }
+  }, [stationMeta.kind, stationMeta.badgeText, title, allTasks, docs.length]);
+
   // Brett & Aktionen -----------------------------------------------------------------------------------
   const qc = useQueryClient();
   const [page, setPage] = useState(0);
@@ -487,9 +535,46 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               </div>
             ) : null}
             <span className="wk-workflow-pill wk-workflow-pill--wood">
-              <b>{roomCtx.roomName}:</b> Wandtafel für Aufgaben · Tisch links für {stationMeta.badgeText} · Beistelltisch für Wochenmappe · Pult rechts für Buch
+              <b>{roomCtx.roomName}:</b> Wandtafel · Tisch links ({stationMeta.badgeText}) · Beistelltisch (Mappe) · Pult rechts (Buch)
             </span>
           </div>
+
+          {planets.length > 1 && onSwitchPlanet ? (
+            <div
+              className="wk-corridor"
+              style={{ left: ROOM.window.x, top: 30 }}
+              role="navigation"
+              aria-label="Nachbarräume im Korridor"
+              data-testid="wk-corridor"
+            >
+              <span className="wk-corridor__label">Räume:</span>
+              {planets.map((p) => {
+                const isCurrent = p.id === planet.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="wk-folder-tab"
+                    aria-current={isCurrent ? 'page' : undefined}
+                    aria-pressed={isCurrent}
+                    data-testid={`wk-corridor-${p.id}`}
+                    onClick={() => { if (!isCurrent) onSwitchPlanet(p.id); }}
+                  >
+                    {clean(p.title)}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="wk-folder-tab wk-lamp-toggle"
+                onClick={toggleRoomLamp}
+                data-testid="wk-lamp-toggle"
+                aria-label="Tischlampe & Tageslicht umschalten"
+              >
+                {world === 'morgennebel' ? '☀ Tageslicht' : '🕯 Lampenlicht'}
+              </button>
+            </div>
+          ) : null}
 
           <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
             {draft !== null ? (
@@ -590,6 +675,34 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 {docs.map((d) => <li key={d.id}><button type="button" onClick={() => { setDocSlip(false); setLectern(d.id); open({ kind: 'doc', id: d.id }); }}><span>{clean(d.name)}</span>{folderTitleById(d.folderId) ? <em>{folderTitleById(d.folderId)}</em> : null}</button></li>)}
               </ul>
             </PaperSlip>
+          ) : null}
+          {!close ? (
+            <div
+              className="wk-mora-companion"
+              style={{ left: activeMoraSeat.x - 190, top: activeMoraSeat.y - 168 }}
+              data-testid="wk-mora-bubble"
+            >
+              <div className="wk-mora-companion__head">
+                <span>{moraImpulse.title}</span>
+                <button
+                  type="button"
+                  className="wk-mora-companion__lamp"
+                  onClick={toggleRoomLamp}
+                  aria-label="Raumlicht umschalten"
+                >
+                  {world === 'morgennebel' ? '☀ Tag' : '🕯 Nacht'}
+                </button>
+              </div>
+              <p>{moraImpulse.text}</p>
+              <button
+                type="button"
+                className="wk-mora-companion__cta"
+                data-testid="wk-mora-action-btn"
+                onClick={() => open({ kind: 'station' })}
+              >
+                {moraImpulse.cta}
+              </button>
+            </div>
           ) : null}
           {!close ? <MoraSeat at={activeMoraSeat} stage={room} name="wk-room" /> : null}
         </StageLayer>

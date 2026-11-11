@@ -976,6 +976,16 @@ export function UnifiedUniverse({
           backLabel={stripFiktiv(planet.title) || planet.title}
           initial={room.place}
           fromSpace={room.fromSpace}
+          onSwitchPlanet={(nextId) => {
+            const nextPlanet = planets.find((p) => p.id === nextId);
+            if (!nextPlanet) return;
+            const ctx = getDepartmentRoomContext(nextPlanet.id, stripFiktiv(nextPlanet.title) || nextPlanet.title);
+            setPlanetId(nextPlanet.id);
+            setMoonId(null);
+            setTaskId(null);
+            setDeptSheetOpen(false);
+            setRoom({ kind: ctx.primaryRoom, place: null, fromSpace: false });
+          }}
           onExit={() => setRoom(null)}
         />
       ) : null}

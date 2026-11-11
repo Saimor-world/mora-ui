@@ -804,6 +804,148 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   border: 1px solid rgba(214, 168, 72, 0.32);
 }
 
+/* =====================================================================================
+   KORRIDOR-LEISTE, MÔRA-RAUM-IMPULS, GASTRAUM-GRUNDRISS & ORIGIN-INSPEKTOR
+   ===================================================================================== */
+.wk-corridor {
+  position: absolute;
+  z-index: 16;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 12, 8, 0.88);
+  border: 1px solid rgba(214, 168, 72, 0.42);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+}
+.wk-corridor__label {
+  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(246, 231, 193, 0.72);
+  padding: 0 4px;
+}
+
+.wk-mora-companion {
+  position: absolute;
+  width: 310px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: rgba(252, 246, 233, 0.95);
+  border: 1.5px solid #b88428;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  color: var(--ink);
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wk-mora-companion__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wk-mora-companion__head span {
+  font: 700 11.5px/1.1 -apple-system, BlinkMacSystemFont, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #7b5514;
+}
+.wk-mora-companion__lamp {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(90, 62, 30, 0.3);
+  background: #fffaf0;
+  color: var(--ink);
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+}
+.wk-mora-companion p {
+  margin: 0;
+  font: 450 13.5px/1.35 'Werk Serif', Georgia, serif;
+  color: var(--ink);
+}
+.wk-mora-companion__cta {
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid #8c6218;
+  background: #2e5e3e;
+  color: #f6fbf7;
+  font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+}
+
+.wk-floorplan {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.wk-floor-table {
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: rgba(255, 252, 244, 0.88);
+  border: 1.5px solid rgba(90, 62, 30, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wk-floor-table.is-besetzt {
+  border-color: #b88428;
+  background: #fdf4df;
+}
+.wk-floor-table.is-bezahlt {
+  border-color: #2e5e3e;
+  background: #eef8f1;
+}
+.wk-floor-table__top,
+.wk-floor-table__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.wk-floor-table__top b {
+  font: 600 14px/1.2 'Werk Serif', Georgia, serif;
+}
+.wk-floor-badge {
+  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink-soft);
+}
+.wk-floor-table small {
+  font: 400 12.5px/1.25 -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink-soft);
+}
+
+.wk-origin-inspector {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #171614;
+  border: 1px solid rgba(214, 168, 72, 0.42);
+  color: #f4ece0;
+  margin: 4px 0 6px;
+}
+.wk-origin-inspector__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.wk-origin-inspector__meta b {
+  font: 600 14px/1.25 'Werk Serif', Georgia, serif;
+  color: #f6e7c1;
+}
+.wk-origin-inspector__meta small {
+  font: 500 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: rgba(246, 231, 193, 0.72);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wk-sky__drift, .wk-sky__planet, .wk-leaf, .wk-slip { animation: none !important; }
   .wk-card, .wk-hit, .wk-corner { transition: none; }
