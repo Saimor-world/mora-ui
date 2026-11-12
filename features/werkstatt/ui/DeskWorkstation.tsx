@@ -5,8 +5,12 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import {
   useOperationalLedger,
   resolveScopeKey,
+  resolveOperationalActor,
+  TRUTH_STATUS_LABELS,
   type AuditEntry,
+  type KanzleiWeberAction,
   type SafetyLevel,
+  type TruthStatus,
 } from '@/lib/universe/operationalLedger';
 import type { DeptMember } from '@/features/universe/ui/Workbench';
 import type { WorkTask } from '@/lib/universe/deptWork';
@@ -154,15 +158,19 @@ export interface DeskWorkstationProps {
   stationKind: StationKind;
   planetId: string;
   planetTitle: string;
+  companyId?: string | null;
   crew: DeptMember[];
   tasks: WorkTask[];
   docs: Array<{ id: string; name: string; meta: string; folderId: string }>;
   activeDocTitle?: string;
   activeDocContent?: string;
-  onSaveDoc?: (newContent: string) => void;
+  docSyncStatus?: TruthStatus;
+  docSyncError?: string | null;
+  onRetryDocSave?: () => void;
+  onSaveDoc?: (newContent: string) => Promise<boolean> | boolean | void;
   onOpenBook?: (docId: string) => void;
   onSelectDoc?: (docId: string) => void;
-  onCreateDoc?: (title: string, body: string) => void;
+  onCreateDoc?: (title: string, body: string) => Promise<boolean> | boolean | void;
   onAddTask?: (title: string, assignee?: string | null) => void;
   onToggleTask?: (task: WorkTask) => void;
   onOpenTask?: (taskId: string) => void;
@@ -176,11 +184,15 @@ export function DeskWorkstation({
   stationKind,
   planetId,
   planetTitle,
+  companyId = null,
   crew,
   tasks,
   docs,
   activeDocTitle = '',
   activeDocContent = '',
+  docSyncStatus,
+  docSyncError = null,
+  onRetryDocSave,
   onSaveDoc,
   onOpenBook,
   onSelectDoc,
@@ -278,7 +290,7 @@ export function DeskWorkstation({
   );
   const [editingFolio, setEditingFolio] = useState(false);
   const [folioDraft, setFolioDraft] = useState(activeDocContent);
-  const [folioSaved, setFolioSaved] = useState(false);
+  const [docSaving, setDocSaving] = useState(false);
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocBody, setNewDocBody] = useState('');
@@ -332,17 +344,17 @@ export function DeskWorkstation({
   const [techTaskDraft, setTechTaskDraft] = useState('');
   useEffect(() => writeLocal(`mora.station.technik.sys.${planetId}`, techSystems), [techSystems, planetId]);
 
-  // 8. SHARED LIVE CAFÉ STATE (Verbindet Küche, Service, Theke & Verwaltung in Echtzeit!)
-  const [cafeShared, setCafeShared] = useState(() =>
-    readLocal('mora.cafe.shared.v1', {
-      extraRevenue: 0,
-      receiptsCount: 42,
-      vitrineStocked: false,
-      ovenStatus: 'idle' as 'idle' | 'baking' | 'fresh',
-      lastBonLabel: '2× Flat White · 1× Zimtschnecke (11,20 €)',
-    })
-  );
-  useEffect(() => writeLocal('mora.cafe.shared.v1', cafeShared), [cafeShared]);
+  // 8. EINHEITLICHER OPERATIVER ZUSTAND (keine zweite Schattenkasse mehr!)
+  const scopeKey = useMemo(() => resolveScopeKey(companyId, planetId), [companyId, planetId]);
+  const {
+    state: opLedger,
+    hasPendingRetry,
+    record: recordOp,
+    transitionWeber,
+    updateSharedStation,
+    retryLastFailed,
+  } = useOperationalLedger(scopeKey, companyId);
+  const sharedStation = opLedger.sharedStation;
 
   // Visueller Gastraum-Grundriss (Service & Gastraum)
   const [floorTables, setFloorTables] = useState(() =>
@@ -355,49 +367,81 @@ export function DeskWorkstation({
   );
   useEffect(() => writeLocal(`mora.station.service.floor.${planetId}`, floorTables), [floorTables, planetId]);
 
-  // Barista Schnell-Bon an der Theke
+  // Barista Schnell-Bon an der Theke (mit stabilem Idempotenz-Schlüssel pro Bon gegen Doppelbuchung)
   const [posCart, setPosCart] = useState<Array<{ name: string; price: number }>>([
     { name: 'Flat White (Hafer)', price: 3.9 },
     { name: 'Zimtschnecke (warm)', price: 3.4 },
   ]);
+  const [posBonKey, setPosBonKey] = useState<string>(() => `pos-bon-${Date.now().toString(36)}`);
   const posTotal = useMemo(() => posCart.reduce((s, x) => s + x.price, 0), [posCart]);
 
   // ORIGIN // 001 Licht-Inspektor im Atelier
   const [originLightMode, setOriginLightMode] = useState<'raking' | 'caustic' | 'frame'>('raking');
 
-  // PRIORITÄT 0, 1 & 3: Strikte Scope-Isolation, Idempotente Dokumentenspur & 4-Raum-Vorgang Kanzlei Weber
-  const scopeKey = useMemo(() => resolveScopeKey(undefined, planetId), [planetId]);
-  const { state: opLedger, record: recordOp } = useOperationalLedger(scopeKey);
+  // PRIORITÄT 0, 1 & 3: Strikte Scope-Isolation, Idempotente Dokumentenspur & 4-Raum-FSM Kanzlei Weber
   const [supplierGateArmed, setSupplierGateArmed] = useState(false);
   const [auditFeedback, setAuditFeedback] = useState<string | null>(null);
+  const resolvedActor = useMemo(() => resolveOperationalActor(scopeKey), [scopeKey]);
 
-  const commitAction = (params: {
+  const commitAction = async (params: {
     idempotencyKey: string;
-    actor: string;
+    actor?: string;
     action: string;
     result: string;
     safetyLevel?: SafetyLevel;
+    kind?: string;
+    referenceId?: string | null;
     amountDelta?: number;
     mutate?: (draft: typeof opLedger) => void;
   }) => {
-    const res = recordOp({
+    const res = await recordOp({
       ...params,
+      actor: params.actor ?? resolvedActor,
+      safetyLevel: params.safetyLevel ?? 'routine',
       departmentId: planetId,
       departmentTitle: planetTitle,
     });
-    if (!res.alreadyRecorded) {
+    if (!res.ok) {
+      setAuditFeedback(`Fehlgeschlagen: ${res.blockedReason || 'Vorgang nicht gespeichert.'}`);
+      return res;
+    }
+    if (!res.alreadyRecorded && res.entry) {
       onAppendAuditEntry?.(res.entry);
-      setAuditFeedback(`Dokumentiert (${res.entry.timestamp}): ${res.entry.result}`);
+      setAuditFeedback(`${TRUTH_STATUS_LABELS[res.truthStatus]} (${res.entry.timestamp}): ${res.entry.result}`);
     } else {
       setAuditFeedback(`Idempotent geschützt: Vorgang #${params.idempotencyKey} bereits einmalig verbucht.`);
     }
     return res;
   };
 
-  const liveTillTotal = useMemo(
-    () => Number((opLedger.baseTillEur + opLedger.bookedRevenueEur + cafeShared.extraRevenue).toFixed(2)),
-    [opLedger.baseTillEur, opLedger.bookedRevenueEur, cafeShared.extraRevenue]
-  );
+  const runWeberTransition = async (params: {
+    action: KanzleiWeberAction;
+    actionLabel: string;
+    resultLabel: string;
+    onSuccess?: () => void;
+  }) => {
+    const res = await transitionWeber({
+      action: params.action,
+      station: stationKind,
+      departmentTitle: planetTitle,
+      actionLabel: params.actionLabel,
+      resultLabel: params.resultLabel,
+    });
+    if (!res.ok) {
+      setAuditFeedback(res.blockedReason || 'Übergang blockiert.');
+      return res;
+    }
+    params.onSuccess?.();
+    if (!res.alreadyRecorded && res.entry) {
+      onAppendAuditEntry?.(res.entry);
+      setAuditFeedback(`${TRUTH_STATUS_LABELS[res.truthStatus]} (${res.entry.timestamp}): ${res.entry.result}`);
+    } else {
+      setAuditFeedback(`Idempotent geschützt: Schritt '${params.action}' bereits einmalig verbucht.`);
+    }
+    return res;
+  };
+
+  const liveTillTotal = opLedger.totalTillEur;
 
   const filteredTasks = useMemo(() => {
     if (!selectedCrewName) return tasks;
@@ -419,21 +463,40 @@ export function DeskWorkstation({
       {/* PRIORITÄT 0, 1 & 3: Datenherkunft, Sicherheitsstufe & Durchgehender Kanzlei-Weber-Vorgang */}
       <div className="wk-ledger-bar" data-testid="wk-ledger-bar">
         <div className="wk-ledger-bar__meta">
-          <span className="wk-truth-badge" data-testid="wk-scope-truth-badge">
-            {scopeKey === 'demo-morgenrot'
-              ? 'Scope: Café Morgenrot (Isolierte Demo-Sandbox · Idempotente Buchung)'
-              : 'Scope: SAIMÔR HQ (Isoliertes Schiff · CORE-Synchron)'}
+          <span className="wk-truth-badge" data-testid="wk-scope-truth-badge" data-truth-status={opLedger.truthStatus}>
+            {scopeKey === 'demo-morgenrot' ? 'Scope: Café Morgenrot' : 'Scope: SAIMÔR HQ'} ·{' '}
+            {TRUTH_STATUS_LABELS[opLedger.truthStatus]}
           </span>
-          {auditFeedback ? (
-            <span className="wk-audit-feedback" data-testid="wk-audit-feedback">{auditFeedback}</span>
-          ) : (
-            <span className="wk-audit-count" data-testid="wk-audit-count">
-              Dokumentenspur: {opLedger.auditTrail.length} verifizierte Einträge
+          {opLedger.truthStatus === 'failed' || hasPendingRetry || docSyncStatus === 'failed' ? (
+            <button
+              type="button"
+              className="wk-ws-chip is-active"
+              data-testid="wk-ledger-retry-btn"
+              onClick={() => {
+                if (opLedger.truthStatus === 'failed' || hasPendingRetry) {
+                  void retryLastFailed();
+                }
+                if (docSyncStatus === 'failed') {
+                  onRetryDocSave?.();
+                }
+              }}
+            >
+              Erneut versuchen ↻
+            </button>
+          ) : null}
+          {opLedger.lastError || docSyncError ? (
+            <span className="wk-audit-feedback" data-testid="wk-audit-error">
+              Fehlgeschlagen: {opLedger.lastError || docSyncError}
             </span>
-          )}
+          ) : auditFeedback ? (
+            <span className="wk-audit-feedback" data-testid="wk-audit-feedback">{auditFeedback}</span>
+          ) : null}
+          <span className="wk-audit-count" data-testid="wk-audit-count">
+            Dokumentenspur: {opLedger.auditTrail.length} Einträge
+          </span>
         </div>
 
-        {scopeKey === 'demo-morgenrot' ? (
+        {['service-station', 'kueche-station', 'theke-station', 'verwaltung-station'].includes(stationKind) ? (
           <div className="wk-weber-flow" data-testid="wk-weber-e2e-bar">
             <span className="wk-weber-flow__label">Vorgang Kanzlei Weber (12 Pers. · 142,00 €):</span>
             <span className={`wk-weber-step${kw.step1Confirmed ? ' is-done' : ''}`} data-testid="wk-weber-state-1">
@@ -455,18 +518,15 @@ export function DeskWorkstation({
                 className={`wk-ws-chip${kw.step1Confirmed ? ' is-done' : ' is-active'}`}
                 data-testid="wk-weber-step-cta"
                 onClick={() => {
-                  commitAction({
-                    idempotencyKey: 'kanzlei-weber-step-1-gastraum',
-                    actor: 'Lena K.',
-                    action: 'Reservierung Kanzlei Weber (12 Pers., Tafel 4–6) bestätigt',
-                    result: 'Vorbereitungsauftrag an Backstube (Zimtschnecken) & Theke (12× Gedeck) ausgelöst',
-                    safetyLevel: 'buchung',
-                    mutate: (d) => {
-                      d.kanzleiWeber.step1Confirmed = true;
+                  void runWeberTransition({
+                    action: 'confirm_intake',
+                    actionLabel: 'Reservierung Kanzlei Weber (12 Pers., Tafel 4–6) bestätigt',
+                    resultLabel: 'Vorbereitungsauftrag an Backstube (Zimtschnecken) & Theke (12× Gedeck) ausgelöst',
+                    onSuccess: () => {
+                      setReservations((l) => l.map((x) => (x.id === 'res-1' ? { ...x, status: 'sitzt' } : x)));
+                      setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'besetzt' } : x)));
                     },
                   });
-                  setReservations((l) => l.map((x) => (x.id === 'res-1' ? { ...x, status: 'sitzt' } : x)));
-                  setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'besetzt' } : x)));
                 }}
               >
                 {kw.step1Confirmed ? '1. Auftrag an Küche & Theke aktiv ✓' : '1. Kanzlei Weber bestätigen & Auftrag starten →'}
@@ -476,80 +536,75 @@ export function DeskWorkstation({
             {stationKind === 'kueche-station' ? (
               <button
                 type="button"
-                className={`wk-ws-chip${kw.step2Baked ? ' is-done' : ' is-active'}`}
+                className={`wk-ws-chip${kw.step2Baked ? ' is-done' : kw.step1Confirmed ? ' is-active' : ''}`}
                 data-testid="wk-weber-step-cta"
+                aria-disabled={!kw.step1Confirmed && !kw.step2Baked}
                 onClick={() => {
-                  commitAction({
-                    idempotencyKey: 'kanzlei-weber-step-2-backstube',
-                    actor: 'Tarek B.',
-                    action: 'Frische Zimtschnecken-Charge (180 °C) für Kanzlei Weber produziert',
-                    result: 'Bestand an Theken-Vitrine gemeldet · Hafermilch-Vorrat auf 16 L gesunken (unter Meldegrenze 24 L)',
-                    safetyLevel: 'buchung',
-                    mutate: (d) => {
-                      d.kanzleiWeber.step1Confirmed = true;
-                      d.kanzleiWeber.step2Baked = true;
-                      d.vitrineTrays = 2;
-                      d.oatMilkLiters = 16;
+                  void runWeberTransition({
+                    action: 'bake_order',
+                    actionLabel: 'Frische Zimtschnecken-Charge (180 °C) für Kanzlei Weber produziert',
+                    resultLabel: 'Bestand an Theken-Vitrine gemeldet · Hafermilch-Vorrat auf 16 L gesunken',
+                    onSuccess: () => {
+                      setInventory((l) => l.map((x) => (x.id === 'inv-hafer' ? { ...x, current: 16 } : x)));
                     },
                   });
-                  setCafeShared((s) => ({ ...s, ovenStatus: 'fresh', vitrineStocked: true }));
-                  setInventory((l) => l.map((x) => (x.id === 'inv-hafer' ? { ...x, current: 16 } : x)));
                 }}
               >
-                {kw.step2Baked ? '2. Charge an Theke gemeldet ✓' : '2. Zimtschnecken für Kanzlei Weber backen & melden →'}
+                {kw.step2Baked
+                  ? '2. Charge an Theke gemeldet ✓'
+                  : !kw.step1Confirmed
+                    ? '2. Wartet auf Schritt 1 (Gastraum)'
+                    : '2. Zimtschnecken für Kanzlei Weber backen & melden →'}
               </button>
             ) : null}
 
             {stationKind === 'theke-station' ? (
               <button
                 type="button"
-                className={`wk-ws-chip${kw.step3Served ? ' is-done' : ' is-active'}`}
+                className={`wk-ws-chip${kw.step3Served ? ' is-done' : kw.step2Baked ? ' is-active' : ''}`}
                 data-testid="wk-weber-step-cta"
+                aria-disabled={!kw.step2Baked && !kw.step3Served}
                 onClick={() => {
-                  commitAction({
-                    idempotencyKey: 'kanzlei-weber-step-3-theke',
-                    actor: 'Jonas M.',
-                    action: 'Vitrinenbestand übernommen & 12× Kanzlei-Weber-Bestellung zubereitet',
-                    result: '12× Spezialgetränke & Gebäck Tafel 4–6 zugeordnet · Bereit zur Abrechnung (142,00 €)',
-                    safetyLevel: 'buchung',
-                    mutate: (d) => {
-                      d.kanzleiWeber.step1Confirmed = true;
-                      d.kanzleiWeber.step2Baked = true;
-                      d.kanzleiWeber.step3Served = true;
+                  void runWeberTransition({
+                    action: 'prepare_pickup',
+                    actionLabel: 'Vitrinenbestand übernommen & 12× Kanzlei-Weber-Bestellung zubereitet',
+                    resultLabel: '12× Spezialgetränke & Gebäck Tafel 4–6 zugeordnet · Bereit zur Abrechnung (142,00 €)',
+                    onSuccess: () => {
+                      setBarChecks((l) => l.map((x) => (x.id === 'chk-3' ? { ...x, done: true } : x)));
                     },
                   });
-                  setCafeShared((s) => ({ ...s, vitrineStocked: true }));
-                  setBarChecks((l) => l.map((x) => (x.id === 'chk-3' ? { ...x, done: true } : x)));
                 }}
               >
-                {kw.step3Served ? '3. Bestellung Tafel 4–6 serviert ✓' : '3. Vitrinenbestand & 12× Gedeck zuordnen →'}
+                {kw.step3Served
+                  ? '3. Bestellung Tafel 4–6 serviert ✓'
+                  : !kw.step2Baked
+                    ? '3. Wartet auf Schritt 2 (Backstube)'
+                    : '3. Vitrinenbestand & 12× Gedeck zuordnen →'}
               </button>
             ) : null}
 
             {stationKind === 'verwaltung-station' ? (
               <button
                 type="button"
-                className={`wk-ws-chip${kw.step4Booked ? ' is-done' : ' is-active'}`}
+                className={`wk-ws-chip${kw.step4Booked ? ' is-done' : kw.step3Served ? ' is-active' : ''}`}
                 data-testid="wk-weber-step-cta"
+                aria-disabled={!kw.step3Served && !kw.step4Booked}
                 onClick={() => {
-                  commitAction({
-                    idempotencyKey: 'kanzlei-weber-step-4-kasse',
-                    actor: 'Clara D.',
-                    action: 'Sammelrechnung Kanzlei Weber (Tafel 4–6) im Kassenbuch abgeschlossen',
-                    result: 'Umsatz +142,00 € exakt einmalig in Tageskasse verbucht & Dossier am Stehpult aktualisiert',
-                    safetyLevel: 'freigabe',
-                    amountDelta: 142.0,
-                    mutate: (d) => {
-                      d.kanzleiWeber.step1Confirmed = true;
-                      d.kanzleiWeber.step2Baked = true;
-                      d.kanzleiWeber.step3Served = true;
-                      d.kanzleiWeber.step4Booked = true;
-                      d.tillClosed = true;
+                  void runWeberTransition({
+                    action: 'settle_invoice',
+                    actionLabel: 'Sammelrechnung Kanzlei Weber (Tafel 4–6) im Kassenbuch abgeschlossen',
+                    resultLabel: 'Umsatz +142,00 € exakt einmalig in Tageskasse verbucht & Dossier aktualisiert',
+                    onSuccess: () => {
+                      setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'bezahlt' } : x)));
                     },
                   });
                 }}
               >
-                {kw.step4Booked ? '4. 142,00 € einmalig verbucht & Dossier erzeugt ✓' : '4. Umsatz (142,00 €) einmalig verbuchen & Dossier erzeugen →'}
+                {kw.step4Booked
+                  ? '4. 142,00 € einmalig verbucht & Dossier erzeugt ✓'
+                  : !kw.step3Served
+                    ? '4. Wartet auf Schritt 3 (Theke)'
+                    : '4. Umsatz (142,00 €) einmalig verbuchen & Dossier erzeugen →'}
               </button>
             ) : null}
           </div>
@@ -644,31 +699,31 @@ export function DeskWorkstation({
                 <small>
                   Schwaden-Ofen (180 °C):{' '}
                   <b>
-                    {cafeShared.ovenStatus === 'idle'
+                    {sharedStation.ovenStatus === 'idle'
                       ? 'Bereit für Einschub'
-                      : cafeShared.ovenStatus === 'baking'
+                      : sharedStation.ovenStatus === 'baking'
                         ? `${Math.round(24 * batchMultiplier)} Zimtschnecken backen (18 Min.)…`
-                        : `${Math.round(24 * batchMultiplier)} Zimtschnecken frisch an der Theke ✓`}
+                        : `${Math.round(24 * batchMultiplier)} Zimtschnecken frisch an der Theke`}
                   </b>
                 </small>
                 <button
                   type="button"
-                  className={`wk-ws-chip${cafeShared.vitrineStocked ? ' is-done' : cafeShared.ovenStatus === 'baking' ? ' is-active' : ''}`}
+                  className={`wk-ws-chip${sharedStation.vitrineStocked ? ' is-done' : sharedStation.ovenStatus === 'baking' ? ' is-active' : ''}`}
                   data-testid="wk-kueche-oven-btn"
                   onClick={() => {
-                    if (cafeShared.ovenStatus === 'idle') {
-                      setCafeShared((s) => ({ ...s, ovenStatus: 'baking', vitrineStocked: false }));
+                    if (sharedStation.ovenStatus === 'idle') {
+                      updateSharedStation({ ovenStatus: 'baking', vitrineStocked: false });
                     } else {
-                      setCafeShared((s) => ({ ...s, ovenStatus: 'fresh', vitrineStocked: true }));
+                      updateSharedStation({ ovenStatus: 'fresh', vitrineStocked: true });
                       setBarChecks((l) => l.map((x) => (x.id === 'chk-3' ? { ...x, done: true } : x)));
                     }
                   }}
                 >
-                  {cafeShared.ovenStatus === 'idle'
+                  {sharedStation.ovenStatus === 'idle'
                     ? 'In den Ofen schieben (180 °C)'
-                    : cafeShared.ovenStatus === 'baking'
+                    : sharedStation.ovenStatus === 'baking'
                       ? 'Frisch in die Theken-Vitrine geben →'
-                      : 'Theken-Vitrine bestückt ✓'}
+                      : 'Theken-Vitrine bestückt'}
                 </button>
               </div>
             </div>
@@ -755,34 +810,35 @@ export function DeskWorkstation({
                           data-testid={`wk-floor-pay-${tb.id}`}
                           onClick={() => {
                             if (tb.state === 'reserviert' && !isPaid) {
-                              setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'besetzt' } : x)));
                               if (tb.id === 't46') {
-                                commitAction({
-                                  idempotencyKey: 'kanzlei-weber-step-1-gastraum',
-                                  actor: 'Lena K.',
-                                  action: 'Reservierung Kanzlei Weber (12 Pers., Tafel 4–6) platziert',
-                                  result: 'Vorbereitungsauftrag an Backstube & Theke ausgelöst',
-                                  safetyLevel: 'buchung',
-                                  mutate: (d) => {
-                                    d.kanzleiWeber.step1Confirmed = true;
+                                void runWeberTransition({
+                                  action: 'confirm_intake',
+                                  actionLabel: 'Reservierung Kanzlei Weber (12 Pers., Tafel 4–6) platziert',
+                                  resultLabel: 'Vorbereitungsauftrag an Backstube & Theke ausgelöst',
+                                  onSuccess: () => {
+                                    setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'besetzt' } : x)));
                                   },
                                 });
+                              } else {
+                                setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'besetzt' } : x)));
                               }
                             } else {
-                              setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'bezahlt' } : x)));
-                              commitAction({
-                                idempotencyKey: tb.id === 't46' ? 'kanzlei-weber-step-4-kasse' : `floor-pay-${tb.id}`,
-                                actor: 'Lena K.',
+                              if (tb.id === 't46') {
+                                setAuditFeedback('Tafel 4–6 (Kanzlei Weber) wird nach Backstube & Theke im Kontor über die Prozess-Stufen abgeschlossen.');
+                                return;
+                              }
+                              void commitAction({
+                                idempotencyKey: `floor-pay-${tb.id}`,
+                                kind: 'table_payment',
+                                referenceId: tb.id,
                                 action: `Tischrechnung ${tb.label} abkassiert`,
                                 result: `Umsatz +${tb.bill.toFixed(2).replace('.', ',')} € exakt einmalig in Tageskasse verbucht`,
                                 safetyLevel: 'buchung',
                                 amountDelta: tb.bill,
-                                mutate: (d) => {
-                                  if (tb.id === 't46') {
-                                    d.kanzleiWeber.step1Confirmed = true;
-                                    d.kanzleiWeber.step4Booked = true;
-                                  }
-                                },
+                              }).then((res) => {
+                                if (res.ok) {
+                                  setFloorTables((l) => l.map((x) => (x.id === tb.id ? { ...x, state: 'bezahlt' } : x)));
+                                }
                               });
                             }
                           }}
@@ -823,7 +879,7 @@ export function DeskWorkstation({
                         className={`wk-ws-chip${rev.sent ? ' is-done' : ''}`}
                         onClick={() => setReviews((l) => l.map((x) => (x.id === rev.id ? { ...x, sent: true } : x)))}
                       >
-                        {rev.sent ? 'Antwort veröffentlicht ✓' : 'Antwort jetzt absenden'}
+                        {rev.sent ? 'Antwort-Entwurf vorgemerkt (Demo · nicht veröffentlicht)' : 'Antwort als Entwurf vormerken'}
                       </button>
                     </div>
                   </div>
@@ -873,8 +929,8 @@ export function DeskWorkstation({
                   <span className="wk-ws-eyebrow">Siebträger (9,0 bar · 93,2 °C) & Schnell-Bon</span>
                   <h3>Theken-Kasse & Direktverkauf</h3>
                 </div>
-                <span className={`wk-ws-chip${cafeShared.vitrineStocked ? ' is-done' : ''}`}>
-                  {cafeShared.vitrineStocked ? 'Vitrine frisch ✓' : 'Vitrine offen'}
+                <span className={`wk-ws-chip${sharedStation.vitrineStocked ? ' is-done' : ''}`}>
+                  {sharedStation.vitrineStocked ? 'Vitrine frisch' : 'Vitrine offen'}
                 </span>
               </div>
               <div className="wk-ws-pills" style={{ marginTop: 4 }}>
@@ -897,7 +953,7 @@ export function DeskWorkstation({
               <div className="wk-ws-row" style={{ marginTop: 6 }}>
                 <div className="wk-ws-row__main">
                   <b>Aktueller Bon ({posCart.length} Pos.): {posTotal.toFixed(2).replace('.', ',')} €</b>
-                  <small>Letzte Buchung: {cafeShared.lastBonLabel}</small>
+                  <small>Letzte Buchung: {sharedStation.lastBonLabel}</small>
                 </div>
                 <button
                   type="button"
@@ -905,13 +961,20 @@ export function DeskWorkstation({
                   data-testid="wk-theke-pos-book"
                   onClick={() => {
                     if (posTotal <= 0) return;
-                    setCafeShared((s) => ({
-                      ...s,
-                      extraRevenue: Number((s.extraRevenue + posTotal).toFixed(2)),
-                      receiptsCount: s.receiptsCount + 1,
-                      lastBonLabel: `${posCart.length}× Theken-Bon (${posTotal.toFixed(2).replace('.', ',')} €)`,
-                    }));
-                    setPosCart([{ name: 'Flat White (Hafer)', price: 3.9 }]);
+                    const bonLabel = `${posCart.length}× Theken-Bon (${posTotal.toFixed(2).replace('.', ',')} €)`;
+                    void commitAction({
+                      idempotencyKey: posBonKey,
+                      kind: 'pos_receipt',
+                      action: bonLabel,
+                      result: `Theken-Bon +${posTotal.toFixed(2).replace('.', ',')} € in einheitlicher Tageskasse verbucht`,
+                      safetyLevel: 'buchung',
+                      amountDelta: Number(posTotal.toFixed(2)),
+                    }).then((res) => {
+                      if (res.ok) {
+                        setPosBonKey(`pos-bon-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`);
+                        setPosCart([{ name: 'Flat White (Hafer)', price: 3.9 }]);
+                      }
+                    });
                   }}
                 >
                   Bon buchen (+{posTotal.toFixed(2).replace('.', ',')} €)
@@ -985,21 +1048,22 @@ export function DeskWorkstation({
                     return;
                   }
                   setSupplierGateArmed(false);
-                  setOrderSubmitted(true);
-                  commitAction({
+                  void commitAction({
                     idempotencyKey: 'verwaltung-supplier-order-do',
-                    actor: 'Clara D.',
+                    kind: 'approval',
                     action: `Lieferantenbestellung (Rösterei Hügel & Hofmolkerei · ${totalOrderSum.toFixed(2).replace('.', ',')} €) verbindlich freigegeben`,
                     result: 'Freigabe-Stufe bestätigt · Bestellbogen im Kontor-Hauptbuch dokumentiert',
                     safetyLevel: 'freigabe',
                     mutate: (d) => {
                       d.supplierOrderApproved = true;
                     },
+                  }).then((res) => {
+                    if (res.ok) setOrderSubmitted(true);
                   });
                 }}
               >
                 {orderSubmitted || opLedger.supplierOrderApproved
-                  ? 'Bestellung an Rösterei & Hofmolkerei gesendet ✓'
+                  ? `Freigabe im Kontor dokumentiert (${TRUTH_STATUS_LABELS[opLedger.truthStatus]})`
                   : supplierGateArmed
                     ? `Freigabe bestätigen (${totalOrderSum.toFixed(2).replace('.', ',')} € verbindlich) →`
                     : 'Bestellung jetzt verbindlich freigeben →'}
@@ -1009,29 +1073,23 @@ export function DeskWorkstation({
 
           <section className="wk-ws-side">
             <div className="wk-ws-card" data-testid="wk-verwaltung-live-till">
-              <span className="wk-ws-eyebrow">Kassenbuch & Idempotente Buchung (Theke & Service)</span>
-              <h3>Tagesstand: {liveTillTotal.toFixed(2).replace('.', ',')} € (+9 % zur Vorwoche)</h3>
+              <span className="wk-ws-eyebrow">Einheitliches Kassenbuch & Idempotente Buchung ({TRUTH_STATUS_LABELS[opLedger.truthStatus]})</span>
+              <h3>Tagesstand: {liveTillTotal.toFixed(2).replace('.', ',')} €</h3>
               <p className="wk-ws-sub">
-                Basis-Kasse 1.842,00 € {(opLedger.bookedRevenueEur + cafeShared.extraRevenue) > 0 ? `+ ${(opLedger.bookedRevenueEur + cafeShared.extraRevenue).toFixed(2).replace('.', ',')} € verbuchte Bons heute` : ''} · {kw.step4Booked ? 'Kanzlei Weber (142,00 €) einmalig verbucht ✓' : 'Kanzlei Weber (142,00 €) offen'}
+                Basis-Kasse {opLedger.baseTillEur.toFixed(2).replace('.', ',')} € {opLedger.bookedRevenueEur > 0 ? `+ ${opLedger.bookedRevenueEur.toFixed(2).replace('.', ',')} € verbuchte Bons heute (${opLedger.sharedStation.receiptsCount} Vorgänge)` : ''} · {kw.step4Booked ? 'Kanzlei Weber (142,00 €) einmalig verbucht ✓' : 'Kanzlei Weber (142,00 €) offen'}
               </p>
               <button
                 type="button"
-                className={`wk-ws-chip${kw.step4Booked ? ' is-done' : ' is-active'}`}
+                className={`wk-ws-chip${kw.step4Booked ? ' is-done' : kw.step3Served ? ' is-active' : ''}`}
                 data-testid="wk-verwaltung-close-till-btn"
+                aria-disabled={!kw.step3Served && !kw.step4Booked}
                 onClick={() => {
-                  commitAction({
-                    idempotencyKey: 'kanzlei-weber-step-4-kasse',
-                    actor: 'Clara D.',
-                    action: 'Tageskasse inkl. Sammelrechnung Kanzlei Weber (142,00 €) abgeschlossen',
-                    result: 'Umsatz +142,00 € exakt einmalig verbucht & Prüf-Dossier im Buch am Stehpult angelegt',
-                    safetyLevel: 'freigabe',
-                    amountDelta: 142.0,
-                    mutate: (d) => {
-                      d.kanzleiWeber.step1Confirmed = true;
-                      d.kanzleiWeber.step2Baked = true;
-                      d.kanzleiWeber.step3Served = true;
-                      d.kanzleiWeber.step4Booked = true;
-                      d.tillClosed = true;
+                  void runWeberTransition({
+                    action: 'settle_invoice',
+                    actionLabel: 'Tageskasse inkl. Sammelrechnung Kanzlei Weber (142,00 €) abgeschlossen',
+                    resultLabel: 'Umsatz +142,00 € exakt einmalig verbucht & Prüf-Dossier im Buch am Stehpult angelegt',
+                    onSuccess: () => {
+                      setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'bezahlt' } : x)));
                     },
                   });
                 }}
@@ -1065,23 +1123,54 @@ export function DeskWorkstation({
             <header className="wk-ws-head">
               <div>
                 <span className="wk-ws-eyebrow">Atelier-Zeichentisch · Konzept & Dossier</span>
-                <h2>{activeDocTitle || 'ORIGIN // 001 Material-Manifest'}{folioSaved ? ' · Gespeichert ✓' : ''}</h2>
+                <h2>
+                  {activeDocTitle || 'ORIGIN // 001 Material-Manifest'}
+                  {docSyncStatus ? ` · ${TRUTH_STATUS_LABELS[docSyncStatus]}` : ''}
+                </h2>
+                {docSyncStatus === 'failed' && docSyncError ? (
+                  <div className="wk-audit-error" data-testid="wk-studio-doc-error" role="alert" style={{ marginTop: 6 }}>
+                    <span>Dossier-Speicherung fehlgeschlagen: {docSyncError}</span>
+                    {onRetryDocSave ? (
+                      <button
+                        type="button"
+                        className="wk-ws-chip"
+                        data-testid="wk-studio-retry-btn"
+                        disabled={docSaving}
+                        onClick={async () => {
+                          setDocSaving(true);
+                          try {
+                            await onRetryDocSave();
+                          } finally {
+                            setDocSaving(false);
+                          }
+                        }}
+                      >
+                        Erneut versuchen
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   type="button"
                   className="wk-ws-chip"
                   data-testid="wk-studio-edit-toggle"
-                  onClick={() => {
+                  disabled={docSaving}
+                  onClick={async () => {
                     if (editingFolio && onSaveDoc) {
-                      onSaveDoc(folioDraft);
-                      setFolioSaved(true);
-                      window.setTimeout(() => setFolioSaved(false), 2000);
+                      setDocSaving(true);
+                      try {
+                        const ok = await onSaveDoc(folioDraft);
+                        if (ok === false) return;
+                      } finally {
+                        setDocSaving(false);
+                      }
                     }
                     setEditingFolio((v) => !v);
                   }}
                 >
-                  {editingFolio ? 'Vorschau' : '✎ Direkt schreiben'}
+                  {editingFolio ? (docSaving ? 'Speichert…' : 'Vorschau') : '✎ Direkt schreiben'}
                 </button>
                 {docs[0] && onOpenBook ? (
                   <button type="button" className="wk-ws-chip" onClick={() => onOpenBook(docs[0].id)}>
@@ -1113,18 +1202,24 @@ export function DeskWorkstation({
               <form
                 className="wk-ws-inline-form"
                 data-testid="wk-studio-new-doc-form"
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  if (!newDocTitle.trim()) return;
-                  onCreateDoc?.(newDocTitle.trim(), newDocBody.trim());
-                  setNewDocTitle('');
-                  setNewDocBody('');
-                  setNewDocOpen(false);
+                  if (!newDocTitle.trim() || docSaving) return;
+                  setDocSaving(true);
+                  try {
+                    const ok = await onCreateDoc?.(newDocTitle.trim(), newDocBody.trim());
+                    if (ok === false) return;
+                    setNewDocTitle('');
+                    setNewDocBody('');
+                    setNewDocOpen(false);
+                  } finally {
+                    setDocSaving(false);
+                  }
                 }}
               >
                 <input value={newDocTitle} onChange={(e) => setNewDocTitle(e.target.value)} placeholder="Titel des neuen Dossiers…" data-testid="wk-studio-new-doc-title" />
                 <input value={newDocBody} onChange={(e) => setNewDocBody(e.target.value)} placeholder="Kernaussage / Entwurf…" />
-                <button type="submit" className="wk-ws-btn">Anlegen</button>
+                <button type="submit" className="wk-ws-btn" disabled={docSaving}>{docSaving ? 'Legt an…' : 'Anlegen'}</button>
               </form>
             ) : null}
 
@@ -1140,16 +1235,22 @@ export function DeskWorkstation({
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                   <button
                     type="button"
-                    className="wk-ws-btn is-done"
+                    className="wk-ws-btn"
                     data-testid="wk-studio-save"
-                    onClick={() => {
-                      onSaveDoc?.(folioDraft);
-                      setEditingFolio(false);
-                      setFolioSaved(true);
-                      window.setTimeout(() => setFolioSaved(false), 2000);
+                    disabled={docSaving}
+                    onClick={async () => {
+                      if (docSaving) return;
+                      setDocSaving(true);
+                      try {
+                        const ok = await onSaveDoc?.(folioDraft);
+                        if (ok === false) return;
+                        setEditingFolio(false);
+                      } finally {
+                        setDocSaving(false);
+                      }
                     }}
                   >
-                    Im Atelier speichern ✓
+                    {docSaving ? 'Speicherung läuft…' : 'Im Atelier speichern'}
                   </button>
                 </div>
               </div>

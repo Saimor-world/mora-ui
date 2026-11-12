@@ -25,7 +25,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import { useOperationalLedger } from '@/lib/universe/operationalLedger';
+import { resolveOperationalActor, TRUTH_STATUS_LABELS, useOperationalLedger } from '@/lib/universe/operationalLedger';
 
 /** „Mi., 4. Nov.“ aus dem Snapshot-Datum, sonst heute. Keine erfundene Uhrzeit. */
 export function headerDate(raw?: string | null, now: Date = new Date()): string {
@@ -74,8 +74,11 @@ export function LiveCockpit({
   const user = useSessionStore((s) => s.user);
   const demoId = useDemoStore((s) => s.demoCompanyId);
   const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
+  const scopeCompanyId = useScopeCompanyId();
   const isCafeScope = demoId === 'demo-morgenrot';
-  const { state: opLedger, record: recordOp } = useOperationalLedger(isCafeScope ? 'demo-morgenrot' : 'saimor-hq');
+  const homeLedgerScope = isCafeScope ? 'demo-morgenrot' : 'saimor-hq';
+  const homeActor = resolveOperationalActor(homeLedgerScope);
+  const { state: opLedger, record: recordOp } = useOperationalLedger(homeLedgerScope, scopeCompanyId);
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
 
@@ -120,7 +123,6 @@ export function LiveCockpit({
     [snapshot, navigate, nightwatchIncidents]
   );
 
-  const scopeCompanyId = useScopeCompanyId();
   const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
   const threads = useMemo(() => homeMycelium(planets, snapshot), [planets, snapshot]);
   // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
@@ -514,29 +516,35 @@ export function LiveCockpit({
                     <strong style={{ color: '#f6d992', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>
                       {isCafeScope && opLedger.kanzleiWeber.step4Booked
                         ? 'MÔRA · Vorgang Kanzlei Weber abgeschlossen'
-                        : `Raum-Synchronisation (${opLedger.auditTrail.length} Buchungen)`}
+                        : `Raum-Synchronisation (${opLedger.auditTrail.length} Buchungen)`}{' '}
+                      · {TRUTH_STATUS_LABELS[opLedger.truthStatus]}
                     </strong>
                     {isCafeScope ? (
                       <span>
-                        Kasse: <b>{(opLedger.baseTillEur + opLedger.bookedRevenueEur).toFixed(2).replace('.', ',')} €</b>
+                        Kasse: <b>{opLedger.totalTillEur.toFixed(2).replace('.', ',')} €</b>
                       </span>
                     ) : null}
                   </div>
                   <p style={{ margin: '5px 0 0', lineHeight: 1.35 }}>
                     {isCafeScope && opLedger.kanzleiWeber.step4Booked
                       ? opLedger.kanzleiWeber.oatMilkReorderPrepared
-                        ? 'Die Reservierung Kanzlei Weber (142,00 €) ist verbucht & dokumentiert. Hafermilch-Nachbestellung (36 L) vorbereitet ✓'
+                        ? 'Die Reservierung Kanzlei Weber (142,00 €) ist verbucht & dokumentiert. Hafermilch-Nachbestellung (36 L) vorbereitet.'
                         : 'Die Reservierung ist abgeschlossen. Der Umsatz (142,00 €) wurde verbucht, der Vorgang dokumentiert. Für morgen könnte Hafermilch knapp werden (16 / 24 L). Soll ich eine Nachbestellung vorbereiten?'
                       : `${opLedger.auditTrail[0].timestamp} Uhr · ${opLedger.auditTrail[0].departmentTitle}: ${opLedger.auditTrail[0].action} → ${opLedger.auditTrail[0].result}`}
                   </p>
+                  {opLedger.lastError ? (
+                    <p role="alert" style={{ margin: '4px 0 0', color: '#f4a29b' }}>
+                      {opLedger.lastError}
+                    </p>
+                  ) : null}
                   {isCafeScope && opLedger.kanzleiWeber.step4Booked && !opLedger.kanzleiWeber.oatMilkReorderPrepared ? (
                     <button
                       type="button"
                       data-testid="home-mora-reorder-btn"
                       onClick={() =>
-                        recordOp({
+                        void recordOp({
                           idempotencyKey: 'mora-oatmilk-reorder-prep',
-                          actor: 'MÔRA & Marius',
+                          actor: homeActor,
                           departmentId: 'd-verw',
                           departmentTitle: 'Verwaltung & Büro',
                           action: 'Hafermilch-Nachbestellung (36 L Barista) auf der Brücke freigegeben',

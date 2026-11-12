@@ -13,9 +13,12 @@ import { buildShipTodaySnapshot, getDepartmentRoomContext, getShipNodeById } fro
 import {
   useOperationalLedger,
   resolveScopeKey,
+  isAuthoritativeCoreScope,
+  resolveOperationalActor,
   formatAuditMarkdownLine,
   getShelfTemplatesForDepartment,
   type AuditEntry,
+  type TruthStatus,
 } from '@/lib/universe/operationalLedger';
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
@@ -379,7 +382,13 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   }, [world]);
 
   const scopeKey = useMemo(() => resolveScopeKey(companyId, planet.id), [companyId, planet.id]);
-  const { state: opLedger, record: recordOp } = useOperationalLedger(scopeKey);
+  const { state: opLedger, record: recordOp } = useOperationalLedger(scopeKey, companyId);
+  const isLiveCore = useMemo(() => isAuthoritativeCoreScope(scopeKey, companyId), [scopeKey, companyId]);
+  const [docSyncStatus, setDocSyncStatus] = useState<TruthStatus>(() =>
+    scopeKey === 'demo-morgenrot' ? 'demo-simulation' : isAuthoritativeCoreScope(scopeKey, companyId) ? 'core-confirmed' : 'local-draft'
+  );
+  const [docSyncError, setDocSyncError] = useState<string | null>(null);
+  const [pendingDocSave, setPendingDocSave] = useState<{ id: string; text: string } | null>(null);
   const shelfTemplates = useMemo(() => getShelfTemplatesForDepartment(planet.id, title), [planet.id, title]);
   const [shelfQuery, setShelfQuery] = useState('');
 
@@ -454,8 +463,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const order = useMemo(() => [...board.pages.flat(), ...board.later], [board]);
   const newTaskFolder = activeFolder ?? planFolder ?? planet.moons[0]?.id ?? null;
 
-  const saveLecternContent = async (text: string) => {
-    if (!lecternDoc) return;
+  const saveLecternContent = async (text: string): Promise<boolean> => {
+    if (!lecternDoc) return false;
     const nextText = text.trim() || lecternContent;
     setCreatedDocs((prev) => {
       const idx = prev.findIndex((d) => d.id === lecternDoc.id);
@@ -470,11 +479,41 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
       ...(old ?? { id: lecternDoc.id, title: clean(lecternDoc.name) }),
       content: nextText,
     }));
-    try {
-      await updateNode(lecternDoc.id, { content: nextText, title: clean(lecternDoc.name), folder_id: lecternDoc.folderId || undefined });
-    } catch {
-      // Lokal im Raum & Query-Cache bereits aktualisiert
+
+    if (!isLiveCore) {
+      setDocSyncError(null);
+      setPendingDocSave(null);
+      setDocSyncStatus(scopeKey === 'demo-morgenrot' ? 'demo-simulation' : 'local-draft');
+      return true;
     }
+
+    setDocSyncStatus('saving');
+    setDocSyncError(null);
+    setPendingDocSave({ id: lecternDoc.id, text: nextText });
+    try {
+      const saved = await updateNode(lecternDoc.id, {
+        content: nextText,
+        title: clean(lecternDoc.name),
+        folder_id: lecternDoc.folderId || undefined,
+      });
+      if (!saved) {
+        throw new Error('CORE-Server hat keine Speicherbestätigung zurückgegeben');
+      }
+      setDocSyncStatus('core-confirmed');
+      setDocSyncError(null);
+      setPendingDocSave(null);
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Dokument konnte nicht im CORE gespeichert werden';
+      setDocSyncStatus('failed');
+      setDocSyncError(msg);
+      return false;
+    }
+  };
+
+  const retryDocSave = async (): Promise<boolean> => {
+    if (!pendingDocSave) return false;
+    return saveLecternContent(pendingDocSave.text);
   };
 
   const appendAuditEntryToLectern = (entry: AuditEntry) => {
@@ -487,20 +526,44 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     void saveLecternContent(nextContent);
   };
 
-  const createDepartmentDoc = async (t: string, body: string) => {
+  const createDepartmentDoc = async (t: string, body: string): Promise<boolean> => {
     const fid = newTaskFolder ?? planet.moons[0]?.id ?? 'f-default';
     const content = `# ${t}\n\n${body || `Konzept & Dokumentation für ${title}.`}`;
-    const localId = `doc-local-${Date.now().toString(36)}`;
-    let createdId = localId;
-    try {
-      const res = await createNode({ folder_id: fid, title: t, name: t, type: 'document', content } as Parameters<typeof createNode>[0]);
-      if (res && typeof (res as { id?: string }).id === 'string') createdId = (res as { id: string }).id;
-    } catch {
-      // Fallback: lokal sofort verfügbar
+    if (!isLiveCore) {
+      const localId = `doc-local-${Date.now().toString(36)}`;
+      setCreatedDocs((prev) => [{ id: localId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
+      qc.setQueryData(['node', localId], { id: localId, title: t, name: t, content });
+      setLectern(localId);
+      setDocSyncStatus(scopeKey === 'demo-morgenrot' ? 'demo-simulation' : 'local-draft');
+      setDocSyncError(null);
+      return true;
     }
-    setCreatedDocs((prev) => [{ id: createdId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
-    qc.setQueryData(['node', createdId], { id: createdId, title: t, name: t, content });
-    setLectern(createdId);
+
+    setDocSyncStatus('saving');
+    setDocSyncError(null);
+    try {
+      const res = await createNode({
+        folder_id: fid,
+        title: t,
+        name: t,
+        type: 'document',
+        content,
+      } as Parameters<typeof createNode>[0]);
+      if (!res || typeof (res as { id?: string }).id !== 'string') {
+        throw new Error('CORE hat kein Dokument angelegt');
+      }
+      const createdId = (res as { id: string }).id;
+      setCreatedDocs((prev) => [{ id: createdId, name: t, meta: 'document', folderId: fid, content }, ...prev]);
+      qc.setQueryData(['node', createdId], { id: createdId, title: t, name: t, content });
+      setLectern(createdId);
+      setDocSyncStatus('core-confirmed');
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Dokument-Erstellung im CORE fehlgeschlagen';
+      setDocSyncStatus('failed');
+      setDocSyncError(msg);
+      return false;
+    }
   };
 
   const submitDraft = async () => {
@@ -762,20 +825,20 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                         onClick={async () => {
                           setDocSlip(false);
                           await createDepartmentDoc(tpl.title, tpl.body);
-                          const res = recordOp({
+                          const res = await recordOp({
                             idempotencyKey: `shelf-tpl-${tpl.id}`,
-                            actor: 'Marius',
+                            actor: resolveOperationalActor(scopeKey),
                             departmentId: planet.id,
                             departmentTitle: title,
                             action: `Vorlage "${tpl.title}" aus dem Wandregal angelegt`,
                             result: 'Neues Dossier auf dem Stehpult aufgeschlagen',
                             safetyLevel: 'routine',
                           });
-                          if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
+                          if (!res.alreadyRecorded && res.entry) appendAuditEntryToLectern(res.entry);
                         }}
                       >
                         <span>+ {tpl.title}</span>
-                        <em>{tpl.category}</em>
+                        <em>Vorlage</em>
                       </button>
                     </li>
                   ))}
@@ -807,21 +870,24 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                     type="button"
                     className="wk-mora-companion__cta"
                     data-testid="wk-mora-reorder-btn"
-                    onClick={() => {
-                      const res = recordOp({
+                    onClick={async () => {
+                      const res = await recordOp({
                         idempotencyKey: 'mora-oatmilk-reorder-prep',
-                        actor: 'MÔRA & Marius',
+                        actor: resolveOperationalActor(scopeKey),
                         departmentId: planet.id,
                         departmentTitle: title,
                         action: 'Hafermilch-Nachbestellung (36 L Barista) für morgen vorbereitet',
                         result: 'Nachbestellung im Kontor-Lieferantenbogen hinterlegt & dokumentiert',
                         safetyLevel: 'buchung',
+                        kind: 'routine_action',
                         mutate: (d) => {
                           d.kanzleiWeber.oatMilkReorderPrepared = true;
                         },
                       });
-                      if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
-                      void addTask('Hafermilch-Nachbestellung (36 L Hofmolkerei) freigeben', newTaskFolder, today, planet.id, 'Clara D.');
+                      if (res.ok && !res.alreadyRecorded && res.entry) appendAuditEntryToLectern(res.entry);
+                      if (res.ok) {
+                        void addTask('Hafermilch-Nachbestellung (36 L Hofmolkerei) freigeben', newTaskFolder, today, planet.id);
+                      }
                     }}
                   >
                     Nachbestellung vorbereiten →
@@ -932,15 +998,19 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                   stationKind={stationMeta.kind}
                   planetId={planet.id}
                   planetTitle={title}
+                  companyId={companyId}
                   crew={crew}
                   tasks={allTasks}
                   docs={docs.map((d) => ({ ...d, name: clean(d.name) }))}
                   activeDocTitle={lecternDoc ? clean(lecternDoc.name) : ''}
                   activeDocContent={lecternContent}
-                  onSaveDoc={(txt) => void saveLecternContent(txt)}
+                  docSyncStatus={docSyncStatus}
+                  docSyncError={docSyncError}
+                  onRetryDocSave={pendingDocSave ? () => { void retryDocSave(); } : undefined}
+                  onSaveDoc={(txt) => saveLecternContent(txt)}
                   onOpenBook={(id) => { setLectern(id); open({ kind: 'doc', id }); }}
                   onSelectDoc={(id) => setLectern(id)}
-                  onCreateDoc={(t, b) => void createDepartmentDoc(t, b)}
+                  onCreateDoc={(t, b) => createDepartmentDoc(t, b)}
                   onAddTask={(t, who) => void addTask(t, newTaskFolder, today, planet.id, who)}
                   onToggleTask={(t) => void setDone(t.raw, !t.done)}
                   onOpenTask={(id) => open({ kind: 'task', id })}
