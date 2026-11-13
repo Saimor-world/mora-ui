@@ -1060,6 +1060,29 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   border-top: 1px dashed rgba(90, 62, 30, 0.25);
 }
 
+/* Phone workstations: keep the paper in the viewport instead of cropping the cover-scaled stage. */
+@media (max-width: 760px) {
+  .wk-close[data-close-kind='station'] > .wk-stage {
+    width: 100% !important; height: 100% !important; transform: none !important;
+  }
+  .wk-close[data-close-kind='station'] > .wk-stage > .wk-stage__img { object-fit: cover; }
+  .wk-close[data-close-kind='station'] .wk-workstation {
+    left: 12px; top: 76px; width: calc(100% - 24px); height: calc(100% - 218px);
+  }
+  .wk-workstation .wk-ws-grid {
+    display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding-right: 2px;
+  }
+  .wk-workstation .wk-ws-sheet, .wk-workstation .wk-ws-side {
+    flex-shrink: 0; min-height: auto; min-width: 0; overflow: visible;
+  }
+  .wk-workstation .wk-ws-sheet { padding: 18px 16px; }
+  .wk-workstation .wk-ws-head { flex-wrap: wrap; }
+  .wk-workstation .wk-ws-head > div { min-width: 0; max-width: 100%; }
+  .wk-workstation .wk-ws-card { padding: 16px; min-width: 0; overflow-wrap: anywhere; }
+  .wk-workstation .wk-ws-card img { max-width: 100%; }
+  .wk-workstation .wk-ws-chip, .wk-workstation .wk-ws-btn { min-height: 44px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wk-sky__drift, .wk-sky__planet, .wk-leaf, .wk-slip { animation: none !important; }
   .wk-card, .wk-hit, .wk-corner { transition: none; }

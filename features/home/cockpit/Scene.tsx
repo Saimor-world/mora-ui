@@ -44,7 +44,7 @@ export interface PlanetSlot {
  */
 export function computePlanetSlots(
   planets: Array<{ id: string; title: string; moons?: unknown[] }>,
-  options?: { width?: number; height?: number; phone?: boolean; compact?: boolean }
+  options?: { width?: number; height?: number; phone?: boolean; compact?: boolean; scale?: number; avoidTopLeft?: { width: number; height: number } }
 ): PlanetSlot[] {
   const n = planets.length;
   if (n === 0) return [];
@@ -53,6 +53,7 @@ export function computePlanetSlots(
   const height = Math.max(240, options?.height ?? 680);
   const phone = options?.phone ?? width <= 820;
   const compact = options?.compact ?? false;
+  const boxScale = Math.max(1, options?.scale ?? 1);
 
   const weights = planets.map((_, i) => 50 + (i % 3) * 10);
   const labels: PlanetLabel[] = planets.map((p) => ({
@@ -82,49 +83,52 @@ export function computePlanetSlots(
     };
   });
 
-  // Feinschliff: Garantiert Kollisionsfreiheit aller Bounding-Boxen (Kugeln und Beschriftungen)
-  for (let pass = 0; pass < 20; pass++) {
+  // Feinschliff: Garantiert Kollisionsfreiheit aller echten Button-Boxen (transform: translate(-50%, -50%))
+  const avoidTL = options?.avoidTopLeft;
+  for (let pass = 0; pass < 100; pass++) {
     let moved = false;
+    if (avoidTL) {
+      for (let i = 0; i < slots.length; i++) {
+        const a = slots[i];
+        const dA = a.size * boxScale;
+        const labelW_A = Math.min(phone ? 104 : 156, Math.max(72, planets[i].title.length * 7.5));
+        const hwA = Math.max(dA / 2, labelW_A / 2) + 8;
+        const hhA = (dA + 48) / 2 + 8;
+        if (a.x - hwA < avoidTL.width && a.y - hhA < avoidTL.height) {
+          const pushRight = avoidTL.width + hwA - a.x;
+          const pushDown = avoidTL.height + hhA - a.y;
+          if (pushDown <= pushRight && avoidTL.height + hhA <= height - hhA - 4) {
+            a.y = Math.round(Math.min(height - hhA - 4, a.y + Math.min(18, pushDown + 2)));
+          } else {
+            a.x = Math.round(Math.min(width - hwA - 4, a.x + Math.min(18, pushRight + 2)));
+          }
+          moved = true;
+        }
+      }
+    }
     for (let i = 0; i < slots.length; i++) {
       for (let j = i + 1; j < slots.length; j++) {
         const a = slots[i];
         const b = slots[j];
-        const rA = a.size / 2;
-        const rB = b.size / 2;
-        const titleA = planets[i].title;
-        const titleB = planets[j].title;
-        const wA = Math.min(phone ? 104 : 140, Math.max(60, titleA.length * 7));
-        const wB = Math.min(phone ? 104 : 140, Math.max(60, titleB.length * 7));
-        const h = 36;
-        const boxesA = [
-          { x0: a.x - rA, y0: a.y - rA, x1: a.x + rA, y1: a.y + rA },
-          { x0: a.x - wA / 2, y0: a.y + rA + 4, x1: a.x + wA / 2, y1: a.y + rA + 4 + h },
-        ];
-        const boxesB = [
-          { x0: b.x - rB, y0: b.y - rB, x1: b.x + rB, y1: b.y + rB },
-          { x0: b.x - wB / 2, y0: b.y + rB + 4, x1: b.x + wB / 2, y1: b.y + rB + 4 + h },
-        ];
-        let hasOv = false;
-        for (const ba of boxesA) {
-          for (const bb of boxesB) {
-            const ovW = Math.min(ba.x1, bb.x1) - Math.max(ba.x0, bb.x0);
-            const ovH = Math.min(ba.y1, bb.y1) - Math.max(ba.y0, bb.y0);
-            if (ovW > 0 && ovH > 0) {
-              hasOv = true;
-              break;
-            }
-          }
-          if (hasOv) break;
-        }
-        if (hasOv) {
-          const dx = a.x - b.x || 1;
-          const dy = a.y - b.y || 1;
+        const dA = a.size * boxScale;
+        const dB = b.size * boxScale;
+        const labelW_A = Math.min(phone ? 104 : 156, Math.max(72, planets[i].title.length * 7.5));
+        const labelW_B = Math.min(phone ? 104 : 156, Math.max(72, planets[j].title.length * 7.5));
+        const hwA = Math.max(dA / 2, labelW_A / 2) + 8;
+        const hwB = Math.max(dB / 2, labelW_B / 2) + 8;
+        const hhA = (dA + 48) / 2 + 8;
+        const hhB = (dB + 48) / 2 + 8;
+        const ovW = Math.min(a.x + hwA, b.x + hwB) - Math.max(a.x - hwA, b.x - hwB);
+        const ovH = Math.min(a.y + hhA, b.y + hhB) - Math.max(a.y - hhA, b.y - hhB);
+        if (ovW > 0 && ovH > 0) {
+          const dx = a.x - b.x || (i % 2 === 0 ? 1 : -1);
+          const dy = a.y - b.y || (i < j ? -1 : 1);
           const d = Math.hypot(dx, dy) || 1;
-          const push = 3;
-          a.x = Math.round(Math.max(rA + 4, Math.min(width - rA - 4, a.x + (dx / d) * push)));
-          a.y = Math.round(Math.max(rA + 4, Math.min(height - rA - h - 8, a.y + (dy / d) * push)));
-          b.x = Math.round(Math.max(rB + 4, Math.min(width - rB - 4, b.x - (dx / d) * push)));
-          b.y = Math.round(Math.max(rB + 4, Math.min(height - rB - h - 8, b.y - (dy / d) * push)));
+          const push = Math.min(12, Math.max(4, Math.min(ovW, ovH) / 2 + 2));
+          a.x = Math.round(Math.max(hwA + 4, Math.min(width - hwA - 4, a.x + (dx / d) * push)));
+          a.y = Math.round(Math.max(hhA + 4, Math.min(height - hhA - 4, a.y + (dy / d) * push)));
+          b.x = Math.round(Math.max(hwB + 4, Math.min(width - hwB - 4, b.x - (dx / d) * push)));
+          b.y = Math.round(Math.max(hhB + 4, Math.min(height - hhB - 4, b.y - (dy / d) * push)));
           moved = true;
         }
       }
@@ -162,6 +166,7 @@ export function PlanetSystem({
   marks,
   scale = 1,
   skyScale = 1,
+  avoidTopLeft,
 }: {
   threads?: MyceliumThread[];
   /** Leise Zeichen je Planet aus echten Daten: Zahl überfälliger Aufgaben, Ring bei offener Nachtwache. */
@@ -170,9 +175,11 @@ export function PlanetSystem({
   scale?: number;
   /** Home-Himmel: Planeten größer (Layout rechnet mit der echten Größe). */
   skyScale?: number;
+  /** Sperrzone oben links (z. B. BriefingStack im Universe), damit kein Planet darunter gerät. */
+  avoidTopLeft?: { width: number; height: number };
   moons?: Map<string, DayMoon[]>;
   onTaskDone?: (taskId: string) => void;
-  onMoonOpen?: (kind: DayMoon['kind']) => void;
+  onMoonOpen?: (moon: DayMoon) => void;
   onOpenTask?: (taskId: string) => void;
   planets: DemoPlanet[];
   onOpen: (id: string) => void;
@@ -204,14 +211,20 @@ export function PlanetSystem({
     return () => ro.disconnect();
   }, []);
 
+  const effectiveScale = !compact && !strip && scale > 1 && planets.length >= 6 && size.height < 540
+    ? Math.max(0.85, Math.min(scale, size.height / 450))
+    : scale;
+
   const slots = useMemo(() => {
     return computePlanetSlots(planets, {
       width: size.width,
       height: size.height,
       phone: size.width <= 820,
       compact,
+      scale: effectiveScale,
+      avoidTopLeft,
     });
-  }, [planets, size.width, size.height, compact]);
+  }, [planets, size.width, size.height, compact, effectiveScale, avoidTopLeft]);
 
   // Desktop-Home: ganzer Himmel, Tiefe nach echter Aktivität (Signal > Aufmerksamkeit > Ordner).
   const skySlots = useMemo(() => {
@@ -240,7 +253,7 @@ export function PlanetSystem({
         const tint = tintForGlass(p.glass);
         const cleanTitle = stripFiktiv(p.title) || p.title;
         const active = !!(signals?.get(p.id) || attention.has(p.id));
-        const orbSize = strip ? 48 : Math.round((sky ? sky.size : (compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active)) * scale);
+        const orbSize = strip ? 48 : Math.round((sky ? sky.size : (compact ? s.size * 0.9 : s.size) * activityScale(folderCount, active)) * effectiveScale);
         const mark = marks?.get(p.id);
 
         const pm = !strip ? moons?.get(p.id) : undefined;
@@ -343,7 +356,7 @@ export function PlanetSystem({
 const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
 
 /** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
-export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void; onOpenTask?: (taskId: string) => void }) {
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (moon: DayMoon) => void; onOpenTask?: (taskId: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
   return (
@@ -363,14 +376,14 @@ export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { m
                 <b>{m.title}</b>
                 {m.when ? <time>{m.when}</time> : null}
                 {m.kind === 'task' && m.taskId ? (
-                  <>
-                    <button type="button" className="ck-daymoon__act" aria-label="Öffnen" data-testid={`day-moon-open-${m.id}`}
-                      onClick={() => onOpenTask?.(m.taskId!)}>→</button>
-                    <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
-                      onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
-                  </>
-                ) : onOpen ? (
-                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>
+                  <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
+                    onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                ) : null}
+                {onOpen && m.objectId ? (
+                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m)}>→</button>
+                ) : m.kind === 'task' && m.taskId && onOpenTask ? (
+                  <button type="button" className="ck-daymoon__act" aria-label="Öffnen" data-testid={`day-moon-open-${m.id}`}
+                    onClick={() => onOpenTask(m.taskId!)}>→</button>
                 ) : null}
               </div>
             ) : null}

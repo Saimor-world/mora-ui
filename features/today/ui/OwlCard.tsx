@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, ChevronRight, Mail, Server, ShieldAlert, ShieldCheck, Siren, X, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
+import { capturePersonalSourceScope, useDemoScopeActive, usePersonalSourceKey } from '@/lib/demo/demoSourceGuard';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { importantMails, owlChips, owlHeadline, relTime, senderLabel, type Chip, type OwlLike, type OwlMail } from './owlModel';
 
@@ -94,9 +95,16 @@ function OwlContent({ s, navigate }: { s: OwlState; navigate?: (id: string) => v
 }
 
 export function OwlCard({ live, navigate }: { live: boolean; navigate?: (id: string) => void }) {
-  const q = useQuery({ queryKey: ['os', 'nightwatch-owl'], queryFn: () => coreGet('/v3/nightwatch/owl') as Promise<OwlState>, enabled: live, staleTime: 60_000, retry: false, refetchInterval: 120_000 });
+  const demo = useDemoScopeActive();
+  const identity = usePersonalSourceKey();
+  const q = useQuery({ queryKey: ['os', 'nightwatch-owl', identity, demo], queryFn: async () => {
+    const current = capturePersonalSourceScope(identity);
+    if (!current()) return null;
+    const data = await coreGet('/v3/nightwatch/owl', { dedupeScope: identity }) as OwlState;
+    return current() ? data : null;
+  }, enabled: live && !demo, staleTime: 60_000, retry: false, refetchInterval: 120_000 });
   const [flying, setFlying] = useState(false);
-  const s = q.data;
+  const s = demo ? null : q.data;
 
   useEffect(() => {
     if (!s || typeof window === 'undefined') return;
@@ -107,7 +115,7 @@ export function OwlCard({ live, navigate }: { live: boolean; navigate?: (id: str
     return () => window.clearTimeout(t);
   }, [s]);
 
-  if (!live || !s || !s.level) return null;
+  if (demo || !live || !s || !s.level) return null;
   return (
     <>
       <section className="os-owl-card" data-testid="owl-card" data-level={s.level} aria-label="Nightwatch">

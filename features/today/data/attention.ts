@@ -6,6 +6,7 @@ export interface AttentionItem {
   reason: string;
   tone: 'warning' | 'critical' | 'info';
   target: 'post' | 'labs' | 'today';
+  objectId?: string;
 }
 
 /** Derive "was Aufmerksamkeit braucht" from a snapshot — only from readable sources. */
@@ -13,7 +14,7 @@ export function deriveAttention(s: TodaySnapshot): AttentionItem[] {
   const out: AttentionItem[] = [];
   const readable = (status: string) => status === 'ok' || status === 'empty';
   if (readable(s.tasks.status)) {
-    for (const t of s.tasks.overdue.slice(0, 3)) out.push({ id: `t-${t.id}`, title: t.title, reason: 'Aufgabe überfällig', tone: 'warning', target: 'today' });
+    for (const t of s.tasks.overdue.slice(0, 3)) out.push({ id: `t-${t.id}`, objectId: t.id, title: t.title, reason: 'Aufgabe überfällig', tone: 'warning', target: 'today' });
   }
   if (readable(s.nightwatch.status)) {
     for (const i of s.nightwatch.incidents.filter((x) => !x.acked).slice(0, 2)) {

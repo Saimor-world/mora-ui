@@ -3,9 +3,13 @@
 import { coreRequest, CoreError } from '@/lib/api/http';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { isDemoScopeActive, useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { ContinuityPanel, type ContinuityRequest } from './ContinuityPanel';
 
 async function call(path: string, body?: object): Promise<unknown> {
+  // Recheck at request time: an old callback or a multi-step scan may outlive
+  // the render that entered demo mode. Never reuse the presenter's calendar.
+  if (isDemoScopeActive()) throw new Error('Kalender-Fäden sind in der Demo nicht verfügbar.');
   try {
     const result = await coreRequest(path, { method: body ? 'POST' : 'GET', body, throwAuthErrors: true });
     if (!result) throw new Error('Kalender-Fäden sind nicht verfügbar.');
@@ -33,7 +37,8 @@ const request: ContinuityRequest = async (operation, body) => {
 export function CalendarContinuity() {
   const user = useSessionStore(state => state.user);
   const generation = useSessionStore(state => state.sessionGeneration);
-  if (!user) return null;
+  const demo = useDemoScopeActive();
+  if (!user || demo) return null;
   if (isUniverseV2Enabled()) {
     // Universe v2: Fäden sind ein Werkzeug, kein Hauptinhalt – zugeklappt als ruhige Zeile unter „Heute“.
     return <details className="uv2-faeden" data-uv2-faeden>

@@ -36,7 +36,7 @@ describe('V1.8 MailSummaryView', () => {
     expect(screen.getAllByTestId('mail-ref')).toHaveLength(3);
     expect(screen.getByTestId('mail-group-rechnung')).toHaveTextContent('Rechnung RE-TEST');
     expect(screen.getAllByTestId('mail-ref')[0]).toHaveAttribute('data-message-id', '<Rechnung RE-TEST@dev-imap.example.test>');
-    expect(coreGet).toHaveBeenCalledWith('/v3/connections/mail/summary', { throwAuthErrors: true });
+    expect(coreGet).toHaveBeenCalledWith('/v3/connections/mail/summary', { throwAuthErrors: true, dedupeScope: expect.any(String) });
   });
 
   it('signal variant shows only the newest message as first signal', async () => {

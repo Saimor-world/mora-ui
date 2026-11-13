@@ -8,7 +8,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { coreGet, coreRequest } from '@/lib/api/http';
 import { calendarReadWindow } from '@/lib/api/calendarReadClient';
 
-jest.mock('@/lib/api/http', () => ({ coreGet: jest.fn(), coreRequest: jest.fn() }));
+jest.mock('@/lib/api/http', () => ({ coreGet: jest.fn(), coreRequest: jest.fn(), readCookie: jest.fn(() => null) }));
 jest.mock('@/lib/api/filesClient', () => ({ listCompanyFiles: jest.fn().mockResolvedValue([]) }));
 jest.mock('@/lib/lea/dayStore', () => {
   const state = { phases: {}, loadCompany: jest.fn().mockResolvedValue(undefined) };
