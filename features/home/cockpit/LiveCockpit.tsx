@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { CockpitWindow } from './Window';
 import { OPEN_PLANET_SIZE, PlanetSystem } from './Scene';
 import { homeMycelium } from '@/lib/universe/homeMycelium';
-import { dayMoonsFor } from '@/lib/universe/dayMoons';
+import { dayMoonsFor, type DayMoon } from '@/lib/universe/dayMoons';
 import { corePost } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { HomeOverview } from '../widgets/HomeOverview';
@@ -24,7 +24,8 @@ import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { objectNavigationScope, useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
 import { resolveOperationalActor, TRUTH_STATUS_LABELS, useOperationalLedger } from '@/lib/universe/operationalLedger';
 
 /** „Mi., 4. Nov.“ aus dem Snapshot-Datum, sonst heute. Keine erfundene Uhrzeit. */
@@ -123,6 +124,14 @@ export function LiveCockpit({
     [snapshot, navigate, nightwatchIncidents]
   );
 
+  const objectScope = objectNavigationScope();
+  const openDayMoon = (moon: DayMoon) => {
+    if (!moon.objectId || objectNavigationScope() !== objectScope) return;
+    if (moon.kind === 'mail') {
+      useOsShellStore.getState().setPostOpenId(moon.objectId);
+      navigate('post');
+    } else openOsObject(moon.kind, moon.objectId, navigate, objectScope);
+  };
   const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
   const threads = useMemo(() => homeMycelium(planets, snapshot), [planets, snapshot]);
   // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
@@ -292,25 +301,17 @@ export function LiveCockpit({
 
   const openFocus = (target: FocusCard['target']) => {
     if (target === 'post') navigate('post');
-    else if (target === 'tasks') {
-      const t = (snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0];
-      const planetId = resolveTaskPlanetId(t);
-      if (t && planetId) openTaskMoon(planetId, t.id);
-      else navigate('today');
-    }
-    else if (target === 'calendar') openLegacyApp('calendar');
+    else if (target === 'tasks') navigate('today');
+    else if (target === 'calendar') { if (effectiveIsDemo) navigate('post'); else openLegacyApp('calendar'); }
     else useOsShellStore.getState().setNightwatchOpen(true);
   };
 
   const handleWidgetOpen = (widgetId: string) => {
     if (widgetId === 'tasks' || widgetId === 'overdue-tasks') {
-      const list = widgetId === 'overdue-tasks' ? (snapshot?.tasks?.overdue ?? []) : [...(snapshot?.tasks?.overdue ?? []), ...(snapshot?.tasks?.due_today ?? [])];
-      const t = list[0];
-      const planetId = resolveTaskPlanetId(t);
-      if (t && planetId) openTaskMoon(planetId, t.id);
-      else navigate('today');
+      navigate('today');
     } else if (widgetId === 'calendar') {
-      navigate('post');
+      // In demo mode only the guarded Post surface may display calendar data.
+      if (effectiveIsDemo) navigate('post'); else openLegacyApp('calendar');
     } else if (widgetId === 'mail') {
       navigate('post');
     } else {
@@ -353,6 +354,7 @@ export function LiveCockpit({
               const planetId = resolveTaskPlanetId(t) || planets[0]?.id || null;
               if (planetId) openTaskMoon(planetId, taskId);
             }}
+            onMoonOpen={openDayMoon}
             onOpen={openDepartment}
           />
         ) : null}

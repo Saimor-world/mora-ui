@@ -13,7 +13,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
  */
 const KEY = 'saimor_demo_company';
 
-type DemoState = { demoCompanyId: string | null; setDemoCompany: (id: string | null) => void };
+type DemoState = { demoCompanyId: string | null; scopeGeneration: number; setDemoCompany: (id: string | null) => void };
 
 const initial = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -22,11 +22,13 @@ const initial = (): string | null => {
 
 export const useDemoStore = create<DemoState>((set) => ({
   demoCompanyId: initial(),
+  // UI cache epoch, including rapid own → demo → own transitions. Not an auth token.
+  scopeGeneration: 0,
   setDemoCompany: (id) => {
     if (typeof window !== 'undefined') {
       try { if (id) window.sessionStorage.setItem(KEY, id); else window.sessionStorage.removeItem(KEY); } catch { /* privat */ }
     }
-    set({ demoCompanyId: id });
+    set((state) => ({ demoCompanyId: id, scopeGeneration: state.scopeGeneration + (state.demoCompanyId === id ? 0 : 1) }));
   },
 }));
 

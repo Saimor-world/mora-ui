@@ -10,6 +10,8 @@ import type { DemoFile, DemoMoon, DemoPlanet } from '@/lib/demo/morgenrot/struct
 import { stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 import { COLLECT_PLANET, type FPlanet } from '@/lib/lea/finder';
+import { objectNavigationScope } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
 
 const GLASS_PALETTE: DemoPlanet['glass'][] = ['champagne', 'sage', 'lavender', 'bluegrey', 'paleblue'];
 
@@ -256,6 +258,7 @@ export function deriveLiveAttention(
 } {
   const attention = new Set<string>();
   const items: LiveAttentionItem[] = [];
+  const objectScope = objectNavigationScope();
 
   // Incidents take top priority - an open incident prevents "Alles erledigt"
   if (incidents && incidents.length > 0) {
@@ -302,7 +305,7 @@ export function deriveLiveAttention(
       detail: '',
       action: 'Post öffnen',
       primary: true,
-      onAction: () => navigate?.('mora'),
+      onAction: () => navigate?.('post'),
     });
   }
 
@@ -316,9 +319,9 @@ export function deriveLiveAttention(
         detail: open
           ? `${nextEv.time ? `${nextEv.time} Uhr · ` : ''}Schicht offen`
           : nextEv.time ? `${nextEv.time} Uhr` : '',
-        action: open ? 'Schicht besetzen' : 'Kalender ansehen',
+        action: 'Termin ansehen',
         isWarning: open,
-        onAction: () => navigate?.('calendar'),
+        onAction: () => { if (navigate) openOsObject('event', nextEv.id, navigate, objectScope); },
       });
     }
   }
@@ -329,8 +332,8 @@ export function deriveLiveAttention(
       id: 'live-task',
       title: stripFiktiv(nextTask.title) || nextTask.title,
       detail: 'Heute',
-      action: 'Aufgabe erledigen',
-      onAction: () => navigate?.('tasks'),
+      action: 'Aufgabe ansehen',
+      onAction: () => { if (navigate) openOsObject('task', nextTask.id, navigate, objectScope); },
     });
   }
 

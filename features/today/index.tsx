@@ -1,6 +1,9 @@
 'use client';
 import { MoraMark } from '@/components/world/MoraSpirit';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { objectNavigationScope, useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { openOsObject } from '@/lib/os-prototype/objectNavigation';
+import { useDemoStore } from '@/lib/demo/demoStore';
+import { ObjectFocus } from './ui/ObjectFocus';
 import { AgentFeed } from '@/features/mora/ui/AgentFeed';
 import React, { useMemo } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, CloudOff, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
@@ -106,6 +109,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const calendarEvents = worldCalendar
     ? world.events.filter((event) => event.date === localISO(new Date(), timeZone))
     : snapshot?.calendar.events ?? [];
+  const objectScope = objectNavigationScope();
+  const demoScope = useDemoStore(s => Boolean(s.demoCompanyId));
+  const detailWorldCalendar = worldCalendar && !demoScope && !snapshot?.requested_scope?.company_id?.startsWith('demo-');
 
   // Handy mit Sitzung: oben Home V4 aus echten Daten, darunter dieselben Widgets wie am Desktop (wie auf HQ).
   const phoneHome = phone && hasSession && !preview;
@@ -169,6 +175,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       ) : null}
 
 
+      <ObjectFocus snapshot={snapshot} events={detailWorldCalendar ? world.events : snapshot?.calendar.events ?? []}
+        eventStatus={detailWorldCalendar ? world.calendarUnavailable ? 'unavailable' : 'ok' : snapshot?.calendar.status ?? 'unavailable'}
+        loading={today.loading} calendarLoading={detailWorldCalendar ? world.loading : today.loading} snapshotStale={today.loadError === 'unavailable'} />
       {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact hideWhenEmpty /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
@@ -193,14 +202,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 {attention.map((a) => (
                   <div key={a.id} className="os-list-row">
                     <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
-                    <Button size="sm" variant="ghost" onClick={() => {
-                      if (a.target !== 'today') { navigate(a.target); return; }
-                      const tid = a.id.startsWith('t-') ? a.id.slice(2) : null;
-                      const task = tid
-                        ? [...(snapshot.tasks.overdue ?? []), ...(snapshot.tasks.due_today ?? []), ...(snapshot.tasks.items ?? [])].find((x) => x.id === tid)
-                        : (snapshot.tasks.overdue ?? [])[0] ?? (snapshot.tasks.due_today ?? [])[0];
-                      openWorkTask(task);
-                    }}>Ansehen</Button>
+                    <Button size="sm" variant="ghost" onClick={() => a.objectId ? openOsObject('task', a.objectId, navigate, objectScope) : navigate(a.target)}>Ansehen</Button>
                   </div>
                 ))}
               </div>
@@ -214,7 +216,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 calendarEvents.length === 0 ? <Text>Keine Termine heute.</Text> : (
                   <div className="os-list">
                     {calendarEvents.slice(0, 4).map((e) => (
-                      <div key={e.id} className="os-list-row"><Text tone="default" className="[overflow-wrap:anywhere]">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
+                      <div key={e.id} className="os-list-row"><Text tone="default" className="[overflow-wrap:anywhere]">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text><Button size="sm" variant="ghost" aria-label={`Termin öffnen: ${e.title}`} onClick={() => openOsObject('event', e.id, navigate, objectScope)}>Ansehen</Button></div>
                     ))}
                   </div>
                 )
@@ -259,6 +261,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                     <div key={m.id} className="os-list-row">
                       <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="[overflow-wrap:anywhere]">{m.from_addr}</Text></Stack>
                       {m.read === false ? <Status tone="info">neu</Status> : null}
+                      <Button size="sm" variant="ghost" aria-label={`Nachricht öffnen: ${m.subject || '(ohne Betreff)'}`} onClick={() => { useOsShellStore.getState().setPostOpenId(m.id); navigate('post'); }}>Ansehen</Button>
                     </div>
                   ))}
                 </div>
