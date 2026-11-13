@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { coreGet } from '@/lib/api/http';
+import { coreGet, readCookie } from '@/lib/api/http';
 import { calendarReadWindow, calendarSnapshotIsCurrent, fetchCalendarReadSnapshot } from '@/lib/api/calendarReadClient';
 import { listCompanyFiles } from '@/lib/api/filesClient';
 import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
@@ -45,7 +45,12 @@ export function useWorld() {
   }, []);
   const isLocalShipCompany = companyId === 'company-local-demo';
   const isLocalMorgenrot = isLocalhost && companyId === 'demo-morgenrot';
-  const useShipFallback = isLocalShipCompany || isLocalMorgenrot || (isLocalhost && !String(companyId ?? '').startsWith('demo-'));
+  const authToken = typeof document !== 'undefined' ? readCookie('mora_auth_token') : null;
+  const hasRealSessionCookie = Boolean(authToken && authToken !== 'local_demo_fallback');
+  const useShipFallback =
+    isLocalShipCompany ||
+    isLocalMorgenrot ||
+    (isLocalhost && !hasRealSessionCookie && !String(companyId ?? '').startsWith('demo-'));
   const shipFallback = useMemo(
     () => (useShipFallback ? (isLocalMorgenrot ? buildCanonicalMorgenrotWorld(now) : buildCanonicalShipWorld(now)) : null),
     [useShipFallback, isLocalMorgenrot, now]
