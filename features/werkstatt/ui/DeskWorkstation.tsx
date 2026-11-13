@@ -1141,8 +1141,8 @@ export function DeskWorkstation({
               <div>
                 <span className="wk-ws-eyebrow">Atelier-Zeichentisch · Konzept & Dossier</span>
                 <h2>
-                  {activeDocTitle || 'ORIGIN // 001 Material-Manifest'}
-                  {docSyncStatus ? ` · ${TRUTH_STATUS_LABELS[docSyncStatus]}` : ''}
+                  {activeDocTitle || 'Noch kein Dossier ausgewählt'}
+                  {activeDocTitle && docSyncStatus ? ` · ${TRUTH_STATUS_LABELS[docSyncStatus]}` : ''}
                 </h2>
                 {docSyncStatus === 'failed' && docSyncError ? (
                   <div className="wk-audit-error" data-testid="wk-studio-doc-error" role="alert" style={{ marginTop: 6 }}>
@@ -1173,7 +1173,7 @@ export function DeskWorkstation({
                   type="button"
                   className="wk-ws-chip"
                   data-testid="wk-studio-edit-toggle"
-                  disabled={docSaving}
+                  disabled={docSaving || !activeDocTitle}
                   onClick={async () => {
                     if (editingFolio && onSaveDoc) {
                       setDocSaving(true);

@@ -516,6 +516,21 @@ describe('Phase 1 Operative Datenwahrheit & Akzeptanztests', () => {
     studio.unmount();
   });
 
+  it('zeigt ohne Dossier weder ein erfundenes Manifest noch eine CORE-Speicherbestätigung', () => {
+    const emptyWork = makeWork();
+    emptyWork.moons.forEach((moon) => { moon.docs = []; });
+    const view = wrap(
+      <Werkstatt planet={makePlanet('dept-studio', 'Design & Studio')} work={emptyWork}
+        planets={[]} companyId="company-hq-live" today={TODAY} fromSpace={false} onExit={jest.fn()} />
+    );
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
+    expect(screen.getByTestId('wk-studio-lectern')).toHaveTextContent('Noch kein Dossier ausgewählt');
+    expect(screen.getByTestId('wk-studio-lectern')).not.toHaveTextContent('Durch CORE bestätigt');
+    expect(screen.getByTestId('wk-studio-edit-toggle')).toBeDisabled();
+    expect(mockUpdateNode).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
   it('8: trennt Demo-Mandant (demo-morgenrot) und Live-Firma (company-hq-live) strikt ohne Datenleck', async () => {
     useDemoStore.setState({ demoCompanyId: 'demo-morgenrot' });
     const demoTheke = wrap(

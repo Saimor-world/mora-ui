@@ -28,10 +28,13 @@ async function loginViaCore(context: BrowserContext, email: string, password: st
 async function openDepartmentDeskFromUniverse(page: Page, deptId: string) {
   const planetBtn = page.locator(`[data-testid="open-${deptId}"]`);
   await expect(planetBtn).toBeVisible({ timeout: 25_000 });
-  await planetBtn.click();
-
   const enterBtn = page.locator('[data-testid="dept-room-enter"]');
-  await expect(enterBtn).toBeVisible({ timeout: 15_000 });
+  // The server-rendered planet can be visible before its click handler hydrates.
+  await expect(async () => {
+    if (await enterBtn.isVisible()) return;
+    await planetBtn.click({ timeout: 3_000 });
+    await expect(enterBtn).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 25_000 });
   await enterBtn.click();
 
   const deskPlate = page.locator('[data-testid="wk-desk-plate"]');
@@ -57,12 +60,13 @@ async function closeDeskAndEnterCorridorRoom(page: Page, nextDeptId: string) {
   await expect(page.locator('[data-testid="wk-workstation"]')).toBeVisible({ timeout: 15_000 });
 }
 
-test.use({ actionTimeout: 25_000, navigationTimeout: 120_000 });
+// Data/persistence acceptance is independent of the decorative flight animation.
+test.use({ actionTimeout: 25_000, navigationTimeout: 120_000, viewport: { width: 1440, height: 900 } });
 
 test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identities', () => {
   test('1. Authenticated Owner HQ boot without fake Kanzlei Weber', async ({ browser }) => {
     test.setTimeout(150_000);
-    const ownerCtx = await browser.newContext();
+    const ownerCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
     try {
       await prepareContext(ownerCtx);
       await loginViaCore(ownerCtx, 'marius@saimor-e2e.test', 'Phase1OwnerPass!');
@@ -106,7 +110,7 @@ test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identiti
     browser,
   }) => {
     test.setTimeout(150_000);
-    const memberCtx = await browser.newContext();
+    const memberCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
     try {
       await prepareContext(memberCtx);
       await loginViaCore(memberCtx, 'svenja@saimor-e2e.test', 'Phase1MemberPass!');
@@ -163,8 +167,8 @@ test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identiti
     browser,
   }) => {
     test.setTimeout(180_000);
-    const ownerCtx = await browser.newContext();
-    const adminCtx = await browser.newContext();
+    const ownerCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
+    const adminCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
     try {
       await prepareContext(ownerCtx);
       await prepareContext(adminCtx);
@@ -261,7 +265,7 @@ test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identiti
     browser,
   }) => {
     test.setTimeout(150_000);
-    const ownerCtx = await browser.newContext();
+    const ownerCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
     try {
       await prepareContext(ownerCtx);
       await loginViaCore(ownerCtx, 'marius@saimor-e2e.test', 'Phase1OwnerPass!');
@@ -345,7 +349,7 @@ test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identiti
     browser,
   }) => {
     test.setTimeout(180_000);
-    const ownerCtx = await browser.newContext();
+    const ownerCtx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
     try {
       await prepareContext(ownerCtx);
       await loginViaCore(ownerCtx, 'marius@saimor-e2e.test', 'Phase1OwnerPass!');
