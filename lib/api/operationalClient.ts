@@ -58,6 +58,11 @@ export interface OperationalStateDto {
   currency: string;
   base_till_cents: number;
   booked_revenue_cents: number;
+  cash_movement_cents?: number;
+  founder_contribution_cents?: number;
+  operating_expense_cents?: number;
+  unclassified_movement_cents?: number;
+  totals_scope?: 'company' | 'accessible_departments';
   total_till_cents: number;
   receipts_count: number;
   processes: OperationalProcessDto[];

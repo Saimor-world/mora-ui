@@ -1,8 +1,13 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:13001';
-const SHOT_DIR =
-  'C:\\Users\\mf4hr\\.gemini\\antigravity\\brain\\6bdab588-e677-4e22-b7df-8785efc0dcb9';
+if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(BASE_URL).hostname)) {
+  throw new Error('This synthetic acceptance suite only permits a local test target.');
+}
+const SHOT_DIR = path.resolve(process.env.SAIMOR_SCREENSHOT_DIR || 'test-results/phase1');
+mkdirSync(SHOT_DIR, { recursive: true });
 
 async function prepareContext(context: BrowserContext) {
   await context.addInitScript(() => {
@@ -52,9 +57,9 @@ async function closeDeskAndEnterCorridorRoom(page: Page, nextDeptId: string) {
   await expect(page.locator('[data-testid="wk-workstation"]')).toBeVisible({ timeout: 15_000 });
 }
 
-test.use({ actionTimeout: 25_000 });
+test.use({ actionTimeout: 25_000, navigationTimeout: 120_000 });
 
-test.describe.serial('Phase 1 Live Authenticated CORE + OS Acceptance', () => {
+test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identities', () => {
   test('1. Authenticated Owner HQ boot without fake Kanzlei Weber', async ({ browser }) => {
     test.setTimeout(150_000);
     const ownerCtx = await browser.newContext();

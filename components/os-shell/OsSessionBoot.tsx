@@ -52,18 +52,18 @@ export function OsSessionBoot() {
         }
       }
       setUser({
-        id: currentUser?.id || 'user-demo-local',
-        name: currentUser?.name || 'Marius',
-        email: currentUser?.email || 'marius@saimor.world',
-        role: currentUser?.role || 'owner',
-        tenant_id: currentUser?.tenant_id || 'tenant-demo',
-        is_demo: false,
+        id: 'user-demo-local',
+        name: 'Lokale Vorschau',
+        email: 'preview@example.test',
+        role: 'demo',
+        tenant_id: 'tenant-demo',
+        is_demo: true,
         operational_state: 'operational',
         setup_required: false,
         active_company_id: 'company-local-demo',
-        active_company_name: 'SAIMÔR HQ',
+        active_company_name: 'Lokale Vorschau',
         company_count: 1,
-        scope_source: 'persisted',
+        scope_source: 'local_demo_fallback',
       });
       setActiveCompany('company-local-demo');
     }

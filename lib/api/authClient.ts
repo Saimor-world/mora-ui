@@ -95,16 +95,16 @@ function hasLocalDemoFallbackSession() {
 function localDemoFallbackProfile(): UserProfile {
     return {
         user_id: 'local-demo-user',
-        email: 'marius@saimor.world',
-        full_name: 'Marius',
-        role: 'owner',
+        email: 'preview@example.test',
+        full_name: 'Lokale Vorschau',
+        role: 'demo',
         tenant_id: 'tenant-demo',
         scope: 'local-preview',
-        demo_mode: false,
+        demo_mode: true,
         operational_state: 'operational',
         setup_required: false,
         active_company_id: 'company-local-demo',
-        active_company_name: 'SAIMÔR HQ',
+        active_company_name: 'Lokale Vorschau',
         company_count: 1,
         scope_source: 'local_demo_fallback',
     };
