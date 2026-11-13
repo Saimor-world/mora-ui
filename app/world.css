@@ -1089,6 +1089,20 @@ body:has(.wd-universe[data-view='pixel']) .os-atmo { background: #05060d !import
 @media (prefers-reduced-motion: reduce) { .wd-sky__twinkle { animation: none; } }
 /* Phase 2: opaque pixel sky is a fixed layer inside the universe's stacking context; keep the shell top bar above it */
 body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative; z-index: 30; }
+/* UnifiedUniverse & LiveCockpit use .ck (fixed; z-index: 40); keep shell topbar & demo banner clickable above overview sky,
+   while opened rooms ([data-work] / [data-werkstatt]) and MoraStage retain full viewport control. */
+html:not([data-mora-stage]) body:has(.ck:not([data-work]):not([data-werkstatt])) :is(.os-shell__topbar, .os-demo-banner) { position: relative; z-index: 45; }
+@media (min-width: 821px) {
+  .os-root .ck:not([data-work]):not([data-werkstatt]) > .ck-top { top: 58px; }
+  .os-root:has(.os-demo-banner) .ck:not([data-work]):not([data-werkstatt]) > .ck-top { top: 92px; }
+  .os-root:has(.os-preview-banner) .ck:not([data-work]):not([data-werkstatt]) > .ck-top { top: 88px; }
+  .os-root:has(.os-demo-banner) .ck-universe-unified .ck-briefing-wrap { top: 132px !important; }
+  html[data-dock='c'] .os-root .ck-scene--system .ck-sys.ck-sys--big:not(.ck-sys--strip),
+  .os-root .ck .ck-sys.ck-sys--big:not(.ck-sys--strip) { top: 98px; bottom: 316px !important; }
+  html[data-dock='c'] .os-root:has(.os-demo-banner) .ck-scene--system .ck-sys.ck-sys--big:not(.ck-sys--strip),
+  .os-root:has(.os-demo-banner) .ck .ck-sys.ck-sys--big:not(.ck-sys--strip) { top: 134px; }
+  .os-root .ck-universe-unified[data-style='glas'] .ck-sys--big .ck-planet { translate: none; }
+}
 
 /* ── Glas-Ansicht (konzept2 Übersicht, konzept4 geöffneter Planet; Marius 27.10.) ───────────────────
  * Keine Bahnen, keine Linien, keine Rahmen. Glasplaneten als transparente PNGs, MÔRA klein und scharf. */

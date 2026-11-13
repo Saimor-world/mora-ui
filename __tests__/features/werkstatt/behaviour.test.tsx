@@ -15,7 +15,14 @@ const update = jest.fn().mockResolvedValue(true);
 const setDone = jest.fn().mockResolvedValue(true);
 const corePost = jest.fn();
 let nodes: Record<string, { id: string; title: string; content: string }> = {};
-jest.mock('@/lib/api/orgClient', () => ({ fetchNodeDetails: jest.fn((id: string) => Promise.resolve(nodes[id])), createNode: jest.fn() }));
+jest.mock('@/lib/api/orgClient', () => ({
+  fetchNodeDetails: jest.fn((id: string) => Promise.resolve(nodes[id])),
+  createNode: jest.fn(),
+  updateNode: jest.fn((id: string, body: unknown) => {
+    mutate({ id, ...(body as Record<string, unknown>) });
+    return Promise.resolve({ id });
+  }),
+}));
 jest.mock('@/lib/queries/useNodes', () => ({ useUpdateNode: () => ({ mutate }) }));
 jest.mock('@/lib/queries/useTeamMembers', () => ({ useTeamMembers: () => ({ data: [{ id: 'u1', name: 'Lea' }, { id: 'u2', name: 'Nina' }, { id: 'u3', name: 'Tarek' }] }) }));
 jest.mock('@/lib/lea/useDayActions', () => ({ useDayActions: () => ({ setDone, update, addTask: jest.fn().mockResolvedValue(true) }) }));
@@ -232,7 +239,7 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-inv-val-inv-hafer')).toHaveTextContent('18 Liter');
   });
 
-  it('öffnet für Design & Studio das physische Basalt-Atelier (room-atelier.webp) und am Zeichentisch den ORIGIN // 001 Prüfsockel & Folio-Editor', () => {
+  it('öffnet für Design & Studio das physische Basalt-Atelier (room-atelier.webp) und am Zeichentisch den ORIGIN // 001 Prüfsockel & Folio-Editor', async () => {
     const studioPlanet = {
       ...planet,
       id: 'dept-studio',
@@ -254,7 +261,7 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-studio-editor')).toBeInTheDocument();
     fireEvent.change(screen.getByTestId('wk-studio-editor'), { target: { value: '# ORIGIN Spezifikation\n\nBasalt & Quarzglas freigegeben.' } });
     fireEvent.click(screen.getByTestId('wk-studio-save'));
-    expect(screen.getByTestId('wk-studio-doc-preview')).toHaveTextContent('Basalt & Quarzglas freigegeben.');
+    await waitFor(() => expect(screen.getByTestId('wk-studio-doc-preview')).toHaveTextContent('Basalt & Quarzglas freigegeben.'));
   });
 
   it('öffnet für Betrieb & Kunden den physischen Bar-Raum (room-bar.webp) und an der Theke den Crew-Tresen mit Relikt-Avataren (1001–1111)', () => {
@@ -339,11 +346,11 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
     expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('Freigabe bestätigen');
     fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
-    expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('gesendet ✓');
+    expect(screen.getByTestId('wk-verwaltung-order-btn')).toHaveTextContent('Freigabe im Kontor dokumentiert');
     u3();
   });
 
-  it('verbindet Räume über den Korridor, synchronisiert Live-Tageskasse zwischen Theke/Service/Verwaltung und zeigt den ORIGIN // 001 Licht-Inspektor', () => {
+  it('verbindet Räume über den Korridor, synchronisiert Live-Tageskasse zwischen Theke/Service/Verwaltung und zeigt den ORIGIN // 001 Licht-Inspektor', async () => {
     window.localStorage.clear();
     const onSwitch = jest.fn();
     const skyPlanets = [
@@ -375,9 +382,10 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     fireEvent.click(screen.getByTestId('wk-mora-action-btn'));
     expect(screen.getByTestId('wk-floorplan')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
-    expect(screen.getByTestId('wk-floor-pay-t1')).toHaveTextContent('Verbucht ✓');
+    await waitFor(() => expect(screen.getByTestId('wk-floor-pay-t1')).toHaveTextContent('Verbucht ✓'));
     // Zweiter Klick auf denselben Tisch darf KEINE doppelte Buchung erzeugen (Idempotenz!)
     fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
+    await flush();
     expect(screen.getByTestId('wk-service-live-till')).toHaveTextContent('1856,60 €');
     u1();
 

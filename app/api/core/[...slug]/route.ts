@@ -139,7 +139,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
       headers,
       body: body ? body : undefined,
       redirect: 'manual',
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(15000),
     });
   } catch (error: any) {
     console.error(`[core proxy error] ${method} ${finalUrl}:`, error?.message || error);

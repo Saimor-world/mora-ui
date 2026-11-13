@@ -808,7 +808,7 @@ export function UnifiedUniverse({
       {!phone && briefings.length > 0 && !planet ? (
         <div
           className="ck-briefing-wrap"
-          style={{ position: 'absolute', top: 72, left: 24, zIndex: 12, maxWidth: 360 }}
+          style={{ position: 'absolute', top: 100, left: 24, zIndex: 12, maxWidth: 360 }}
         >
           <BriefingStack briefings={briefings} />
         </div>
@@ -935,6 +935,7 @@ export function UnifiedUniverse({
             company={companyName}
             compact={false}
             scale={1.45}
+            avoidTopLeft={!phone && briefings.length > 0 ? { width: 396, height: 245 } : undefined}
             style={planetStyle}
             onOpen={handleOpenPlanet}
           />

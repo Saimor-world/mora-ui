@@ -32,11 +32,16 @@ export function OsSessionBoot() {
     ) {
       useDemoStore.getState().setDemoCompany(null);
     }
+    const authCookie = readCookie('mora_auth_token');
+    const sessionCookie = readCookie('mora_session');
+    const hasRealSessionCookie =
+      (Boolean(authCookie) && authCookie !== 'local_demo_fallback') ||
+      (Boolean(sessionCookie) && sessionCookie !== 'local_demo_fallback');
     const isLocalFallback =
-      isLocalhost ||
+      (!hasRealSessionCookie && isLocalhost) ||
       isLocalDemoFallback() ||
-      readCookie('mora_session') === 'local_demo_fallback' ||
-      readCookie('mora_auth_token') === 'local_demo_fallback';
+      sessionCookie === 'local_demo_fallback' ||
+      authCookie === 'local_demo_fallback';
     const currentUser = useSessionStore.getState().user;
     if (isLocalFallback && (!currentUser || !currentUser.active_company_id || isLocalDemoFallback())) {
       if (isLocalhost) {
@@ -69,7 +74,7 @@ export function OsSessionBoot() {
     if (!hasUser || profile.user_id !== 'local-demo-user') {
       setUser(mapProfileToUser(profile));
     }
-    if (profile.active_company_id && (!activeCompanyId || profile.user_id === 'local-demo-user')) {
+    if (profile.active_company_id && (!activeCompanyId || activeCompanyId === 'company-local-demo' || profile.user_id === 'local-demo-user')) {
       setActiveCompany(profile.active_company_id);
     }
   }, [profile, hasUser, setUser, activeCompanyId, setActiveCompany]);
