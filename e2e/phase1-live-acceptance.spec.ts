@@ -460,4 +460,34 @@ test.describe.serial('Phase 1 local CORE + OS acceptance with synthetic identiti
       await ownerCtx.close();
     }
   });
+
+  test('6. Phone companion opens a readable empty Atelier without a false save claim', async ({ browser }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce',
+    });
+    try {
+      await prepareContext(context);
+      await loginViaCore(context, 'marius@saimor-e2e.test', 'Phase1OwnerPass!');
+      const page = await context.newPage();
+      await page.goto(`${BASE_URL}/os#universe`, { waitUntil: 'domcontentloaded' });
+      const entry = page.getByRole('button', { name: 'Universe ansehen', exact: true });
+      await expect(entry).toBeVisible({ timeout: 25_000 });
+      await entry.tap();
+      await openDepartmentDeskFromUniverse(page, 'dept-hq-studio');
+      const sheet = page.getByTestId('wk-studio-lectern');
+      await expect(sheet).toContainText('Noch kein Dossier ausgewählt');
+      await expect(sheet).not.toContainText('Durch CORE bestätigt');
+      const edit = page.getByTestId('wk-studio-edit-toggle');
+      await expect(edit).toBeDisabled();
+      const titleBox = await sheet.locator('h2').boundingBox();
+      expect(titleBox).not.toBeNull();
+      expect(titleBox!.x).toBeGreaterThanOrEqual(0);
+      expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(391);
+      expect((await edit.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await page.screenshot({ path: `${SHOT_DIR}\\e2e-07-phone-empty-atelier.png` });
+    } finally {
+      await context.close();
+    }
+  });
 });
