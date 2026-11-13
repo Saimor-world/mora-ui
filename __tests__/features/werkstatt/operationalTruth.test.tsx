@@ -117,28 +117,7 @@ function makeServerState(overrides: Partial<OperationalStateDto> = {}): Operatio
     booked_revenue_cents: 0,
     total_till_cents: 0,
     receipts_count: 0,
-    processes: [
-      {
-        id: 'proc-weber-live',
-        company_id: 'company-hq-live',
-        process_key: 'kanzlei_weber_2026_11',
-        process_type: 'kanzlei_weber_catering',
-        title: 'Kanzlei Weber (12 Pers.)',
-        current_step: 'intake_open',
-        version: 1,
-        state: {
-          step1Confirmed: false,
-          step2Baked: false,
-          step3Served: false,
-          step4Booked: false,
-          oatMilkReorderPrepared: false,
-        },
-        created_by_user_id: 'u-marius',
-        updated_by_user_id: 'u-marius',
-        created_at: '2026-11-12T08:00:00Z',
-        updated_at: '2026-11-12T08:00:00Z',
-      },
-    ],
+    processes: [],
     events: [],
     ledger_entries: [],
     ...overrides,
@@ -268,6 +247,7 @@ describe('Phase 1 Operative Datenwahrheit & Akzeptanztests', () => {
   it('5+6: zeigt bei fehlgeschlagener CORE-Buchung (503) ehrlich Fehlgeschlagen + Retry ohne Fake-Eintrag und bestätigt erst nach CORE-Quittung', async () => {
     useDemoStore.setState({ demoCompanyId: null });
     mockFetchOperationalState.mockResolvedValue(makeServerState());
+    mockUpdateNode.mockResolvedValue({ id: 'n-folio' });
 
     const afterSuccessState = makeServerState({
       booked_revenue_cents: 1680,
@@ -342,14 +322,17 @@ describe('Phase 1 Operative Datenwahrheit & Akzeptanztests', () => {
     view.unmount();
   });
 
-  it('6b: behandelt HTTP 403 / 409 bei CORE-Transition ehrlich als Fehlgeschlagen ohne Zustandsverfälschung', async () => {
+  it('6b: behandelt HTTP 403 / 409 bei CORE-Transition in autorisierter Demo-Sandbox ehrlich als Fehlgeschlagen ohne Zustandsverfälschung', async () => {
     useDemoStore.setState({ demoCompanyId: null });
     mockFetchOperationalState.mockResolvedValue(
       makeServerState({
+        company_id: 'company-sandbox-demo',
+        company_name: 'Café Morgenrot Sandbox',
+        is_demo: true,
         processes: [
           {
             id: 'proc-weber-live',
-            company_id: 'company-hq-live',
+            company_id: 'company-sandbox-demo',
             process_key: 'kanzlei_weber_2026_11',
             process_type: 'kanzlei_weber_catering',
             title: 'Kanzlei Weber (12 Pers.)',
@@ -380,7 +363,7 @@ describe('Phase 1 Operative Datenwahrheit & Akzeptanztests', () => {
         planet={makePlanet('d-verw', 'Verwaltung & Büro')}
         work={makeWork()}
         planets={skyPlanets}
-        companyId="company-hq-live"
+        companyId="company-sandbox-demo"
         today={TODAY}
         fromSpace={false}
         onExit={jest.fn()}
@@ -408,6 +391,91 @@ describe('Phase 1 Operative Datenwahrheit & Akzeptanztests', () => {
       expect(screen.getByTestId('wk-audit-error')).toHaveTextContent('Versionskonflikt')
     );
     expect(screen.getByTestId('wk-verwaltung-live-till')).toHaveTextContent('0,00 €');
+    view.unmount();
+  });
+
+  it('6c: erkennt idempotente Wiederholung (receipt.replayed=true) nach verlorener HTTP-Antwort im produktiven HQ ohne fiktive Kanzlei-Weber-Leiste', async () => {
+    useDemoStore.setState({ demoCompanyId: null });
+    mockFetchOperationalState.mockResolvedValue(makeServerState());
+
+    const confirmedState = makeServerState({
+      booked_revenue_cents: 0,
+      total_till_cents: 0,
+      receipts_count: 1,
+      ledger_entries: [
+        {
+          id: 'le-order-1',
+          company_id: 'company-hq-live',
+          process_id: null,
+          idempotency_key: 'verwaltung-supplier-order-do',
+          kind: 'approval',
+          station: 'verwaltung',
+          label: 'Lieferantenbestellung freigegeben',
+          amount_cents: 0,
+          currency: 'EUR',
+          safety_level: 'freigabe',
+          reference_id: null,
+          actor_user_id: 'u-marius',
+          actor_name: 'Marius',
+          actor_role: 'owner',
+          meta: {},
+          created_at: '2026-11-12T10:00:00Z',
+        },
+      ],
+    });
+
+    // Erster Versuch bricht nach Server-Commit ab (z. B. Netzwerkabbruch -> 503)
+    mockCreateOperationalLedgerEntry.mockRejectedValueOnce(
+      new CoreError('Verbindung unterbrochen', 503)
+    );
+
+    const view = wrap(
+      <Werkstatt
+        planet={makePlanet('d-verw', 'Verwaltung & Büro')}
+        work={makeWork()}
+        planets={skyPlanets}
+        companyId="company-hq-live"
+        today={TODAY}
+        fromSpace={false}
+        onExit={jest.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTestId('wk-desk-plate'));
+    await waitFor(() =>
+      expect(screen.getByTestId('wk-scope-truth-badge')).toHaveAttribute('data-truth-status', 'core-confirmed')
+    );
+
+    // Im echten HQ (is_demo=false) dürfen KEINE fiktiven Kanzlei-Weber-Elemente erscheinen
+    expect(screen.queryByTestId('wk-weber-e2e-bar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('wk-verwaltung-close-till-btn')).not.toBeInTheDocument();
+    expect(screen.getByTestId('wk-verwaltung-live-till')).not.toHaveTextContent('Kanzlei Weber');
+
+    // Freigabe in Verwaltung auslösen (2 Klicks wegen Freigabe-Gate) -> 503 Fehler
+    fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
+    fireEvent.click(screen.getByTestId('wk-verwaltung-order-btn'));
+    await waitFor(() =>
+      expect(screen.getByTestId('wk-scope-truth-badge')).toHaveAttribute('data-truth-status', 'failed')
+    );
+
+    // Retry trifft denselben Idempotenz-Key -> CORE meldet receipt.replayed = true
+    mockCreateOperationalLedgerEntry.mockResolvedValueOnce({
+      ledger_entry: confirmedState.ledger_entries[0],
+      state: confirmedState,
+      receipt: {
+        kind: 'ledger_entry',
+        id: 'le-order-1',
+        company_id: 'company-hq-live',
+        persisted: true,
+        replayed: true,
+      },
+    });
+
+    fireEvent.click(screen.getByTestId('wk-ledger-retry-btn'));
+    await waitFor(() =>
+      expect(screen.getByTestId('wk-scope-truth-badge')).toHaveAttribute('data-truth-status', 'core-confirmed')
+    );
+    expect(screen.getByTestId('wk-audit-feedback')).toHaveTextContent('Idempotente Wiederholung, keine Doppelbuchung');
+    expect(screen.getByTestId('wk-audit-count')).toHaveTextContent('1 Einträge');
     view.unmount();
   });
 

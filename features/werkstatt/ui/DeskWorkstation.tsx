@@ -9,6 +9,7 @@ import {
   TRUTH_STATUS_LABELS,
   type AuditEntry,
   type KanzleiWeberAction,
+  type OperationalActionResult,
   type SafetyLevel,
   type TruthStatus,
 } from '@/lib/universe/operationalLedger';
@@ -383,6 +384,21 @@ export function DeskWorkstation({
   const [auditFeedback, setAuditFeedback] = useState<string | null>(null);
   const resolvedActor = useMemo(() => resolveOperationalActor(scopeKey), [scopeKey]);
 
+  const reportActionOutcome = (res: OperationalActionResult, fallbackRef: string) => {
+    if (!res.ok) {
+      setAuditFeedback(`Fehlgeschlagen: ${res.blockedReason || 'Vorgang nicht gespeichert.'}`);
+      return;
+    }
+    if (!res.alreadyRecorded && res.entry) {
+      onAppendAuditEntry?.(res.entry);
+      setAuditFeedback(`${TRUTH_STATUS_LABELS[res.truthStatus]} (${res.entry.timestamp}): ${res.entry.result}`);
+    } else if (res.truthStatus === 'core-confirmed') {
+      setAuditFeedback(`Durch CORE bestätigt (Idempotente Wiederholung, keine Doppelbuchung): ${fallbackRef}.`);
+    } else {
+      setAuditFeedback(`Idempotent geschützt: ${fallbackRef} bereits einmalig verbucht.`);
+    }
+  };
+
   const commitAction = async (params: {
     idempotencyKey: string;
     actor?: string;
@@ -401,16 +417,7 @@ export function DeskWorkstation({
       departmentId: planetId,
       departmentTitle: planetTitle,
     });
-    if (!res.ok) {
-      setAuditFeedback(`Fehlgeschlagen: ${res.blockedReason || 'Vorgang nicht gespeichert.'}`);
-      return res;
-    }
-    if (!res.alreadyRecorded && res.entry) {
-      onAppendAuditEntry?.(res.entry);
-      setAuditFeedback(`${TRUTH_STATUS_LABELS[res.truthStatus]} (${res.entry.timestamp}): ${res.entry.result}`);
-    } else {
-      setAuditFeedback(`Idempotent geschützt: Vorgang #${params.idempotencyKey} bereits einmalig verbucht.`);
-    }
+    reportActionOutcome(res, `Vorgang #${params.idempotencyKey}`);
     return res;
   };
 
@@ -432,12 +439,7 @@ export function DeskWorkstation({
       return res;
     }
     params.onSuccess?.();
-    if (!res.alreadyRecorded && res.entry) {
-      onAppendAuditEntry?.(res.entry);
-      setAuditFeedback(`${TRUTH_STATUS_LABELS[res.truthStatus]} (${res.entry.timestamp}): ${res.entry.result}`);
-    } else {
-      setAuditFeedback(`Idempotent geschützt: Schritt '${params.action}' bereits einmalig verbucht.`);
-    }
+    reportActionOutcome(res, `Schritt '${params.action}'`);
     return res;
   };
 
@@ -474,7 +476,13 @@ export function DeskWorkstation({
               data-testid="wk-ledger-retry-btn"
               onClick={() => {
                 if (opLedger.truthStatus === 'failed' || hasPendingRetry) {
-                  void retryLastFailed();
+                  void retryLastFailed().then((res) => {
+                    if (!res) {
+                      setAuditFeedback('CORE-Abgleich aktualisiert.');
+                      return;
+                    }
+                    reportActionOutcome(res, 'Wiederholung');
+                  });
                 }
                 if (docSyncStatus === 'failed') {
                   onRetryDocSave?.();
@@ -496,7 +504,8 @@ export function DeskWorkstation({
           </span>
         </div>
 
-        {['service-station', 'kueche-station', 'theke-station', 'verwaltung-station'].includes(stationKind) ? (
+        {['service-station', 'kueche-station', 'theke-station', 'verwaltung-station'].includes(stationKind) &&
+        (scopeKey === 'demo-morgenrot' || opLedger.isDemoCompany) ? (
           <div className="wk-weber-flow" data-testid="wk-weber-e2e-bar">
             <span className="wk-weber-flow__label">Vorgang Kanzlei Weber (12 Pers. · 142,00 €):</span>
             <span className={`wk-weber-step${kw.step1Confirmed ? ' is-done' : ''}`} data-testid="wk-weber-state-1">
@@ -1076,26 +1085,34 @@ export function DeskWorkstation({
               <span className="wk-ws-eyebrow">Einheitliches Kassenbuch & Idempotente Buchung ({TRUTH_STATUS_LABELS[opLedger.truthStatus]})</span>
               <h3>Tagesstand: {liveTillTotal.toFixed(2).replace('.', ',')} €</h3>
               <p className="wk-ws-sub">
-                Basis-Kasse {opLedger.baseTillEur.toFixed(2).replace('.', ',')} € {opLedger.bookedRevenueEur > 0 ? `+ ${opLedger.bookedRevenueEur.toFixed(2).replace('.', ',')} € verbuchte Bons heute (${opLedger.sharedStation.receiptsCount} Vorgänge)` : ''} · {kw.step4Booked ? 'Kanzlei Weber (142,00 €) einmalig verbucht ✓' : 'Kanzlei Weber (142,00 €) offen'}
+                Basis-Kasse {opLedger.baseTillEur.toFixed(2).replace('.', ',')} €{' '}
+                {opLedger.bookedRevenueEur > 0
+                  ? `+ ${opLedger.bookedRevenueEur.toFixed(2).replace('.', ',')} € verbuchte Buchungen heute (${opLedger.sharedStation.receiptsCount} Vorgänge)`
+                  : '(0,00 € Buchungen heute)'}
+                {scopeKey === 'demo-morgenrot' || opLedger.isDemoCompany
+                  ? ` · ${kw.step4Booked ? 'Kanzlei Weber (142,00 €) einmalig verbucht ✓' : 'Kanzlei Weber (142,00 €) offen'}`
+                  : ''}
               </p>
-              <button
-                type="button"
-                className={`wk-ws-chip${kw.step4Booked ? ' is-done' : kw.step3Served ? ' is-active' : ''}`}
-                data-testid="wk-verwaltung-close-till-btn"
-                aria-disabled={!kw.step3Served && !kw.step4Booked}
-                onClick={() => {
-                  void runWeberTransition({
-                    action: 'settle_invoice',
-                    actionLabel: 'Tageskasse inkl. Sammelrechnung Kanzlei Weber (142,00 €) abgeschlossen',
-                    resultLabel: 'Umsatz +142,00 € exakt einmalig verbucht & Prüf-Dossier im Buch am Stehpult angelegt',
-                    onSuccess: () => {
-                      setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'bezahlt' } : x)));
-                    },
-                  });
-                }}
-              >
-                {kw.step4Booked ? 'Tageskasse & Kanzlei-Weber-Dossier dokumentiert ✓' : 'Kanzlei Weber (142,00 €) verbuchen & Tages-Dossier erzeugen →'}
-              </button>
+              {scopeKey === 'demo-morgenrot' || opLedger.isDemoCompany ? (
+                <button
+                  type="button"
+                  className={`wk-ws-chip${kw.step4Booked ? ' is-done' : kw.step3Served ? ' is-active' : ''}`}
+                  data-testid="wk-verwaltung-close-till-btn"
+                  aria-disabled={!kw.step3Served && !kw.step4Booked}
+                  onClick={() => {
+                    void runWeberTransition({
+                      action: 'settle_invoice',
+                      actionLabel: 'Tageskasse inkl. Sammelrechnung Kanzlei Weber (142,00 €) abgeschlossen',
+                      resultLabel: 'Umsatz +142,00 € exakt einmalig verbucht & Prüf-Dossier im Buch am Stehpult angelegt',
+                      onSuccess: () => {
+                        setFloorTables((l) => l.map((x) => (x.id === 't46' ? { ...x, state: 'bezahlt' } : x)));
+                      },
+                    });
+                  }}
+                >
+                  {kw.step4Booked ? 'Tageskasse & Kanzlei-Weber-Dossier dokumentiert ✓' : 'Kanzlei Weber (142,00 €) verbuchen & Tages-Dossier erzeugen →'}
+                </button>
+              ) : null}
             </div>
             <div className="wk-ws-card">
               <span className="wk-ws-eyebrow">Team & Personal</span>

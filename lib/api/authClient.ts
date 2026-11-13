@@ -2,7 +2,7 @@
 // Authentication and user profile functions extracted from coreClient.ts.
 
 import type { OperationalState } from '@/lib/types/session';
-import { coreGet, corePost, isLocalDemoFallback, isLocalhost, readCookie } from './http';
+import { AUTH_COOKIE, coreGet, corePost, isLocalDemoFallback, isLocalhost, readCookie } from './http';
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
@@ -112,9 +112,14 @@ function localDemoFallbackProfile(): UserProfile {
 
 export async function fetchUserProfile(): Promise<UserProfile> {
     if (hasLocalDemoFallbackSession()) return localDemoFallbackProfile();
-    const profile = await coreGet('/v3/auth/session', { isOptional: true, timeoutMs: 3000 });
+    const authCookie = readCookie(AUTH_COOKIE);
+    const hasRealSessionCookie = Boolean(authCookie && authCookie !== 'local_demo_fallback');
+    const profile = await coreGet('/v3/auth/session', {
+        isOptional: true,
+        timeoutMs: hasRealSessionCookie ? 10000 : 3000,
+    });
     if (profile) return profile as UserProfile;
-    if (hasLocalDemoFallbackSession() || (isLocalhost() && process.env.NODE_ENV !== 'test')) {
+    if (hasLocalDemoFallbackSession() || (!hasRealSessionCookie && isLocalhost() && process.env.NODE_ENV !== 'test')) {
         return localDemoFallbackProfile();
     }
     return profile as UserProfile;

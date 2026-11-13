@@ -97,6 +97,7 @@ export interface AuditEntry {
 export interface ScopedOperationalState {
   scope: ScopeKey;
   companyId: string | null;
+  isDemoCompany: boolean;
   truth: DataTruth;
   truthStatus: TruthStatus;
   lastError: string | null;
@@ -169,6 +170,7 @@ function defaultState(scope: ScopeKey, companyId: string | null = null): ScopedO
   return {
     scope,
     companyId,
+    isDemoCompany: isDemo,
     truth: live ? 'core-synced' : 'local-sim',
     truthStatus: isDemo ? 'demo-simulation' : live ? 'pending-sync' : 'local-draft',
     lastError: null,
@@ -230,6 +232,7 @@ export function readOperationalState(scope: ScopeKey, companyId: string | null =
       ...parsed,
       scope,
       companyId: companyId ?? parsed.companyId ?? fallback.companyId,
+      isDemoCompany: Boolean(parsed.isDemoCompany ?? (scope === 'demo-morgenrot')),
       recordedKeys: Array.isArray(parsed.recordedKeys) ? parsed.recordedKeys : [],
       auditTrail: Array.isArray(parsed.auditTrail) ? parsed.auditTrail : [],
       kanzleiWeber: { ...fallback.kanzleiWeber, ...(parsed.kanzleiWeber ?? {}) },
@@ -392,7 +395,10 @@ function mapCoreStateToLocal(
   scope: ScopeKey,
   prev?: ScopedOperationalState
 ): ScopedOperationalState {
-  const kwProc = coreState.processes.find((p) => p.process_type === 'kanzlei_weber_catering');
+  const isDemoCompany = scope === 'demo-morgenrot' || Boolean(coreState.is_demo);
+  const kwProc = isDemoCompany
+    ? coreState.processes.find((p) => p.process_type === 'kanzlei_weber_catering')
+    : undefined;
   const step = (kwProc?.current_step ?? 'intake_open') as KanzleiWeberStep;
   const pState = kwProc?.state ?? {};
   const recordedKeys = Array.from(
@@ -430,6 +436,7 @@ function mapCoreStateToLocal(
     ...(prev ?? defaultState(scope, coreState.company_id)),
     scope,
     companyId: coreState.company_id,
+    isDemoCompany,
     truth: 'core-synced',
     truthStatus: 'core-confirmed',
     lastError: null,
@@ -439,18 +446,31 @@ function mapCoreStateToLocal(
     bookedRevenueEur: centsToEur(coreState.booked_revenue_cents),
     totalTillEur: centsToEur(coreState.total_till_cents),
     recordedKeys,
-    tillClosed: Boolean(pState.till_closed ?? stepIdx >= 4),
-    kanzleiWeber: {
-      processId: kwProc?.id ?? prev?.kanzleiWeber.processId ?? 'proc-pending',
-      processKey: kwProc?.process_key ?? 'kanzlei-weber-catering-1',
-      currentStep: step,
-      version: kwProc?.version ?? 1,
-      step1Confirmed: stepIdx >= 1,
-      step2Baked: stepIdx >= 2,
-      step3Served: stepIdx >= 3,
-      step4Booked: stepIdx >= 4,
-      oatMilkReorderPrepared: recordedKeys.includes('mora-oatmilk-reorder-prep'),
-    },
+    tillClosed: Boolean(pState.till_closed ?? (isDemoCompany && stepIdx >= 4)),
+    supplierOrderApproved: recordedKeys.includes('verwaltung-supplier-order-do'),
+    kanzleiWeber: isDemoCompany
+      ? {
+          processId: kwProc?.id ?? prev?.kanzleiWeber.processId ?? 'proc-pending',
+          processKey: kwProc?.process_key ?? 'kanzlei-weber-catering-1',
+          currentStep: step,
+          version: kwProc?.version ?? 1,
+          step1Confirmed: stepIdx >= 1,
+          step2Baked: stepIdx >= 2,
+          step3Served: stepIdx >= 3,
+          step4Booked: stepIdx >= 4,
+          oatMilkReorderPrepared: recordedKeys.includes('mora-oatmilk-reorder-prep'),
+        }
+      : {
+          processId: 'proc-disabled-live',
+          processKey: 'kanzlei-weber-disabled',
+          currentStep: 'intake_open',
+          version: 1,
+          step1Confirmed: false,
+          step2Baked: false,
+          step3Served: false,
+          step4Booked: false,
+          oatMilkReorderPrepared: recordedKeys.includes('mora-oatmilk-reorder-prep'),
+        },
     sharedStation: {
       receiptsCount: coreState.receipts_count,
       vitrineStocked: Boolean(pState.vitrine_stocked ?? stepIdx >= 2),
@@ -570,7 +590,7 @@ export function useOperationalLedger(scope: ScopeKey, companyId: string | null =
           });
           pendingRetryRef.current = null;
           setHasPendingRetry(false);
-          const next = mapCoreStateToLocal(res.state, scope, state);
+          const next = mapCoreStateToLocal(res.state, scope, stateRef.current);
           notifySubscribers(scope, next);
           setState(next);
           return {
@@ -585,7 +605,7 @@ export function useOperationalLedger(scope: ScopeKey, companyId: string | null =
           pendingRetryRef.current = { label: input.action, run: execute };
           setHasPendingRetry(true);
           const failedState: ScopedOperationalState = {
-            ...state,
+            ...stateRef.current,
             truthStatus: 'failed',
             lastError: message,
           };
@@ -602,7 +622,7 @@ export function useOperationalLedger(scope: ScopeKey, companyId: string | null =
 
       return execute();
     },
-    [authoritative, companyId, scope, state]
+    [authoritative, companyId, scope]
   );
 
   const transitionWeber = useCallback(
@@ -613,7 +633,17 @@ export function useOperationalLedger(scope: ScopeKey, companyId: string | null =
       actionLabel: string;
       resultLabel: string;
     }): Promise<OperationalActionResult> => {
-      const current = authoritative ? state : readOperationalState(scope, companyId);
+      const current = authoritative ? stateRef.current : readOperationalState(scope, companyId);
+      const isDemoContext = scope === 'demo-morgenrot' || Boolean(current.isDemoCompany);
+      if (authoritative && !isDemoContext) {
+        return {
+          ok: false,
+          alreadyRecorded: false,
+          truthStatus: current.truthStatus,
+          blockedReason: 'Fiktiver Demo-Vorgang (Kanzlei Weber) ist im produktiven HQ deaktiviert.',
+          state: current,
+        };
+      }
       const check = validateLocalWeberTransition(current, params.action, params.station);
       if (!check.allowed) {
         if (check.alreadyDone) {
