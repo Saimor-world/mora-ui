@@ -38,6 +38,11 @@ const snap = {
 } as unknown as TodaySnapshot;
 
 describe('HQ Home: echter Inhalt statt Text', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    mockSnapshot = null;
+  });
+
   it('Kosmos-Mitte zeigt höchstens drei Karten aus echten Daten – Name + Zahl/Datum', () => {
     const cards = focusCards(snap);
     expect(cards.map((c) => `${c.label} · ${c.value}`)).toEqual(['Post · 2 brauchen dich', 'Angebot Pilot · Frist 10.11.', 'Amt · Frist 17.11.']);
@@ -93,8 +98,10 @@ describe('HQ Home: echter Inhalt statt Text', () => {
       { id: 'e2', when: 'Do 05.11. 14:00', label: 'Kundencall' },
       { id: 'e3', when: 'Fr 06.11. 10:00', label: 'Workshop' },
     ]);
-    const realNow = Date.now;
-    Date.now = () => new Date('2026-11-03T19:00:00Z').getTime();
+    // Uhr für den ganzen Test festhalten (Render, Effekte, Prüfungen): 03.11.2026, 20:00 Berlin.
+    // Vorher wurde nur Date.now kurz überschrieben; BridgeConcept liest die Zeit über new Date(),
+    // darum zählte der Test zwischen 00:00 und 09:00 den 09:00-Termin mit („3 Termine“).
+    jest.useFakeTimers({ now: new Date('2026-11-03T19:00:00Z') });
     mockSnapshot = late;
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { container } = render(
@@ -102,8 +109,6 @@ describe('HQ Home: echter Inhalt statt Text', () => {
         <BridgeConcept items={[]} activeId="home" onNavigate={jest.fn()} onMora={jest.fn()} onMore={jest.fn()} onNotifications={jest.fn()} onSearch={jest.fn()} mood="idle" moraOpen={false} attention={0} phone={false} showLegacy={false} />
       </QueryClientProvider>
     );
-    Date.now = realNow;
-    mockSnapshot = null;
     const next = container.querySelector('[data-station="next"] button')!;
     expect(next.getAttribute('aria-label')).toContain('2 Termine');
     expect(next.getAttribute('aria-label')).toContain('Do 05.11. 14:00 Kundencall');
