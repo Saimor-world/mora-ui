@@ -28,6 +28,7 @@ function Online({ state, navigate, initialView }: { state: Extract<MorgenrotStat
       initialView={initialView}
       companyName={COMPANY}
       snapshot={state.snapshot}
+      departments={state.departments}
       viewerName={state.viewer.name}
       isDemo={true}
     />

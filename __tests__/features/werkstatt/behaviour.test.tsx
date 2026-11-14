@@ -207,8 +207,8 @@ describe('Mappe – Wochenblatt von Hand', () => {
     expect(createNode).toHaveBeenCalledTimes(1);
     const createdContent = String(createNode.mock.calls[0][0].content);
     expect(createdContent).not.toMatch(/Theke|Küche|Einkauf/);
-    expect(createdContent).toContain('| Produkt |');
-    expect(createdContent).toContain('| Technik |');
+    // Echte Firma: keine Vorlagen-Zeilen, nur eine leere Zeile zum Selbstbeschriften.
+    expect(createdContent).not.toMatch(/Produkt|Technik/);
   });
 });
 

@@ -7,6 +7,7 @@ import { buildFinder, TASKS_PLANET } from '@/lib/lea/finder';
 import { buildLiveDay } from '@/lib/lea/live';
 import { localISO } from '@/lib/lea/world';
 import { LiveCockpit } from '@/features/home/cockpit/LiveCockpit';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { LiveWorld } from '@/features/universe/ui/LiveWorld';
 import { FinderVerse } from '@/components/finderverse/FinderVerse';
 import { widgetsFromToday } from '@/features/home/widgets/adapters';
@@ -279,7 +280,7 @@ describe('Demo-Tenant: fiktiv-badge in Home UND Universe + stripFiktiv erst in d
     expect(screen.queryByTestId('home-focus')).toBeNull();
   });
 
-  it('Heute-Karte mit Frist öffnet die Aufgaben (Feature „today“), nicht ins Leere', () => {
+  it('Heute-Karte mit Frist öffnet die Aufgabe an ihrem festen Ort im Universe, nicht ins Leere und ohne Umweg über Heute', () => {
     window.matchMedia = jest.fn().mockImplementation((query: string) => ({ matches: true, media: query, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const navigate = jest.fn();
@@ -290,7 +291,10 @@ describe('Demo-Tenant: fiktiv-badge in Home UND Universe + stripFiktiv erst in d
     );
     const card = screen.getAllByTestId('home-focus-card').find((c) => /Frist|überfällig/.test(c.textContent ?? ''))!;
     card.click();
-    expect(navigate).toHaveBeenCalledWith('today');
+    // Aufgabe ohne Abteilung/Ordner: derselbe feste Ort wie im Universe (erste echte Abteilung).
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'dept-kueche', taskId: 't-fiktiv-1' });
+    expect(navigate).toHaveBeenCalledWith('universe');
+    expect(navigate).not.toHaveBeenCalledWith('today');
     expect(navigate).not.toHaveBeenCalledWith('tasks');
   });
 });

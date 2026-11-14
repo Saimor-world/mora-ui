@@ -9,7 +9,7 @@ import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
 import { StationPlanet, WorkSurface, type DeptMember, type Origin, type RoomKind } from '@/features/universe/ui/Workbench';
-import { deptWork } from '@/lib/universe/deptWork';
+import { deptWork, unassignedHomeId } from '@/lib/universe/deptWork';
 import { getDepartmentRoomContext, getShipDepartmentCrew } from '@/lib/universe/shipDepartments';
 import { Werkstatt, placeFromParam, roomKindFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
 import { localISO } from '@/lib/lea/world';
@@ -449,14 +449,14 @@ export function UnifiedUniverse({
   const work = useMemo(() => {
     const knownDeptIds = planets.map((p) => p.id);
     const knownFolderIds = planets.flatMap((p) => p.moons.map((m) => m.id));
-    const isPrimary = Boolean(planet && planets[0]?.id === planet.id);
-    const hasFocusedTask = Boolean(taskId || (room?.place && room.place.kind === 'task'));
+    // Aufgaben ohne Abteilung und Ordner haben genau einen festen Ort – unabhängig davon, was gerade offen ist.
+    const home = unassignedHomeId(world.planets) ?? unassignedHomeId(planets);
     return deptWork(planet, world.tasks, localISO(new Date()), {
-      includeUnassigned: isPrimary || hasFocusedTask,
+      includeUnassigned: Boolean(planet && planet.id === home),
       knownDeptIds,
       knownFolderIds,
     });
-  }, [planet, planets, world.tasks, taskId, room?.place]);
+  }, [planet, planets, world.planets, world.tasks]);
   const spaceName = useMemo(() => {
     const f = planet ? world.finder.find((p) => p.id === planet.id) : null;
     const names = Array.from(new Set((f?.spaces ?? []).map((sp) => sp.name).filter(Boolean)));

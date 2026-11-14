@@ -134,6 +134,35 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
       });
     };
 
+    const toFile = (fallbackMeta: string) => (node: CoreRawNode, fIndex: number): DemoFile => ({
+      id: String(node.id || `node-${fIndex}`),
+      name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
+      meta: String(node.type || fallbackMeta),
+      body: Array.isArray(node.body)
+        ? node.body
+        : [String(node.content || node.description || '')].filter(Boolean),
+    });
+    const isFolderLike = (c: CoreRawNode | null | undefined) => Boolean(c && (c.type === 'folder' || c.type === 'space'));
+    // Inhalte eines Ordners: nie seine Unterordner (die werden eigene Monde).
+    const filesOf = (folder: CoreRawNode): CoreRawNode[] => (Array.isArray(folder.nodes)
+      ? folder.nodes.filter((c) => c && !isFolderLike(c))
+      : Array.isArray(folder.children)
+        ? folder.children.filter((c) => c && c.type === 'node')
+        : []);
+    const subfoldersOf = (folder: CoreRawNode): CoreRawNode[] => [
+      ...(Array.isArray(folder.subfolders) ? folder.subfolders : []),
+      ...(Array.isArray(folder.folders) ? folder.folders : []),
+      ...(Array.isArray(folder.nodes) ? folder.nodes : []).filter((c) => c && c.type === 'folder'),
+      ...(Array.isArray(folder.children) ? folder.children : []).filter((c) => c && c.type === 'folder'),
+    ];
+    // Ein Ordner und alle seine Unterordner (beliebig tief) bleiben als Monde erhalten.
+    const addFolder = (folder: CoreRawNode) => {
+      const fid = String(folder.id || `folder-${moons.length}`);
+      if (seenMoonIds.has(fid)) return;
+      addMoon(fid, String(folder.name || folder.title || 'Ordner'), filesOf(folder).map(toFile('Dokument')));
+      for (const sub of subfoldersOf(folder)) if (sub) addFolder(sub);
+    };
+
     // 1. Direct folders on department
     const directFolders: CoreRawNode[] = Array.isArray(dept.folders)
       ? dept.folders
@@ -141,25 +170,7 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
         ? dept.children.filter((c) => c && c.type === 'folder')
         : [];
 
-    for (const folder of directFolders) {
-      const rawFiles: CoreRawNode[] = Array.isArray(folder.nodes)
-        ? folder.nodes
-        : Array.isArray(folder.children)
-          ? folder.children.filter((c) => c && c.type === 'node')
-          : [];
-      addMoon(
-        String(folder.id || `folder-${moons.length}`),
-        String(folder.name || folder.title || 'Ordner'),
-        rawFiles.map((node, fIndex) => ({
-          id: String(node.id || `node-${fIndex}`),
-          name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
-          meta: String(node.type || 'Dokument'),
-          body: Array.isArray(node.body)
-            ? node.body
-            : [String(node.content || node.description || '')].filter(Boolean),
-        }))
-      );
-    }
+    for (const folder of directFolders) addFolder(folder);
 
     // 2. Spaces of the department and their folders
     const spaces: CoreRawNode[] = Array.isArray(dept.spaces)
@@ -189,44 +200,19 @@ export function coreTreeToPlanets(rawTreeOrDepartments: any): DemoPlanet[] {
           ? space.children.filter((c) => c && c.type === 'folder')
           : [];
 
-      if (spaceFolders.length > 0) {
-        for (const folder of spaceFolders) {
-          const rawFiles: CoreRawNode[] = Array.isArray(folder.nodes)
-            ? folder.nodes
-            : Array.isArray(folder.children)
-              ? folder.children.filter((c) => c && c.type === 'node')
-              : [];
-          addMoon(
-            String(folder.id || `folder-${moons.length}`),
-            String(folder.name || folder.title || 'Ordner'),
-            rawFiles.map((node, fIndex) => ({
-              id: String(node.id || `node-${fIndex}`),
-              name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
-              meta: String(node.type || 'Dokument'),
-              body: Array.isArray(node.body)
-                ? node.body
-                : [String(node.content || node.description || '')].filter(Boolean),
-            }))
-          );
-        }
-      } else {
-        // Space itself acts as a Moon if it has nodes or stands alone
-        const rawFiles: CoreRawNode[] = Array.isArray(space.nodes)
-          ? space.nodes
-          : Array.isArray(space.children)
-            ? space.children.filter((c) => c && c.type === 'node')
-            : [];
+      for (const folder of spaceFolders) addFolder(folder);
+
+      // Bereich ohne Ordner – oder mit eigenen Inhalten neben den Ordnern – bleibt als eigener Mond sichtbar.
+      const spaceFiles: CoreRawNode[] = Array.isArray(space.nodes)
+        ? space.nodes.filter((c) => c && !isFolderLike(c))
+        : Array.isArray(space.children)
+          ? space.children.filter((c) => c && c.type === 'node')
+          : [];
+      if (spaceFolders.length === 0 || spaceFiles.length > 0) {
         addMoon(
           String(space.id || `space-${moons.length}`),
           String(space.name || space.title || 'Bereich'),
-          rawFiles.map((node, fIndex) => ({
-            id: String(node.id || `node-${fIndex}`),
-            name: stripFiktiv(String(node.title || node.name || 'Dokument')) || 'Dokument',
-            meta: String(node.type || 'Bereich'),
-            body: Array.isArray(node.body)
-              ? node.body
-              : [String(node.content || node.description || '')].filter(Boolean),
-          }))
+          spaceFiles.map(toFile('Bereich'))
         );
       }
     }
