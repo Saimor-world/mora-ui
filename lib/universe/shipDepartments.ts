@@ -33,7 +33,7 @@ export const CANONICAL_SHIP_DEPARTMENTS: ShipDepartmentSeed[] = [
     id: 'dept-kommando',
     name: 'Kommando & Strategie',
     spaceId: 'sp-kommando',
-    spaceName: 'Brücke & Führung',
+    spaceName: 'Kommando & Strategie',
     folders: [
       {
         id: 'f-strategie',
@@ -99,7 +99,7 @@ export const CANONICAL_SHIP_DEPARTMENTS: ShipDepartmentSeed[] = [
     id: 'dept-technik',
     name: 'Produkt & Technik',
     spaceId: 'sp-technik',
-    spaceName: 'Maschinenraum & Architektur',
+    spaceName: 'Produkt & Technik',
     folders: [
       {
         id: 'f-os-v15',
@@ -728,23 +728,23 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
     return {
       primaryRoom: 'studio',
       archetype: 'bridge',
-      roomTag: 'Abteilungs-Raum · Kommandobrücke (Obsidian & Gold)',
-      roomName: 'Kommandobrücke & Strategie-Kanzel',
-      roomSubtitle: 'Strategie-Dossiers & Charta am Kommandopult, Führungs-Leitplanken, Prioritäten & Wochenplan',
-      enterLabel: 'Kommandobrücke betreten →',
+      roomTag: label,
+      roomName: label,
+      roomSubtitle: 'Dossiers, Prioritäten und Wochenplan',
+      enterLabel: label,
       werkstatt: {
-        tag: 'Kommandobrücke · Führung',
-        name: 'Kommandobrücke & Strategie-Kanzel',
-        shortLabel: 'Kommandobrücke',
-        subtitle: 'Strategische Entscheidungen, Prioritäten & Wochen-Taktung',
-        focusHint: 'Führungsaufgaben, Freigaben & Meilensteine',
+        tag: label,
+        name: label,
+        shortLabel: 'Kommando',
+        subtitle: 'Entscheidungen, Prioritäten und Wochenplan',
+        focusHint: 'Aufgaben, Freigaben und Meilensteine',
       },
       studio: {
-        tag: 'Kommandobrücke · Charta & Strategie',
-        name: 'Kommandobrücke & Strategie-Kanzel',
-        shortLabel: 'Kommandobrücke',
-        subtitle: 'Architektur-Charta, Quartalsziele & Partner-Verträge direkt am Kommandopult',
-        focusTitle: 'Strategischer Kompass & Leitplanken',
+        tag: label,
+        name: label,
+        shortLabel: 'Kommando',
+        subtitle: 'Charta, Quartalsziele und Verträge am Pult',
+        focusTitle: 'Ziele und Leitlinien',
         focusItems: [
           { label: 'Phase 01 Fokus', value: 'ORIGIN // 001 Master & ein eigener Raum pro Abteilung', status: 'Aktiv' },
           { label: 'Führungs-Takt', value: 'Tägliche Captains-Runde (10:00 Uhr)', status: 'Stabil' },
@@ -752,19 +752,19 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
         ],
       },
       bar: {
-        tag: 'Kommandobrücke · Captains-Runde',
-        name: 'Offiziersmesse & Brücke',
-        shortLabel: 'Brücke',
-        subtitle: 'Abstimmung der Captains, Schicht-Übergabe & direkte Führungs-Signale',
-        loungeTitle: 'Captains-Tisch & Führungs-Übergabe',
-        handoverPrompt: 'Strategische Übergabe oder Auftrag an die Crew notieren…',
+        tag: label,
+        name: label,
+        shortLabel: 'Kommando',
+        subtitle: 'Abstimmung, Übergabe und kurze Signale',
+        loungeTitle: 'Übergabe',
+        handoverPrompt: 'Übergabe oder Auftrag notieren…',
       },
     };
   }
 
   if (raw.includes('technik') || raw.includes('produkt') || raw.includes('maschine') || raw.includes('core') || raw.includes('backstube') || raw.includes('küche') || raw.includes('werkstatt')) {
     const isCafe = raw.includes('backstube') || raw.includes('küche');
-    const rName = isCafe ? 'Backstube & Werkstatt' : 'Technik-Werkstatt & Maschinenlabor';
+    const rName = isCafe ? 'Backstube & Werkstatt' : label;
     return {
       primaryRoom: 'werkstatt',
       archetype: 'werkstatt',
@@ -793,10 +793,10 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
       },
       bar: {
         tag: 'Bereitschaft',
-        name: 'Technik-Kajüte',
-        shortLabel: 'Kajüte',
-        subtitle: 'Release-Übergabe, Bereitschaftsdienst & schneller Engineering-Sync',
-        loungeTitle: 'Engineering-Lounge & Release-Übergabe',
+        name: label,
+        shortLabel: 'Übergabe',
+        subtitle: 'Release-Übergabe und kurze Abstimmung',
+        loungeTitle: 'Übergabe',
         handoverPrompt: 'Technische Übergabe oder Prüfpunkt für die Schicht…',
       },
     };
@@ -843,11 +843,11 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
 
   if (raw.includes('betrieb') || raw.includes('kunde') || raw.includes('projekt') || raw.includes('service') || raw.includes('gastraum') || raw.includes('theke') || raw.includes('bar')) {
     const isCafe = raw.includes('gastraum') || raw.includes('theke') || raw.includes('service');
-    const rName = isCafe ? 'Gastraum, Theke & Bar' : 'Panorama-Bar & Crew-Salon';
+    const rName = isCafe ? 'Gastraum, Theke & Bar' : label;
     return {
       primaryRoom: 'bar',
       archetype: 'bar',
-      roomTag: isCafe ? 'Abteilungs-Raum · Gastraum & Theke' : 'Abteilungs-Raum · Panorama-Lounge am See',
+      roomTag: isCafe ? 'Gastraum & Theke' : label,
       roomName: rName,
       roomSubtitle: 'Captain & Crew an Bord, Schicht-Übergabe, laufende Aufgaben & direkter Abteilungs-Funk (Post & Termine)',
       enterLabel: `${rName} betreten →`,
@@ -883,11 +883,11 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
 
   if (raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury') || raw.includes('büro') || raw.includes('einkauf') || raw.includes('verwaltung')) {
     const isCafe = raw.includes('büro') || raw.includes('einkauf');
-    const rName = isCafe ? 'Kontor & Einkaufs-Büro' : 'Treasury-Kontor & Vertrags-Archiv';
+    const rName = isCafe ? 'Kontor & Einkaufs-Büro' : label;
     return {
       primaryRoom: 'studio',
       archetype: 'kontor',
-      roomTag: isCafe ? 'Abteilungs-Raum · Kontor & Einkauf' : 'Abteilungs-Raum · Smaragd- & Bronze-Kontor',
+      roomTag: isCafe ? 'Kontor & Einkauf' : label,
       roomName: rName,
       roomSubtitle: 'Verträge, Kalkulationen & Richtlinien direkt am Kontor-Pult, Freigabe-Matrix & Fristen-Aufgaben',
       enterLabel: `${rName} betreten →`,

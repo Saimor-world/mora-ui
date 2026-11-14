@@ -384,7 +384,7 @@ export function LiveCockpit({
               onClick={() => setDemoCompany(null)}
               aria-pressed={!isCafeScope}
               data-testid="home-scope-hq"
-              title="SAIMÔR HQ Raumschiff (Kommando, Technik, Atelier, Betrieb, Kontor)"
+              title="SAIMÔR HQ (Kommando, Technik, Atelier, Betrieb, Kontor)"
               style={{
                 fontSize: 12,
                 fontWeight: !isCafeScope ? 600 : 500,

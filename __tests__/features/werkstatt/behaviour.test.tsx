@@ -269,7 +269,7 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     ];
     wrap(<Werkstatt planet={barPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} crew={crew} backLabel="Betrieb & Kunden" fromSpace={false} onExit={jest.fn()} />);
 
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Betrieb & Kunden · Panorama-Bar & Crew-Salon');
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Betrieb & Kunden');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-bar');
 
     // Klick auf die Theke öffnet das Crew-Logbuch & Funk
@@ -281,8 +281,8 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(Number(c1Avatar.getAttribute('data-origin-seed'))).toBeGreaterThanOrEqual(1001);
     expect(Number(c1Avatar.getAttribute('data-origin-seed'))).toBeLessThanOrEqual(1111);
     expect(c1Avatar.getAttribute('data-origin-seed')).not.toBe(c2Avatar.getAttribute('data-origin-seed'));
-    expect(screen.getByTestId('wk-mora-ship')).toHaveTextContent('MÔRA · Das Schiff');
-    expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Panorama-Bar & Crew-Salon · Schicht-Übergabe');
+    expect(screen.getByTestId('wk-mora-ship')).toHaveTextContent('MÔRA');
+    expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Betrieb & Kunden · Schicht-Übergabe');
     expect(screen.getByTestId('wk-bar-signals')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('wk-crew-c1'));
     expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Filter: Marius');
@@ -295,7 +295,7 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
       title: 'Kommando & Strategie',
     };
     const { unmount } = wrap(<Werkstatt planet={bridgePlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} backLabel="Kommando & Strategie" fromSpace={false} onExit={jest.fn()} />);
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Kommando & Strategie · Kommandobrücke & Strategie-Kanzel');
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Kommando & Strategie');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('bridge');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
     unmount();
@@ -306,7 +306,7 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
       title: 'Finanzen & Recht',
     };
     wrap(<Werkstatt planet={kontorPlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} backLabel="Finanzen & Recht" fromSpace={false} onExit={jest.fn()} />);
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Finanzen & Recht · Treasury-Kontor & Vertrags-Archiv');
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Finanzen & Recht');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('kontor');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
     expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Präzisionswaage & XRPL-Wächter');
@@ -367,12 +367,12 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
       />
     );
     expect(screen.getByTestId('wk-corridor')).toBeInTheDocument();
-    expect(screen.getByTestId('wk-mora-bubble')).toHaveTextContent('Gastraum-Impuls');
+    expect(screen.queryByTestId('wk-mora-bubble')).toBeNull();
     fireEvent.click(screen.getByTestId('wk-corridor-d-theke'));
     expect(onSwitch).toHaveBeenCalledWith('d-theke');
 
     // Öffne Service-Station -> Tisch 1 im Grundriss abkassieren (+14,60 € idempotent in Tageskasse)
-    fireEvent.click(screen.getByTestId('wk-mora-action-btn'));
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
     expect(screen.getByTestId('wk-floorplan')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('wk-floor-pay-t1'));
     expect(screen.getByTestId('wk-floor-pay-t1')).toHaveTextContent('Verbucht ✓');
@@ -452,8 +452,9 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     const { unmount: u5 } = wrap(
       <Werkstatt planet={{ ...planet, id: 'd-service', title: 'Service & Gastraum' }} work={work} planets={skyPlanets} companyId="demo-morgenrot" today={TODAY} fromSpace={false} onExit={jest.fn()} />
     );
-    expect(screen.getByTestId('wk-mora-bubble')).toHaveTextContent('Für morgen könnte Hafermilch knapp werden');
+    expect(screen.queryByTestId('wk-mora-bubble')).toBeNull();
     expect(screen.getByTestId('wk-mora-reorder-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('wk-mora-reorder-btn')).toHaveAttribute('aria-label', 'Hafermilch-Nachbestellung vorbereiten');
     // Außerdem zeigt das Wandregal die Abteilungs-Vorlagen (Priorität 4)
     fireEvent.click(screen.getByTestId('wk-hit-shelf'));
     expect(screen.getByTestId('wk-shelf-templates')).toBeInTheDocument();

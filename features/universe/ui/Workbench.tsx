@@ -87,7 +87,7 @@ export type DeptMember = {
 };
 
 /**
- * Die Abteilung als Arbeitsplatz (Abteilungsansicht an Bord des Raumschiffs):
+ * Die Abteilung als Arbeitsplatz:
  * - der Planet in der Mitte, seine echten Ordner als Monde,
  * - Captain (Abteilungsleitung) & Crew (Mitarbeiter) sichtbar an Bord,
  * - Räume der Abteilung (Werkstatt, Studio, Bar) direkt betretbar.
@@ -191,7 +191,7 @@ export function StationPlanet({
       </div>
       <div className="ws-deck" data-testid="dept-deck">
         <div className="ws-deck__head">
-          <span className="ws-deck__eyebrow">Abteilungs-Deck · MÔRA Raumschiff</span>
+          <span className="ws-deck__eyebrow">Abteilung</span>
           <div className="ws-deck__title ws-title" style={onOpenDept ? { cursor: 'pointer' } : undefined} onClick={onOpenDept}>
             <strong>{title}</strong>
             {space ? <small>{clean(space)}</small> : null}

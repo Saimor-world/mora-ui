@@ -68,6 +68,26 @@ const CLOSE = {
   planung: { img: '/werkstatt/room-mappe.webp', sky: { x: 0, y: 0, w: 1920, h: 120 }, mora: { x: 360, y: 960 } },
   station: { img: '/werkstatt/room-schreibtisch.webp', sky: { x: 0, y: 0, w: 1920, h: 150 }, mora: { x: 420, y: 930 } },
 };
+/** Fenster-Ausschnitt je Raumbild (Bühne 1920×1080). Werkstatt bleibt bei den v15-Maßen. */
+export const ROOM_SKY: Record<string, Rect> = {
+  werkstatt: { x: 1000, y: 84, w: 826, h: 572 },
+  studio: { x: 1034, y: 116, w: 750, h: 509 },
+  bar: { x: 1034, y: 114, w: 753, h: 511 },
+  kontor: { x: 1034, y: 112, w: 751, h: 513 },
+  bridge: { x: 1034, y: 112, w: 751, h: 513 },
+};
+export function roomSky(archetype?: string | null): Rect {
+  return ROOM_SKY[archetype || 'werkstatt'] ?? ROOM_SKY.werkstatt;
+}
+/** Himmel in der Nahsicht: v15-Maße für die Werkstatt-Fotos, eigene Streifen für Atelier/Bar/Kontor. */
+export function closeSky(kind: keyof typeof CLOSE, archetype?: string | null): Rect {
+  if (kind === 'station' || kind === 'task') {
+    if (archetype === 'studio') return { x: 183, y: 0, w: 1572, h: 71 };
+    if (archetype === 'bar') return { x: 103, y: 0, w: 1705, h: 71 };
+    if (archetype === 'kontor' || archetype === 'bridge') return { x: 112, y: 0, w: 1736, h: 66 };
+  }
+  return CLOSE[kind].sky;
+}
 const focusOf = (p: Place): Rect => ((p.kind === 'task' || p.kind === 'station') ? ROOM.desk : p.kind === 'doc' ? ROOM.lecternBook : p.kind === 'planung' ? ROOM.folder : ROOM.board);
 const EASE = 'cubic-bezier(.45,0,.2,1)';
 /** Kamera in Ruhelage: Inline-Transform setzen (null = unverändert) und alle Fahrten auf dem Element beenden. */
@@ -549,7 +569,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             : '/werkstatt/room-werkstatt.webp';
     return world === 'morgennebel' ? base.replace('.webp', '-morgen.webp') : base;
   }, [roomCtx.archetype, world]);
-  const activeSkyRect = ROOM.window;
+  const activeSkyRect = roomSky(roomCtx.archetype);
   const activeMoraSeat = ROOM.moraSeat;
 
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
@@ -582,9 +602,6 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 ))}
               </div>
             ) : null}
-            <span className="wk-workflow-pill wk-workflow-pill--wood">
-              <b>{roomCtx.roomName}:</b> Wandtafel · Tisch links ({stationMeta.badgeText}) · Beistelltisch (Mappe) · Pult rechts (Buch)
-            </span>
           </div>
 
           {planets.length > 1 && onSwitchPlanet ? (
@@ -595,7 +612,6 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               aria-label="Nachbarräume im Korridor"
               data-testid="wk-corridor"
             >
-              <span className="wk-corridor__label">Räume:</span>
               {planets.map((p) => {
                 const isCurrent = p.id === planet.id;
                 return (
@@ -714,7 +730,6 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
           <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />
           {lecternDoc ? <div className="wk-plate" aria-hidden style={{ left: ROOM.plate.x, top: ROOM.plate.y, translate: '-50% 0' }}>{clean(lecternDoc.name)}</div> : null}
           <button type="button" className="wk-hit" style={box(ROOM.table)} onClick={() => open({ kind: 'planung' })} aria-label="Mappe Planung" data-testid="wk-hit-mappe" />
-          <div className="wk-plate wk-plate--sub" aria-hidden style={{ left: ROOM.table.x + ROOM.table.w / 2, top: ROOM.table.y + 62, translate: '-50% 0' }}>Wochenmappe</div>
           <button type="button" className="wk-hit" style={box(ROOM.shelf)} onClick={() => setDocSlip(true)} aria-label="Regal mit Dokumenten" data-testid="wk-hit-shelf" />
 
           {docSlip ? (
@@ -750,8 +765,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                   ))}
               </ul>
               <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed rgba(90, 62, 30, 0.25)' }} data-testid="wk-shelf-templates">
-                <small style={{ display: 'block', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7b5514', marginBottom: 6 }}>
-                  Vorlagen aus dem Regal anlegen & aufs Stehpult legen
+                <small style={{ display: 'block', fontWeight: 600, color: '#7b5514', marginBottom: 6 }}>
+                  Vorlagen
                 </small>
                 <ul className="wk-slip__list">
                   {shelfTemplates.map((tpl) => (
@@ -784,59 +799,41 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             </PaperSlip>
           ) : null}
           {!close ? (
-            <div
-              className="wk-mora-companion"
-              style={{ left: activeMoraSeat.x - 190, top: activeMoraSeat.y - 168 }}
-              data-testid="wk-mora-bubble"
+            <button
+              type="button"
+              className="wk-hit"
+              style={{ left: ROOM.window.x + ROOM.window.w - 74, top: ROOM.window.y + 16, width: 62, height: 62 }}
+              onClick={toggleRoomLamp}
+              aria-label="Raumlicht umschalten"
+              data-testid="wk-lamp-toggle"
+            />
+          ) : null}
+          {!close && moraImpulse.canReorderOatMilk ? (
+            <button
+              type="button"
+              className="wk-tag"
+              style={{ left: ROOM.table.x + 24, top: ROOM.table.y + 70 }}
+              data-testid="wk-mora-reorder-btn"
+              aria-label="Hafermilch-Nachbestellung vorbereiten"
+              onClick={() => {
+                const res = recordOp({
+                  idempotencyKey: 'mora-oatmilk-reorder-prep',
+                  actor: 'MÔRA',
+                  departmentId: planet.id,
+                  departmentTitle: title,
+                  action: 'Hafermilch-Nachbestellung (36 L Barista) für morgen vorbereitet',
+                  result: 'Nachbestellung im Kontor-Lieferantenbogen hinterlegt & dokumentiert',
+                  safetyLevel: 'buchung',
+                  mutate: (d) => {
+                    d.kanzleiWeber.oatMilkReorderPrepared = true;
+                  },
+                });
+                if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
+                void addTask('Hafermilch-Nachbestellung (36 L Hofmolkerei) freigeben', newTaskFolder, today, planet.id, 'Clara D.');
+              }}
             >
-              <div className="wk-mora-companion__head">
-                <span>{moraImpulse.title}</span>
-                <button
-                  type="button"
-                  className="wk-mora-companion__lamp"
-                  onClick={toggleRoomLamp}
-                  aria-label="Raumlicht umschalten"
-                >
-                  {world === 'morgennebel' ? '☀ Tag' : '🕯 Nacht'}
-                </button>
-              </div>
-              <p>{moraImpulse.text}</p>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {moraImpulse.canReorderOatMilk ? (
-                  <button
-                    type="button"
-                    className="wk-mora-companion__cta"
-                    data-testid="wk-mora-reorder-btn"
-                    onClick={() => {
-                      const res = recordOp({
-                        idempotencyKey: 'mora-oatmilk-reorder-prep',
-                        actor: 'MÔRA & Marius',
-                        departmentId: planet.id,
-                        departmentTitle: title,
-                        action: 'Hafermilch-Nachbestellung (36 L Barista) für morgen vorbereitet',
-                        result: 'Nachbestellung im Kontor-Lieferantenbogen hinterlegt & dokumentiert',
-                        safetyLevel: 'buchung',
-                        mutate: (d) => {
-                          d.kanzleiWeber.oatMilkReorderPrepared = true;
-                        },
-                      });
-                      if (!res.alreadyRecorded) appendAuditEntryToLectern(res.entry);
-                      void addTask('Hafermilch-Nachbestellung (36 L Hofmolkerei) freigeben', newTaskFolder, today, planet.id, 'Clara D.');
-                    }}
-                  >
-                    Nachbestellung vorbereiten →
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="wk-mora-companion__cta"
-                  data-testid="wk-mora-action-btn"
-                  onClick={() => open({ kind: 'station' })}
-                >
-                  {moraImpulse.cta}
-                </button>
-              </div>
-            </div>
+              Hafermilch
+            </button>
           ) : null}
           {!close ? <MoraSeat at={activeMoraSeat} stage={room} name="wk-room" /> : null}
         </StageLayer>
@@ -856,7 +853,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             img={closeImg(close.kind, world, roomCtx.archetype)}
             ext={closeImg(close.kind, world, roomCtx.archetype).replace('.webp', '')}
             label={nameOf(close)}
-            under={<WindowUniverse rect={CLOSE[close.kind].sky} world={world} planets={planets} focusId={planet.id} />}
+            under={<WindowUniverse rect={closeSky(close.kind, roomCtx.archetype)} world={world} planets={planets} focusId={planet.id} />}
           >
             <div className="wk-close-bar" data-testid="wk-close-bar">
               <button
