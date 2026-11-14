@@ -13,6 +13,9 @@ const TABS = [{ y: 328, h: 150 }, { y: 590, h: 147 }, { y: 750, h: 150 }];
 
 export interface WeekNode { id: string; name: string; monday: string }
 
+/** Nur die klar getrennte Demo (z. B. Café Morgenrot, demo-morgenrot) darf Vorlagen-Inhalte schreiben. */
+export const isDemoScope = (companyId: string | null | undefined) => Boolean(companyId && companyId.startsWith('demo-'));
+
 /** Wochenpläne erkennen: Notizen „Wochenplan KW 46“ im Ordner Planung; Montag aus metadata.week_start oder Name. */
 export function weekNodesFrom(docs: { id: string; name: string; meta: string }[], year: number): WeekNode[] {
   return docs.map((d) => {
@@ -107,8 +110,9 @@ export function Mappe({
     if (last) base.setDate(base.getDate() + 7);
     const monday = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
     const kw = isoWeek(monday);
-    const fallbackLabels = defaultRows && defaultRows.length > 0 ? defaultRows : ['Aufgaben', 'Termine', 'Notizen'];
-    const rows = sheet?.rows.map((r) => ({ label: r.label, cells: DAYS.map(() => '') })) ?? fallbackLabels.map((label) => ({ label, cells: DAYS.map(() => '') }));
+    // Vorlagen-Zeilen nur in der getrennten Demo (demo-…); echte Firmen bekommen ein leeres Blatt mit einer leeren Zeile.
+    const labels = isDemoScope(companyId) && defaultRows && defaultRows.length > 0 ? defaultRows : [''];
+    const rows = sheet?.rows.map((r) => ({ label: r.label, cells: DAYS.map(() => '') })) ?? labels.map((label) => ({ label, cells: DAYS.map(() => '') }));
     const content = serializeWeek({ title: `Wochenplan KW ${kw}`, rows, open: [] });
     const created = await createNode({ folder_id: folderId ?? undefined, company_id: companyId ?? undefined, title: `Wochenplan KW ${kw}`, type: 'note', content, metadata: { kind: 'wochenplan', week_start: monday } }).catch(() => null);
     const id = (created as { id?: string } | null)?.id ?? (process.env.NODE_ENV !== 'test' ? `wk-local-kw${kw}-${Date.now().toString(36)}` : null);

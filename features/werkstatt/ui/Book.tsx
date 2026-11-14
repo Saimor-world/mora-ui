@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchNodeDetails } from '@/lib/api/orgClient';
+import { fetchCompanyFileBlob, getFilePreview } from '@/lib/api/filesClient';
 import { getShipNodeById } from '@/lib/universe/shipDepartments';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { JADE_MORA_SRC } from '@/components/world/JadeMora';
@@ -26,19 +27,36 @@ const MIN_H = 2 * 34.5 + 1;
 
 type Turn = { dir: 1 | -1; from: number; to: number } | null;
 
-export function Book({ id, fallbackTitle, folderId, stage, back }: {
+/** Eine Leseanfrage darf das Buch nie offen hängen lassen: nach `ms` gilt sie als leer. */
+export const BOOK_READ_TIMEOUT_MS = 8000;
+function settleWithin<T>(p: Promise<T>, ms = BOOK_READ_TIMEOUT_MS): Promise<T | null> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(null); });
+  });
+}
+type BookSource = { title?: string; name?: string; content?: string; description?: string; body?: string[] };
+/** Hochgeladene Datei (/v3/files): kein Knoten. Text aus der Vorschau, sonst nur der Titel – nur lesen. */
+async function readFileSource(id: string): Promise<BookSource | null> {
+  const prev = await settleWithin(getFilePreview(id));
+  return prev && prev.previewAvailable && typeof prev.content === 'string' ? { content: prev.content } : null;
+}
+
+export function Book({ id, fallbackTitle, folderId, stage, back, file = false }: {
   id: string; fallbackTitle: string; folderId: string | null; stage: Stage; back: { label: string; run: () => void } | null;
+  /** Hochgeladene Datei aus /v3/files: wird gelesen, nie als Knoten gespeichert. */
+  file?: boolean;
 }) {
   const qc = useQueryClient();
-  const localSeed = useMemo(() => getShipNodeById(id), [id]);
+  const localSeed = useMemo(() => (file ? null : getShipNodeById(id)), [id, file]);
   const q = useQuery({
-    queryKey: ['node', id],
-    queryFn: async () => (await fetchNodeDetails(id).catch(() => null)) ?? localSeed ?? null,
+    queryKey: [file ? 'file-preview' : 'node', id],
+    queryFn: async () => (file ? await readFileSource(id) : (await settleWithin(fetchNodeDetails(id))) ?? localSeed ?? null),
     initialData: localSeed ?? undefined,
     staleTime: 30_000,
   });
   const upd = useUpdateNode(folderId ?? '');
-  const node = q.data as { title?: string; name?: string; content?: string; description?: string; body?: string[] } | null | undefined;
+  const node = q.data as BookSource | null | undefined;
   const title = node?.title || node?.name || fallbackTitle;
   const [blocks, setBlocks] = useState<Block[] | null>(null);
   useEffect(() => {
@@ -116,6 +134,7 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
   const lastSaved = useRef<string | null>(null);
   const save = useCallback((next: Block[]) => {
     dirty.current = false;
+    if (file) return;
     const content = serializeBlocks(next);
     if (content === (lastSaved.current ?? serializeBlocks(parseBlocks(node?.content ?? '')))) return;
     lastSaved.current = content;
@@ -123,7 +142,7 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
     upd.mutate({ id, payload: { content } }, {
       onSuccess: () => qc.setQueryData(['node', id], (old: object | undefined) => ({ ...(old ?? {}), content })),
     });
-  }, [id, upd, qc, node]);
+  }, [id, upd, qc, node, file]);
   const saveTimer = useRef<number | null>(null);
   const scheduleSave = useCallback((next: Block[]) => {
     dirty.current = true;
@@ -309,7 +328,7 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
                     contentEditable={live && editing ? true : undefined} suppressContentEditableWarning spellCheck={live && editing}
                     onInput={live && editing ? (e) => onInput(p, e.currentTarget) : undefined}
                     onKeyDown={live && editing ? (e) => onKey(p, e) : undefined}
-                    onDoubleClick={live && !editing ? () => setEditing(true) : undefined}
+                    onDoubleClick={live && !editing && !file ? () => setEditing(true) : undefined}
                     dangerouslySetInnerHTML={htmlOf.get(p.key)} />
                 );
               })}
@@ -395,10 +414,21 @@ export function Book({ id, fallbackTitle, folderId, stage, back }: {
       <div className="wk-page__measure" ref={measureRef} aria-hidden style={{ width: TEXT_W }} />
       <WorkDock back={back} actions={[
         { id: 'inhalt', label: 'Inhalt', run: () => setToc((v) => !v), pressed: toc, disabled: headings.length < 2 },
-        editing ? { id: 'fertig', label: 'Fertig', run: finish, pressed: true } : { id: 'bearbeiten', label: 'Bearbeiten', run: () => setEditing(true) },
+        file
+          ? { id: 'datei-oeffnen', label: 'Öffnen', run: () => void openFile(id) }
+          : editing ? { id: 'fertig', label: 'Fertig', run: finish, pressed: true } : { id: 'bearbeiten', label: 'Bearbeiten', run: () => setEditing(true) },
         { id: 'zurueckblaettern', label: '‹', run: () => go(spread - 1), disabled: spread === 0 || editing },
         { id: 'weiterblaettern', label: '›', run: () => go(spread + 1), disabled: spread >= spreads - 1 || editing },
       ]} />
     </div>
   );
+}
+
+/** Die Datei selbst im Browser öffnen (mit derselben Sitzung wie alle CORE-Lesezugriffe). */
+async function openFile(id: string) {
+  const blob = await settleWithin(fetchCompanyFileBlob(id), 20_000);
+  if (!blob || typeof URL.createObjectURL !== 'function') return;
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank', 'noopener');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

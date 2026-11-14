@@ -1,14 +1,16 @@
 'use client';
 import React, { useMemo } from 'react';
 import { useWorld } from '@/lib/lea/useWorld';
+import { unassignedHomeId } from '@/lib/universe/deptWork';
 import { LiveCockpit, type LiveCockpitProps } from './LiveCockpit';
 
 /** Home previews exactly the places that the shared Universe can open. */
-export function ConnectedCockpit(props: Omit<LiveCockpitProps, 'departments' | 'finderPlanets' | 'finderLoading' | 'finderFailed'>) {
+export function ConnectedCockpit(props: Omit<LiveCockpitProps, 'finderPlanets' | 'finderLoading' | 'finderFailed' | 'taskHomeId'>) {
   const world = useWorld();
   const planets = useMemo(() => {
     const visible = new Set(world.planets.map((p) => p.id));
     return world.finder.filter((p) => visible.has(p.id));
   }, [world.planets, world.finder]);
-  return <LiveCockpit {...props} finderPlanets={planets} finderLoading={world.loading} finderFailed={world.failed} />;
+  const taskHomeId = useMemo(() => unassignedHomeId(world.planets), [world.planets]);
+  return <LiveCockpit {...props} finderPlanets={planets} finderLoading={world.loading} finderFailed={world.failed} taskHomeId={taskHomeId} />;
 }

@@ -1,5 +1,6 @@
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import type { WorldTask } from '@/lib/lea/world';
+import { COLLECT_PLANET, TASKS_PLANET } from '@/lib/lea/finder';
 
 /** Eine Aufgabe, wie die Abteilung sie zeigt – nur Felder, die CORE (/v3/tasks) wirklich liefert. */
 export interface WorkTask {
@@ -35,6 +36,15 @@ export function toWorkTask(t: WorldTask, today: string): WorkTask {
 /** Überfällig zuerst, dann nach Fälligkeit, ohne Datum zuletzt. */
 export function byUrgency(a: WorkTask, b: WorkTask): number {
   return Number(b.overdue) - Number(a.overdue) || (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.title.localeCompare(b.title, 'de');
+}
+
+/**
+ * Der eine feste Ort für Aufgaben ohne Abteilung und ohne bekannten Ordner: die erste echte Abteilung.
+ * Home, Heute und Universe fragen alle hier – so springt eine solche Aufgabe nie zwischen Orten.
+ */
+export function unassignedHomeId(planets: ReadonlyArray<{ id: string; name?: string; title?: string }>): string | null {
+  const home = planets.find((p) => p && p.id && p.id !== COLLECT_PLANET && p.id !== TASKS_PLANET && !/^ohne[\s-]*abteilung$/i.test(String(p.name ?? p.title ?? '').trim()));
+  return home?.id ?? null;
 }
 
 export interface DeptWorkOptions {

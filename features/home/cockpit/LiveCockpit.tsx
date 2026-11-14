@@ -22,6 +22,7 @@ import { coreTreeToPlanets, deriveLiveAttention, finderToCockpitPlanets } from '
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
+import { unassignedHomeId } from '@/lib/universe/deptWork';
 import { focusCards, type FocusCard } from '@/lib/mora/bridgeData';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -57,6 +58,8 @@ export interface LiveCockpitProps {
   snapshot?: TodaySnapshot | null;
   viewerName?: string | null;
   isDemo?: boolean;
+  /** Fester Ort für Aufgaben ohne Abteilung und Ordner – derselbe wie im Universe (unassignedHomeId). */
+  taskHomeId?: string | null;
 }
 
 export function LiveCockpit({
@@ -70,6 +73,7 @@ export function LiveCockpit({
   snapshot: propSnapshot,
   viewerName: propViewerName,
   isDemo = false,
+  taskHomeId,
 }: LiveCockpitProps) {
   const user = useSessionStore((s) => s.user);
   const demoId = useDemoStore((s) => s.demoCompanyId);
@@ -285,8 +289,10 @@ export function LiveCockpit({
     if (!t) return null;
     if (t.department_id && planets.some((p) => p.id === t.department_id)) return t.department_id;
     const byFolder = t.folder_id ? planets.find((p) => p.moons.some((m) => m.id === t.folder_id))?.id : null;
-    return byFolder || null;
-  }, [planets]);
+    if (byFolder) return byFolder;
+    // Ohne Abteilung und Ordner: immer derselbe feste Ort wie im Universe, nie ein Umweg über Heute.
+    return taskHomeId && planets.some((p) => p.id === taskHomeId) ? taskHomeId : unassignedHomeId(planets);
+  }, [planets, taskHomeId]);
 
   const openFocus = (target: FocusCard['target']) => {
     if (target === 'post') navigate('post');

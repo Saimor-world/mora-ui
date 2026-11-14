@@ -235,7 +235,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const lecternQuery = useQuery({
     queryKey: ['node', lecternDoc?.id ?? 'none'],
     queryFn: async () => (lecternDoc ? (await fetchNodeDetails(lecternDoc.id).catch(() => null)) ?? localLecternNode : null),
-    enabled: Boolean(lecternDoc && activeRoom === 'studio'),
+    enabled: Boolean(lecternDoc && lecternDoc.meta !== 'file' && activeRoom === 'studio'),
     initialData: localLecternNode ?? undefined,
     staleTime: 30_000,
   });
@@ -906,7 +906,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             ) : null}
             {close.kind === 'doc' ? (
               <Book key={close.id} id={close.id} fallbackTitle={clean(allDocs.find((d) => d.id === close.id)?.name ?? '')}
-                folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo} />
+                folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo}
+                file={allDocs.find((d) => d.id === close.id)?.meta === 'file'} />
             ) : null}
             {close.kind === 'planung' ? (
               <Mappe

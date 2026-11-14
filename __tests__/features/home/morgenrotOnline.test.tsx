@@ -196,4 +196,34 @@ describe('Café Morgenrot from CORE', () => {
     expect(screen.getByText(/bei einer anderen Firma angemeldet/)).toBeInTheDocument();
     expect(mockCoreGet).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps the departments it loaded from CORE, with their subfolders and folder-less spaces, even before the shared world has them', async () => {
+    mockUseWorld.mockReturnValue({ loading: false, failed: false, planets: [], finder: [] });
+    const rich = { departments: [{ id: 'd-k', name: 'Küche', spaces: [{ id: 'sp-k', name: 'Küche' }, { id: 'sp-lager', name: 'Lager' }] }] };
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? rich
+      : path === '/v3/tree/sp-k/children?type=space' ? [{ id: 'f-rez', name: 'Rezepte', nodes: [{ id: 'f-winter', name: 'Winter', type: 'folder' }] }]
+      : path === '/v3/tree/sp-lager/children?type=space' ? []
+      : new CoreError('unexpected', 404)));
+    render(<MorgenrotHome navigate={navigate} />);
+    expect(await screen.findByTestId('open-d-k')).toBeInTheDocument();
+  });
+
+  it('a task without department or folder opens in the one fixed department, never bouncing via Today', async () => {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 820px)', media: query, addEventListener: jest.fn(), removeEventListener: jest.fn(),
+    }));
+    serve((path) => (path === '/v3/auth/session' ? session
+      : path === `/v3/today?company_id=${MORGENROT.companyId}` ? snapshot()
+      : path === `/v3/tree?company_id=${MORGENROT.companyId}` ? tree : new CoreError('unexpected', 404)));
+    render(<MorgenrotHome navigate={navigate} />);
+    const cards = await screen.findAllByTestId('home-focus-card');
+    const taskCard = cards.find((c) => /Reservierung/.test(c.textContent ?? ''));
+    expect(taskCard).toBeTruthy();
+    fireEvent.click(taskCard!);
+    expect(navigate).not.toHaveBeenCalledWith('today');
+    expect(useUniverseFocus.getState().target).toMatchObject({ planetId: 'd-k', taskId: 't1' });
+    expect(navigate).toHaveBeenCalledWith('universe');
+  });
 });

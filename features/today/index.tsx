@@ -23,6 +23,7 @@ import { taskLineOf, formatTaskLine } from '@/lib/lea/live';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { nextOpenToday } from '@/lib/lea/day';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
+import { unassignedHomeId } from '@/lib/universe/deptWork';
 import { localISO } from '@/lib/lea/world';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
@@ -81,7 +82,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
     }
     const byDept = task.department_id && depts.some((p) => p.id === task.department_id) ? task.department_id : null;
     const byFolder = task.folder_id ? depts.find((p) => p.moons.some((m) => m.id === task.folder_id))?.id : null;
-    const planetId = byDept || byFolder || depts[0]?.id || null;
+    const planetId = byDept || byFolder || unassignedHomeId(world.planets) || null;
     if (!planetId) return;
     useUniverseFocus.getState().show({ planetId, taskId: task.id, from: 'home' });
     navigate('universe');
