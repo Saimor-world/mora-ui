@@ -306,7 +306,7 @@ export function DeskWorkstation({
   const [kontorBudgets, setKontorBudgets] = useState(() =>
     readLocal(`mora.station.kontor.budgets.${planetId}`, [
       { id: 'kb-origin', label: 'Phase 01 Produktion · ORIGIN // 001 Master', amount: 18500, owner: 'Sorel M.', approved: true },
-      { id: 'kb-core', label: 'Mora Core v3 & Raumschiff-Infrastruktur', amount: 12400, owner: 'Kaito R.', approved: true },
+      { id: 'kb-core', label: 'Mora Core v3 & Infrastruktur', amount: 12400, owner: 'Kaito R.', approved: true },
       { id: 'kb-pilot', label: 'Pilotkunden-Onboarding & Partner-Rahmen', amount: 6800, owner: 'Tarek B.', approved: false },
       { id: 'kb-reserve', label: 'Strategische Liquiditätsreserve (Q4)', amount: 45000, owner: 'Clara D.', approved: true },
     ])
@@ -419,23 +419,25 @@ export function DeskWorkstation({
       {/* PRIORITÄT 0, 1 & 3: Datenherkunft, Sicherheitsstufe & Durchgehender Kanzlei-Weber-Vorgang */}
       <div className="wk-ledger-bar" data-testid="wk-ledger-bar">
         <div className="wk-ledger-bar__meta">
-          <span className="wk-truth-badge" data-testid="wk-scope-truth-badge">
-            {scopeKey === 'demo-morgenrot'
-              ? 'Scope: Café Morgenrot (Isolierte Demo-Sandbox · Idempotente Buchung)'
-              : 'Scope: SAIMÔR HQ (Isoliertes Schiff · CORE-Synchron)'}
+          <span
+            className="wk-truth-badge"
+            data-testid="wk-scope-truth-badge"
+            aria-label={scopeKey === 'demo-morgenrot' ? 'Café Morgenrot, Demo' : 'SAIMÔR'}
+          >
+            {scopeKey === 'demo-morgenrot' ? 'Café Morgenrot' : 'SAIMÔR'}
           </span>
           {auditFeedback ? (
             <span className="wk-audit-feedback" data-testid="wk-audit-feedback">{auditFeedback}</span>
           ) : (
-            <span className="wk-audit-count" data-testid="wk-audit-count">
-              Dokumentenspur: {opLedger.auditTrail.length} verifizierte Einträge
+            <span className="wk-audit-count" data-testid="wk-audit-count" aria-label={`${opLedger.auditTrail.length} Einträge`}>
+              {opLedger.auditTrail.length}
             </span>
           )}
         </div>
 
         {scopeKey === 'demo-morgenrot' ? (
           <div className="wk-weber-flow" data-testid="wk-weber-e2e-bar">
-            <span className="wk-weber-flow__label">Vorgang Kanzlei Weber (12 Pers. · 142,00 €):</span>
+            <span className="wk-weber-flow__label">Kanzlei Weber</span>
             <span className={`wk-weber-step${kw.step1Confirmed ? ' is-done' : ''}`} data-testid="wk-weber-state-1">
               1. Gastraum {kw.step1Confirmed ? '✓' : '○'}
             </span>
@@ -1275,7 +1277,7 @@ export function DeskWorkstation({
             <header className="wk-ws-head">
               <div>
                 <span className="wk-ws-eyebrow">Empfang, Crew & Schicht-Logbuch</span>
-                <h2>{planetTitle} · Panorama-Bar & Crew-Salon · Schicht-Übergabe</h2>
+                <h2>{planetTitle} · Schicht-Übergabe</h2>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 {selectedCrewName ? <span className="wk-ws-chip is-done">Filter: {selectedCrewName}</span> : null}
@@ -1311,8 +1313,8 @@ export function DeskWorkstation({
                 onClick={() => useOsShellStore.getState().setMoraOpen(true)}
               >
                 <div>
-                  <b>MÔRA · Das Schiff</b>
-                  <small>Brücke & Funk rufen →</small>
+                  <b>MÔRA</b>
+                  <small>fragen</small>
                 </div>
               </button>
             </div>
@@ -1405,7 +1407,7 @@ export function DeskWorkstation({
           <section className="wk-ws-sheet">
             <header className="wk-ws-head">
               <div>
-                <span className="wk-ws-eyebrow">Kommandobrücke · Führung & Strategie</span>
+                <span className="wk-ws-eyebrow">Kommando & Strategie</span>
                 <h2>Strategische Direktiven & Freigaben</h2>
               </div>
               <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
@@ -1461,12 +1463,12 @@ export function DeskWorkstation({
 
           <section className="wk-ws-side">
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Captains-Runde · Schiffs-Status</span>
+              <span className="wk-ws-eyebrow">Lage</span>
               <h3>Abteilungen & Bereitschaft</h3>
               <div className="wk-ws-list">
                 <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Design & Studio (Atelier)</b><small>Captain Sorel M. · ORIGIN // 001 Seed 1001</small></div><span className="wk-ws-chip is-done">Kanonisch ✓</span></div>
                 <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Produkt & Technik (Werkstatt)</b><small>Captain Kaito R. · Saimôr OS & Core v3</small></div><span className="wk-ws-chip is-done">Bereit ✓</span></div>
-                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Betrieb & Kunden (Panorama-Bar)</b><small>Captain Tarek B. · Pilot-Onboarding</small></div><span className="wk-ws-chip is-done">Aktiv ✓</span></div>
+                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Betrieb & Kunden</b><small>Captain Tarek B. · Pilot-Onboarding</small></div><span className="wk-ws-chip is-done">Aktiv ✓</span></div>
                 <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Finanzen & Recht (Kontor)</b><small>Captain Clara D. · Treasury & XRPL Testnet</small></div><span className="wk-ws-chip is-done">Geschützt ✓</span></div>
               </div>
             </div>
@@ -1576,7 +1578,7 @@ export function DeskWorkstation({
           <section className="wk-ws-sheet">
             <header className="wk-ws-head">
               <div>
-                <span className="wk-ws-eyebrow">Maschinenraum & Architektur · Werkbank</span>
+                <span className="wk-ws-eyebrow">Produkt & Technik</span>
                 <h2>System-Prüfstand & Mora Core v3</h2>
               </div>
               <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>

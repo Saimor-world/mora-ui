@@ -17,7 +17,6 @@
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 .wk-root[data-world='morgennebel'] { --paper: #f4ede0; }
-.wk-root[data-landed='1'] { background: #070d11; }
 .wk-root:not([data-landed='1']) .wk-stage__ext--bottom { opacity: 0; }
 .wk-root :where(button, input, textarea) { font: inherit; color: inherit; }
 .wk-room, .wk-close { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
@@ -390,7 +389,6 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   background: linear-gradient(170deg, rgba(13, 21, 27, .88) 0%, rgba(8, 13, 18, .93) 100%);
   border: 1px solid rgba(190, 224, 216, .2);
   box-shadow: 0 24px 52px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .08);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   color: #ecf4f0; overflow: hidden;
 }
 .wk-bar-panel {
@@ -435,7 +433,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 
 .wk-studio-eyebrow {
   display: block; font: 600 11.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
-  text-transform: uppercase; letter-spacing: .1em; color: var(--dept-accent); margin-bottom: 4px;
+  letter-spacing: .02em; color: var(--dept-accent); margin-bottom: 4px;
 }
 .wk-studio-panel__head h3, .wk-bar-panel__head h3, .wk-studio-focus__title {
   margin: 0; font: 600 20px/1.2 'Werk Serif', Georgia, serif; color: #f4f8f6;
@@ -585,7 +583,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   border-radius: 8px; background: rgba(255, 255, 255, .05); font-size: 14px; color: rgba(224, 236, 232, .82);
 }
 .wk-bar-signal-group { display: flex; flex-direction: column; gap: 7px; }
-.wk-bar-signal-group h4 { margin: 4px 0 2px; font: 600 13.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(218, 178, 112, .85); text-transform: uppercase; letter-spacing: .05em; }
+.wk-bar-signal-group h4 { margin: 4px 0 2px; font: 600 13.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(218, 178, 112, .85);  }
 .wk-bar-signal-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%;
   padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(218, 178, 112, .2);
@@ -643,7 +641,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 .wk-ws-sheet {
   display: flex; flex-direction: column; gap: 12px; padding: 26px 28px; border-radius: 10px;
   background-color: var(--paper); background-image: var(--grain); color: var(--ink);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .75);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 2px 6px rgba(30, 20, 10, .22);
   border: 1px solid rgba(90, 62, 30, .28); overflow-y: auto;
 }
 .wk-ws-side {
@@ -652,7 +650,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 .wk-ws-card {
   display: flex; flex-direction: column; gap: 10px; padding: 20px 22px; border-radius: 10px;
   background-color: #f4ead6; background-image: var(--grain); color: var(--ink);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, .54), inset 0 1px 0 rgba(255, 255, 255, .68);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 1px 3px rgba(30, 20, 10, .2);
   border: 1px solid rgba(90, 62, 30, .26);
 }
 .wk-ws-head {
@@ -660,8 +658,8 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   padding-bottom: 12px; border-bottom: 1px solid var(--pencil);
 }
 .wk-ws-eyebrow {
-  display: block; font: 700 11.5px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
-  text-transform: uppercase; letter-spacing: .09em; color: #7a5420; margin-bottom: 3px;
+  display: block; font: 600 13px/1.2 'Werk Serif', Georgia, serif;
+  letter-spacing: 0; color: #7a5420; margin-bottom: 3px;
 }
 .wk-ws-head h2 { margin: 0; font: 700 24px/1.18 'Werk Serif', Georgia, serif; color: var(--ink); }
 .wk-ws-card h3 { margin: 0; font: 650 19px/1.2 'Werk Serif', Georgia, serif; color: var(--ink); }
@@ -820,9 +818,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
 }
 .wk-corridor__label {
-  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font: 600 13px/1 'Werk Serif', Georgia, serif;
   color: rgba(246, 231, 193, 0.72);
   padding: 0 4px;
 }
@@ -848,9 +844,7 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   gap: 8px;
 }
 .wk-mora-companion__head span {
-  font: 700 11.5px/1.1 -apple-system, BlinkMacSystemFont, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font: 700 13px/1.1 'Werk Serif', Georgia, serif;
   color: #7b5514;
 }
 .wk-mora-companion__lamp {
@@ -955,13 +949,14 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   align-items: center;
   justify-content: space-between;
   gap: 8px 14px;
-  padding: 7px 14px;
+  padding: 6px 10px;
   margin-bottom: 10px;
-  border-radius: 10px;
-  background: rgba(20, 15, 10, 0.88);
-  border: 1px solid rgba(214, 168, 72, 0.44);
-  color: #f6e7c1;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+  border-radius: var(--r);
+  background-color: var(--paper);
+  background-image: var(--grain);
+  border: 1px solid rgba(90, 62, 30, 0.22);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 1px 2px rgba(30, 20, 10, .2);
 }
 .wk-ledger-bar__meta {
   display: flex;
@@ -970,20 +965,19 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   flex-wrap: wrap;
 }
 .wk-truth-badge {
-  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: rgba(214, 168, 72, 0.18);
-  border: 1px solid rgba(214, 168, 72, 0.42);
-  color: #f6e7c1;
+  font: 500 13px/1.2 'Werk Serif', Georgia, serif;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
 }
 .wk-audit-feedback {
-  font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #a7f3d0;
+  font: 500 13px/1.2 'Werk Serif', Georgia, serif;
+  color: var(--ink);
 }
 .wk-audit-count {
-  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, sans-serif;
-  color: rgba(246, 231, 193, 0.75);
+  font: 500 13px/1.2 'Werk Serif', Georgia, serif;
+  color: var(--ink-soft);
 }
 .wk-weber-flow {
   display: flex;
@@ -992,23 +986,21 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
   flex-wrap: wrap;
 }
 .wk-weber-flow__label {
-  font: 700 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #f6d992;
+  font: 600 13px/1 'Werk Serif', Georgia, serif;
+  color: var(--ink-soft);
 }
 .wk-weber-step {
-  font: 600 11.5px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  font: 500 13px/1 'Werk Serif', Georgia, serif;
   padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(246, 231, 193, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--r);
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--ink-soft);
+  border: 1px solid rgba(90, 62, 30, 0.16);
 }
 .wk-weber-step.is-done {
-  background: rgba(46, 94, 62, 0.88);
-  border-color: rgba(167, 243, 208, 0.5);
-  color: #f6fbf7;
+  background: rgba(230, 214, 180, 0.9);
+  border-color: rgba(90, 62, 30, 0.28);
+  color: var(--ink);
 }
 .wk-audit-trail {
   margin-top: 8px;
