@@ -117,7 +117,7 @@ const MyceliumOverlay = dynamic(
 );
 
 // UI Components
-import { Dock } from '@/components/mora/Dock';
+import { Dock } from '@/components/mora/LegacyDock';
 import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 import { FirstRunTour } from '@/components/onboarding/FirstRunTour';
 import { useMoraSpeaks } from '@/lib/queries/useMoraSpeaks';

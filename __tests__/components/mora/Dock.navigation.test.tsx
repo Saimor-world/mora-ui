@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { Dock } from '@/components/mora/Dock';
+import { Dock } from '@/components/mora/LegacyDock';
 import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';

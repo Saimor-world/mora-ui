@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import '../shell-styles';
 
 /**
  * Tunnel is a scrollable dev page — root layout uses overflow-hidden for the OS shell.

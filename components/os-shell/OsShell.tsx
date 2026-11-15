@@ -17,7 +17,6 @@ import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 import type { FeatureManifest, FeatureSurfaceProps } from '@/features/types';
-import { MoraStage } from '@/features/mora/ui/MoraStage';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { enabledFeatureFlags } from '@/lib/os-prototype/flags';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
@@ -29,9 +28,32 @@ import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
 import { NightwatchVisit } from '@/components/nightwatch/NightwatchVisit';
 import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
-import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, DemoBanner, DemoSwitch, StatusMenu } from './ContextCapsule';
-import { ControlCenter } from './ControlCenter';
+
+// Erst auf Klick sichtbar: nicht im Start-JS von /os. Nach dem ersten Bild
+// lädt OsShell sie im Leerlauf vor, damit das erste Öffnen nicht wartet.
+const loadControlCenter = () => import('./ControlCenter');
+const loadShortcutsOverlay = () => import('./ShortcutsOverlay');
+const loadMoraStage = () => import('@/features/mora/ui/MoraStage');
+const ControlCenter = React.lazy(() => loadControlCenter().then((m) => ({ default: m.ControlCenter })));
+const ShortcutsOverlay = React.lazy(() => loadShortcutsOverlay().then((m) => ({ default: m.ShortcutsOverlay })));
+const MoraStage = React.lazy(() => loadMoraStage().then((m) => ({ default: m.MoraStage })));
+
+function usePreloadWhenIdle(loaders: Array<() => Promise<unknown>>) {
+  useEffect(() => {
+    const run = () => { for (const load of loaders) load().catch(() => {}); };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(run, { timeout: 3000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(run, 1500);
+    return () => window.clearTimeout(t);
+    // Loader-Liste ist modulweit fest.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+const IDLE_PRELOAD = [loadControlCenter, loadShortcutsOverlay, loadMoraStage];
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -89,6 +111,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const closeTray = useCallback(() => setTrayOpen(false), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const health = useCoreHealth();
+  usePreloadWhenIdle(IDLE_PRELOAD);
 
   const navigate = useCallback((id: string) => {
     const resolved = resolveFeatureId(id, ctx);
@@ -214,7 +237,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           </div>
         </main>
 
-        {moraOpen && active.id !== 'mora' ? <MoraStage navigate={navigate} onClose={closeMora} /> : null}
+        {moraOpen && active.id !== 'mora' ? <Suspense fallback={null}><MoraStage navigate={navigate} onClose={closeMora} /></Suspense> : null}
 
         <OsDock
           showLegacy={internal || preview}
@@ -248,9 +271,9 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
       </div>
 
-      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
+      {controlOpen ? <Suspense fallback={null}><ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /></Suspense> : null}
       <NightwatchVisit enabled={Boolean(internal) && !preview} />
-      {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
+      {shortcutsOpen ? <Suspense fallback={null}><ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /></Suspense> : null}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
