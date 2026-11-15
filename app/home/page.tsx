@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect } from 'react';
 import nextDynamic from 'next/dynamic';
+import '../shell-styles';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { isOsPrototypeEnabled } from '@/lib/os-prototype/flags';

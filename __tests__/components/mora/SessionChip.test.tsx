@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { resetAllStores } from '../../test-utils';
 
 // ─── Mock Dock's store / hook deps (module level, pre-import) ─────────────────
-// SessionChip itself has no store reads (all props-driven), but importing Dock.tsx
+// SessionChip itself has no store reads (all props-driven), but importing LegacyDock.tsx
 // evaluates Dock's module, which imports store hooks. We stub those here following
 // the ActionTray.test.tsx pattern to keep the import clean.
 
@@ -62,7 +62,7 @@ jest.mock('@/components/mora/SearchPopup', () => ({
 }));
 
 // ─── Import the real SessionChip after mocks are registered ──────────────────
-import { SessionChip } from '@/components/mora/Dock';
+import { SessionChip } from '@/components/mora/LegacyDock';
 
 beforeEach(resetAllStores);
 
