@@ -6,7 +6,7 @@ import { fetchCompanyFileBlob, getFilePreview } from '@/lib/api/filesClient';
 import { getShipNodeById } from '@/lib/universe/shipDepartments';
 import { useUpdateNode } from '@/lib/queries/useNodes';
 import { JADE_MORA_SRC } from '@/components/world/JadeMora';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { HintLookup, type BookLookupScope } from './HintLookup';
 import { parseBlocks, serializeBlocks, inlineToHtml, htmlToInline, type Block } from '../model/docBlocks';
 import { layoutBook, joinParts, type Piece, type BookLayout } from '../model/layout';
 import { findHints } from '../model/hints';
@@ -42,10 +42,11 @@ async function readFileSource(id: string): Promise<BookSource | null> {
   return prev && prev.previewAvailable && typeof prev.content === 'string' ? { content: prev.content } : null;
 }
 
-export function Book({ id, fallbackTitle, folderId, stage, back, file = false }: {
+export function Book({ id, fallbackTitle, folderId, stage, back, file = false, lookup }: {
   id: string; fallbackTitle: string; folderId: string | null; stage: Stage; back: { label: string; run: () => void } | null;
   /** Hochgeladene Datei aus /v3/files: wird gelesen, nie als Knoten gespeichert. */
   file?: boolean;
+  lookup?: BookLookupScope;
 }) {
   const qc = useQueryClient();
   const localSeed = useMemo(() => (file ? null : getShipNodeById(id)), [id, file]);
@@ -364,10 +365,11 @@ export function Book({ id, fallbackTitle, folderId, stage, back, file = false }:
           {openHint === h.blockId ? (
             <div className="wk-hint__body">
               <p>{h.text}</p>
-              <span>
-                <button type="button" onClick={() => useOsShellStore.getState().setMoraOpen(true)}>Nachsehen</button>
+              <div className="wk-hint__actions">
+                <HintLookup key={JSON.stringify([id, h.blockId, h.passage, lookup?.companyId])}
+                  sourceId={id} passage={h.passage} scope={lookup} />
                 <button type="button" onClick={() => { setDismissed((d) => [...d, h.blockId]); setOpenHint(null); }}>Weglegen</button>
-              </span>
+              </div>
             </div>
           ) : null}
         </div>

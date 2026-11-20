@@ -149,6 +149,18 @@ describe('Buch am Pult', () => {
   const para = 'Wer zuerst kommt, schaltet die Maschine an und lässt sie zwanzig Minuten warm werden, bevor die Tür aufgeht und Gäste kommen.';
   const long = ['# Betriebshandbuch', ...Array.from({ length: 96 }, (_, i) => (i % 8 === 0 ? `## Kapitel ${i / 8 + 1}` : `${para} ${para}`))].join('\n\n');
   const stage = { x: 0, y: 0, k: 0.75, vw: 1440, vh: 900 } as never;
+
+  it('übergibt die aufgeklappte Buchstelle an die Quellensuche und öffnet das Bestandsdokument', async () => {
+    nodes['n-fragen'] = { id: 'n-fragen', title: 'Küchenbuch', content: 'Mindestbestand Hafermilch noch klären.' };
+    const open = jest.fn();
+    wrap(<Book id="n-fragen" fallbackTitle="Küchenbuch" folderId="k-rez" stage={stage} back={null}
+      lookup={{ companyId: 'demo-morgenrot', demo: true, documents: [{ id: 'inv-1', name: 'Bestandsbuch' }], open }} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Mindestbestand Hafermilch noch klären/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nachsehen' }));
+    await screen.findByText(/Mindestbestand 24 Liter/);
+    fireEvent.click(screen.getByRole('button', { name: 'Bestandsbuch öffnen' }));
+    expect(open).toHaveBeenCalledWith('inv-1');
+  });
   it('ein langes Dokument wird zum Buch mit rund 40 Seiten, das bis zum Ende blättert', async () => {
     nodes['n-hb'] = { id: 'n-hb', title: 'Betriebshandbuch', content: long };
     wrap(<Book id="n-hb" fallbackTitle="Betriebshandbuch" folderId="f-hb" stage={stage} back={null} />);
