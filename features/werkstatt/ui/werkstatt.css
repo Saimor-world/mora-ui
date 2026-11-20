@@ -1063,3 +1063,9 @@ html[data-os-work='werkstatt'][data-world='morgennebel'] .bridge__status * { col
 /* Sitzend statt schwebend: kein Spiegelbild, kein Flug-Schatten – der Kontaktschatten liegt im Raum. */
 html[data-os-work='werkstatt'] .bridge__mora[data-flying='true'] { -webkit-box-reflect:below 0 linear-gradient(transparent,transparent) !important; filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)) !important; }
 html[data-os-work='werkstatt'] .bridge__mora-reflect { display:none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wk-card:is(button):active { scale: .985; }
+  .wk-dock button:active { translate: 0 1px; }
+}
+.wk-hit:active { box-shadow: inset 0 0 0 2px var(--pencil); }

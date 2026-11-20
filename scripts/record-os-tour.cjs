@@ -32,6 +32,21 @@ const fs = require('node:fs/promises');
         if (id === 'universe') {
           const planet = page.locator('button[data-testid^="open-"]:visible,button[data-testid^="world-planet-"]:visible').first();
           await section('Abteilung', async () => { await click(planet); await click(page.getByTestId('dept-room-enter')); });
+          await section('Aufgabe und MÔRA am selben Arbeitsplatz', async () => {
+            const card = page.locator('button[data-testid^="wk-card-"]').first();
+            await click(card);
+            const sheet = page.getByTestId('wk-task-sheet');
+            await sheet.waitFor();
+            await click(page.getByTestId('wk-task-due'));
+            await page.keyboard.press('Escape');
+            await click(page.getByTestId('wk-dock-mora'));
+            const question = page.getByTestId('mora-stage');
+            await question.waitFor();
+            await wait();
+            await click(page.getByRole('button', {name:'MÔRA schließen'}));
+            await sheet.waitFor();
+            await click(page.getByTestId('wk-dock-back'));
+          });
           for (const [obj, label] of [['lectern','Buch'],['mappe','Planung']]) {
             await section(label, async () => { await click(page.getByTestId('wk-hit-'+obj)); await page.keyboard.press('Escape'); await wait(); });
           }
