@@ -19,7 +19,7 @@ export function roomPassages(rows: SemanticSearchResult[], docs: readonly RoomDo
 
 export function localPassages(query: string, docs: readonly RoomDocument[], sourceId: string, read: (id: string) => { content: string } | null): Passage[] {
   const ignored = new Set(['fehlt', 'noch', 'klären', 'offen', 'todo', 'wird', 'sind', 'eine', 'einer', 'einen', 'dieser', 'bitte']);
-  const terms = [...new Set(query.toLowerCase().match(/[\p{L}\d-]{4,}/gu) ?? [])].filter(term => !ignored.has(term));
+  const terms = [...new Set(query.toLowerCase().match(/[a-zà-öø-ÿ\d-]{4,}/g) ?? [])].filter(term => !ignored.has(term));
   const candidates = docs.filter(doc => doc.id !== sourceId).flatMap(doc => {
     const lines = read(doc.id)?.content.split(/\n+/) ?? [];
     const ranked = lines.map(line => ({ line, score: terms.filter(term => line.toLowerCase().includes(term)).length }))
