@@ -82,7 +82,8 @@ export function MoraStage({ navigate, onClose }: { navigate: (featureId: string)
   const answer = [...current].reverse().find((t) => t.role === 'mora') ?? null;
   const problem = [...current].reverse().find((t) => t.role === 'system') ?? null;
   const proposals = useMemo(() => (lastUser ? proposeActions(lastUser.text, activeFeatureId) : []), [lastUser, activeFeatureId]);
-  const suggestions = contextFeature?.mora.suggestions || [];
+  const inWorkroom = activeFeatureId === 'universe' && Boolean(surfaceContext);
+  const suggestions = inWorkroom ? ['Was ist hier noch offen?', 'Welche Quelle hilft mir weiter?'] : contextFeature?.mora.suggestions || [];
   const offline = !health.isLoading && health.data?.state !== 'online';
 
   const run = (p: MoraProposal) => {
@@ -100,7 +101,7 @@ export function MoraStage({ navigate, onClose }: { navigate: (featureId: string)
         <span className="mora-stage__tag">{contextLabel === 'MÔRA' ? 'Dein Tag' : `Bei: ${contextLabel}`}{surfaceContext ? ` · ${surfaceContext}` : ''}</span>
         <span className="mora-stage__tag" title="MÔRA führt nichts ohne deine Bestätigung aus"><ShieldCheck size={12} aria-hidden="true" /> nur mit Bestätigung</span>
         {offline ? <span className="mora-stage__tag" data-tone="warning">gerade nicht erreichbar</span> : null}
-        <button type="button" className="mora-stage__close" onClick={onClose} aria-label="MÔRA schließen"><span>Zurück ins OS</span><kbd>Esc</kbd><X size={14} aria-hidden="true" /></button>
+        <button type="button" className="mora-stage__close" onClick={onClose} aria-label="MÔRA schließen"><span>{inWorkroom ? 'Zurück zur Arbeit' : 'Zurück ins OS'}</span><kbd>Esc</kbd><X size={14} aria-hidden="true" /></button>
       </header>
 
       {history.length ? (
@@ -110,7 +111,7 @@ export function MoraStage({ navigate, onClose }: { navigate: (featureId: string)
       ) : null}
 
       <div className="mora-stage__center">
-        <p className="mora-stage__question" data-empty={lastUser ? undefined : 'true'}>{lastUser ? `„${lastUser.text}“` : `Frag mich etwas zu ${['MÔRA', 'SAIMÔR', 'Home', 'Heute'].includes(contextLabel) ? 'deinem Tag' : contextLabel}.`}</p>
+        <p className="mora-stage__question" data-empty={lastUser ? undefined : 'true'}>{lastUser ? `„${lastUser.text}“` : inWorkroom ? surfaceContext : `Frag mich etwas zu ${['MÔRA', 'SAIMÔR', 'Home', 'Heute'].includes(contextLabel) ? 'deinem Tag' : contextLabel}.`}</p>
         <div className="mora-stage__rings" aria-hidden="true"><i /><i /><i />
           <span className="mora-stage__anchor" data-testid="mora-stage-anchor"><span className="mora-stage__fallback"><PixelMoraMark size={96} active /></span></span>
         </div>
