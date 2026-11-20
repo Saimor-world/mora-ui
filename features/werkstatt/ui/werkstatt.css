@@ -1069,3 +1069,6 @@ html[data-os-work='werkstatt'] .bridge__mora-reflect { display:none; }
   .wk-dock button:active { translate: 0 1px; }
 }
 .wk-hit:active { box-shadow: inset 0 0 0 2px var(--pencil); }
+
+/* Das Gespräch besitzt seine eigene Navigation, bis das Arbeitsblatt wieder aktiv ist. */
+html[data-mora-stage] .wk-dock { visibility: hidden; pointer-events: none; }
