@@ -905,7 +905,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 back={backTo} />
             ) : null}
             {close.kind === 'doc' ? (
-              <Book key={close.id} id={close.id} fallbackTitle={clean(allDocs.find((d) => d.id === close.id)?.name ?? '')}
+              <Book key={JSON.stringify([companyId, planet.id, close.id])} id={close.id}
+                lookup={{ companyId, documents: allDocs, demo: scopeKey === 'demo-morgenrot', open: (id) => open({ kind: 'doc', id }) }} fallbackTitle={clean(allDocs.find((d) => d.id === close.id)?.name ?? '')}
                 folderId={allDocs.find((d) => d.id === close.id)?.folderId ?? null} stage={stage} back={backTo}
                 file={allDocs.find((d) => d.id === close.id)?.meta === 'file'} />
             ) : null}

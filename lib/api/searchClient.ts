@@ -143,12 +143,14 @@ export async function searchSemantic(
     companyId: string | null,
     limit = 10,
     threshold = 0.55,
+    strict = false,
 ): Promise<SemanticSearchResult[]> {
     const q = encodeURIComponent(query);
     const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
     const result = await coreGet(
         `/v3/search/semantic?q=${q}&limit=${String(limit)}&threshold=${String(threshold)}${c}`,
-        { isOptional: true },
+        { isOptional: !strict, throwAuthErrors: strict },
     );
+    if (strict && result == null) throw new Error('Quellensuche nicht verfügbar');
     return normalizeList<SemanticSearchResult>(result, ['results', 'items', 'matches', 'data']);
 }
