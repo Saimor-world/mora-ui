@@ -1,0 +1,32 @@
+name: OS-Rundgang
+on:
+  push:
+    branches: [codex/os-rundgang]
+permissions:
+  contents: read
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_OS_PROTOTYPE: '1'
+      NEXT_PUBLIC_OS_PREVIEW: local
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Vorschau filmen
+        run: |
+          npm start -- --hostname 127.0.0.1 > /tmp/os-tour.log 2>&1 &
+          for i in {1..60}; do curl -fsS http://localhost:3000/os >/dev/null && break; sleep 1; done
+          node scripts/record-os-tour.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SAIMOR-OS-Rundgang
+          path: os-tour/
+          retention-days: 7
