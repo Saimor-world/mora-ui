@@ -585,6 +585,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const activeSkyRect = roomSky(roomCtx.archetype);
   const activeMoraSeat = ROOM.moraSeat;
 
+  const currentIndex = top.kind === 'task' ? order.findIndex(task => task.id === top.id) : -1;
+  const nextTask = currentIndex >= 0 ? order[currentIndex + 1] : undefined;
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
   const folderName = (t: WorkTask | null) => (t?.folderId ? clean(planet.moons.find((m) => m.id === t.folderId)?.title ?? '') : '');
   const folderTitleById = (fid: string) => clean(planet.moons.find((m) => m.id === fid)?.title ?? '');
@@ -914,7 +916,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 crumb={[title, folderName(taskOf(close.id))].filter(Boolean).join(' · ')}
                 docs={docs.filter((d) => d.folderId === taskOf(close.id)?.folderId).map((d) => ({ id: d.id, name: clean(d.name) }))}
                 onOpenDoc={(id) => { setLectern(id); open({ kind: 'doc', id }); }}
-                onNext={() => { const i = order.findIndex((t) => t.id === close.id); const n = order[i + 1]; if (n) setStack((s) => [...s.slice(0, -1), { kind: 'task', id: n.id }]); }}
+                onNext={nextTask ? () => setStack(s => [...s.slice(0, -1), { kind: 'task', id: nextTask.id }]) : undefined}
                 back={backTo} />
             ) : null}
             {close.kind === 'doc' ? (

@@ -38,7 +38,7 @@ const fs = require('node:fs/promises');
             const sheet = page.getByTestId('wk-task-sheet');
             await sheet.waitFor();
             await click(page.getByTestId('wk-task-due'));
-            await page.keyboard.press('Escape');
+            await click(page.getByTestId('wk-due-slip').getByRole('button', { name: /^morgen/i }));
             await click(page.getByTestId('wk-dock-mora'));
             const question = page.getByTestId('mora-stage');
             await question.waitFor();
