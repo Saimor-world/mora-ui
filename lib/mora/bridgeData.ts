@@ -91,7 +91,7 @@ export function dayMarks(snapshot: TodaySnapshot | null, now: number, max = 5): 
   return picked.sort((a, b) => a.minute - b.minute);
 }
 
-export type Station = { id: 'post' | 'today' | 'team' | 'nightwatch'; label: string; value: string; detail: string; tone: 'calm' | 'amber' | 'red'; progress?: number };
+export type Station = { id: 'post' | 'today' | 'team' | 'nightwatch'; label: string; value: string; detail: string; tone: 'calm' | 'amber' | 'red'; progress?: number; count?: number };
 
 export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number | null): Station[] {
   const mail = mailCounts(snapshot, briefingUnread);
@@ -101,11 +101,14 @@ export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number
 
   let today: Station = { id: 'today', label: 'Heute', value: 'Offline', detail: 'Aufgaben nicht verbunden', tone: 'calm' };
   if (snapshot && sourceReady(snapshot.tasks)) {
-    const open = snapshot.tasks.counts.open ?? snapshot.tasks.items.filter((t) => t.status !== 'done').length;
-    const done = snapshot.tasks.items.filter((t) => t.status === 'done').length;
-    const overdue = snapshot.tasks.counts.overdue ?? 0;
-    const due = snapshot.tasks.counts.due_today ?? 0;
-    today = { id: 'today', label: 'Heute', value: String(open), detail: overdue ? `${overdue} überfällig` : open ? `${due} heute fällig` : 'Alles erledigt', tone: overdue ? 'amber' : 'calm', progress: open + done ? done / (open + done) : 1 };
+    const tasks = snapshot.tasks;
+    const due = tasks.counts.due_today ?? tasks.due_today.filter(t => t.status !== 'done').length;
+    const overdue = tasks.counts.overdue ?? tasks.overdue.filter(t => t.status !== 'done').length;
+    today = {
+      id: 'today', label: 'Heute', count: due + overdue, value: due + overdue ? `${due + overdue} fällig` : 'Nichts fällig',
+      detail: overdue ? `${overdue} überfällig · ${due} heute fällig` : `${due} heute fällig`,
+      tone: overdue ? 'amber' : 'calm',
+    };
   }
 
   let team: Station = { id: 'team', label: 'Team', value: 'Offline', detail: 'Schichtplan nicht verbunden', tone: 'calm' };
@@ -225,7 +228,7 @@ export function instrumentLines(snapshot: TodaySnapshot | null, id: 'post' | 'to
   if (id === 'today') {
     if (!sourceReady(snapshot.tasks)) return [];
     const seen = new Set<string>();
-    const list = [...snapshot.tasks.overdue.map((t) => ({ t, late: true })), ...snapshot.tasks.due_today.map((t) => ({ t, late: false })), ...snapshot.tasks.items.filter((t) => t.status !== 'done').map((t) => ({ t, late: false }))];
+    const list = [...snapshot.tasks.overdue.map((t) => ({ t, late: true })), ...snapshot.tasks.due_today.map((t) => ({ t, late: false }))];
     return list.filter(({ t }) => t.status !== 'done' && !seen.has(t.id) && seen.add(t.id)).slice(0, max)
       .map(({ t, late }) => ({ id: t.id, lead: late ? 'Überfällig' : t.status === 'in_progress' ? 'Läuft' : 'Heute', text: cleanTitle(t.title), tone: late ? 'amber' as const : undefined }));
   }

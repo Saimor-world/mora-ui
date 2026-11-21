@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { tileSub } from '@/components/os-shell/BridgeConcept';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
-import { instrumentLines, untilText } from '@/lib/mora/bridgeData';
+import { instrumentLines, stations, untilText } from '@/lib/mora/bridgeData';
 import { answerCards } from '@/features/mora/ui/MoraStage';
 
 const css = fs.readFileSync(path.join(process.cwd(), 'components/os-shell/bridge-concept.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -42,6 +42,16 @@ it('fills the dock instruments with real entries only, never padding', () => {
   expect(instrumentLines(snapshot, 'next', 15 * 60).map((l) => l.text)).toEqual(['Feier']);
   expect(instrumentLines(null, 'post', 600)).toEqual([]);
   expect(instrumentLines({ ...snapshot, mail: { ...snapshot.mail, status: 'disconnected' } } as unknown as TodaySnapshot, 'post', 600)).toEqual([]);
+});
+
+it('keeps undated backlog entries out of the daily preview and count', () => {
+  const tasks = { ...snapshot.tasks, items: snapshot.tasks.due_today, due_today: [], overdue: [],
+    counts: { ...snapshot.tasks.counts, open: 23, due_today: 0, overdue: 0 } };
+  const quiet = { ...snapshot, tasks };
+  expect(stations(quiet)[1].value).toBe('Nichts fällig');
+  expect(instrumentLines(quiet, 'today', 600)).toEqual([]);
+  expect(tileSub('today', quiet)).toBe('');
+  expect(stations(snapshot)[1].value).toBe('2 fällig');
 });
 
 it('says how long until the next appointment', () => {
