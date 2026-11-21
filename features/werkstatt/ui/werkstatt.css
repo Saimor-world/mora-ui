@@ -220,6 +220,8 @@
 .wk-sheet__body { margin: 26px 0 0; font: 400 var(--t-m)/1.5 'Werk Serif', Georgia, serif; }
 .wk-sheet__links { margin-top: auto; padding-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; }
 .wk-sheet__links > span { font: 500 var(--t-s)/1 'Werk Serif', Georgia, serif; color: var(--ink-soft); }
+.wk-sheet__source + .wk-sheet__links { margin-top: 0; padding-top: 12px; }
+.wk-sheet__source .wk-link { display: inline-flex; align-items: center; gap: 8px; }
 .wk-link { text-decoration: underline; text-decoration-color: var(--pencil); text-underline-offset: 6px; }
 
 /* Raum-Leiste über dem klassischen OS-Dock (.bridge__pill bleibt am festen Platz unten bei 12px) */

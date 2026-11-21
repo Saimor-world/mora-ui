@@ -912,7 +912,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               </div>
             </div>
             {close.kind === 'task' && taskOf(close.id) ? (
-              <TaskSheet key={close.id} task={taskOf(close.id) as WorkTask} companyId={companyId}
+              <TaskSheet key={close.id} task={taskOf(close.id) as WorkTask} companyId={companyId} planetId={planet.id}
                 crumb={[title, folderName(taskOf(close.id))].filter(Boolean).join(' · ')}
                 docs={docs.filter((d) => d.folderId === taskOf(close.id)?.folderId).map((d) => ({ id: d.id, name: clean(d.name) }))}
                 onOpenDoc={(id) => { setLectern(id); open({ kind: 'doc', id }); }}

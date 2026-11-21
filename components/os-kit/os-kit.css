@@ -654,6 +654,8 @@
 .os-mail__pane-meta small { color: var(--os-text-muted); }
 .os-mail__pane-body { font-size: 15px; line-height: 1.6; color: var(--os-text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 56vh; overflow-y: auto; }
 .os-mail__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.os-mail__problem { display: flex; flex-wrap: wrap; align-items: center; justify-content: inherit; gap: 6px 10px; }
+.os-mail__pane-empty .os-mail__problem { flex-direction: column; }
 @media (max-width: 760px) {
   .os-mail { grid-template-columns: 1fr; min-height: 0; }
   .os-mail__pane { display: none; border-left: 0; padding-left: 0; }
