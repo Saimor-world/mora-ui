@@ -86,6 +86,9 @@ describe('V1.7 SourceDock', () => {
     const primary = await screen.findByTestId('dock-primary');
     expect(primary).toBeDisabled();
     expect(screen.getByTestId('dock-idle')).toHaveTextContent('nur lokal');
+    fireEvent.click(screen.getByTestId('dock-station-nextcloud'));
+    expect(screen.getByTestId('dock-consent')).toHaveTextContent('noch nicht verbunden');
+    expect(screen.queryByTestId('dock-approve')).toBeNull();
     expect(corePost).not.toHaveBeenCalled();
   });
 });

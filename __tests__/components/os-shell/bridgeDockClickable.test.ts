@@ -36,7 +36,9 @@ it('fills every dock tile only from real snapshot content', () => {
 it('fills the dock instruments with real entries only, never padding', () => {
   const full = { ...snapshot, mail: { ...snapshot.mail, items: [...snapshot.mail.items, { id: 'm3', subject: 'Rechnung offen', from_addr: 'anna.berg@example.com', read: false }] } } as unknown as TodaySnapshot;
   expect(instrumentLines(full, 'post', 600).map((l) => l.text)).toEqual(['Lieferung morgen', 'Rechnung offen', 'Gelesen']);
-  expect(instrumentLines(full, 'post', 600)[1]).toMatchObject({ lead: 'Anna', tone: 'amber' });
+  expect(instrumentLines(full, 'post', 600)[1]).toMatchObject({ lead: 'Anna Berg', tone: 'amber' });
+  const named = { ...full, mail: { ...full.mail, items: [{ ...full.mail.items[0], from_addr: 'Testbetrieb <post@example.org>' }] } };
+  expect(instrumentLines(named, 'post', 600)[0].lead).toBe('Testbetrieb');
   expect(instrumentLines(full, 'post', 600)[2].tone).toBe('muted');
   expect(instrumentLines(snapshot, 'today', 600).map((l) => [l.lead, l.text])).toEqual([['Überfällig', 'Kassenbuch'], ['Heute', 'Teig ansetzen']]);
   expect(instrumentLines(snapshot, 'next', 15 * 60).map((l) => l.text)).toEqual(['Feier']);

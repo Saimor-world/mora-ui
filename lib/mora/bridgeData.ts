@@ -211,19 +211,13 @@ export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar
 /** Eine Zeile in einem Dock-Instrument: echte Einträge aus dem Snapshot, nie aufgefüllt. */
 export type InstrumentLine = { id: string; lead: string; text: string; tone?: 'amber' | 'muted' };
 
-const sender = (from?: string) => {
-  const local = (from ?? '').split('@')[0] ?? '';
-  const first = local.split(/[._-]/)[0] ?? '';
-  return first.length > 1 ? cap(first) : '';
-};
-
 export function instrumentLines(snapshot: TodaySnapshot | null, id: 'post' | 'today' | 'team' | 'next', now: number, max = 3): InstrumentLine[] {
   if (!snapshot) return [];
   if (id === 'post') {
     if (!sourceReady(snapshot.mail)) return [];
     const items = snapshot.mail.items ?? [];
     return [...items.filter((m) => m.read !== true), ...items.filter((m) => m.read === true)].slice(0, max)
-      .map((m) => ({ id: m.id, lead: sender(m.from_addr) || 'Mail', text: cleanTitle(m.subject ?? '(ohne Betreff)'), tone: m.read === true ? 'muted' as const : NEEDS_YOU.test(m.subject ?? '') ? 'amber' as const : undefined }));
+      .map((m) => ({ id: m.id, lead: senderName(m.from_addr) || 'Mail', text: cleanTitle(m.subject ?? '(ohne Betreff)'), tone: m.read === true ? 'muted' as const : NEEDS_YOU.test(m.subject ?? '') ? 'amber' as const : undefined }));
   }
   if (id === 'today') {
     if (!sourceReady(snapshot.tasks)) return [];
