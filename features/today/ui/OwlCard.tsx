@@ -49,16 +49,19 @@ export function StatusChip({ c }: { c: Chip }) {
   );
 }
 
-export function NeedsYou({ mails, onOpen, onAll }: { mails: OwlMail[]; onOpen: (m: OwlMail) => void; onAll: () => void }) {
+export function NeedsYou({ mails, onOpen, onAll }: { mails: OwlMail[]; onOpen: (m: OwlMail) => void; onAll?: () => void }) {
+  const [expanded, setExpanded] = useState(false);
   if (!mails.length) return null;
   return (
     <div className="os-owl-needs" data-testid="owl-needs">
       <div className="os-owl-needs__head">
         <span className="os-owl-eyebrow">Braucht dich</span>
-        <button type="button" className="os-owl-link" onClick={onAll}>Alle anzeigen</button>
+        {onAll ? <button type="button" className="os-owl-link" onClick={onAll}>Alle anzeigen</button>
+          : mails.length > 4 ? <button type="button" className="os-owl-link" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle anzeigen'}</button>
+          : null}
       </div>
       <ul>
-        {mails.slice(0, 4).map((m, i) => (
+        {(expanded ? mails : mails.slice(0, 4)).map((m, i) => (
           <li key={m.id ?? i}>
             <button type="button" className="os-owl-row" onClick={() => onOpen(m)} data-testid="owl-mail" data-kind={m.kind}>
               <span className="os-owl-row__dot" data-kind={m.kind} aria-hidden />
@@ -88,7 +91,7 @@ function OwlContent({ s, navigate }: { s: OwlState; navigate?: (id: string) => v
         </div>
       </div>
       <div className="os-owl-chips">{owlChips(s).map((c) => <StatusChip key={c.key} c={c} />)}</div>
-      <NeedsYou mails={importantMails(s)} onOpen={open} onAll={() => navigate?.('post')} />
+      <NeedsYou mails={importantMails(s)} onOpen={open} onAll={navigate ? () => navigate('post') : undefined} />
     </>
   );
 }

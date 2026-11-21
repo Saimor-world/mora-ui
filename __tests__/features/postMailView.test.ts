@@ -1,4 +1,4 @@
-import { mailTime, senderAddress, senderName, unreadCount, visibleMail } from '@/features/post/mailView';
+import { plainText, mailTime, senderAddress, senderName, unreadCount, visibleMail } from '@/features/post/mailView';
 
 describe('post mail view helpers', () => {
   it('shows a person, not a raw header', () => {
@@ -6,6 +6,10 @@ describe('post mail view helpers', () => {
     expect(senderName({ from_addr: 'lea.k@beispiel.test' })).toBe('Lea K');
     expect(senderName({})).toBe('Unbekannt');
     expect(senderAddress({ from: 'Lea <lea@beispiel.test>' })).toBe('lea@beispiel.test');
+  });
+
+  it('keeps a message readable when it contains an invalid numeric entity', () => {
+    expect(plainText('Mira &#39; &#x1F331; &#99999999; &#xD800;')).toBe("Mira ' 🌱 � �");
   });
 
   it('formats mail times relative to now', () => {

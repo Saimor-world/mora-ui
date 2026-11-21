@@ -150,7 +150,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <Text variant="eyebrow" className="mb-2">Heute · Aktuell — das ist heute relevant</Text>
           <div className="os-today-now">
             {([
-              ['Kalender', CalendarDays, ...calendarTile(snapshot), () => navigate('post')],
+              ['Kalender', CalendarDays, ...calendarTile(snapshot), () => openLegacyApp('calendar')],
               // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
               ...(companyView ? [['Mail', Mail,
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
@@ -209,7 +209,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           </Section>
 
           <ResponsiveGrid columns={2}>
-            <Section icon={<CalendarDays size={14} />} title="Termine heute" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
+            <Section icon={<CalendarDays size={14} />} title="Termine heute" aside={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('calendar')}>Kalender</Button>}>
               <SourceState status={worldCalendar ? world.calendarUnavailable ? 'unavailable' : 'ok' : snapshot.calendar.status} label="Kalender" />
               {(worldCalendar ? !world.calendarUnavailable : snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'stale') && (
                 calendarEvents.length === 0 ? <Text>Keine Termine heute.</Text> : (
@@ -257,10 +257,13 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               {snapshot.mail.items.length === 0 && snapshot.mail.status !== 'disconnected' && snapshot.mail.status !== 'unavailable' ? <Text>Nichts Neues.</Text> : (
                 <div className="os-list">
                   {snapshot.mail.items.slice(0, 3).map((m) => (
-                    <div key={m.id} className="os-list-row">
+                    <button type="button" key={m.id} className="os-list-row" onClick={() => {
+                      useOsShellStore.getState().setPostOpenId(m.id);
+                      navigate('post');
+                    }}>
                       <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="[overflow-wrap:anywhere]">{m.from_addr}</Text></Stack>
                       {m.read === false ? <Status tone="info">neu</Status> : null}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -276,7 +279,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             ['Universe', 'Raum & Zusammenhänge', Compass, () => navigate('universe')],
             ['Arbeit', 'Offene Arbeit und nächste Schritte', ListTodo, () => openWorkTask((snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0])],
             ['Mail', 'Lesen, antworten, sortieren', Mail, () => navigate('post')],
-            ['Kalender', 'Termine und feste Punkte', CalendarDays, () => navigate('post')],
+            ['Kalender', 'Termine und feste Punkte', CalendarDays, () => openLegacyApp('calendar')],
             ['Dateien', 'Dokumente im Arbeitskontext', BookOpen, () => navigate('knowledge')],
           ] as const).map(([t, d, Icon, run]) => (
             <button key={t} type="button" className="os-today-now__card" onClick={run}><span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {d}</span><b>{t}</b></button>

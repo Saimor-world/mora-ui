@@ -49,8 +49,11 @@ const ENT: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apo
 /** Mail-Texte kommen teils HTML-kodiert („weren&#39;t“): lesbar machen, ohne HTML zu rendern. */
 export function plainText(s?: string | null): string {
   return String(s ?? '')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+|x[0-9a-f]+);/gi, (_, raw: string) => {
+      const point = raw[0].toLowerCase() === 'x' ? parseInt(raw.slice(1), 16) : Number(raw);
+      return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
+        ? String.fromCodePoint(point) : '\uFFFD';
+    })
     .replace(/&([a-z]+);/gi, (m, n) => ENT[n.toLowerCase()] ?? m)
     .replace(/[\u200b-\u200f\u034f\u00ad]+/g, '')
     .replace(/\n{3,}/g, '\n\n')

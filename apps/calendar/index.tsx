@@ -1,5 +1,6 @@
 'use client';
 
+import { localISO } from '@/lib/lea/world';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState } from 'react';
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, Link2, List, Loader2, Plus, RefreshCw, Sparkles } from 'lucide-react';
@@ -195,7 +196,7 @@ export default function CalendarApp({ paneId }: AppProps) {
                     {selectedDate ? (
                       <>
                         <button type="button" onClick={() => setSelectedDate(null)} className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45 transition-colors hover:text-[#D6A848]">← Nächste Termine</button>
-                        <CalendarEventPanel selectedDate={selectedDate} events={events} onAddEvent={(title) => { void addEvent(title, selectedDate.toISOString().split('T')[0]).catch(() => undefined); }} />
+                        <CalendarEventPanel selectedDate={selectedDate} events={events} onAddEvent={(title) => { void addEvent(title, localISO(selectedDate)).catch(() => undefined); }} />
                       </>
                     ) : uvView === 'week' ? (
                       <WeekBoard anchor={currentDate} events={events} onSelect={setSelectedDate} />
@@ -221,7 +222,7 @@ export default function CalendarApp({ paneId }: AppProps) {
                     selectedDate={selectedDate}
                     events={events}
                     onAddEvent={(title) => {
-                      void addEvent(title, selectedDate.toISOString().split('T')[0]).catch(() => undefined);
+                      void addEvent(title, localISO(selectedDate)).catch(() => undefined);
                     }}
                   />
                 )}
