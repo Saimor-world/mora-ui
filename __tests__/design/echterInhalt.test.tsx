@@ -68,7 +68,7 @@ describe('HQ Home: echter Inhalt statt Text', () => {
     const { container, unmount } = renderDock();
     const deck = container.querySelector('.bridge__deck')!;
     expect(deck.querySelector('[aria-label*="9 Mails"]')).not.toBeNull();
-    expect(deck.querySelector('[aria-label*="3 Aufgaben"]')).not.toBeNull();
+    expect(deck.querySelector('[aria-label*="Heute: Nichts fällig"]')).not.toBeNull();
     expect(deck.querySelector('[aria-label*="2 Termine"]')).not.toBeNull();
     unmount();
     mockSnapshot = { ...snap, mail: { ...snap.mail, status: 'unavailable' } } as unknown as TodaySnapshot;
