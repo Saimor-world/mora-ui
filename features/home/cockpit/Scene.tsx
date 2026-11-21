@@ -171,7 +171,7 @@ export function PlanetSystem({
   /** Home-Himmel: Planeten größer (Layout rechnet mit der echten Größe). */
   skyScale?: number;
   moons?: Map<string, DayMoon[]>;
-  onTaskDone?: (taskId: string) => void;
+  onTaskDone?: (taskId: string) => Promise<boolean>;
   onMoonOpen?: (kind: DayMoon['kind']) => void;
   onOpenTask?: (taskId: string) => void;
   planets: DemoPlanet[];
@@ -343,9 +343,24 @@ export function PlanetSystem({
 const MOON_ICON: Record<DayMoon['kind'], string> = { task: '◯', mail: '✉', event: '◷' };
 
 /** Monde = Tagesdinge der Abteilung. Antippen klappt sie an Ort und Stelle auf; Aufgaben lassen sich abhaken. */
-export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => void; onOpen?: (kind: DayMoon['kind']) => void; onOpenTask?: (taskId: string) => void }) {
+export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { moons: DayMoon[]; x: number; y: number; r: number; onTaskDone?: (taskId: string) => Promise<boolean>; onOpen?: (kind: DayMoon['kind']) => void; onOpenTask?: (taskId: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [done, setDone] = useState<Set<string>>(() => new Set());
+  const [saving, setSaving] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const complete = async (moon: DayMoon) => {
+    if (!moon.taskId || !onTaskDone || saving || done.has(moon.id)) return;
+    setSaving(moon.id);
+    setFailed(null);
+    try {
+      if (await onTaskDone(moon.taskId)) setDone(previous => new Set(previous).add(moon.id));
+      else setFailed(moon.id);
+    } catch {
+      setFailed(moon.id);
+    } finally {
+      setSaving(null);
+    }
+  };
   return (
     <div className="ck-daymoons" style={{ left: x, top: y }} data-testid="day-moons">
       {moons.map((m, i) => {
@@ -367,7 +382,9 @@ export function DayMoons({ moons, x, y, r, onTaskDone, onOpen, onOpenTask }: { m
                     <button type="button" className="ck-daymoon__act" aria-label="Öffnen" data-testid={`day-moon-open-${m.id}`}
                       onClick={() => onOpenTask?.(m.taskId!)}>→</button>
                     <button type="button" className="ck-daymoon__act" aria-pressed={isDone} aria-label="Erledigt" data-testid={`day-moon-done-${m.id}`}
-                      onClick={() => { if (!isDone) { setDone((d) => new Set(d).add(m.id)); onTaskDone?.(m.taskId!); } }}>✓</button>
+                      disabled={!onTaskDone || isDone || saving !== null} aria-busy={saving === m.id}
+                      onClick={() => void complete(m)}>✓</button>
+                    {failed === m.id ? <span role="alert">Änderung nicht bestätigt. Bitte erneut versuchen.</span> : null}
                   </>
                 ) : onOpen ? (
                   <button type="button" className="ck-daymoon__act" aria-label="Öffnen" onClick={() => onOpen(m.kind)}>→</button>

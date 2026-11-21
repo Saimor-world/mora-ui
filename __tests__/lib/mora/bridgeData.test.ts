@@ -44,3 +44,8 @@ it('does not infer a person’s absence or shift duration from mail and a matchi
 it('distinguishes an inbox with read mail from an empty inbox', () => {
   expect(warmBriefing({ ...snap, mail: { ...snap.mail, unread_count: 0, items: snap.mail.items.map(m => ({ ...m, read: true })) } })).toContain('Keine ungelesenen Mails');
 });
+
+it('shows a recorded overnight shift through its actual end', () => {
+  const sample = { ...snap, calendar: { ...snap.calendar, events: [{ id: 'night', title: 'Nachtschicht', date: snap.date, time: '22:00', duration: 480 }] } };
+  expect(instrumentLines(sample, 'team', 600)[0].text).toBe('Nachtschicht bis 06:00 (+1 Tag)');
+});

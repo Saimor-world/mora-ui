@@ -14,12 +14,12 @@ Prüfstand vom 21. November 2026. Ausgangspunkt ist der OS-Entwurf d833b127. Gep
 | Heute und Kalender | Zwei Kalenderkacheln und der Link bei „Termine heute“ führten zur kombinierten Postansicht. Alle drei öffnen jetzt das Kalenderfenster. |
 | Klassischer Kalender | Bei Auswahl des 21.11.2026 um Mitternacht in Berlin ergab die UTC-Umwandlung den 20.11. Beide Speichereinstiege übergeben jetzt das im Raster gewählte lokale Datum. |
 | Handy | „Alle anzeigen“ hatte keinen Effekt. Bei mehr als vier wichtigen Mails lässt sich die Liste nun erweitern und wieder einklappen. Ein Interaktionstest öffnet den fünften Eintrag. |
+| Home, Tagesmond | Der Haken erschien vor der Bestätigung von CORE und blieb bei einem Fehler stehen. Im Live-Modus werden Kennung und gespeicherter Status geprüft. Bis zur Antwort ist der Knopf gesperrt. Eine Ablehnung bleibt sichtbar und die Person kann es erneut versuchen. Der Test deckt Ablehnung, Doppelklick und erfolgreichen zweiten Versuch ab. |
 
 ## Offene Befunde in Arbeitsabläufen
 
 | Priorität | Wo und unter welcher Bedingung | Folge und Abnahme |
 |---|---|---|
-| Hoch | Home, Tagesmond abhaken. Scene.tsx setzt lokal erledigt, LiveCockpit.tsx verwirft den Fehler der Speicherung. | Der Haken kann einer abgelehnten Änderung widersprechen. Bei Ablehnung muss der Eintrag offen und erneut bedienbar sein. |
 | Hoch | Werkstatt, Tisch der Leitung oder des Kontors. DeskWorkstation.tsx schaltet die Anzeige „Freigegeben“ bzw. „Geprüft“ im lokalen Zustand um. | Eine reale Freigabe braucht eine bestätigte Speicherung und muss nach erneutem Öffnen durch die berechtigte Person nachvollziehbar sein. |
 | Hoch | Werkstatt, Beschriftung physischer Gegenstände. resolveStationKind liefert unter anderem einen festen Kassenstand, eine Reservierung und „3 Entscheidungen“. Werkstatt.tsx rendert sie am Möbel. | Ein passender Raumtyp genügt für scheinbar konkrete Betriebsaussagen. Im Kundenraum nur Zahlen oder Termine mit Quelle zeigen. Beispiele auf den ausgewiesenen Demoraum begrenzen. |
 | Hoch | Universe, Abteilung ohne hinterlegte Crew. UnifiedUniverse.tsx zieht die allgemeine Teamliste heran, erklärt deren erste Person zur Leitung und weist Beteiligten aus Arbeitsvorgängen „online“ zu. Bei leerer Liste wird die angemeldete Person als Leitung eingesetzt. | Mitgliedschaft, Leitungsrolle und Anwesenheit benötigen jeweils einen eigenen Beleg. Mit zwei Abteilungen und einer Person ohne Leitungsrolle prüfen. |

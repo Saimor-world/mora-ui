@@ -191,7 +191,7 @@ export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar
       const start = toMinute(e.time);
       if (start === null) return null;
       const name = cleanTitle(e.title);
-      return { id: e.id, name, start, end: typeof e.duration === 'number' ? Math.min(DAY_END, start + e.duration) : null, open: open.some(s => s.id === e.id) };
+      return { id: e.id, name, start, end: typeof e.duration === 'number' && e.duration > 0 ? start + e.duration : null, open: open.some(s => s.id === e.id) };
     })
     .filter((x): x is ShiftBar => x !== null)
     .sort((a, b) => Number(b.open) - Number(a.open) || a.start - b.start)
@@ -221,11 +221,16 @@ export function instrumentLines(snapshot: TodaySnapshot | null, id: 'post' | 'to
   if (id === 'team') {
     const open = openShifts(snapshot);
     const bars = shiftCoverage(snapshot, max);
-    if (bars.length) return bars.map(b => ({
-      id: b.id, lead: hhmm(b.start),
-      text: b.open ? `${b.name} · offen` : b.end === null ? b.name : `${b.name} bis ${hhmm(b.end)}`,
-      tone: b.open ? 'amber' as const : undefined,
-    }));
+    if (bars.length) return bars.map(b => {
+      let text = b.name;
+      if (b.open) text += ' · offen';
+      else if (b.end !== null) {
+        text += ` bis ${hhmm(b.end % 1440)}`;
+        const days = Math.floor(b.end / 1440);
+        if (days) text += ` (+${days} ${days === 1 ? 'Tag' : 'Tage'})`;
+      }
+      return { id: b.id, lead: hhmm(b.start), text, tone: b.open ? 'amber' as const : undefined };
+    });
     return open.slice(0, max).map(s => ({ id: s.id, lead: s.time ?? 'Heute', text: `${cleanTitle(s.title)} · offen`, tone: 'amber' as const }));
   }
   return dayMarks(snapshot, now, 12).filter((m) => m.minute >= now).slice(0, max)
