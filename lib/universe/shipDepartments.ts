@@ -328,6 +328,8 @@ export const CANONICAL_MORGENROT_DEPARTMENTS: ShipDepartmentSeed[] = [
               '2. Erste Gare: 45 Minuten abgedeckt ruhen lassen.',
               '3. Ausrollen, mit Butter-Zimt-Kardamom bestreichen und in 24 gleichmäßige Rollen schneiden.',
               '4. Backofen auf **180 °C Ober-/Unterhitze** vorheizen und **18 Minuten** goldbraun backen.',
+              '',
+              'Mindestbestand Hafermilch noch klären.',
             ].join('\n'),
           },
           {
