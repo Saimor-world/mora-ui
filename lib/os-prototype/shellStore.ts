@@ -1,10 +1,13 @@
 'use client';
 import { create } from 'zustand';
+import type { UniverseTarget } from '@/lib/lea/universeFocus';
 
 /**
  * UI-only state of the OS prototype shell (no server data, no persistence).
  * Server state lives in React Query hooks inside features/*.
  */
+export interface PostReturn { featureId: string; focus?: UniverseTarget | null }
+
 export interface OsShellState {
   activeFeatureId: string;
   moraOpen: boolean;
@@ -19,6 +22,9 @@ export interface OsShellState {
   /** Mail, die Post beim nächsten Öffnen direkt zeigt (aus Heute › Braucht dich). */
   postOpenId: string | null;
   setPostOpenId: (id: string | null) => void;
+  /** Rückweg aus der Post zu dem Eintrag, von dem aus die Originalmail geöffnet wurde. */
+  postReturn: PostReturn | null;
+  setPostReturn: (back: PostReturn | null) => void;
   setMoraDraft(text: string | null): void;
   setActiveFeature(id: string): void;
   setMoraOpen(open: boolean): void;
@@ -98,6 +104,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   moraDraft: null,
   postOpenId: null,
   setPostOpenId: (id) => set({ postOpenId: id }),
+  postReturn: null,
+  setPostReturn: (back) => set({ postReturn: back }),
   setMoraDraft: (text) => set({ moraDraft: text }),
   setActiveFeature: (id) => set({ activeFeatureId: id, surfaceContext: null }),
   setMoraOpen: (open) => set({ moraOpen: open }),

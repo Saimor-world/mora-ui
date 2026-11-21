@@ -10,6 +10,8 @@ import type { WorkTask } from '@/lib/universe/deptWork';
 import { PaperSlip } from './PaperSlip';
 import { WorkDock } from './WorkDock';
 import { CrewRelicAvatar } from '@/components/world/CrewRelicAvatar';
+import { Mail } from 'lucide-react';
+import { mailSourceId, openOriginalMail } from '@/features/post/originalMail';
 
 /** Blatt unter der Lampe (Bühnen-Einheiten im Schreibtisch-Bild). */
 export const TASK_SHEET = { x: 600, y: 262, w: 780, h: 650 };
@@ -28,8 +30,8 @@ export async function assignTask(task: WorkTask, name: string): Promise<boolean>
 const plusDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return localISO(d); };
 const nextMonday = () => { const d = new Date(); d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7)); return localISO(d); };
 
-export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, back }: {
-  task: WorkTask; crumb: string; companyId: string | null; docs: { id: string; name: string }[];
+export function TaskSheet({ task, crumb, companyId, planetId, docs, onOpenDoc, onNext, back }: {
+  task: WorkTask; crumb: string; companyId: string | null; planetId?: string | null; docs: { id: string; name: string }[];
   onOpenDoc: (id: string) => void; onNext?: () => void; back: { label: string; run: () => void } | null;
 }) {
   const qc = useQueryClient();
@@ -57,6 +59,8 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
     setStub(!ok);
     if (ok) { qc.invalidateQueries({ queryKey: ['tasks'] }); invalidateToday(); }
   };
+  // Nur ein Bezug aus CORE (source.mail_id) öffnet eine Mail – nie ein Treffer über den Titel.
+  const mailId = mailSourceId(task.raw);
   const status = task.done ? 'done' : task.status === 'in_progress' ? 'in_progress' : 'open';
   const due = task.due ? shortDate(task.due) : null;
   const dueOptions = [
@@ -97,6 +101,14 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
         </div>
       </dl>
       {(task.raw as { description?: string }).description ? <p className="wk-sheet__body">{(task.raw as { description?: string }).description}</p> : null}
+      {mailId ? (
+        <div className="wk-sheet__links wk-sheet__source">
+          <button type="button" className="wk-ink wk-link" data-testid="wk-task-original-mail"
+            onClick={() => openOriginalMail(mailId, planetId ? { planetId, taskId: task.id, from: 'home' } : null)}>
+            <Mail size={16} aria-hidden /> Originalmail öffnen
+          </button>
+        </div>
+      ) : null}
       {docs.length ? (
         <div className="wk-sheet__links">
           <span>Im selben Ordner</span>

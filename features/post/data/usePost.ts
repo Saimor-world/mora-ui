@@ -4,6 +4,7 @@ import { coreGet, normalizeList } from '@/lib/api/http';
 import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { OriginalMailError } from '../originalMail';
 
 /** Same CORE contracts the legacy Mail / Calendar apps read — wrapped as React Query. */
 export interface PostMessage { id: string; subject?: string; from_addr?: string; from?: string; date?: string; snippet?: string; body_text?: string; read?: boolean }
@@ -49,9 +50,11 @@ export function useOriginalMail(id: string | null, live: boolean) {
     enabled: Boolean(live && id && user?.tenant_id && user.id),
     retry: false,
     queryFn: async (): Promise<PostMessage> => {
-      if (!id) throw new Error('Nachrichtenkennung fehlt');
+      if (!id) throw new OriginalMailError('unavailable');
       const mail = await coreGet(`/v3/mail/messages/${encodeURIComponent(id)}`, { throwAuthErrors: true });
-      if (!mail || mail.id !== id) throw new Error('Originalmail nicht verfügbar');
+      // null = keine Antwort (offline); eine andere Kennung ist nie das angeforderte Original.
+      if (!mail) throw new OriginalMailError('failed');
+      if (mail.id !== id) throw new OriginalMailError('unavailable');
       return mail;
     },
   });

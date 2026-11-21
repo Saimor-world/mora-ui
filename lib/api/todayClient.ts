@@ -68,6 +68,8 @@ export type TodayTask = {
   folder_id?: string | null;
   completed_at?: string | null;
   is_overdue?: boolean | null;
+  /** Herkunft eines abgeleiteten Eintrags (nur für den Postfach-Inhaber gesetzt). */
+  source?: { kind: 'mail'; mail_id: string } | null;
 };
 
 export type TodayIncident = {
