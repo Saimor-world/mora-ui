@@ -9,7 +9,7 @@ describe('post mail view helpers', () => {
   });
 
   it('keeps a message readable when it contains an invalid numeric entity', () => {
-    expect(plainText('Mira &#39; &#x1F331; &#99999999; &#xD800;')).toBe("Mira ' 🌱 � �");
+    expect(plainText('Mira &#39; &#x1F331; &#99999999; &#xD800;')).toBe("Mira ' 🌱 \uFFFD \uFFFD");
   });
 
   it('formats mail times relative to now', () => {
