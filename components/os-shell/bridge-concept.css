@@ -746,3 +746,13 @@ html[data-os-work] .bridge__body::after {
 .ck-myc path.ck-myc__pulse { stroke:#eafff5; stroke-width:2; stroke-dasharray:4 96; opacity:.9; animation:ck-myc-travel 14s linear infinite; }
 @keyframes ck-myc-travel { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
 
+
+/* Auf Arbeitsseiten gehört der Platz über der App-Leiste dem geöffneten Inhalt. */
+@media (min-width: 900px) {
+  html[data-dock='c'] .os-root:has(.os-shell:not([data-place='home'], [data-place='universe'])) {
+    --os-dock-space: 84px !important;
+  }
+  .os-shell:not([data-place='home'], [data-place='universe']) .bridge__body { height: 84px; }
+  html:not([data-mora-stage]) .os-shell:not([data-place='home'], [data-place='universe']) .bridge__body > :not(.bridge__pill) { display: none; }
+  html[data-mora-stage] .os-shell:not([data-place='home'], [data-place='universe']) .bridge__body { height: 304px; }
+}

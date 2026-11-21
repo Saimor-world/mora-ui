@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { tileSub } from '@/components/os-shell/BridgeConcept';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
-import { instrumentLines, untilText } from '@/lib/mora/bridgeData';
+import { instrumentLines, stations, untilText } from '@/lib/mora/bridgeData';
 import { answerCards } from '@/features/mora/ui/MoraStage';
 
 const css = fs.readFileSync(path.join(process.cwd(), 'components/os-shell/bridge-concept.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -36,12 +36,24 @@ it('fills every dock tile only from real snapshot content', () => {
 it('fills the dock instruments with real entries only, never padding', () => {
   const full = { ...snapshot, mail: { ...snapshot.mail, items: [...snapshot.mail.items, { id: 'm3', subject: 'Rechnung offen', from_addr: 'anna.berg@example.com', read: false }] } } as unknown as TodaySnapshot;
   expect(instrumentLines(full, 'post', 600).map((l) => l.text)).toEqual(['Lieferung morgen', 'Rechnung offen', 'Gelesen']);
-  expect(instrumentLines(full, 'post', 600)[1]).toMatchObject({ lead: 'Anna', tone: 'amber' });
+  expect(instrumentLines(full, 'post', 600)[1]).toMatchObject({ lead: 'Anna Berg', tone: 'amber' });
+  const named = { ...full, mail: { ...full.mail, items: [{ ...full.mail.items[0], from_addr: 'Testbetrieb <post@example.org>' }] } };
+  expect(instrumentLines(named, 'post', 600)[0].lead).toBe('Testbetrieb');
   expect(instrumentLines(full, 'post', 600)[2].tone).toBe('muted');
   expect(instrumentLines(snapshot, 'today', 600).map((l) => [l.lead, l.text])).toEqual([['Überfällig', 'Kassenbuch'], ['Heute', 'Teig ansetzen']]);
   expect(instrumentLines(snapshot, 'next', 15 * 60).map((l) => l.text)).toEqual(['Feier']);
   expect(instrumentLines(null, 'post', 600)).toEqual([]);
   expect(instrumentLines({ ...snapshot, mail: { ...snapshot.mail, status: 'disconnected' } } as unknown as TodaySnapshot, 'post', 600)).toEqual([]);
+});
+
+it('keeps undated backlog entries out of the daily preview and count', () => {
+  const tasks = { ...snapshot.tasks, items: snapshot.tasks.due_today, due_today: [], overdue: [],
+    counts: { ...snapshot.tasks.counts, open: 23, due_today: 0, overdue: 0 } };
+  const quiet = { ...snapshot, tasks };
+  expect(stations(quiet)[1].value).toBe('Nichts fällig');
+  expect(instrumentLines(quiet, 'today', 600)).toEqual([]);
+  expect(tileSub('today', quiet)).toBe('');
+  expect(stations(snapshot)[1].value).toBe('2 fällig');
 });
 
 it('says how long until the next appointment', () => {

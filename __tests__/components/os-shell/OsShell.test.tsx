@@ -82,6 +82,10 @@ describe('OsShell navigation', () => {
     fireEvent.change(input, { target: { value: 'scanner' } });
     await waitFor(() => expect(screen.getByRole('option', { name: /Scanner/ })).toBeInTheDocument());
     expect(screen.getByRole('option', { name: /MÔRA fragen/ })).toBeInTheDocument();
+    const option = screen.getByRole('option', { name: /Scanner/ });
+    option.focus();
+    fireEvent.keyDown(option, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Befehle' })).toBeNull();
   });
 
   it('hides Finance, Labs and the classic surface from a customer company', () => {

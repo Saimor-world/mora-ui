@@ -35,25 +35,17 @@ export function mailCounts(snapshot: TodaySnapshot | null, briefingUnread?: numb
   return { unread, needsYou };
 }
 
-export type Absence = { name: string; shiftTime: string | null; shiftId: string | null };
+/** Only the calendar entry itself can mark its shift as open. */
+function openShifts(snapshot: TodaySnapshot | null) {
+  if (!snapshot || !sourceReady(snapshot.calendar)) return [];
+  return snapshot.calendar.events.filter(e =>
+    e.date === snapshot.date && /schicht/i.test(e.title) &&
+    (e.is_open === true || e.open === true || /^(open|offen)$/i.test(e.status || e.phase || ''))
+  );
+}
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-/** Krankmeldung/Ausfall aus der Post, verknüpft mit der Schicht im Kalender (über den Vornamen). */
-export function absences(snapshot: TodaySnapshot | null): Absence[] {
-  if (!snapshot || !sourceReady(snapshot.mail)) return [];
-  const out: Absence[] = [];
-  for (const m of snapshot.mail.items ?? []) {
-    if (!/krank|fällt .*aus|ausfall|nicht da/i.test(m.subject ?? '')) continue;
-    const local = (m.from_addr ?? '').split('@')[0] ?? '';
-    const first = local.split(/[._-]/)[0];
-    if (!first || first.length < 2) continue;
-    const shift = sourceReady(snapshot.calendar)
-      ? snapshot.calendar.events.find((e) => e.date === snapshot.date && /schicht/i.test(e.title) && new RegExp(`\\b${first}\\b`, 'i').test(e.title))
-      : undefined;
-    if (!out.some((a) => a.name.toLowerCase() === first.toLowerCase())) out.push({ name: cap(first), shiftTime: shift?.time ?? null, shiftId: shift?.id ?? null });
-  }
-  return out;
+function openShiftLabel(shift: { time?: string }) {
+  return shift.time ? `Schicht um ${shift.time} offen` : 'Offene Schicht';
 }
 
 export type DayMark = { id: string; minute: number; time: string; label: string; problem: boolean };
@@ -72,14 +64,14 @@ export const hhmm = (minute: number) => `${String(Math.floor(minute / 60)).padSt
  */
 export function dayMarks(snapshot: TodaySnapshot | null, now: number, max = 5): DayMark[] {
   if (!snapshot || !sourceReady(snapshot.calendar)) return [];
-  const absent = absences(snapshot);
+  const open = openShifts(snapshot);
   const all = snapshot.calendar.events
     .filter((e) => e.date === snapshot.date && e.title)
     .map((e) => {
       const minute = toMinute(e.time);
-      const a = absent.find((x) => x.shiftId === e.id);
+      const isOpen = open.some(x => x.id === e.id);
       return minute === null || minute < DAY_START || minute > DAY_END ? null
-        : { id: e.id, minute, time: hhmm(minute), label: a ? `Schicht offen · ${a.name}` : shorten(e.title), problem: !!a };
+        : { id: e.id, minute, time: hhmm(minute), label: isOpen ? `Offen · ${shorten(e.title)}` : shorten(e.title), problem: isOpen };
     })
     .filter((x): x is DayMark => x !== null)
     .sort((a, b) => a.minute - b.minute);
@@ -91,7 +83,7 @@ export function dayMarks(snapshot: TodaySnapshot | null, now: number, max = 5): 
   return picked.sort((a, b) => a.minute - b.minute);
 }
 
-export type Station = { id: 'post' | 'today' | 'team' | 'nightwatch'; label: string; value: string; detail: string; tone: 'calm' | 'amber' | 'red'; progress?: number };
+export type Station = { id: 'post' | 'today' | 'team' | 'nightwatch'; label: string; value: string; detail: string; tone: 'calm' | 'amber' | 'red'; progress?: number; count?: number };
 
 export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number | null): Station[] {
   const mail = mailCounts(snapshot, briefingUnread);
@@ -101,20 +93,23 @@ export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number
 
   let today: Station = { id: 'today', label: 'Heute', value: 'Offline', detail: 'Aufgaben nicht verbunden', tone: 'calm' };
   if (snapshot && sourceReady(snapshot.tasks)) {
-    const open = snapshot.tasks.counts.open ?? snapshot.tasks.items.filter((t) => t.status !== 'done').length;
-    const done = snapshot.tasks.items.filter((t) => t.status === 'done').length;
-    const overdue = snapshot.tasks.counts.overdue ?? 0;
-    const due = snapshot.tasks.counts.due_today ?? 0;
-    today = { id: 'today', label: 'Heute', value: String(open), detail: overdue ? `${overdue} überfällig` : open ? `${due} heute fällig` : 'Alles erledigt', tone: overdue ? 'amber' : 'calm', progress: open + done ? done / (open + done) : 1 };
+    const tasks = snapshot.tasks;
+    const due = tasks.counts.due_today ?? tasks.due_today.filter(t => t.status !== 'done').length;
+    const overdue = tasks.counts.overdue ?? tasks.overdue.filter(t => t.status !== 'done').length;
+    today = {
+      id: 'today', label: 'Heute', count: due + overdue, value: due + overdue ? `${due + overdue} fällig` : 'Nichts fällig',
+      detail: overdue ? `${overdue} überfällig · ${due} heute fällig` : `${due} heute fällig`,
+      tone: overdue ? 'amber' : 'calm',
+    };
   }
 
   let team: Station = { id: 'team', label: 'Team', value: 'Offline', detail: 'Schichtplan nicht verbunden', tone: 'calm' };
   if (snapshot && sourceReady(snapshot.calendar)) {
     const shifts = snapshot.calendar.events.filter((e) => e.date === snapshot.date && /schicht/i.test(e.title)).length;
-    const absent = absences(snapshot);
-    team = absent.length
-      ? { id: 'team', label: 'Team', value: `${absent.length} Ausfall`, detail: `${absent.map((a) => a.name).join(', ')} krank`, tone: 'amber' }
-      : { id: 'team', label: 'Team', value: shifts ? `${shifts} Schichten` : 'Frei', detail: shifts ? 'Alle da' : 'Heute keine Schicht', tone: 'calm' };
+    const open = openShifts(snapshot);
+    team = open.length
+      ? { id: 'team', label: 'Team', value: `${open.length} offen`, detail: 'Im Schichtplan als offen markiert', tone: 'amber' }
+      : { id: 'team', label: 'Team', value: `${shifts} ${shifts === 1 ? 'Schicht' : 'Schichten'}`, detail: 'Heute im Kalender', tone: 'calm' };
   }
 
   let night: Station = { id: 'nightwatch', label: 'Nachtwache', value: 'Offline', detail: 'Nicht verbunden', tone: 'calm' };
@@ -131,8 +126,8 @@ export function stations(snapshot: TodaySnapshot | null, briefingUnread?: number
 /** Ein Satz von MÔRA, nur aus echten Daten. */
 export function moraLine(snapshot: TodaySnapshot | null, now: number, briefingUnread?: number | null): string {
   if (!snapshot) return '';
-  const absent = absences(snapshot)[0];
-  if (absent) return absent.shiftTime ? `${absent.name} fällt heute aus, die Schicht um ${absent.shiftTime} ist offen.` : `${absent.name} hat sich heute krankgemeldet.`;
+  const shift = openShifts(snapshot)[0];
+  if (shift) return `${openShiftLabel(shift)}.`;
   const mail = mailCounts(snapshot, briefingUnread);
   if (mail.needsYou) return `${mail.needsYou} ${mail.needsYou === 1 ? 'Mail braucht' : 'Mails brauchen'} dich.`;
   const next = dayMarks(snapshot, now, 10).find((m) => m.minute >= now);
@@ -146,10 +141,10 @@ export function warmBriefing(snapshot: TodaySnapshot | null, briefingUnread?: nu
   const greet = hour < 11 ? 'Guten Morgen.' : hour < 18 ? 'Hallo.' : 'Guten Abend.';
   const mail = mailCounts(snapshot, briefingUnread);
   const parts: string[] = [];
-  if (mail.unread !== null) parts.push(mail.unread ? `${mail.unread} ${mail.unread === 1 ? 'Mail wartet' : 'Mails warten'}${mail.needsYou ? `, ${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : ''}` : 'Der Posteingang ist leer');
-  const absent = absences(snapshot)[0];
+  if (mail.unread !== null) parts.push(mail.unread ? `${mail.unread} ${mail.unread === 1 ? 'Mail wartet' : 'Mails warten'}${mail.needsYou ? `, ${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : ''}` : 'Keine ungelesenen Mails');
+  const shift = openShifts(snapshot)[0];
   const quiet = sourceReady(snapshot.nightwatch) && !(snapshot.nightwatch.open_incidents ?? 0);
-  const second = absent ? `${absent.name} fällt aus${absent.shiftTime ? `, die Schicht um ${absent.shiftTime} ist offen` : ''}.` : quiet ? 'Die Nacht war ruhig.' : '';
+  const second = shift ? `${openShiftLabel(shift)}.` : quiet ? 'Die Nacht war ruhig.' : '';
   const first = parts.length ? `${greet} ${parts[0]}.` : greet;
   return second ? `${first} ${second}` : first;
 }
@@ -168,11 +163,10 @@ export type StageCard = {
 };
 export function stageCard(snapshot: TodaySnapshot | null, now: number, briefingUnread?: number | null): StageCard | null {
   if (!snapshot) return null;
-  const absent = absences(snapshot)[0];
-  if (absent) return {
-    id: `shift:${absent.shiftId ?? absent.name}`, kind: 'shift', urgent: true, eyebrow: 'Team · Ausfall',
-    title: absent.shiftTime ? `Schicht ${absent.shiftTime} offen` : `${absent.name} fällt aus`,
-    detail: absent.shiftTime ? `${absent.name} ist krank gemeldet.` : 'Krankmeldung in der Post.',
+  const shift = openShifts(snapshot)[0];
+  if (shift) return {
+    id: `shift:${shift.id}`, kind: 'shift', urgent: true, eyebrow: 'Team · Schichtplan',
+    title: openShiftLabel(shift), detail: cleanTitle(shift.title),
     primary: { label: 'Schicht öffnen', target: 'calendar' },
   };
   if (sourceReady(snapshot.nightwatch)) {
@@ -187,20 +181,20 @@ export function stageCard(snapshot: TodaySnapshot | null, now: number, briefingU
 }
 
 /** Besetzung heute: Schichten als Balken 6–22 Uhr, Ausfälle markiert. Höchstens `max` Zeilen. */
-export type ShiftBar = { id: string; name: string; start: number; end: number; absent: boolean };
+export type ShiftBar = { id: string; name: string; start: number; end: number | null; open: boolean };
 export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar[] {
   if (!snapshot || !sourceReady(snapshot.calendar)) return [];
-  const absent = absences(snapshot);
+  const open = openShifts(snapshot);
   return snapshot.calendar.events
     .filter((e) => e.date === snapshot.date && /schicht/i.test(e.title))
     .map((e) => {
       const start = toMinute(e.time);
       if (start === null) return null;
-      const name = cleanTitle(e.title).replace(/^schicht\s*/i, '').split(/\s+/)[0] ?? '';
-      return { id: e.id, name, start, end: Math.min(DAY_END, start + (e.duration ?? 480)), absent: absent.some((a) => a.shiftId === e.id) };
+      const name = cleanTitle(e.title);
+      return { id: e.id, name, start, end: typeof e.duration === 'number' && e.duration > 0 ? start + e.duration : null, open: open.some(s => s.id === e.id) };
     })
     .filter((x): x is ShiftBar => x !== null)
-    .sort((a, b) => Number(b.absent) - Number(a.absent) || a.start - b.start)
+    .sort((a, b) => Number(b.open) - Number(a.open) || a.start - b.start)
     .slice(0, max)
     .sort((a, b) => a.start - b.start);
 }
@@ -208,33 +202,36 @@ export function shiftCoverage(snapshot: TodaySnapshot | null, max = 4): ShiftBar
 /** Eine Zeile in einem Dock-Instrument: echte Einträge aus dem Snapshot, nie aufgefüllt. */
 export type InstrumentLine = { id: string; lead: string; text: string; tone?: 'amber' | 'muted' };
 
-const sender = (from?: string) => {
-  const local = (from ?? '').split('@')[0] ?? '';
-  const first = local.split(/[._-]/)[0] ?? '';
-  return first.length > 1 ? cap(first) : '';
-};
-
 export function instrumentLines(snapshot: TodaySnapshot | null, id: 'post' | 'today' | 'team' | 'next', now: number, max = 3): InstrumentLine[] {
   if (!snapshot) return [];
   if (id === 'post') {
     if (!sourceReady(snapshot.mail)) return [];
     const items = snapshot.mail.items ?? [];
     return [...items.filter((m) => m.read !== true), ...items.filter((m) => m.read === true)].slice(0, max)
-      .map((m) => ({ id: m.id, lead: sender(m.from_addr) || 'Mail', text: cleanTitle(m.subject ?? '(ohne Betreff)'), tone: m.read === true ? 'muted' as const : NEEDS_YOU.test(m.subject ?? '') ? 'amber' as const : undefined }));
+      .map((m) => ({ id: m.id, lead: senderName(m.from_addr) || 'Mail', text: cleanTitle(m.subject ?? '(ohne Betreff)'), tone: m.read === true ? 'muted' as const : NEEDS_YOU.test(m.subject ?? '') ? 'amber' as const : undefined }));
   }
   if (id === 'today') {
     if (!sourceReady(snapshot.tasks)) return [];
     const seen = new Set<string>();
-    const list = [...snapshot.tasks.overdue.map((t) => ({ t, late: true })), ...snapshot.tasks.due_today.map((t) => ({ t, late: false })), ...snapshot.tasks.items.filter((t) => t.status !== 'done').map((t) => ({ t, late: false }))];
+    const list = [...snapshot.tasks.overdue.map((t) => ({ t, late: true })), ...snapshot.tasks.due_today.map((t) => ({ t, late: false }))];
     return list.filter(({ t }) => t.status !== 'done' && !seen.has(t.id) && seen.add(t.id)).slice(0, max)
       .map(({ t, late }) => ({ id: t.id, lead: late ? 'Überfällig' : t.status === 'in_progress' ? 'Läuft' : 'Heute', text: cleanTitle(t.title), tone: late ? 'amber' as const : undefined }));
   }
   if (!sourceReady(snapshot.calendar)) return [];
   if (id === 'team') {
-    const absent = absences(snapshot);
+    const open = openShifts(snapshot);
     const bars = shiftCoverage(snapshot, max);
-    if (bars.length) return bars.map((b) => ({ id: b.id, lead: hhmm(b.start), text: b.absent ? `${b.name || 'Schicht'} · fällt aus` : `${b.name || 'Schicht'} bis ${hhmm(b.end)}`, tone: b.absent ? 'amber' as const : undefined }));
-    return absent.slice(0, max).map((a) => ({ id: `a:${a.name}`, lead: a.shiftTime ?? 'Heute', text: `${a.name} · krank gemeldet`, tone: 'amber' as const }));
+    if (bars.length) return bars.map(b => {
+      let text = b.name;
+      if (b.open) text += ' · offen';
+      else if (b.end !== null) {
+        text += ` bis ${hhmm(b.end % 1440)}`;
+        const days = Math.floor(b.end / 1440);
+        if (days) text += ` (+${days} ${days === 1 ? 'Tag' : 'Tage'})`;
+      }
+      return { id: b.id, lead: hhmm(b.start), text, tone: b.open ? 'amber' as const : undefined };
+    });
+    return open.slice(0, max).map(s => ({ id: s.id, lead: s.time ?? 'Heute', text: `${cleanTitle(s.title)} · offen`, tone: 'amber' as const }));
   }
   return dayMarks(snapshot, now, 12).filter((m) => m.minute >= now).slice(0, max)
     .map((m) => ({ id: m.id, lead: m.time, text: m.label, tone: m.problem ? 'amber' as const : undefined }));
@@ -267,7 +264,7 @@ export function focusCards(snapshot: TodaySnapshot | null, briefingUnread?: numb
     const critical = snapshot.nightwatch.incidents.some((i) => /critical|fatal/i.test(String(i.severity ?? '')));
     if (n) out.push({ id: 'nightwatch', label: 'Nachtwache', value: `${n} offen`, tone: critical ? 'red' : 'amber', target: 'nightwatch' });
   }
-  for (const a of absences(snapshot)) out.push({ id: `absent:${a.name}`, label: a.name, value: a.shiftTime ? `Schicht ${a.shiftTime} offen` : 'fällt aus', tone: 'amber', target: 'calendar' });
+  for (const shift of openShifts(snapshot)) out.push({ id: `shift:${shift.id}`, label: cleanTitle(shift.title), value: openShiftLabel(shift), tone: 'amber', target: 'calendar' });
   const mail = mailCounts(snapshot, briefingUnread);
   if (mail.needsYou) out.push({ id: 'post', label: 'Post', value: `${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich`, tone: 'amber', target: 'post' });
   if (sourceReady(snapshot.tasks)) {

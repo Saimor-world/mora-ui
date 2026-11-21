@@ -113,7 +113,8 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
 
   return (
     <div className="os-dialog-backdrop" style={{ alignItems: 'flex-start', paddingTop: '12vh' }} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label="Befehle" className="os-dialog" style={{ padding: 0, width: 'min(620px, 100%)' }}>
+      <div role="dialog" aria-modal="true" aria-label="Befehle"
+        onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }} className="os-dialog" style={{ padding: 0, width: 'min(620px, 100%)' }}>
         <div className="flex items-center gap-3 px-5" style={{ borderBottom: '1px solid var(--os-hairline)' }}>
           <Search size={16} className="os-tone-faint" />
           <input
@@ -124,7 +125,6 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') onClose();
               if (e.key === 'ArrowDown') { e.preventDefault(); setIndex((i) => Math.min(i + 1, items.length - 1)); }
               if (e.key === 'ArrowUp') { e.preventDefault(); setIndex((i) => Math.max(i - 1, 0)); }
               if (e.key === 'Enter') { e.preventDefault(); choose(items[index]); }

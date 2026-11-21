@@ -1,6 +1,5 @@
 'use client';
 import { localISO, shortDate } from '@/lib/lea/world';
-import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React, { useMemo } from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
 import { MailClient } from './MailClient';
@@ -27,12 +26,12 @@ function Column({ icon, title, action, children }: { icon: React.ReactNode; titl
   );
 }
 
-function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; isError: boolean; error: unknown; data: T[] | null | undefined; refetch: () => void; fetchStatus: string }; empty: string; render: (items: T[]) => React.ReactNode; subject: string }) {
-  if (q.fetchStatus === 'idle' && q.data === undefined) return <FailureState kind="unauthenticated" compact subject={subject} />;
+function QueryBody<T>({ q, empty, render, subject, allowEmpty = false }: { q: { isLoading: boolean; isError: boolean; error: unknown; data: T[] | null | undefined; refetch: () => void; fetchStatus: string }; empty: string; allowEmpty?: boolean; render: (items: T[]) => React.ReactNode; subject: string }) {
   if (q.isLoading) return <Loading lines={4} />;
   if (q.isError) return <FailureState kind={classifyCoreFailure(q.error)} compact subject={subject} onRetry={q.refetch} />;
+  if (q.fetchStatus === 'idle' && q.data === undefined) return <FailureState kind="unauthenticated" compact subject={subject} />;
   if (q.data === null) return <StateView kind="not_configured" compact copy="CORE hat keine Daten geliefert – Quelle nicht verbunden oder nicht erreichbar." detail={subject} />;
-  if (!q.data || q.data.length === 0) return <StateView kind="empty" compact title={empty} />;
+  if (!q.data || (!allowEmpty && q.data.length === 0)) return <StateView kind="empty" compact title={empty} />;
   return <>{render(q.data)}</>;
 }
 
@@ -54,13 +53,10 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       subject: m.subject,
       from: m.from,
       from_addr: m.from_addr || m.from,
-      date: m.received_at,
-      read: m.read ?? false,
-      snippet: m.snippet || `Nachricht von ${m.from || m.from_addr || 'Team'} – im Tagesstand deiner Abteilung hinterlegt.`,
-      body_text:
-        (m as { body_text?: string }).body_text ||
-        m.snippet ||
-        `${m.subject}\n\nAbsender: ${m.from || m.from_addr || 'Intern'}\nEingang: ${m.received_at ? new Date(m.received_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'Heute'}\n\nDiese Nachricht gehört zum aktiven Arbeitskontext und kann direkt mit MÔRA beantwortet oder in die Abteilungsarbeit übernommen werden.`,
+      date: m.received_at || m.date,
+      read: m.read,
+      snippet: m.snippet,
+      body_text: (m as { body_text?: string }).body_text,
     }));
   }, [snapshot?.mail?.items]);
 
@@ -76,10 +72,10 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
 
   const useSnapshotInbox =
     snapshotMessages.length > 0 &&
-    (demo || localFallback || liveInbox.isError || !liveInbox.data || liveInbox.data.length === 0);
+    (demo || localFallback);
   const useSnapshotCalendar =
     snapshotEvents.length > 0 &&
-    (demo || localFallback || liveCalendar.isError || !liveCalendar.data || liveCalendar.data.length === 0);
+    (demo || localFallback);
 
   const inbox = useSnapshotInbox
     ? { ...liveInbox, isLoading: false, isError: false, error: null, fetchStatus: 'idle', data: snapshotMessages }
@@ -99,7 +95,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       </header>
       <div className="os-post-grid">
         <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('mail')}>Im Postfach öffnen</Button>}>
-          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} />} />
+          <QueryBody allowEmpty q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} live={hasSession && !demo && !localFallback && !sample} />} />
         </Column>
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine anstehenden Termine im Kalender." render={(items) => (

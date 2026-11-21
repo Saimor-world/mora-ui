@@ -263,13 +263,14 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
     return () => { root.removeAttribute('data-os-work'); delete root.dataset.world; };
   }, [world]);
 
-  // MÔRA setzt sich an den Ort, an dem man gerade ist.
+  const moraOpen = useOsShellStore(s => s.moraOpen);
+  // Nach dem Gespräch kehrt MÔRA an den geöffneten Arbeitsplatz zurück.
   useEffect(() => {
-    if (!landed || busy) return;
+    if (!landed || busy || moraOpen) return;
     const anchor = close ? `close-${close.kind}` : 'room';
     const t = window.setTimeout(() => useMoraPresence.getState().goTo(`[data-mora-anchor="wk-${anchor}"]`, 'work'), 60);
     return () => window.clearTimeout(t);
-  }, [landed, busy, close, activeRoom]);
+  }, [landed, busy, close, activeRoom, moraOpen]);
   useEffect(() => () => useMoraPresence.getState().goHome(), []);
 
   // Kamera ------------------------------------------------------------------------------------------
@@ -378,20 +379,32 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (document.querySelector('[data-ws-pop]')) return;
+      const shell = useOsShellStore.getState();
+      if (shell.moraOpen || shell.paletteOpen || shell.controlOpen || shell.shortcutsOpen || document.querySelector('[data-ws-pop], [role="dialog"]')) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) { t.blur(); e.preventDefault(); return; }
       e.preventDefault();
       back();
     };
-    window.addEventListener('keydown', k, true);
-    return () => window.removeEventListener('keydown', k, true);
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
   }, [back]);
 
   const roomLabel = currentRoomMeta.shortLabel;
   const stationMeta = useMemo(() => resolveStationKind(planet.id, title, roomCtx.archetype), [planet.id, title, roomCtx.archetype]);
   const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
+
+  const subject = top.kind === 'task' ? allTasks.find(t => t.id === top.id)?.title
+    : top.kind === 'doc' ? allDocs.find(d => d.id === top.id)?.name : undefined;
+  const placeContext = [title, nameOf(top), subject && clean(subject)].filter(Boolean).join(' · ');
+  useLayoutEffect(() => {
+    const store = useOsShellStore.getState();
+    store.setSurfaceContext(placeContext);
+    return () => {
+      if (useOsShellStore.getState().surfaceContext === placeContext) store.setSurfaceContext(null);
+    };
+  }, [placeContext]);
 
   const toggleRoomLamp = useCallback(() => {
     const nextPhase = world === 'morgennebel' ? 'night' : 'flow';
@@ -572,6 +585,8 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   const activeSkyRect = roomSky(roomCtx.archetype);
   const activeMoraSeat = ROOM.moraSeat;
 
+  const currentIndex = top.kind === 'task' ? order.findIndex(task => task.id === top.id) : -1;
+  const nextTask = currentIndex >= 0 ? order[currentIndex + 1] : undefined;
   const taskOf = (id: string) => allTasks.find((t) => t.id === id) ?? null;
   const folderName = (t: WorkTask | null) => (t?.folderId ? clean(planet.moons.find((m) => m.id === t.folderId)?.title ?? '') : '');
   const folderTitleById = (fid: string) => clean(planet.moons.find((m) => m.id === fid)?.title ?? '');
@@ -640,9 +655,9 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             </div>
           ) : null}
 
-          <div className="wk-board" role="list" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
+          <div className="wk-board" role="group" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
             {draft !== null ? (
-              <div className="wk-card wk-card--new" style={slot(0)} role="listitem">
+              <div className="wk-card wk-card--new" style={slot(0)}>
                 <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
                   onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
@@ -651,7 +666,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             {cards.slice(0, draft !== null ? PER_PAGE - 1 : PER_PAGE).map((t, i) => {
               const k = i + (draft !== null ? 1 : 0);
               return (
-                <button key={t.id} type="button" role="listitem" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
+                <button key={t.id} type="button" className="wk-card" data-testid={`wk-card-${t.id}`} data-overdue={t.overdue ? '1' : undefined}
                   style={{ ...slot(k), rotate: `${((hash(t.id) % 7) - 3) * 0.35}deg` }} onClick={() => open({ kind: 'task', id: t.id })}>
                   <i className="wk-pin" aria-hidden />
                   <span className="wk-card__t">{t.title}</span>
@@ -901,7 +916,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                 crumb={[title, folderName(taskOf(close.id))].filter(Boolean).join(' · ')}
                 docs={docs.filter((d) => d.folderId === taskOf(close.id)?.folderId).map((d) => ({ id: d.id, name: clean(d.name) }))}
                 onOpenDoc={(id) => { setLectern(id); open({ kind: 'doc', id }); }}
-                onNext={() => { const i = order.findIndex((t) => t.id === close.id); const n = order[i + 1]; if (n) setStack((s) => [...s.slice(0, -1), { kind: 'task', id: n.id }]); }}
+                onNext={nextTask ? () => setStack(s => [...s.slice(0, -1), { kind: 'task', id: nextTask.id }]) : undefined}
                 back={backTo} />
             ) : null}
             {close.kind === 'doc' ? (

@@ -52,7 +52,7 @@ export function PhoneCompanion({ onOpenUniverse }: { onOpenUniverse?: () => void
 
       {s && importantMails(s).length ? (
         <section className="pc-card pc-needs" data-testid="pc-needs">
-          <NeedsYou mails={importantMails(s).slice(0, 4)} onOpen={setReading} onAll={() => undefined} />
+          <NeedsYou mails={importantMails(s)} onOpen={setReading} />
         </section>
       ) : null}
 

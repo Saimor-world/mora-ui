@@ -79,7 +79,7 @@ export function tileSub(id:string, snapshot:TodaySnapshot|null):string{
   const tasks=available(snapshot.tasks)?snapshot.tasks:null; const cal=available(snapshot.calendar)?snapshot.calendar:null;
   switch(id){
     case 'post':{if(!available(snapshot.mail))return '';const m=snapshot.mail.items.find(i=>!i.read)??snapshot.mail.items[0];return clean(m?.subject);}
-    case 'today':{if(!tasks)return '';const t=tasks.due_today[0]??tasks.items.find(i=>i.status!=='done');return t?clean(t.title):'';}
+    case 'today':{if(!tasks)return '';const t=tasks.due_today.find(i=>i.status!=='done');return t?clean(t.title):'';}
     case 'overdue':return tasks?.overdue[0]?clean(tasks.overdue[0].title):'';
     case 'next':return cal?.next_event?.location?clean(cal.next_event.location):'';
     case 'events':{if(!cal)return '';const n=cal.next_event?.id;const after=cal.events.filter(e=>e.date===snapshot.date&&e.id!==n&&(!cal.next_event?.time||(e.time??'')>cal.next_event.time));return after[0]?`Danach ${after[0].time?after[0].time+' ':''}${clean(after[0].title)}`:'';}
@@ -152,7 +152,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   ];
   const renderControl = (control:typeof controls[number]) => {
     const Icon=control.icon;
-    const count=control.id==='post' ? mail.unread : control.id==='today' && available(snapshot?.tasks) ? snapshot?.tasks.counts.open : control.id==='notifications' ? attention+incidents : null;
+    const count=control.id==='post' ? mail.unread : control.id==='today' && available(snapshot?.tasks) ? gauges[1].count : control.id==='notifications' ? attention+incidents : null;
     const next=snapshot?.calendar.next_event;
     const status=control.id==='calendar' && available(snapshot?.calendar) && next?.time ? `Heute ${next.time}` : null;
     const tip=status ? `${control.name} · ${status}` : control.name;
@@ -168,7 +168,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const readFrac=mail.unread!==null&&snapshot?.mail.items.length?1-Math.min(1,mail.unread/Math.max(snapshot.mail.items.length,mail.unread)):mail.unread===0?1:0;
   const instruments:Instrument[]=[
     {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach'},
-    {id:'today',col:'inner',label:'Heute',value:tasks?countLabel(Number(today.value)||0,'Aufgabe','Aufgaben'):today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben'},
+    {id:'today',col:'inner',label:'Heute',value:today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben'},
     {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan'},
     {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender'},
   ];

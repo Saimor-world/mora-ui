@@ -22,6 +22,7 @@ jest.mock('@/lib/lea/useDayActions', () => ({ useDayActions: () => ({ setDone, u
 jest.mock('@/lib/api/http', () => ({ corePost: (...a: unknown[]) => corePost(...a) }));
 jest.mock('@/lib/os/useScopedToday', () => ({ invalidateToday: jest.fn() }));
 
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { Werkstatt } from '@/features/werkstatt/ui/Werkstatt';
 import { TaskSheet } from '@/features/werkstatt/ui/TaskSheet';
 import { Book } from '@/features/werkstatt/ui/Book';
@@ -97,6 +98,11 @@ describe('Zurück führt dorthin, woher man kam', () => {
     const root = screen.getByTestId('werkstatt');
     fireEvent.click(screen.getByTestId('wk-board').querySelector('[data-testid^="wk-card-"]') as HTMLElement);
     expect(root.dataset.place).toBe('task');
+    expect(useOsShellStore.getState().surfaceContext).toContain('Aufgabe Nummer');
+    fireEvent.click(screen.getByTestId('wk-dock-mora'));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(root.dataset.place).toBe('task');
+    act(() => useOsShellStore.getState().setMoraOpen(false));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(root.dataset.place).toBe('room');
     fireEvent.click(screen.getByTestId('wk-hit-lectern'));

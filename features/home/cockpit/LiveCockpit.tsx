@@ -6,12 +6,12 @@ import { CockpitWindow } from './Window';
 import { OPEN_PLANET_SIZE, PlanetSystem } from './Scene';
 import { homeMycelium } from '@/lib/universe/homeMycelium';
 import { dayMoonsFor } from '@/lib/universe/dayMoons';
-import { corePost } from '@/lib/api/http';
+import { corePost, isLocalDemoFallback } from '@/lib/api/http';
 import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { HomeOverview } from '../widgets/HomeOverview';
 import { HomeFocus } from '../widgets/HomeFocus';
 import { widgetsFromToday } from '../widgets/adapters';
-import { useScopedToday } from '@/lib/os/useScopedToday';
+import { invalidateToday, useScopedToday } from '@/lib/os/useScopedToday';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { firstName } from '@/lib/auth/displayName';
@@ -128,7 +128,13 @@ export function LiveCockpit({
   const dayMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
   const threads = useMemo(() => homeMycelium(planets, snapshot), [planets, snapshot]);
   // Demo: abhaken bleibt lokal, nie ein CORE-Schreibzugriff.
-  const onTaskDone = useCallback((id: string) => { if (!effectiveIsDemo && !scopeCompanyId?.startsWith('demo-')) void corePost(`/v3/tasks/${encodeURIComponent(id)}`, { status: 'done' }).catch(() => null); }, [effectiveIsDemo, scopeCompanyId]);
+  const onTaskDone = useCallback(async (id: string) => {
+    if (effectiveIsDemo || scopeCompanyId === 'company-local-demo' || scopeCompanyId?.startsWith('demo-') || isLocalDemoFallback()) return true;
+    const updated = await corePost(`/v3/tasks/${encodeURIComponent(id)}`, { status: 'done' }, { throwAuthErrors: true });
+    if (updated?.id !== id || updated.status !== 'done') return false;
+    invalidateToday();
+    return true;
+  }, [effectiveIsDemo, scopeCompanyId]);
 
   const planetSignals = useMemo(() => {
     const map = new Map<string, { isAlarm: boolean; reason: string }>();
