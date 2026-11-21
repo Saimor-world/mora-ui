@@ -191,15 +191,15 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
       case 'consent':
         return s ? (
           <div data-testid="dock-consent">
-            <Text variant="eyebrow">Freigabe</Text>
+            <Text variant="eyebrow">{local ? 'Freigabe' : 'Quelle ansehen'}</Text>
             <Text variant="title" as="h3" className="mt-1">{s.label}</Text>
             <ul className="os-station-consent">
-              <li><ArrowDownToLine size={14} aria-hidden /><span>{CONSENT_IN[s.group] || 'Inhalte dieser Quelle'}</span></li>
+              <li><ArrowDownToLine size={14} aria-hidden /><span>{s.id === 'calendly' ? 'Buchungen, Umbuchungen und Absagen' : CONSENT_IN[s.group] || 'Inhalte dieser Quelle'}</span></li>
               <li><Orbit size={14} aria-hidden /><span>dockt an {targetName(s)}</span></li>
-              <li><ShieldCheck size={14} aria-hidden /><span>MÔRA handelt nur nach deiner Bestätigung</span></li>
+              <li><ShieldCheck size={14} aria-hidden /><span>{local ? 'MÔRA handelt nur nach deiner Bestätigung' : 'Diese Quelle ist noch nicht verbunden. Die Einrichtung ist in dieser Ansicht nur lokal möglich.'}</span></li>
             </ul>
             <div className="os-station-actions">
-              <Button variant="primary" size="sm" onClick={() => approve(s)} disabled={!local} data-testid="dock-approve">{s.entry?.action?.kind === 'oauth' ? 'Freigeben und anmelden' : 'Freigeben'}</Button>
+              {local && <Button variant="primary" size="sm" onClick={() => approve(s)} data-testid="dock-approve">{s.entry?.action?.kind === 'oauth' ? 'Freigeben und anmelden' : 'Freigeben'}</Button>}
               <Button variant="ghost" size="sm" onClick={back}>Zurück</Button>
             </div>
           </div>

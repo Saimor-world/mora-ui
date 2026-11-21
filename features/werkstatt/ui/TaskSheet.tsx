@@ -42,7 +42,12 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
   const [stub, setStub] = useState(false);
   useEffect(() => { setWho(task.assignee); setStub(false); }, [task.id, task.assignee]);
   const people = (team.data ?? []).map((m) => m.name).filter(Boolean);
-  const commitTitle = () => { const v = title.trim(); if (v && v !== task.title) void update(task.raw, { title: v }); else setTitle(task.title); };
+  const [saveError, setSaveError] = useState('');
+  const save = async (action: Promise<boolean>, label: string) => {
+    const ok = await action.catch(() => false);
+    setSaveError(ok ? '' : label + ' konnte nicht gespeichert werden.');
+  };
+  const commitTitle = () => { const v = title.trim(); if (v && v !== task.title) void save(update(task.raw, { title: v }), 'Der Titel'); else setTitle(task.title); };
   const pick = async (name: string) => {
     setSlip(null);
     setWho(name);
@@ -64,12 +69,13 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
       <p className="wk-sheet__crumb">{crumb}</p>
       <div className="wk-sheet__title">
         <button type="button" className="wk-ring" aria-pressed={task.done} aria-label={task.done ? 'Wieder öffnen' : 'Erledigt'}
-          onClick={() => void setDone(task.raw, !task.done)} data-testid="wk-task-done">
+          onClick={() => void save(setDone(task.raw, !task.done), 'Der Stand')} data-testid="wk-task-done">
           <svg viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="22" />{task.done ? <path d="M21 33 l8 8 l15 -18" /> : null}</svg>
         </button>
         <textarea value={title} rows={2} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }} aria-label="Aufgabe" data-testid="wk-task-title" />
       </div>
+      {saveError && <p role="alert">{saveError}</p>}
       <dl className="wk-sheet__facts">
         <div>
           <dt>fällig</dt>
@@ -85,15 +91,15 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
         <div>
           <dt>stand</dt>
           <dd className="wk-sheet__stand">
-            <button type="button" className="wk-ink" aria-pressed={status === 'open'} onClick={() => status !== 'open' && void update(task.raw, { status: 'backlog' })}>offen</button>
-            <button type="button" className="wk-ink" aria-pressed={status === 'in_progress'} onClick={() => status !== 'in_progress' && void update(task.raw, { status: 'in_progress' })}>in Arbeit</button>
+            <button type="button" className="wk-ink" aria-pressed={status === 'open'} onClick={() => status !== 'open' && void save(update(task.raw, { status: 'backlog' }), 'Der Stand')}>offen</button>
+            <button type="button" className="wk-ink" aria-pressed={status === 'in_progress'} onClick={() => status !== 'in_progress' && void save(update(task.raw, { status: 'in_progress' }), 'Der Stand')}>in Arbeit</button>
           </dd>
         </div>
       </dl>
       {(task.raw as { description?: string }).description ? <p className="wk-sheet__body">{(task.raw as { description?: string }).description}</p> : null}
       {docs.length ? (
         <div className="wk-sheet__links">
-          <span>dazu</span>
+          <span>Im selben Ordner</span>
           {docs.slice(0, 3).map((d) => <button key={d.id} type="button" className="wk-ink wk-link" onClick={() => onOpenDoc(d.id)}>{d.name}</button>)}
         </div>
       ) : null}
@@ -109,7 +115,7 @@ export function TaskSheet({ task, crumb, companyId, docs, onOpenDoc, onNext, bac
       {slip === 'due' ? (
         <PaperSlip x={40} y={250} w={300} label="Wann?" onClose={() => setSlip(null)} testId="wk-due-slip">
           <ul className="wk-slip__list">
-            {dueOptions.map((o) => <li key={o.label}><button type="button" onClick={() => { setSlip(null); void update(task.raw, { due_date: o.v }); }}><span>{o.label}</span><em>{shortDate(o.v)}</em></button></li>)}
+            {dueOptions.map((o) => <li key={o.label}><button type="button" onClick={() => { setSlip(null); void save(update(task.raw, { due_date: o.v }), 'Die Fälligkeit'); }}><span>{o.label}</span><em>{shortDate(o.v)}</em></button></li>)}
           </ul>
         </PaperSlip>
       ) : null}
