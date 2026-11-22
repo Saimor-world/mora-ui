@@ -13,7 +13,7 @@ export function deriveAttention(s: TodaySnapshot): AttentionItem[] {
   const out: AttentionItem[] = [];
   const readable = (status: string) => status === 'ok' || status === 'empty';
   if (readable(s.tasks.status)) {
-    for (const t of s.tasks.overdue.slice(0, 3)) out.push({ id: `t-${t.id}`, title: t.title, reason: 'Aufgabe überfällig', tone: 'warning', target: 'today' });
+    for (const t of s.tasks.overdue.slice(0, 3)) out.push({ id: `t-${t.id}`, title: t.title, reason: 'Eintrag überfällig', tone: 'warning', target: 'today' });
   }
   if (readable(s.nightwatch.status)) {
     for (const i of s.nightwatch.incidents.filter((x) => !x.acked).slice(0, 2)) {
@@ -34,11 +34,11 @@ export function deriveHints(s: TodaySnapshot | null): string[] {
   const missing = (['mail', 'calendar', 'tasks', 'nightwatch'] as const).filter((k) => s[k].status === 'disconnected' || s[k].status === 'unavailable');
   if (missing.length) hints.push(`Nicht verbunden oder nicht verfügbar: ${missing.map(label).join(', ')}. Ich rechne dort nicht mit „nichts“, sondern mit „unbekannt“.`);
   if (s.calendar.next_event) hints.push(`Nächster Termin: ${s.calendar.next_event.title}${s.calendar.next_event.time ? ` um ${s.calendar.next_event.time}` : ''}.`);
-  if ((s.tasks.counts.overdue ?? 0) > 0) hints.push('Eine überfällige Aufgabe zuerst klären würde den Tag spürbar entlasten.');
+  if ((s.tasks.counts.overdue ?? 0) > 0) hints.push('Einen überfälligen Eintrag zuerst klären würde den Tag spürbar entlasten.');
   if (!hints.length) hints.push('Ruhiger Tag – nichts drängt. Gute Zeit für Fokusarbeit.');
   return hints;
 }
 
 function label(k: 'mail' | 'calendar' | 'tasks' | 'nightwatch') {
-  return { mail: 'Post', calendar: 'Kalender', tasks: 'Aufgaben', nightwatch: 'Nightwatch' }[k];
+  return { mail: 'Post', calendar: 'Kalender', tasks: 'Einträge', nightwatch: 'Nightwatch' }[k];
 }

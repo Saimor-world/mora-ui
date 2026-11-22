@@ -102,7 +102,7 @@ export function DepartmentSheet({
   return (
     <Shell
       title={planet.title}
-      sub={`${planet.moons.length} ${planet.moons.length === 1 ? 'Ordner' : 'Ordner'}${tasks?.length ? ` · ${tasks.length} Aufgaben` : ''}`}
+      sub={`${planet.moons.length} ${planet.moons.length === 1 ? 'Ordner' : 'Ordner'}${tasks?.length ? ` · ${tasks.length} Einträge` : ''}`}
       onClose={onClose}
     >
       <div className="ck-dept-sheet">
@@ -175,7 +175,7 @@ export function DepartmentSheet({
 
         {tasks && tasks.length > 0 ? (
           <section className="ck-dept-sec" style={{ marginTop: 20 }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 600 }}>Aufgaben ({tasks.length})</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 600 }}>Einträge ({tasks.length})</h3>
             <div className="ck-files">
               {tasks.map((t) => (
                 <div key={t.id} className="ck-file" style={{ cursor: 'default' }}>

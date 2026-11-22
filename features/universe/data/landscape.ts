@@ -66,7 +66,7 @@ export function buildLandscape(input: LandscapeInput): Landscape {
   if (t?.overdue) todaySignals.push({ id: 'overdue', label: `${t.overdue} überfällig`, tone: 'warning' });
   if (t?.dueToday) todaySignals.push({ id: 'due', label: `${t.dueToday} heute fällig`, tone: 'info' });
   planets.push({
-    id: 'today', title: 'Heute', role: 'Aufgaben & Termine', target: 'today', ring: 0, angle: 200,
+    id: 'today', title: 'Heute', role: 'Einträge & Termine', target: 'today', ring: 0, angle: 200,
     size: sizeFrom((t?.open ?? 0) + (cal?.titles.length ?? 0)),
     moons: moons([...(cal?.titles ?? []), ...(t?.titles ?? [])], 'today'),
     signals: todaySignals,
@@ -139,7 +139,7 @@ export function buildLandscape(input: LandscapeInput): Landscape {
   const strands: Strand[] = [];
   for (const p of planets) if (p.signals.length) strands.push({ id: `mora-${p.id}`, from: 'mora', to: p.id, evidence: 'assigned', label: p.signals[0].label });
   if ((m?.subjects ?? []).some((x) => FINANCE_HINT.test(x))) strands.push({ id: 'post-finance', from: 'post', to: 'finance', evidence: 'inferred', label: 'Post erwähnt Rechnung/Beleg' });
-  if ((t?.titles ?? []).some((x) => FINANCE_HINT.test(x))) strands.push({ id: 'today-finance', from: 'today', to: 'finance', evidence: 'inferred', label: 'Aufgabe betrifft Finanzen' });
+  if ((t?.titles ?? []).some((x) => FINANCE_HINT.test(x))) strands.push({ id: 'today-finance', from: 'today', to: 'finance', evidence: 'inferred', label: 'Eintrag betrifft Finanzen' });
   if ((cal?.titles.length ?? 0) > 0 && m) strands.push({ id: 'today-post', from: 'today', to: 'post', evidence: 'inferred', label: 'Termine und Post am selben Tag' });
 
   const prio = planets.find((p) => p.signals.some((x) => x.tone === 'warning') && p.tone === 'attention') || planets.find((p) => p.tone === 'attention') || null;

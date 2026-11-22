@@ -251,7 +251,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
 
   const defaultWeekRows = useMemo(() => {
     const names = planet.moons.map((m) => clean(m.title)).filter((n) => n && !/^planung$/i.test(n)).slice(0, 3);
-    return names.length > 0 ? names : [title || 'Aufgaben', 'Termine', 'Notizen'];
+    return names.length > 0 ? names : [title || 'Einträge', 'Termine', 'Notizen'];
   }, [planet.moons, title]);
 
   // Arbeitsmodus am Dock + Welt (Dock folgt Licht der Welt).
@@ -392,7 +392,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
 
   const roomLabel = currentRoomMeta.shortLabel;
   const stationMeta = useMemo(() => resolveStationKind(planet.id, title, roomCtx.archetype), [planet.id, title, roomCtx.archetype]);
-  const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Aufgabe' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
+  const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Eintrag' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
   const subject = top.kind === 'task' ? allTasks.find(t => t.id === top.id)?.title
@@ -466,7 +466,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
       default:
         return {
           title: `MÔRA · ${title}`,
-          text: `${allTasks.filter((t) => !t.done).length} offene Aufgaben an der Tafel · ${docs.length} Dossiers im Raum.`,
+          text: `${allTasks.filter((t) => !t.done).length} offene Einträge an der Tafel · ${docs.length} Dossiers im Raum.`,
           cta: `${stationMeta.badgeText} öffnen →`,
           canReorderOatMilk: false,
         };
@@ -655,10 +655,10 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             </div>
           ) : null}
 
-          <div className="wk-board" role="group" aria-label={`Aufgaben ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
+          <div className="wk-board" role="group" aria-label={`Einträge ${title}`} data-testid="wk-board" data-later={later ? '1' : undefined}>
             {draft !== null ? (
               <div className="wk-card wk-card--new" style={slot(0)}>
-                <textarea autoFocus value={draft} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="wk-new-card" maxLength={120}
+                <textarea autoFocus value={draft} placeholder="Neuer Eintrag" aria-label="Neuer Eintrag" data-testid="wk-new-card" maxLength={120}
                   onChange={(e) => setDraft(e.target.value)} onBlur={() => void submitDraft()}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitDraft(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setDraft(null); } }} />
               </div>
@@ -675,13 +675,13 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               );
             })}
             {!later && board.later.length ? (
-              <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Aufgaben`}>
+              <button type="button" className="wk-card wk-bundle" style={slot(PER_PAGE)} onClick={() => { setLater(true); setPage(0); }} data-testid="wk-later" aria-label={`Später, ${board.later.length} Einträge`}>
                 <i className="wk-bundle__clip" aria-hidden />
                 <span className="wk-card__t">später</span>
                 <span className="wk-bundle__n">{board.later.length}</span>
               </button>
             ) : later ? (
-              <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Aufgaben">
+              <button type="button" className="wk-card wk-bundle wk-bundle--back" style={slot(PER_PAGE)} onClick={() => { setLater(false); setPage(0); }} data-testid="wk-now" aria-label="Zurück zu den nächsten Einträge">
                 <span className="wk-card__t">jetzt</span>
               </button>
             ) : null}
@@ -979,7 +979,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
           { id: 'station', label: stationMeta.badgeText, run: () => open({ kind: 'station' }) },
           {
             id: 'neue-aufgabe',
-            label: 'Neue Aufgabe',
+            label: 'Neuer Eintrag',
             run: () => { setLater(false); setPage(0); setDraft(''); },
           },
           { id: 'dokumente', label: 'Dokumente', run: () => setDocSlip((v) => !v), pressed: docSlip },

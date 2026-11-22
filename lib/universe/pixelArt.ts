@@ -319,7 +319,7 @@ export function paintMoon(kind: PlanetKind, d: number, seed: number, light: { x:
     if (o(x - 1, y) || o(x + 1, y) || o(x, y - 1) || o(x, y + 1)) col = lv > 0.3 ? look.moon[3] : look.moon[0];
     put(bm, x, y, col);
   }
-  if (tasks) { // offene Aufgaben: zwei warme Lichter auf der Nachtseite
+  if (tasks) { // offene Einträge: zwei warme Lichter auf der Nachtseite
     const col = LIGHTS;
     [[-0.45, 0.35], [0.1, 0.55]].forEach(([ox, oy]) => { const x = Math.round(c + ox * R * -L.x * 1.4 + (L.x > 0 ? -1 : 1)), y = Math.round(c + oy * R * 0.9); put(bm, x, y, col); });
   }

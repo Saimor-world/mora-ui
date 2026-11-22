@@ -235,7 +235,7 @@ export function StationPlanet({
                 <small>{roomCtx.roomSubtitle}</small>
               </div>
               <div className="ws-room-door__meta">
-                <span>{work.open ? `${work.open} ${work.open === 1 ? 'Aufgabe' : 'Aufgaben'} offen` : 'Keine offenen Aufgaben'} · {plural(docCount, 'Dokument', 'Dokumente')} · {crew.length || 1} an Bord</span>
+                <span>{work.open ? `${work.open} ${work.open === 1 ? 'Eintrag' : 'Einträge'} offen` : 'Keine offenen Einträge'} · {plural(docCount, 'Dokument', 'Dokumente')} · {crew.length || 1} an Bord</span>
                 <span className="ws-room-door__go" aria-hidden>{roomCtx.enterLabel}</span>
               </div>
             </button>
@@ -560,7 +560,7 @@ function WorkBar({ kind, task, owner, companyId, folders }: {
     { id: 'assign', label: 'Zuweisen', run: () => setMore((v) => v === 'assign' ? null : 'assign') },
     { id: 'move', label: 'Verschieben', run: () => setMore((v) => v === 'move' ? null : 'move') },
   ] : kind === 'list' ? [
-    { id: 'new', label: 'Neue Aufgabe', Icon: Plus, run: () => document.querySelector<HTMLInputElement>('[data-testid="work-new-title"]')?.focus() },
+    { id: 'new', label: 'Neuer Eintrag', Icon: Plus, run: () => document.querySelector<HTMLInputElement>('[data-testid="work-new-title"]')?.focus() },
     { id: 'filter', label: 'Filter', Icon: Filter, run: () => {
       const el = document.querySelector<HTMLElement>('.ws-surface');
       if (!el) return;
@@ -657,7 +657,7 @@ function TaskList({ open, done, expanded, owner, companyId, onToggle, onOpen }: 
   );
   let idx = 0;
   return (
-    <div className="ws-list ws-list--tasks" ref={listRef} tabIndex={0} role="listbox" aria-label="Aufgaben" onKeyDown={onKey} data-testid="work-task-list">
+    <div className="ws-list ws-list--tasks" ref={listRef} tabIndex={0} role="listbox" aria-label="Einträge" onKeyDown={onKey} data-testid="work-task-list">
       {groups.map((g) => g.key === 'later' ? (
         <details key={g.key} className="ws-group" data-group={g.key}>
           <summary className="ws-group__label">{g.label} <span>{g.items.length}</span></summary>
@@ -712,7 +712,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
       </Head>
       <div className="ws-desk">
         <div className="ws-col ws-col--tasks" data-testid="work-tasks">
-          <h3>Aufgaben <span>{open.length}</span></h3>
+          <h3>Einträge <span>{open.length}</span></h3>
           <TaskList
             open={open}
             done={done}
@@ -724,7 +724,7 @@ function MoonDesk({ planet, moon, w, companyId, owner, expanded, onBack, onDoc, 
           />
           <form className="ws-new" onSubmit={(e) => { e.preventDefault(); void create(); }}>
             <span className="ws-check ws-check--ghost" aria-hidden />
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-clear-on-esc="1" data-testid="work-new-title" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neuer Eintrag" aria-label="Neuer Eintrag" data-clear-on-esc="1" data-testid="work-new-title" />
             <DueDate value={due || null} onChange={(v) => setDue(v ?? '')} clearable testId="work-new-due" />
           </form>
         </div>
@@ -903,7 +903,7 @@ function TaskDesk({ task, planet, folder, docs, owner, companyId, onBack, backLa
         <button type="button" className="ws-check ws-check--big" aria-pressed={task.done} aria-label={task.done ? 'Wieder öffnen' : 'Erledigen'} onClick={() => void setDone(task.raw, !task.done)} data-testid="work-task-done">{task.done ? <Check size={20} strokeWidth={2.4} /> : null}</button>
         <textarea className="ws-task__title" value={title} rows={2} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
-          aria-label="Aufgabe" data-testid="work-task-title" />
+          aria-label="Eintrag" data-testid="work-task-title" />
       </div>
       {task.overdue && !task.done ? (
         <p className="ws-overdue-flag" data-testid="work-task-overdue">Überfällig seit {task.due ? shortDate(task.due) : '–'}</p>

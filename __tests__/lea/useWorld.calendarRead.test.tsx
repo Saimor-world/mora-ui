@@ -75,7 +75,7 @@ it('does not allow an unavailable task response to become all tasks done', async
   await waitFor(() => expect(result.current.dayUnavailable).toBe(true));
   expect(result.current.calendarUnavailable).toBe(false);
   expect(result.current.day.taskLine).toMatch(/nicht verfügbar/);
-  expect(result.current.day.sentence).toMatch(/Aufgabenstand/);
+  expect(result.current.day.sentence).toMatch(/Stand der Einträge/);
 });
 
 it('invalidates the metadata passed to MÔRA when a previously successful read becomes forbidden', async () => {

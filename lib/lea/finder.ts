@@ -33,7 +33,7 @@ export interface FPlanet {
 export const TASKS_PLANET = 'aufgaben';
 export const COLLECT_PLANET = 'ohne-abteilung';
 
-const KIND_LABEL: Record<StarKind, string> = { event: 'Termin', document: 'Dokument', note: 'Notiz', task: 'Aufgabe', file: 'Datei', link: 'Link', other: 'Eintrag' };
+const KIND_LABEL: Record<StarKind, string> = { event: 'Termin', document: 'Dokument', note: 'Notiz', task: 'Eintrag', file: 'Datei', link: 'Link', other: 'Eintrag' };
 export const kindLabel = (k: StarKind) => KIND_LABEL[k];
 
 function starKind(type?: string, meta?: Record<string, unknown> | null): StarKind {
@@ -128,7 +128,7 @@ export function buildFinder(input: { departments: FDept[]; unassigned?: FSpace[]
   }
   if (input.tasks) {
     const stars = input.tasks.filter((t) => !placed(t)).map((t) => taskStar(t, input.now)).sort((a, b) => Number(a.done) - Number(b.done) || Number(b.overdue) - Number(a.overdue) || a.name.localeCompare(b.name, 'de'));
-    planets.push({ id: TASKS_PLANET, name: 'Aufgaben', kind: 'tasks', tone: matteTone('Aufgaben', { count: stars.length }), spaces: [], moons: [], stars });
+    planets.push({ id: TASKS_PLANET, name: 'Einträge', kind: 'tasks', tone: matteTone('Einträge', { count: stars.length }), spaces: [], moons: [], stars });
   }
   return planets;
 }
@@ -144,7 +144,7 @@ export function planetCounts(p: FPlanet) {
 /** Die zwei Kacheln für einen Planeten – dieselben im Universe-Fokus und im Finder. */
 export function focusTiles(p: FPlanet): Array<[string, number, string]> {
   const c = planetCounts(p);
-  if (p.kind === 'tasks') return [['Offen', c.open, c.open === 1 ? 'Aufgabe' : 'Aufgaben'], ['Überfällig', c.overdue, c.overdue ? 'braucht dich' : 'nichts drängt']];
+  if (p.kind === 'tasks') return [['Offen', c.open, c.open === 1 ? 'Eintrag' : 'Einträge'], ['Überfällig', c.overdue, c.overdue ? 'braucht dich' : 'nichts drängt']];
   return [['Ordner', c.folders, c.folders === 1 ? 'kreist als Mond' : 'kreisen als Monde'], [c.events ? 'Termine' : 'Einträge', c.events || c.items, c.events ? 'im Kalender' : 'in den Ordnern']];
 }
 

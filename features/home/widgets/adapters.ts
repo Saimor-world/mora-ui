@@ -118,7 +118,7 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
       out.push({
         id: 'tasks',
         title: 'Heute fällig',
-        ...meta(snapshot.tasks, 'Aufgaben', isFiktiv),
+        ...meta(snapshot.tasks, 'Einträge', isFiktiv),
         content: {
           type: 'list',
           items: due.map((t) => ({
@@ -131,8 +131,8 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
     } else if (counts?.open && counts.open > 0) {
       out.push({
         id: 'tasks',
-        title: 'Aufgaben',
-        ...meta(snapshot.tasks, 'Aufgaben'),
+        title: 'Einträge',
+        ...meta(snapshot.tasks, 'Einträge'),
         content: {
           type: 'metric',
           value: `${counts.open} offen`,
@@ -146,8 +146,8 @@ export function widgetsFromToday(snapshot: TodaySnapshot | null): SourceWidget[]
       const isFiktiv = slice.some((t) => hasFiktivMarker(t.title));
       out.push({
         id: 'overdue-tasks',
-        title: 'Überfällige Aufgaben',
-        ...meta(snapshot.tasks, 'Aufgaben', isFiktiv),
+        title: 'Überfällige Einträge',
+        ...meta(snapshot.tasks, 'Einträge', isFiktiv),
         content: {
           type: 'list',
           items: slice.map((t) => ({

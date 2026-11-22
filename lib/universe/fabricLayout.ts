@@ -50,7 +50,7 @@ export function buildFabricLayout(tree: CoreTreeNode[], maxNodes = 48): FabricLa
             id: item.id,
             type: item.type,
             title: item.name || 'Ohne Titel',
-            subtitle: item.nodeType === 'task' ? 'Aufgabe' : TYPE_LABEL[item.type],
+            subtitle: item.nodeType === 'task' ? 'Eintrag' : TYPE_LABEL[item.type],
             x,
             y,
             color: item.color || TYPE_COLOR[item.type],

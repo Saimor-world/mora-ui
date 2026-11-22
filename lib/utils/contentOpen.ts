@@ -57,7 +57,7 @@ export function getContentTypeLabel(type?: string | null): string {
         case 'note':
             return 'Notiz';
         case 'task':
-            return 'Aufgabe';
+            return 'Eintrag';
         case 'link':
             return 'Link';
         case 'image':

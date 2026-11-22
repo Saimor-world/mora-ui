@@ -31,9 +31,9 @@ export interface ShipDepartmentSeed {
 export const CANONICAL_SHIP_DEPARTMENTS: ShipDepartmentSeed[] = [
   {
     id: 'dept-kommando',
-    name: 'Kommando & Strategie',
+    name: 'Leitung',
     spaceId: 'sp-kommando',
-    spaceName: 'Kommando & Strategie',
+    spaceName: 'Leitung',
     folders: [
       {
         id: 'f-strategie',
@@ -280,7 +280,7 @@ export const CANONICAL_SHIP_DEPARTMENTS: ShipDepartmentSeed[] = [
             content: [
               '# Freigaben & Sicherheitsrichtlinien',
               '',
-              'Alle kritischen Transaktionen und Hauptnetz-Freigaben erfordern die ausdrückliche Bestätigung durch das Kommando.',
+              'Alle kritischen Transaktionen und Hauptnetz-Freigaben erfordern die ausdrückliche Bestätigung durch die Leitung.',
             ].join('\n'),
           },
         ],
@@ -726,7 +726,7 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
   const raw = `${deptIdOrName || ''} ${deptTitle || ''}`.toLowerCase();
   const label = deptTitle || deptIdOrName || 'Abteilung';
 
-  if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('führung') || raw.includes('brücke')) {
+  if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('leitung') || raw.includes('führung') || raw.includes('brücke')) {
     return {
       primaryRoom: 'studio',
       archetype: 'bridge',
@@ -737,14 +737,14 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
       werkstatt: {
         tag: label,
         name: label,
-        shortLabel: 'Kommando',
+        shortLabel: 'Leitung',
         subtitle: 'Entscheidungen, Prioritäten und Wochenplan',
         focusHint: 'Aufgaben, Freigaben und Meilensteine',
       },
       studio: {
         tag: label,
         name: label,
-        shortLabel: 'Kommando',
+        shortLabel: 'Leitung',
         subtitle: 'Charta, Quartalsziele und Verträge am Pult',
         focusTitle: 'Ziele und Leitlinien',
         focusItems: [
@@ -756,7 +756,7 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
       bar: {
         tag: label,
         name: label,
-        shortLabel: 'Kommando',
+        shortLabel: 'Leitung',
         subtitle: 'Abstimmung, Übergabe und kurze Signale',
         loungeTitle: 'Übergabe',
         handoverPrompt: 'Übergabe oder Auftrag notieren…',
@@ -878,7 +878,7 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
         shortLabel: 'Bar',
         subtitle: 'Tägliche Schicht-Übergabe, Kunden-Signale & Abstimmung der Crew',
         loungeTitle: `${rName} · Schicht-Übergabe`,
-        handoverPrompt: 'Übergabe für die nächste Schicht oder Kunden-Aufgabe…',
+        handoverPrompt: 'Übergabe für die nächste Schicht oder einen Kunden-Eintrag…',
       },
     };
   }
@@ -980,7 +980,7 @@ export function buildShipTodaySnapshot(
   const mails: Array<[string, string, string, string]> = [
     ['OS v15 Abteilungs-Decks & Räume bereit zur Abnahme', 'Kaito R. · Produkt & Technik', 'dept-produkt', '09:15'],
     ['ORIGIN // 001 Material-Manifest finalisiert', 'Sorel M. · Design & Studio', 'dept-studio', '08:40'],
-    ['Pilotkunde Kooperationsvertrag zur Freigabe', 'Elena V. · Kommando & Strategie', 'dept-kommando', '08:05'],
+    ['Pilotkunde Kooperationsvertrag zur Freigabe', 'Elena V. · Leitung', 'dept-kommando', '08:05'],
   ];
   const events: Array<[string, string, string]> = [
     ['Captains-Runde auf der Brücke', '10:00', 'dept-kommando'],

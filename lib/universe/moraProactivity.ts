@@ -161,7 +161,7 @@ export function deriveMoraNudges(input: ProactivityInput): MoraNudge[] {
     out.push({
       id: 'task:open',
       kind: 'task',
-      title: `${input.openTasks} offene Aufgaben`,
+      title: `${input.openTasks} offene Einträge`,
       detail: 'Werkstatt wartet. Ich rühre nichts an.',
       planetId: ids.werkstatt,
       fly: false,

@@ -34,7 +34,7 @@ export function looseTasks(tasks: WorldTask[]) { return tasks.filter((t) => !t.f
 
 export function TaskHomeRow({ tasks, onOpen, variant = 'row' }: { tasks: WorldTask[]; onOpen: () => void; variant?: 'row' | 'chip' }) {
   const n = looseTasks(tasks).length;
-  if (variant === 'chip') return <button type="button" className="th-chip" onClick={onOpen} data-testid="taskhome-chip">{n ? <>Noch nicht zugeordnet · {n}</> : '+ Aufgabe'}</button>;
+  if (variant === 'chip') return <button type="button" className="th-chip" onClick={onOpen} data-testid="taskhome-chip">{n ? <>Noch nicht zugeordnet · {n}</> : '+ Eintrag'}</button>;
   return (
     <button type="button" className="wd-horizon__row" onClick={onOpen} data-testid="horizon-unassigned">
       <span>{n ? `Noch nicht zugeordnet · ${n}` : 'Alles zugeordnet'}</span>
@@ -61,16 +61,16 @@ export function TaskHomeSheet({ tasks, planets, actions, readOnly, onClose, phon
   // Portal: das Blatt liegt über Dock und Kopfzeile, nicht im Stapel des Universums.
   return createPortal(
     <div className="th-scrim" data-phone={phone ? 'true' : 'false'} onClick={onClose}>
-      <section className="th-sheet" role="dialog" aria-modal="true" aria-label="Aufgaben zuordnen" onClick={(e) => e.stopPropagation()} data-testid="taskhome-sheet">
+      <section className="th-sheet" role="dialog" aria-modal="true" aria-label="Einträge zuordnen" onClick={(e) => e.stopPropagation()} data-testid="taskhome-sheet">
         <header className="th-head">
-          <h2>Aufgaben zuordnen</h2>
+          <h2>Einträge zuordnen</h2>
           <button type="button" className="th-close" onClick={onClose} aria-label="Schließen">×</button>
         </header>
         {!readOnly ? (
           <form className="th-new" onSubmit={async (e) => { e.preventDefault(); const t = title.trim(); if (!t) return; setBusy('new'); const ok = await actions.addTask(t, place || null); setBusy(null); setNote(ok ? (place ? `Angelegt in ${nameOf(place)}` : 'Angelegt, noch nicht zugeordnet') : 'Anlegen hat nicht geklappt'); if (ok) setTitle(''); }}>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neue Aufgabe" aria-label="Neue Aufgabe" data-testid="taskhome-title" />
-            <PlacePicker planets={planets} value={place} onChange={setPlace} label="Bereich der neuen Aufgabe" testid="taskhome-place" />
-            <button type="submit" className="th-add" disabled={!title.trim() || busy === 'new'} aria-label="Aufgabe anlegen" data-testid="taskhome-add">↵</button>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Neuer Eintrag" aria-label="Neuer Eintrag" data-testid="taskhome-title" />
+            <PlacePicker planets={planets} value={place} onChange={setPlace} label="Bereich des neuen Eintrags" testid="taskhome-place" />
+            <button type="submit" className="th-add" disabled={!title.trim() || busy === 'new'} aria-label="Eintrag anlegen" data-testid="taskhome-add">↵</button>
           </form>
         ) : null}
         {note ? <p className="th-note" role="status">{note}</p> : null}
@@ -86,7 +86,7 @@ export function TaskHomeSheet({ tasks, planets, actions, readOnly, onClose, phon
                 ) : null}
               </li>
             );
-          }) : <li className="th-empty">Alle Aufgaben sind zugeordnet.</li>}
+          }) : <li className="th-empty">Alle Einträge sind zugeordnet.</li>}
         </ul>
       </section>
     </div>,

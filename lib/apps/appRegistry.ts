@@ -147,7 +147,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'work',
     name: 'Arbeit',
-    description: 'Fokussierter Einstieg in Aufgaben, Dateien, Zeit und Kommunikation',
+    description: 'Fokussierter Einstieg in Einträge, Dateien, Zeit und Kommunikation',
     icon: 'Grid',
     color: 'teal',
     category: 'workspace',
@@ -166,7 +166,7 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'tasks',
-    name: 'Aufgaben',
+    name: 'Einträge',
     description: 'Was ansteht, läuft und erledigt ist',
     icon: 'SquareCheckBig',
     color: 'orange',
@@ -209,7 +209,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'action-center',
     name: 'Action Center',
-    description: 'Aktionen, Vorschläge und operative Aufgaben',
+    description: 'Aktionen, Vorschläge und operative Einträge',
     icon: 'Activity',
     color: 'green',
     category: 'core',

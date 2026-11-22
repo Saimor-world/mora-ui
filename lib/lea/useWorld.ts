@@ -151,8 +151,8 @@ export function useWorld() {
   })) : [], [calendarComplete, events.data]);
   const day = useMemo(() => {
     const result = buildLiveDay(calendarEvents, tasks.data ?? [], phases, now, 'Europe/Berlin');
-    if (!calendarComplete || !tasksComplete) return { ...result, ahead: null, taskLine: tasksComplete ? result.taskLine : 'Aufgabenstand nicht verfügbar',
-      sentence: !calendarComplete ? 'Den Kalenderstand kann ich gerade nicht vollständig lesen.' : 'Den Aufgabenstand kann ich gerade nicht vollständig lesen.' };
+    if (!calendarComplete || !tasksComplete) return { ...result, ahead: null, taskLine: tasksComplete ? result.taskLine : 'Stand der Einträge nicht verfügbar',
+      sentence: !calendarComplete ? 'Den Kalenderstand kann ich gerade nicht vollständig lesen.' : 'Den Stand der Einträge kann ich gerade nicht vollständig lesen.' };
     return result;
   }, [calendarEvents, tasks.data, phases, calendarComplete, tasksComplete, now]);
   // Finder = Universe: Abteilungen, Ordner (Monde), Inhalte (Sterne) und der Aufgaben-Planet.

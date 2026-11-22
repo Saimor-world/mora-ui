@@ -83,15 +83,15 @@ describe('3 Text schweigt', () => {
 
 describe('4 ruhige Raumnamen statt Sci-Fi', () => {
   it('nennt Kommando, Betrieb und Technik beim Abteilungsnamen, nicht Kommandobrücke oder Maschinenraum', () => {
-    const kommando = getDepartmentRoomContext('dept-leitung', 'Kommando & Strategie');
-    expect(kommando.roomName).toBe('Kommando & Strategie');
+    const kommando = getDepartmentRoomContext('dept-leitung', 'Leitung');
+    expect(kommando.roomName).toBe('Leitung');
     expect(`${kommando.roomName} ${kommando.roomTag} ${kommando.enterLabel}`).not.toMatch(/Kommandobrücke|Strategie-Kanzel|Obsidian/);
     expect(getDepartmentRoomContext('dept-betrieb', 'Betrieb & Kunden').roomName).toBe('Betrieb & Kunden');
     expect(getDepartmentRoomContext('dept-technik', 'Produkt & Technik').roomName).toBe('Produkt & Technik');
     expect(getDepartmentRoomContext('dept-technik', 'Produkt & Technik').roomName).not.toMatch(/Maschinenraum|Maschinenlabor/);
 
-    const { unmount } = wrap(<Werkstatt planet={{ ...planet, id: 'dept-leitung', title: 'Kommando & Strategie' }} work={work} planets={[]} companyId="company-local-demo" today={TODAY} fromSpace={false} onExit={jest.fn()} />);
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Kommando & Strategie');
+    const { unmount } = wrap(<Werkstatt planet={{ ...planet, id: 'dept-leitung', title: 'Leitung' }} work={work} planets={[]} companyId="company-local-demo" today={TODAY} fromSpace={false} onExit={jest.fn()} />);
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Leitung');
     expect(document.querySelector('.wk-root')?.textContent).not.toMatch(/Kommandobrücke|Raumschiff|Maschinenraum/);
     unmount();
   });

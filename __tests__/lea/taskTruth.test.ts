@@ -14,7 +14,7 @@ describe('eine Quelle der Wahrheit für Aufgaben', () => {
     expect(day.taskLine).toBe(tl.line);
     expect(day.openTotal).toBe(19);
     expect(day.sentence).not.toMatch(/alles erledigt/);
-    expect(day.sentence).toMatch(/19 Aufgaben offen/);
+    expect(day.sentence).toMatch(/19 Einträge offen/);
   });
   it('heute fällig und überfällig getrennt', () => {
     const tl = taskLineOf([t('x', 'backlog', '2026-10-24'), t('y', 'backlog', '2026-10-20'), t('z', 'in_progress'), t('d', 'done', '2026-10-01')], now);

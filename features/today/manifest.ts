@@ -13,7 +13,7 @@ export const todayManifest: FeatureManifest = {
   load: () => import('./index'),
   mora: {
     contextLabel: 'Heute',
-    suggestions: ['Was ist heute wichtig?', 'Fasse meinen Tag in drei Sätzen zusammen.', 'Welche Aufgaben sind überfällig?'],
+    suggestions: ['Was ist heute wichtig?', 'Fasse meinen Tag in drei Sätzen zusammen.', 'Welche Einträge sind überfällig?'],
   },
   legacyApps: ['tasks', 'nightwatch'],
   keywords: ['today', 'home', 'start', 'briefing', 'tag'],

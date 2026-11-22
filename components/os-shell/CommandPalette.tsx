@@ -82,7 +82,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         }
       }
       for (const t of world.day.open) {
-        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
+        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Eintrag · überfällig' : `Eintrag · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
       }
       for (const e of world.events) {
         if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${formatDeDate(e.date)}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });

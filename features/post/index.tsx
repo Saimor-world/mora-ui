@@ -111,7 +111,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       {sample || demo || localFallback ? (
         <Surface padding={5} data-testid="post-continuity">
           <Text variant="eyebrow">Kalender-Fäden</Text>
-          <Text className="mt-2">Vorbereitungs-Aufgaben zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>
+          <Text className="mt-2">Vorbereitungs-Einträge zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>
         </Surface>
       ) : <Surface padding={5} className="os-continuity" data-testid="post-continuity"><CalendarContinuity /></Surface>}
     </div>

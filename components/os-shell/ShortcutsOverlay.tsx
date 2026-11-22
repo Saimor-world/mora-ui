@@ -19,8 +19,7 @@ export function ShortcutsOverlay({ items, onClose }: { items: FeatureManifest[];
   return (
     <div className="os-dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-label="Tastenkürzel" className="os-dialog os-shortcuts" data-testid="shortcuts-overlay">
-        <Text variant="eyebrow">Kommandozentrale</Text>
-        <Text variant="title" as="h2" className="mt-1 mb-4">Tastenkürzel</Text>
+        <Text variant="title" as="h2" className="mb-4">Tastenkürzel</Text>
         <div className="os-shortcuts__grid">
           {rows.map(([k, label]) => (
             <React.Fragment key={k + label}>

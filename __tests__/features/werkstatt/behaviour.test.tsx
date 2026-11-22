@@ -72,7 +72,7 @@ describe('Brett mit 40 Aufgaben', () => {
     expect(cards.length).toBeLessThanOrEqual(5);
     cards.forEach((c) => expect(c.querySelector('.wk-card__t')?.textContent?.trim().length).toBeGreaterThan(5));
     expect(container.querySelectorAll('[title]')).toHaveLength(0);
-    expect(screen.getByTestId('wk-later').getAttribute('aria-label')).toMatch(/Später, 18 Aufgaben/);
+    expect(screen.getByTestId('wk-later').getAttribute('aria-label')).toMatch(/Später, 18 Einträge/);
     expect(container.querySelectorAll('select, [role="listbox"], [role="menu"]')).toHaveLength(0);
   });
   it('Überfällig steht genau einmal je Karte (ein Punkt) und nirgends sonst', () => {
@@ -306,14 +306,14 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-bar-handover')).toHaveTextContent('Filter: Marius');
   });
 
-  it('öffnet für Kommando & Strategie und Finanzen & Recht das physische Smaragd-Walnuss-Kontor (room-kontor.webp)', () => {
+  it('öffnet für Leitung und Finanzen & Recht das physische Smaragd-Walnuss-Kontor (room-kontor.webp)', () => {
     const bridgePlanet = {
       ...planet,
       id: 'dept-leitung',
-      title: 'Kommando & Strategie',
+      title: 'Leitung',
     };
     const { unmount } = wrap(<Werkstatt planet={bridgePlanet} work={work} planets={[]} companyId="company-local-demo" today={TODAY} backLabel="Kommando & Strategie" fromSpace={false} onExit={jest.fn()} />);
-    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Kommando & Strategie');
+    expect(screen.getByTestId('wk-room-sign').textContent).toBe('Leitung');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('bridge');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
     unmount();
