@@ -956,7 +956,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
                   onSelectDoc={(id) => setLectern(id)}
                   onCreateDoc={(t, b) => void createDepartmentDoc(t, b)}
                   onAddTask={(t, who) => void addTask(t, newTaskFolder, today, planet.id, who)}
-                  onToggleTask={(t) => void setDone(t.raw, !t.done)}
+                  onToggleTask={(t) => setDone(t.raw, !t.done)}
                   onOpenTask={(id) => open({ kind: 'task', id })}
                   mails={barMails}
                   events={barEvents}

@@ -164,7 +164,8 @@ export interface DeskWorkstationProps {
   onSelectDoc?: (docId: string) => void;
   onCreateDoc?: (title: string, body: string) => void;
   onAddTask?: (title: string, assignee?: string | null) => void;
-  onToggleTask?: (task: WorkTask) => void;
+  /** Liefert bei Speicherung in CORE true, bei Ablehnung false. */
+  onToggleTask?: (task: WorkTask) => void | Promise<boolean | void>;
   onOpenTask?: (taskId: string) => void;
   mails?: Array<{ id: string; subject?: string; from?: string; from_addr?: string; received_at?: string; snippet?: string }>;
   events?: Array<{ id: string; title: string; time?: string; start?: string; location?: string }>;
@@ -292,16 +293,23 @@ export function DeskWorkstation({
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
 
   // 7. SAIMÔR KOMMANDOBRÜCKE / KONTOR / TECHNIK STATE
-  const [bridgeDecisions, setBridgeDecisions] = useState(() =>
-    readLocal(`mora.station.bridge.dec.${planetId}`, [
-      { id: 'dec-1', title: 'Phase 01: ORIGIN // 001 als visueller & technischer Master', owner: 'Marius', approved: true },
-      { id: 'dec-2', title: 'Jede Abteilung besitzt ihren eigenen physischen Arbeitsraum', owner: 'Kaito R. & Sorel M.', approved: true },
-      { id: 'dec-3', title: 'Kooperationsrahmen für ersten Pilotkunden freigeben', owner: 'Elena V.', approved: false },
-    ])
-  );
+  // Freigaben sind Einträge dieses Raums in CORE. „Freigegeben“ steht nur, wenn CORE den Eintrag
+  // als erledigt liefert; während des Speicherns und bei Ablehnung nie (Audit 21.11.).
+  const [approvalState, setApprovalState] = useState<Record<string, 'saving' | 'failed'>>({});
+  const approve = async (t: WorkTask) => {
+    if (!onToggleTask || approvalState[t.id] === 'saving') return;
+    setApprovalState((s) => ({ ...s, [t.id]: 'saving' }));
+    let ok: boolean | void = false;
+    try { ok = await onToggleTask(t); } catch { ok = false; }
+    setApprovalState((s) => {
+      const next = { ...s };
+      if (ok === false) next[t.id] = 'failed'; else delete next[t.id];
+      return next;
+    });
+  };
+  const approvals = useMemo(() => [...tasks.filter((t) => !t.done), ...tasks.filter((t) => t.done)], [tasks]);
   const [newDirective, setNewDirective] = useState('');
-  const [newDirectiveOwner, setNewDirectiveOwner] = useState('Marius');
-  useEffect(() => writeLocal(`mora.station.bridge.dec.${planetId}`, bridgeDecisions), [bridgeDecisions, planetId]);
+  const [newDirectiveOwner, setNewDirectiveOwner] = useState('');
 
   const [kontorBudgets, setKontorBudgets] = useState(() =>
     readLocal(`mora.station.kontor.budgets.${planetId}`, [
@@ -1418,11 +1426,7 @@ export function DeskWorkstation({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!newDirective.trim()) return;
-                setBridgeDecisions((prev) => [
-                  { id: `dec-${Date.now()}`, title: newDirective.trim(), owner: newDirectiveOwner.trim() || 'Marius', approved: false },
-                  ...prev,
-                ]);
-                onAddTask?.(newDirective.trim(), newDirectiveOwner.trim() || 'Marius');
+                onAddTask?.(newDirective.trim(), newDirectiveOwner.trim() || null);
                 setNewDirective('');
               }}
             >
@@ -1443,21 +1447,31 @@ export function DeskWorkstation({
             </form>
 
             <div className="wk-ws-list">
-              {bridgeDecisions.map((d) => (
-                <div key={d.id} className="wk-ws-row" data-testid={`wk-bridge-dec-${d.id}`}>
-                  <div className="wk-ws-row__main">
-                    <b>{d.title}</b>
-                    <small>Verantwortlich: {d.owner}</small>
+              {approvals.map((d) => {
+                const state = approvalState[d.id];
+                return (
+                  <div key={d.id} className="wk-ws-row" data-testid={`wk-bridge-dec-${d.id}`}>
+                    <div className="wk-ws-row__main">
+                      <b>{d.title}</b>
+                      {d.assignee ? <small>{d.assignee}</small> : null}
+                      {state === 'failed' ? <small role="alert">Nicht gespeichert</small> : null}
+                    </div>
+                    {d.done && state !== 'saving' ? (
+                      <span className="wk-ws-chip is-done">Freigegeben ✓</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="wk-ws-chip"
+                        disabled={state === 'saving' || !onToggleTask}
+                        aria-label={state === 'saving' ? 'Wird gespeichert' : 'Freigeben'}
+                        onClick={() => void approve(d)}
+                      >
+                        {state === 'saving' ? '…' : 'Freigeben'}
+                      </button>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    className={`wk-ws-chip${d.approved ? ' is-done' : ''}`}
-                    onClick={() => setBridgeDecisions((l) => l.map((x) => (x.id === d.id ? { ...x, approved: !x.approved } : x)))}
-                  >
-                    {d.approved ? 'Freigegeben ✓' : 'Jetzt freigeben'}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
@@ -1515,13 +1529,6 @@ export function DeskWorkstation({
                     <span>{b.amount.toLocaleString('de-DE')} €</span>
                     <button type="button" onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, amount: x.amount + 500 } : x)))}>+</button>
                   </div>
-                  <button
-                    type="button"
-                    className={`wk-ws-chip${b.approved ? ' is-done' : ''}`}
-                    onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, approved: !x.approved } : x)))}
-                  >
-                    {b.approved ? 'Geprüft ✓' : 'Freigeben'}
-                  </button>
                 </div>
               ))}
             </div>
