@@ -132,3 +132,48 @@ describe('nextAuthVerificationSecret', () => {
         expect(nextAuthVerificationSecret()).toBe('dev_secret_key_change_me_in_prod');
     });
 });
+
+describe('public route boundaries', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        process.env = { ...ORIGINAL_ENV, NODE_ENV: 'production' };
+        delete process.env.NEXTAUTH_SECRET;
+        mockGetToken.mockResolvedValue(null);
+    });
+    afterAll(() => {
+        process.env = { ...ORIGINAL_ENV };
+    });
+
+    it.each(['/api/authentication', '/api/core-private', '/api/client-errors.js', '/api/v2/anything.css'])(
+        'does not expose protected API %s by prefix or file extension',
+        async path => {
+            expect((await middleware(request(path))).status).toBe(401);
+        },
+    );
+
+    it.each(['/tunnel', '/tunel'])('keeps dev museum %s behind login in production', async path => {
+        const res = await middleware(request(path));
+        expect(res.status).toBe(307);
+        expect(res.headers.get('location')).toContain(`callbackUrl=%2F${path.slice(1)}`);
+    });
+
+    it.each(['/star-centralx/secret', '/oauth/calendarx'])('does not open look-alike prefix %s', async path => {
+        expect((await middleware(request(path))).status).toBe(307);
+    });
+
+    it.each([
+        '/api/auth/session',
+        '/api/auth',
+        '/api/core/v3/auth/me',
+        '/star-central/scene.webp',
+        '/oauth/calendar/callback',
+        '/_next/static/chunk.js',
+    ])('preserves intended public path %s', async path => {
+        expect((await middleware(request(path))).headers.get('x-middleware-next')).toBe('1');
+    });
+
+    it('keeps the dev museum reachable outside production', async () => {
+        setEnv({ NODE_ENV: 'development' });
+        expect((await middleware(request('/tunnel'))).headers.get('x-middleware-next')).toBe('1');
+    });
+});

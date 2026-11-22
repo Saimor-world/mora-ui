@@ -30,9 +30,8 @@ const PUBLIC_PATHS = [
     "/begleiter",      // Handy-Begleiter: zeigt nichts ohne gekoppeltes Gerät + Face-ID-Signatur (CORE prüft)
 ];
 
-/** Dev-only UI museum — see app/tunnel/page.tsx */
-const DEV_PUBLIC_PATHS = ["/tunnel", "/tunel"]; //
-    
+/** Dev-only UI museum — see app/tunnel/page.tsx. Public only outside production. */
+const DEV_PUBLIC_PATHS = ["/tunnel", "/tunel"];
 
 const PUBLIC_PREFIXES = [
     "/_next/static",
@@ -55,15 +54,20 @@ const PUBLIC_FILES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
-    if (PUBLIC_PATHS.includes(pathname) || DEV_PUBLIC_PATHS.includes(pathname)) return true;
+    if (PUBLIC_PATHS.includes(pathname)) return true;
+    if (process.env.NODE_ENV !== "production" && DEV_PUBLIC_PATHS.includes(pathname)) return true;
 
+    // Prefixes match only on a path-segment boundary: "/api/auth" frees
+    // "/api/auth" and "/api/auth/...", never "/api/authentication".
     for (const prefix of PUBLIC_PREFIXES) {
-        if (pathname.startsWith(prefix)) return true;
+        const base = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+        if (pathname === base || pathname.startsWith(`${base}/`)) return true;
     }
 
     if (PUBLIC_FILES.includes(pathname)) return true;
 
-    if (pathname.match(/\.(js|css|png|jpg|jpeg|webp|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    // Static-asset extensions never open API routes.
+    if (!pathname.startsWith("/api/") && pathname.match(/\.(js|css|png|jpg|jpeg|webp|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
         return true;
     }
 
