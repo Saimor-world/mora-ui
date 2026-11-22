@@ -136,7 +136,7 @@ export function Mappe({
         <header className="wk-week-live__head">
           <div>
             <span className="wk-ws-eyebrow">Wandtafel-Synchron · Single Source of Truth</span>
-            <h2>Aufgaben & Termine der Woche</h2>
+            <h2>Einträge & Termine der Woche</h2>
           </div>
           <span className="wk-floor-badge">{tasks.filter((t) => !t.done).length} offen</span>
         </header>
@@ -155,9 +155,9 @@ export function Mappe({
             <input
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Neue Aufgabe für Wochentag anlegen…"
+              placeholder="Neuer Eintrag für Wochentag…"
               data-testid="wk-week-new-task-input"
-              aria-label="Neue Aufgabe für Wochentag"
+              aria-label="Neuer Eintrag für Wochentag"
             />
             {days.length > 0 ? (
               <div className="wk-ws-pills" role="group" aria-label="Wochentag wählen">

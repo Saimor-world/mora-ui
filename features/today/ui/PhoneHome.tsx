@@ -37,7 +37,7 @@ export function PhoneHome({ greeting, firstName, navigate, onAskMora }: {
         </div>
         <div>
           <p className="wd-home__sentence" data-testid="phone-home-sentence">{greeting}{firstName ? `, ${firstName}` : ''}.</p>
-          <p className="wd-home__sub">{world.loading ? 'MÔRA liest deinen Tag …' : dayUnavailable ? 'Dein Tagesstand ist gerade nicht vollständig lesbar.' : daySentence(day, now, timeZone)}{!dayUnavailable && day.onlyToday.some((t) => t.overdue) ? ` ${day.onlyToday.filter((t) => t.overdue).length === 1 ? 'Eine Aufgabe ist überfällig.' : `${day.onlyToday.filter((t) => t.overdue).length} Aufgaben sind überfällig.`}` : ''}</p>
+          <p className="wd-home__sub">{world.loading ? 'MÔRA liest deinen Tag …' : dayUnavailable ? 'Dein Tagesstand ist gerade nicht vollständig lesbar.' : daySentence(day, now, timeZone)}{!dayUnavailable && day.onlyToday.some((t) => t.overdue) ? ` ${day.onlyToday.filter((t) => t.overdue).length === 1 ? 'Ein Eintrag ist überfällig.' : `${day.onlyToday.filter((t) => t.overdue).length} Einträge sind überfällig.`}` : ''}</p>
         </div>
         <button type="button" className="wd-home__cta" onClick={() => onAskMora('Was steht heute an, und was sollte ich zuerst tun?')} data-testid="phone-home-cta">
           Mit MÔRA durch den Tag

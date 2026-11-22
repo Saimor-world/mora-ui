@@ -50,7 +50,7 @@ describe('MÔRAs Satz', () => {
 
   it('nennt bei einem kommenden Termin die Zahlen getrennt', () => {
     const live = buildLiveDay([{ id: 'e1', title: 'Maniküre – Mara Beispiel', date: day(0), time: '23:59' }], tasks, {}, now);
-    expect(live.sentence).toMatch(/1 Aufgabe heute fällig, 1 überfällig\./);
+    expect(live.sentence).toMatch(/1 Eintrag heute fällig, 1 überfällig\./);
   });
 });
 
@@ -81,11 +81,11 @@ function renderWorld() {
 }
 
 describe('LiveWorld – Aufgaben', () => {
-  it('öffnet „Aufgaben zuordnen“ über den Horizont-Knopf; das Datum steht als „TT.MM.“', () => {
+  it('öffnet „Einträge zuordnen“ über den Horizont-Knopf; das Datum steht als „TT.MM.“', () => {
     renderWorld();
     fireEvent.click(screen.getByTestId('horizon-tasks'));
     const sheet = screen.getByTestId('taskhome-sheet');
-    expect(sheet).toHaveTextContent('Aufgaben zuordnen');
+    expect(sheet).toHaveTextContent('Einträge zuordnen');
     const [, m, d] = day(-2).split('-');
     expect(within(sheet).getByText(new RegExp(`${d}\\.${m}\\.`))).toBeInTheDocument();
     expect(sheet.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);

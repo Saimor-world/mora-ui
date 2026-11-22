@@ -315,7 +315,7 @@ export function deriveLiveAttention(
       id: 'live-task',
       title: stripFiktiv(nextTask.title) || nextTask.title,
       detail: 'Heute',
-      action: 'Aufgabe erledigen',
+      action: 'Eintrag erledigen',
       onAction: () => navigate?.('tasks'),
     });
   }

@@ -77,7 +77,7 @@ export function TaskSheet({ task, crumb, companyId, planetId, docs, onOpenDoc, o
           <svg viewBox="0 0 64 64" aria-hidden><circle cx="32" cy="32" r="22" />{task.done ? <path d="M21 33 l8 8 l15 -18" /> : null}</svg>
         </button>
         <textarea value={title} rows={2} onChange={(e) => setTitle(e.target.value)} onBlur={commitTitle}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }} aria-label="Aufgabe" data-testid="wk-task-title" />
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }} aria-label="Eintrag" data-testid="wk-task-title" />
       </div>
       {saveError && <p role="alert">{saveError}</p>}
       <dl className="wk-sheet__facts">

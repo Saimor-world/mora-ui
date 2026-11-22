@@ -101,11 +101,11 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
   if (archetype === 'bridge' || raw.includes('kommando') || raw.includes('strategie') || raw.includes('leitung')) {
     return {
       kind: 'bridge-station',
-      deskLabel: 'Kommandopult · Captains-Runde & Freigaben',
-      deskHint: 'Strategische Entscheidungen · Captains-Sync · Partner-Freigaben',
-      badgeText: 'Kommandopult · 3 Entscheidungen',
+      deskLabel: 'Leitungspult · Freigaben',
+      deskHint: 'Entscheidungen · Freigaben',
+      badgeText: 'Leitungspult',
       fixtureLabel: 'Führungs-Waage & Charta-Siegel',
-      fixtureSub: 'Captains-Runde 10:00 · Phase 01',
+      fixtureSub: 'Phase 01',
       fixtureBox: { x: 34, y: 420, w: 175, h: 200 },
     };
   }
@@ -294,13 +294,13 @@ export function DeskWorkstation({
   // 7. SAIMÔR KOMMANDOBRÜCKE / KONTOR / TECHNIK STATE
   const [bridgeDecisions, setBridgeDecisions] = useState(() =>
     readLocal(`mora.station.bridge.dec.${planetId}`, [
-      { id: 'dec-1', title: 'Phase 01: ORIGIN // 001 als visueller & technischer Master', owner: 'Captain Marius', approved: true },
+      { id: 'dec-1', title: 'Phase 01: ORIGIN // 001 als visueller & technischer Master', owner: 'Marius', approved: true },
       { id: 'dec-2', title: 'Jede Abteilung besitzt ihren eigenen physischen Arbeitsraum', owner: 'Kaito R. & Sorel M.', approved: true },
       { id: 'dec-3', title: 'Kooperationsrahmen für ersten Pilotkunden freigeben', owner: 'Elena V.', approved: false },
     ])
   );
   const [newDirective, setNewDirective] = useState('');
-  const [newDirectiveOwner, setNewDirectiveOwner] = useState('Captain Marius');
+  const [newDirectiveOwner, setNewDirectiveOwner] = useState('Marius');
   useEffect(() => writeLocal(`mora.station.bridge.dec.${planetId}`, bridgeDecisions), [bridgeDecisions, planetId]);
 
   const [kontorBudgets, setKontorBudgets] = useState(() =>
@@ -1232,7 +1232,7 @@ export function DeskWorkstation({
             </div>
 
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Atelier-Aufgaben ({tasks.filter((t) => !t.done).length} offen)</span>
+              <span className="wk-ws-eyebrow">Atelier-Einträge ({tasks.filter((t) => !t.done).length} offen)</span>
               <form
                 className="wk-ws-inline-form"
                 onSubmit={(e) => {
@@ -1245,7 +1245,7 @@ export function DeskWorkstation({
                 <input
                   value={studioTaskDraft}
                   onChange={(e) => setStudioTaskDraft(e.target.value)}
-                  placeholder="Neue Aufgabe zum Konzept…"
+                  placeholder="Neuer Eintrag zum Konzept…"
                   data-testid="wk-studio-new-task"
                 />
                 <button type="submit" className="wk-ws-btn">+</button>
@@ -1332,7 +1332,7 @@ export function DeskWorkstation({
               <input
                 value={handoverDraft}
                 onChange={(e) => setHandoverDraft(e.target.value)}
-                placeholder={selectedCrewName ? `Übergabe an ${selectedCrewName} notieren…` : 'Übergabe für die nächste Schicht oder Kunden-Aufgabe…'}
+                placeholder={selectedCrewName ? `Übergabe an ${selectedCrewName} notieren…` : 'Übergabe für die nächste Schicht oder einen Kunden-Eintrag…'}
                 data-testid="wk-bar-handover-input"
               />
               <button type="submit" className="wk-ws-btn">Festhalten</button>
@@ -1407,12 +1407,11 @@ export function DeskWorkstation({
           <section className="wk-ws-sheet">
             <header className="wk-ws-head">
               <div>
-                <span className="wk-ws-eyebrow">Kommando & Strategie</span>
-                <h2>Strategische Direktiven & Freigaben</h2>
+                <span className="wk-ws-eyebrow">Leitung</span>
+                <h2>Freigaben</h2>
               </div>
               <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
             </header>
-            <p className="wk-ws-sub">Verbindliche Führungs-Entscheidungen und Meilenstein-Freigaben für alle Abteilungen an Bord von SAIMÔR HQ.</p>
 
             <form
               className="wk-ws-inline-form"
@@ -1420,7 +1419,7 @@ export function DeskWorkstation({
                 e.preventDefault();
                 if (!newDirective.trim()) return;
                 setBridgeDecisions((prev) => [
-                  { id: `dec-${Date.now()}`, title: newDirective.trim(), owner: newDirectiveOwner.trim() || 'Captain Marius', approved: false },
+                  { id: `dec-${Date.now()}`, title: newDirective.trim(), owner: newDirectiveOwner.trim() || 'Marius', approved: false },
                   ...prev,
                 ]);
                 onAddTask?.(newDirective.trim(), newDirectiveOwner.trim() || 'Marius');
@@ -1430,16 +1429,17 @@ export function DeskWorkstation({
               <input
                 value={newDirective}
                 onChange={(e) => setNewDirective(e.target.value)}
-                placeholder="Neue strategische Direktive oder Freigabe…"
+                placeholder="Neue Freigabe…"
                 data-testid="wk-bridge-new-directive"
               />
               <input
                 value={newDirectiveOwner}
                 onChange={(e) => setNewDirectiveOwner(e.target.value)}
-                placeholder="Captain / Owner"
+                placeholder="Wer gibt das frei?"
+                aria-label="Wer gibt das frei?"
                 style={{ maxWidth: 165 }}
               />
-              <button type="submit" className="wk-ws-btn">+ Direktive</button>
+              <button type="submit" className="wk-ws-btn">+ Freigabe</button>
             </form>
 
             <div className="wk-ws-list">
@@ -1624,7 +1624,7 @@ export function DeskWorkstation({
 
           <section className="wk-ws-side">
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Offene Engineering-Aufgaben ({tasks.filter((t) => !t.done).length})</span>
+              <span className="wk-ws-eyebrow">Offene Engineering-Einträge ({tasks.filter((t) => !t.done).length})</span>
               <h3>Aktueller Sprint an der Werkbank</h3>
               <div className="wk-ws-list">
                 {tasks.slice(0, 4).map((t) => (

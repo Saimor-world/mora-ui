@@ -51,7 +51,7 @@ export function BridgeConsole({
   const moraSize = device === 'phone' ? 56 : device === 'tablet' ? 68 : 76;
 
   return (
-    <nav className="ck-dock" aria-label="Kommandozentrale">
+    <nav className="ck-dock" aria-label="Navigation">
       <button
         type="button"
         className="ck-dock__b"

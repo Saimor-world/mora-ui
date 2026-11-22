@@ -7,11 +7,12 @@ import { getAppManifest } from '@/lib/apps/appRegistry';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp, type LegacyPlacement } from '@/lib/os-prototype/legacyApps';
 import { getFeature } from '@/features/registry';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import type { FeatureSurfaceProps } from '../types';
 
 export const LABS_GROUPS: Array<{ id: string; title: string; copy: string; placements: LegacyPlacement[] }> = [
-  { id: 'labs', title: 'Labor', copy: 'Experimentell. Funktioniert, ist aber (noch) kein Kernbereich.', placements: ['labs'] },
-  { id: 'work', title: 'Arbeit', copy: 'Aufgaben und Arbeitssitzungen – offene Arbeit erscheint auch in Heute.', placements: ['work'] },
+  { id: 'labs', title: 'Labor', copy: 'Experimentell.', placements: ['labs'] },
+  { id: 'work', title: 'Arbeit', copy: 'Einträge und Arbeitssitzungen – offene Arbeit erscheint auch in Heute.', placements: ['work'] },
   { id: 'system', title: 'System', copy: 'Systemnah oder rollenbeschränkt.', placements: ['system'] },
   { id: 'legacy', title: 'Legacy', copy: 'Abgelöste Varianten – bleiben bis zur Freigabe erreichbar.', placements: ['legacy'] },
   { id: 'placed', title: 'In neue Bereiche eingeordnet', copy: 'Klassische Apps, die jetzt zu einem Hauptbereich gehören – hier direkt als Fenster.', placements: ['mora', 'finance', 'knowledge', 'post', 'settings'] },
@@ -21,16 +22,12 @@ const PLACEMENT_FEATURE: Partial<Record<LegacyPlacement, string>> = { mora: 'mor
 
 export default function LabsSurface({ navigate }: FeatureSurfaceProps) {
   const role = useSessionStore((s) => s.user?.role ?? null);
+  const internal = useIsSaimorInternal();
   return (
     <div className="flex flex-col gap-8" data-testid="feature-labs">
       <header>
         <Text variant="eyebrow">Labs & System</Text>
-        <Text variant="display" className="mt-2">Alles da. Nur nicht im Weg.</Text>
-        <Text className="mt-2 max-w-2xl">
-          Jede bisherige App bleibt erreichbar – als Fenster über der neuen Oberfläche. Nichts wurde gelöscht.
-          Die klassische Oberfläche mit Universe, Spaces und Dock läuft unverändert weiter.
-        </Text>
-        <div className="mt-4"><Link href="/" className="os-button" data-testid="labs-legacy-shell"><LayoutGrid size={14} /> Klassische Oberfläche öffnen</Link></div>
+        {internal ? <div className="mt-4"><Link href="/home?classic=1" className="os-button" data-testid="labs-legacy-shell"><LayoutGrid size={14} /> Klassische Oberfläche</Link></div> : null}
       </header>
 
       {LABS_GROUPS.map((g) => {

@@ -86,13 +86,13 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   // „Heute fällig“ und „überfällig“ getrennt – wie in der Aufgabenzeile (formatTaskLine).
   const dueNames = summarizeTitles(open.filter((o) => !o.overdue).map((o) => o.task.title.split(':')[0]));
   const overdueNames = summarizeTitles(open.filter((o) => o.overdue).map((o) => o.task.title.split(':')[0]));
-  const dueCount = [tl.dueToday ? `${plural(tl.dueToday, 'Aufgabe', 'Aufgaben')} heute fällig` : '', tl.overdue ? `${tl.overdue} überfällig` : ''].filter(Boolean).join(', ');
+  const dueCount = [tl.dueToday ? `${plural(tl.dueToday, 'Eintrag', 'Einträge')} heute fällig` : '', tl.overdue ? `${tl.overdue} überfällig` : ''].filter(Boolean).join(', ');
   const dueList = [dueNames.length ? `Heute fällig: ${dueNames.join(' und ')}.` : '', overdueNames.length ? `Überfällig: ${overdueNames.join(' und ')}.` : ''].filter(Boolean).join(' ');
   if (stale && !running) sentence = `Der Termin mit ${personOf(stale.title)} um ${stale.time} ist noch nicht abgeschlossen.`;
   else if (running) sentence = `${personOf(running.title)} ist da. Ich halte dir den Rest fern, bis ihr fertig seid.`;
   else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` ${dueCount.charAt(0).toUpperCase()}${dueCount.slice(1)}.` : restLine}`;
   else if (open.length) sentence = `Heute kommt niemand mehr. ${dueList}`;
-  else if (tl.openTotal) sentence = `Heute ist nichts fällig · ${plural(tl.openTotal, 'Aufgabe', 'Aufgaben')} offen.${tomorrow.length ? ' Morgen steht schon etwas drin.' : ''}`;
+  else if (tl.openTotal) sentence = `Heute ist nichts fällig · ${plural(tl.openTotal, 'Eintrag', 'Einträge')} offen.${tomorrow.length ? ' Morgen steht schon etwas drin.' : ''}`;
   else sentence = tomorrow.length ? 'Heute ist alles erledigt. Morgen steht schon etwas drin.' : 'Heute ist alles erledigt. Magst du morgen planen?';
   const doneTodayEvents = today.length > 0 && today.every((e) => phaseOf(e, phases) === 'erledigt');
   // Ergänzt die Termin-Karte statt sie zu wiederholen: was danach kommt.

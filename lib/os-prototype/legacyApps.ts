@@ -33,7 +33,7 @@ export const LEGACY_APP_PLACEMENT: LegacyAppEntry[] = [
   { appId: 'settings', placement: 'settings', note: 'Vollständige alte Einstellungen (1.806 Z.) – Einstieg aus Einstellungen.' },
   { appId: 'integrations', placement: 'settings', note: 'Klassische Integrationen – abgelöst durch Einstellungen › Quellen (Andockstation).' },
   { appId: 'work', placement: 'work', note: 'Arbeitsfläche (Cockpit).' },
-  { appId: 'tasks', placement: 'work', note: 'Aufgaben – offene Arbeit erscheint in Heute.' },
+  { appId: 'tasks', placement: 'work', note: 'Einträge – offene Arbeit erscheint in Heute.' },
   { appId: 'action-center', placement: 'work', note: 'Action Center.' },
   { appId: 'work-session', placement: 'work', note: 'Arbeitssitzung.' },
   { appId: 'scanner', placement: 'labs', note: 'Scanner (experimentell).' },

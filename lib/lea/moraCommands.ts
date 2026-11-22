@@ -77,7 +77,7 @@ export function parseDayCommand(text: string, ctx: CommandContext): DayCommand |
     const pool = ctx.tasks.filter((x) => (isReopen ? x.status === 'done' : x.status !== 'done'));
     const { hit, ties } = best(q, pool, (x) => x.title);
     if (hit) return isReopen ? { kind: 'reopen', task: hit } : { kind: 'done', task: hit };
-    if (ties.length > 1) return { kind: 'ambiguous', what: 'Aufgabe', options: ties.map((x) => x.title) };
+    if (ties.length > 1) return { kind: 'ambiguous', what: 'Eintrag', options: ties.map((x) => x.title) };
     if (q.length) return { kind: 'unknown-target', what: q.join(' ') };
   }
   return null;

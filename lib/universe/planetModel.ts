@@ -165,7 +165,7 @@ export function bodyMeta(p: ModelPlanet | null, c: ModelCluster | null): string 
     if (cap === 'post' && typeof p.counts?.unread === 'number') parts.push(`${n('unread')} ungelesen`);
     else if (cap === 'post' && n('mails')) parts.push(`${n('mails')} Mails`);
     if (cap === 'wache') parts.push(n('open_incidents') ? `${n('open_incidents')} offen` : 'ruhig');
-    if (cap === 'werkstatt' && n('open_tasks')) parts.push(`${n('open_tasks')} offene Aufgaben`);
+    if (cap === 'werkstatt' && n('open_tasks')) parts.push(`${n('open_tasks')} offene Einträge`);
     if (cap === 'betrieb' && p.counts?.tenants) parts.push(`${p.counts.tenants} Tenants`);
     const connected = (p.sources || []).filter((s) => s.status === 'connected').map((s) => s.label || s.type);
     if (!parts.length && connected.length) parts.push(connected.slice(0, 2).join(' · '));
@@ -197,7 +197,7 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
         break;
       case 'wissen': if (n('docs')) out.push({ label: 'Dokumente', value: n('docs'), tone: 'calm' }); break;
       case 'wache': out.push(n('open_incidents') ? { label: 'offene Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
-      case 'werkstatt': if (n('open_tasks')) out.push({ label: 'offene Aufgaben', value: n('open_tasks'), tone: 'open' }); break;
+      case 'werkstatt': if (n('open_tasks')) out.push({ label: 'offene Einträge', value: n('open_tasks'), tone: 'open' }); break;
       case 'betrieb': {
         const eur = Number(p.counts?.estimated_eur ?? 0);
         if (eur) out.push({ label: 'Kosten geschätzt', value: eur.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }), tone: 'calm' });

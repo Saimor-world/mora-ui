@@ -16,12 +16,12 @@ import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import Link from 'next/link';
 import './bridge-concept.css';
 
-type Light = { id:string; label:string; date:string; kind:'Termin'|'Aufgabe'; target:'calendar'|'today' };
+type Light = { id:string; label:string; date:string; kind:'Termin'|'Eintrag'; target:'calendar'|'today' };
 export function bridgeLights(snapshot: TodaySnapshot | null): Light[] {
   if (!snapshot) return [];
   const lights: Light[] = [];
   if (snapshot.calendar.status === 'ok' && snapshot.calendar.complete) for (const e of snapshot.calendar.events) if (e.id && e.title && e.date) lights.push({id:e.id,label:e.title,date:`${e.date}${e.time ? ` ${e.time}` : ''}`,kind:'Termin',target:'calendar'});
-  if (snapshot.tasks.status === 'ok' && snapshot.tasks.complete) for (const t of snapshot.tasks.items) if (t.id && t.title && t.due_date && t.status !== 'done') lights.push({id:t.id,label:t.title,date:t.due_date,kind:'Aufgabe',target:'today'});
+  if (snapshot.tasks.status === 'ok' && snapshot.tasks.complete) for (const t of snapshot.tasks.items) if (t.id && t.title && t.due_date && t.status !== 'done') lights.push({id:t.id,label:t.title,date:t.due_date,kind:'Eintrag',target:'today'});
   return lights.sort((a,b)=>a.date.replace(' ','T').localeCompare(b.date.replace(' ','T')));
 }
 const available = (source?: TodaySourceMeta) => !!source?.complete && (source.status === 'ok' || source.status === 'empty');
@@ -67,7 +67,7 @@ export function bridgeWidgets(snapshot:TodaySnapshot|null, phase:SceneId|null):W
   const scene=phase?SCENES.find(x=>x.id===phase):null;
   return [
     {id:'next',label:'Als Nächstes',value:!cal?'—':next?`${next.time?`${next.time} `:''}${next.title.replace(/\[(fiktiv)\]|\((fiktiv)\)/gi,'').trim()}`:'Heute frei',tone:'calm',icon:CalendarClock,target:'calendar'},
-    {id:'overdue',label:'Überfällig',value:overdue===null?'—':overdue?`${overdue} ${overdue===1?'Aufgabe':'Aufgaben'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
+    {id:'overdue',label:'Überfällig',value:overdue===null?'—':overdue?`${overdue} ${overdue===1?'Eintrag':'Einträge'}`:'Nichts',tone:overdue?'amber':'calm',icon:AlarmClock,target:'today'},
     {id:'events',label:'Termine',value:count===null?'—':String(count),tone:'calm',icon:CalendarDays,target:'calendar'},
     {id:'phase',label:'Zeit-Theme',value:scene?scene.label:'…',sub:scene?scene.range:undefined,tone:'calm',icon:SunMoon,target:'control'},
   ];
@@ -168,7 +168,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const readFrac=mail.unread!==null&&snapshot?.mail.items.length?1-Math.min(1,mail.unread/Math.max(snapshot.mail.items.length,mail.unread)):mail.unread===0?1:0;
   const instruments:Instrument[]=[
     {id:'post',col:'outer',label:'Post',value:mail.unread===null?post.value:countLabel(mail.unread,'Mail','Mails'),detail:post.detail,tone:post.tone,frac:readFrac,lines:instrumentLines(snapshot,'post',now),offline:mail.unread===null,open:()=>onNavigate('post'),openLabel:'Postfach'},
-    {id:'today',col:'inner',label:'Heute',value:today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Aufgaben'},
+    {id:'today',col:'inner',label:'Heute',value:today.value,detail:today.detail,tone:today.tone,frac:today.progress??0,lines:instrumentLines(snapshot,'today',now),offline:!tasks,open:()=>onNavigate('today'),openLabel:'Einträge'},
     {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan'},
     {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender'},
   ];

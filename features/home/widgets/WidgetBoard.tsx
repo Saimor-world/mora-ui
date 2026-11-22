@@ -4,7 +4,7 @@ import './widgets.css';
 
 function humanSourceName(source: string): string {
   const s = source.toLowerCase();
-  if (s.includes('task') || s === 'tasks') return 'Aufgaben';
+  if (s.includes('task') || s === 'tasks') return 'Einträge';
   if (s.includes('calendar') || s === 'core_calendar') return 'Kalender';
   if (s.includes('mail') || s === 'post') return 'Post';
   if (s.includes('kasse') || s === 'revenue') return 'Kasse';

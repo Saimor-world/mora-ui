@@ -181,7 +181,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   // MÔRAs Tages-Sätze ausführen – über dieselben Aktionen wie „Heute“, immer mit Rückgängig.
   const runCommand = useCallback(async (cmd: DayCommand): Promise<MoraReply> => {
     switch (cmd.kind) {
-      case 'jump': openPlanet(cmd.planetId); return { text: cmd.planetId === world.tasksPlanetId ? 'Hier sind deine Aufgaben zum Zuordnen.' : `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
+      case 'jump': openPlanet(cmd.planetId); return { text: cmd.planetId === world.tasksPlanetId ? 'Hier sind deine Einträge zum Zuordnen.' : `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
       case 'done': {
         if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
         const ok = await dayActions.setDone(cmd.task, true);
@@ -308,7 +308,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${stripFiktiv(world.day.running.title) || world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${stripFiktiv(world.day.next.title) || world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
-            <span>Aufgaben</span>
+            <span>Einträge</span>
             <b>{stripFiktiv(world.day.taskLine) || world.day.taskLine}</b>
           </button>
           <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />

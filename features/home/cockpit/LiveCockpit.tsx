@@ -151,7 +151,7 @@ export function LiveCockpit({
       }
       const overdue = (snapshot?.tasks?.overdue ?? []).filter((t) => t.department_id === p.id);
       if (overdue.length > 0) {
-        map.set(p.id, { isAlarm: false, reason: overdue[0].title || `${overdue.length} überfällige Aufgabe` });
+        map.set(p.id, { isAlarm: false, reason: overdue[0].title || `${overdue.length} überfälliger Eintrag` });
         return;
       }
       const due = (snapshot?.tasks?.due_today ?? []).filter((t) => t.department_id === p.id);
@@ -396,7 +396,7 @@ export function LiveCockpit({
               onClick={() => setDemoCompany(null)}
               aria-pressed={!isCafeScope}
               data-testid="home-scope-hq"
-              title="SAIMÔR HQ (Kommando, Technik, Atelier, Betrieb, Kontor)"
+              title="SAIMÔR HQ (Leitung, Technik, Atelier, Betrieb, Kontor)"
               style={{
                 fontSize: 12,
                 fontWeight: !isCafeScope ? 600 : 500,

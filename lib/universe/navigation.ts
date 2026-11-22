@@ -17,8 +17,8 @@ const SOURCE_APPS: Record<string, Pick<PaneOpenRequest, 'id' | 'type' | 'title'>
   dropbox: { id: 'files-main', type: 'meine-dateien', title: 'Dateien' },
   github: { id: 'work-main', type: 'work', title: 'Arbeit' },
   gitlab: { id: 'work-main', type: 'work', title: 'Arbeit' },
-  linear: { id: 'tasks-main', type: 'tasks', title: 'Aufgaben' },
-  jira: { id: 'tasks-main', type: 'tasks', title: 'Aufgaben' },
+  linear: { id: 'tasks-main', type: 'tasks', title: 'Einträge' },
+  jira: { id: 'tasks-main', type: 'tasks', title: 'Einträge' },
 };
 
 export type MoonNavigationTarget =

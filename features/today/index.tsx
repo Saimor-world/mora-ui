@@ -156,7 +156,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')]] as const : []),
-              ['Aufgaben · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Aufgabenstand nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openWorkTask((snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0])],
+              ['Einträge · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Stand der Einträge nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Einträge.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Einträge.', () => openWorkTask((snapshot?.tasks?.overdue ?? [])[0] ?? (snapshot?.tasks?.due_today ?? [])[0])],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
@@ -241,8 +241,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               )}
             </Section> : null}
 
-            <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openWorkTask((snapshot.tasks.overdue ?? [])[0] ?? (snapshot.tasks.due_today ?? [])[0])}>Aufgaben</Button>}>
-              <SourceState status={snapshot.tasks.status} label="Aufgaben" />
+            <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openWorkTask((snapshot.tasks.overdue ?? [])[0] ?? (snapshot.tasks.due_today ?? [])[0])}>Einträge</Button>}>
+              <SourceState status={snapshot.tasks.status} label="Einträge" />
               {snapshot.tasks.status !== 'disconnected' && snapshot.tasks.status !== 'unavailable' ? (
                 <Stack direction="row" gap={6} wrap>
                   {((tc ? [['Offen', tc.openTotal], ['In Arbeit', tc.inProgress], ['Heute fällig', tc.dueToday], ['Überfällig', tc.overdue]] : [['Offen', snapshot.tasks.counts.open], ['In Arbeit', snapshot.tasks.counts.in_progress], ['Heute fällig', snapshot.tasks.counts.due_today], ['Überfällig', snapshot.tasks.counts.overdue]]) as ReadonlyArray<readonly [string, number | null]>).map(([l, v]) => (
