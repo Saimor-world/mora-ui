@@ -649,6 +649,8 @@
 .os-mail__pane-empty { align-items: center; opacity: .85; }
 .os-mail__pane-empty-icon { color: var(--os-text-muted); opacity: .6; margin-bottom: 6px; }
 .os-mail__back { display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--os-text-muted); }
+/* Der Weg zurück zum Eintrag gilt auf jeder Breite, nicht nur im Handy-Lesemodus. */
+.os-mail__back--entry { display: inline-flex; align-self: flex-start; }
 .os-mail__pane-subject { font-size: 20px; line-height: 1.3; font-weight: 600; color: var(--os-text); margin: 0; }
 .os-mail__pane-meta { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--os-text); }
 .os-mail__pane-meta small { color: var(--os-text-muted); }

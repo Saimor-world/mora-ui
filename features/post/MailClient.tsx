@@ -41,7 +41,7 @@ export function MailClient({ items, live }: { items: PostMessage[]; live: boolea
   const open = (live && originalId === openId && original.data) || summary;
   const problem = live && originalId === openId && original.isError ? originalProblem(original.error) : null;
   const backToEntry = back ? (
-    <button type="button" className="os-mail__back" onClick={() => returnFromOriginalMail(back)} aria-label="Zurück zum Eintrag" data-testid="post-back-entry"><ArrowLeft size={14} aria-hidden /> Eintrag</button>
+    <button type="button" className="os-mail__back os-mail__back--entry" onClick={() => returnFromOriginalMail(back)} aria-label="Zurück zum Eintrag" data-testid="post-back-entry"><ArrowLeft size={14} aria-hidden /> Eintrag</button>
   ) : null;
   const problemNote = problem ? (
     <div className="os-mail__problem" role="status" data-testid="post-original-problem" data-problem={problem}>
