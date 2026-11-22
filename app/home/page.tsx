@@ -5,7 +5,7 @@ import nextDynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { isOsPrototypeEnabled } from '@/lib/os-prototype/flags';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { useIsSaimorHq } from '@/lib/hooks/useIsSaimorInternal';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +45,9 @@ const MorgenOverlay = nextDynamic(
 function HomeEntry() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const internal = useIsSaimorInternal();
+    // HQ membership only (no demo deduction): the fail-closed demo check would otherwise
+    // bounce an HQ session to /os while the company list is still loading.
+    const internal = useIsSaimorHq();
     const newOs = isOsPrototypeEnabled();
     // Classic mode is an explicit choice from an already established HQ session.
     // A default/bookmarked /home always enters /os through its existing auth gate.

@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 function makeQueryClient() {
   const client = new QueryClient({
@@ -33,6 +34,21 @@ function makeQueryClient() {
   return client;
 }
 
+/**
+ * Fail-closed cache boundary: when a signed-in principal leaves (logout, user switch,
+ * explicit session reset), every cached read belongs to the old session. Cancel what is
+ * in flight and drop the whole cache, so nothing from person A can render for person B.
+ * The first sign-in (anonymous → user) keeps the cache: nothing personal is in it yet.
+ */
+export function installSessionCacheReset(client: QueryClient): () => void {
+  return useSessionStore.subscribe((state, previous) => {
+    if (state.sessionGeneration === previous.sessionGeneration) return;
+    if (!previous.user) return;
+    void client.cancelQueries();
+    client.clear();
+  });
+}
+
 let browserQueryClient: QueryClient | undefined;
 
 export function getQueryClient() {
@@ -41,6 +57,7 @@ export function getQueryClient() {
   }
   if (!browserQueryClient) {
     browserQueryClient = makeQueryClient(); // browser: singleton
+    installSessionCacheReset(browserQueryClient);
   }
   return browserQueryClient;
 }
