@@ -11,16 +11,30 @@ import { useScopeCompanyId } from '@/lib/demo/demoStore';
 // Ohne Provider (Tests, isolierte Renders) kein Wurf: eigener, leerer Client – dann gilt „keine Demo“.
 const standaloneClient = new QueryClient();
 
-/** True, wenn die aktive Firma ein is_demo-Arbeitsbereich ist (z. B. Coffee/Brandt im HQ-Tenant). */
+/** Firmenliste je angemeldeter Person: ein Nutzerwechsel liest nie die Liste der vorherigen Person. */
+function useCompaniesKey() {
+    const principal = useSessionStore((state) => (state.user ? `${state.user.tenant_id ?? 'tenant-unknown'}:${state.user.id}` : 'anonymous'));
+    return [...queryKeys.companies(), true, principal] as const;
+}
+
+/**
+ * True, wenn die aktive Firma ein is_demo-Arbeitsbereich ist (z. B. Coffee/Brandt im HQ-Tenant).
+ * Fail-closed: Solange die Firmenliste lädt, fehlschlägt oder die aktive Firma nicht enthält,
+ * gilt sie als Demo, damit keine HQ-Inhalte (Eule, Finanzen) in einer Demo aufblitzen.
+ */
 export function useActiveCompanyIsDemo(): boolean {
     const activeId = useScopeCompanyId();
     const ctxClient = useContext(QueryClientContext);
+    const queryKey = useCompaniesKey();
     const { data } = useQuery(
-        { queryKey: [...queryKeys.companies(), true], queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(activeId && ctxClient) },
+        { queryKey, queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(activeId && ctxClient) },
         ctxClient ?? standaloneClient,
     );
-    if (!activeId || !Array.isArray(data)) return false;
-    return Boolean(data.find((c) => c.id === activeId)?.is_demo);
+    if (!activeId) return false;
+    if (!ctxClient) return false;
+    if (!Array.isArray(data)) return true;
+    const company = data.find((c) => c.id === activeId);
+    return company ? Boolean(company.is_demo) : true;
 }
 
 /** Session-bound version of isSaimorInternal (see lib/auth/organization). Demo-Firmen gelten nie als intern. */
@@ -37,8 +51,9 @@ export function useIsSaimorHq(): boolean {
 /** Alle is_demo-Firmen des Tenants (für den Demo-Schalter). */
 export function useDemoCompanies(enabled: boolean): { id: string; name: string }[] {
     const ctxClient = useContext(QueryClientContext);
+    const queryKey = useCompaniesKey();
     const { data } = useQuery(
-        { queryKey: [...queryKeys.companies(), true], queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(enabled && ctxClient) },
+        { queryKey, queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(enabled && ctxClient) },
         ctxClient ?? standaloneClient,
     );
     return Array.isArray(data) ? data.filter((c) => c.is_demo).map((c) => ({ id: c.id, name: c.name })) : [];
