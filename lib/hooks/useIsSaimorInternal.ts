@@ -6,7 +6,7 @@ import { useContext } from 'react';
 import { QueryClient, QueryClientContext, useQuery } from '@tanstack/react-query';
 import { fetchCompanies } from '@/lib/api/orgClient';
 import { queryKeys, STALE_TIMES } from '@/lib/queries/queryKeys';
-import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDemoStore, useScopeCompanyId } from '@/lib/demo/demoStore';
 
 // Ohne Provider (Tests, isolierte Renders) kein Wurf: eigener, leerer Client – dann gilt „keine Demo“.
 const standaloneClient = new QueryClient();
@@ -57,4 +57,34 @@ export function useDemoCompanies(enabled: boolean): { id: string; name: string }
         ctxClient ?? standaloneClient,
     );
     return Array.isArray(data) ? data.filter((c) => c.is_demo).map((c) => ({ id: c.id, name: c.name })) : [];
+}
+
+const DEMO_TENANTS = new Set(['tenant-demo', 'tenant-demo-morgenrot']);
+
+/** Demo-Sitzung: Konto in einem Demo-Tenant oder mit Demo-Rolle. Dort ist alles erfunden und so markiert. */
+export function isDemoSessionUser(user: { role?: string | null; tenant_id?: string | null; is_demo?: boolean } | null | undefined): boolean {
+    if (!user) return false;
+    return Boolean(user.is_demo) || user.role === 'demo' || DEMO_TENANTS.has(user.tenant_id ?? '');
+}
+
+/**
+ * Wessen Welt gerade zu sehen ist:
+ * - 'hq': SAIMÔR intern, die eigenen Räume (Leitung, Atelier, Kontor …)
+ * - 'demo': erfundene Demo-Welt (Café-Demo im HQ oder Demo-Konto)
+ * - 'customer': alle anderen. Dort steht nur, was aus CORE kommt.
+ * Ohne Sitzung gilt 'customer', also nie Beispielinhalt.
+ */
+export type WorkScope = 'hq' | 'demo' | 'customer';
+export function useWorkScope(): WorkScope {
+    const demoId = useDemoStore((s) => s.demoCompanyId);
+    const hq = useIsSaimorHq();
+    const demoUser = useSessionStore((s) => isDemoSessionUser(s.user as { role?: string | null; tenant_id?: string | null; is_demo?: boolean } | null));
+    if (demoUser) return 'demo';
+    if (hq) return demoId ? 'demo' : 'hq';
+    return 'customer';
+}
+
+/** Demo-Schalter, „Fiktive Demo“ und „+ Abteilung“: nur für SAIMÔR intern. */
+export function useShowsDemoChrome(): boolean {
+    return useIsSaimorHq();
 }

@@ -20,6 +20,7 @@ import {
 import { demoTodaySnapshot } from '@/lib/demo/morgenrot/demoToday';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useWorkScope } from '@/lib/hooks/useIsSaimorInternal';
 import { sceneFor } from '@/lib/os-prototype/scene';
 import { arrangeBoard } from '../model/board';
 import { cameraTo, roomStage, toScreen, worldFor, type Rect, type Stage, type World } from '../model/stage';
@@ -174,8 +175,9 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   // Der Raum hat seine eigene Bühne (bei 4:3 verkleinert, damit Regal und Pult beide sichtbar bleiben).
   const room = useMemo(() => roomStage(stage), [stage]);
   const world = useWorld();
+  const workScope = useWorkScope();
   const title = clean(planet.title);
-  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title), [planet.id, title]);
+  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title, workScope), [planet.id, title, workScope]);
   const resolvedRoomKind = roomKind ?? roomCtx.primaryRoom;
   const [activeRoom, setActiveRoom] = useState<RoomKind>(resolvedRoomKind);
   useEffect(() => { setActiveRoom(roomKind ?? roomCtx.primaryRoom); }, [roomKind, roomCtx.primaryRoom]);
@@ -391,7 +393,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
   }, [back]);
 
   const roomLabel = currentRoomMeta.shortLabel;
-  const stationMeta = useMemo(() => resolveStationKind(planet.id, title, roomCtx.archetype), [planet.id, title, roomCtx.archetype]);
+  const stationMeta = useMemo(() => resolveStationKind(planet.id, title, roomCtx.archetype, workScope), [planet.id, title, roomCtx.archetype, workScope]);
   const nameOf = (p: Place) => (p.kind === 'room' ? roomLabel : p.kind === 'task' ? 'Eintrag' : p.kind === 'doc' ? 'Buch' : p.kind === 'station' ? stationMeta.deskLabel : 'Planung');
   const backTo = stack.length > 1 ? { label: nameOf(stack[stack.length - 2]), run: back } : { label: backLabel ?? 'Universe', run: back };
 
@@ -700,6 +702,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
               2. Runder Beistelltisch in der Mitte -> Wochenmappe
               3. Stehpult vor dem Fenster rechts -> Gebundenes Vollbild-Buch
               4. Wandregal / Archivschrank ganz links -> Dokumenten-Auswahl */}
+          {stationMeta.fixtureLabel ? (<>
           <button
             type="button"
             className="wk-hit wk-hit--fixture"
@@ -722,6 +725,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             <span>{stationMeta.fixtureLabel}</span>
             <small>{stationMeta.fixtureSub}</small>
           </button>
+          </>) : null}
 
           <button
             type="button"
@@ -739,7 +743,7 @@ export function Werkstatt({ planet, work, planets, companyId, today, roomKind, c
             data-testid="wk-desk-plate"
           >
             <b>{stationMeta.deskLabel}</b>
-            <small>{stationMeta.deskHint} →</small>
+            {stationMeta.deskHint ? <small>{stationMeta.deskHint} →</small> : null}
           </button>
 
           <button type="button" className="wk-hit" style={box(ROOM.lectern)} onClick={() => lecternDoc && open({ kind: 'doc', id: lecternDoc.id })} aria-label={lecternDoc ? `Buch am Pult: ${clean(lecternDoc.name)}` : 'Pult'} data-testid="wk-hit-lectern" />

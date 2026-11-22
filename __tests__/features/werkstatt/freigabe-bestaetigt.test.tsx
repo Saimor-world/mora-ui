@@ -75,8 +75,8 @@ describe('Leitung › Freigaben', () => {
 
 describe('Kontor › Budgets', () => {
     it('bietet keine lokale „Geprüft“-Freigabe an', () => {
-        render(<DeskWorkstation stationKind="kontor-station" planetId="dept-test-kontor" planetTitle="Kontor" crew={[]} tasks={[]} docs={[]} onClose={jest.fn()} />);
-        const sheet = screen.getByTestId('wk-station-kontor-station');
+        render(<DeskWorkstation stationKind="raum-station" planetId="dept-test-kontor" planetTitle="Kontor" crew={[]} tasks={[]} docs={[]} onClose={jest.fn()} />);
+        const sheet = screen.getByTestId('wk-station-raum-station');
         expect(within(sheet).queryByText(/Geprüft ✓/)).toBeNull();
         expect(within(sheet).queryByRole('button', { name: 'Freigeben' })).toBeNull();
     });

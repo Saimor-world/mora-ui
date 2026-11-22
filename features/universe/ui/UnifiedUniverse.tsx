@@ -25,7 +25,7 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { hasFiktivMarker, stripFiktiv } from '@/lib/demo/morgenrot/stripFiktiv';
 import { MORGENROT } from '@/lib/demo/morgenrot/online';
 import type { DemoPlanet } from '@/lib/demo/morgenrot/structure';
-import { useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
+import { isDemoSessionUser, useActiveCompanyIsDemo, useShowsDemoChrome, useWorkScope } from '@/lib/hooks/useIsSaimorInternal';
 import { useNavPos } from '@/lib/mora/navPos';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
@@ -354,6 +354,8 @@ export function UnifiedUniverse({
 
   // Demo detection and company name
   const activeCompanyIsDemo = useActiveCompanyIsDemo();
+  const showsDemoChrome = useShowsDemoChrome();
+  const workScope = useWorkScope();
   const demoNameId = useDemoStore((s) => s.demoCompanyId);
   const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
   const isCafeScope = demoNameId === 'demo-morgenrot';
@@ -473,25 +475,27 @@ export function UnifiedUniverse({
       seen.add(k);
       list.push(m);
     };
-    const canonical = getShipDepartmentCrew(planet.id) ?? getShipDepartmentCrew(planet.title);
+    // Beispiel-Crew nur in der eigenen HQ- und der Demo-Welt, nie in Kundenräumen.
+    const canonical = workScope === 'customer' ? null : (getShipDepartmentCrew(planet.id) ?? getShipDepartmentCrew(planet.title));
     if (canonical && canonical.length > 0) {
       canonical.forEach((c) => add(c));
     } else {
-      teamMembers.forEach((m, idx) => {
-        const isLead = /owner|admin|lead|captain|leitung/i.test(m.role) || idx === 0;
-        add({ id: m.id, name: m.name, role: isLead ? 'Abteilungsleitung' : m.role, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });
+      // Rolle nur, wie CORE sie liefert; keine erfundene „Abteilungsleitung“.
+      teamMembers.forEach((m) => {
+        const isLead = /owner|admin|lead|leitung/i.test(m.role || '');
+        add({ id: m.id, name: m.name, role: m.role || undefined, status: m.status, isCaptain: isLead && !list.some((x) => x.isCaptain) });
       });
     }
     const assignees = new Set<string>();
     work.loose.forEach((t) => { if (t.assignee) assignees.add(t.assignee); });
     work.moons.forEach((mw) => [...mw.open, ...mw.done].forEach((t) => { if (t.assignee) assignees.add(t.assignee); }));
-    assignees.forEach((a) => add({ id: `assignee-${a}`, name: a, role: planet.jobRoles?.[0], status: 'online', isCaptain: list.length === 0 }));
+    assignees.forEach((a) => add({ id: `assignee-${a}`, name: a, status: 'offline' }));
     if (list.length === 0) {
       const me = firstName(user);
-      if (me) add({ id: user?.id || 'me', name: me, role: 'Abteilungsleitung', status: 'online', isCaptain: true });
+      if (me) add({ id: user?.id || 'me', name: me, status: 'online' });
     }
     return list;
-  }, [planet, teamMembers, work, user]);
+  }, [planet, teamMembers, work, user, workScope]);
   const workTask = useMemo(() => {
     if (!taskId) return null;
     let hit = work.loose.find((t) => t.id === taskId) ?? null;
@@ -715,13 +719,14 @@ export function UnifiedUniverse({
           ) : (
             <span>{companyName}</span>
           )}
-          {effectiveIsDemo ? (
+          {effectiveIsDemo && (showsDemoChrome || isDemoSessionUser(user as { role?: string | null; tenant_id?: string | null } | null)) ? (
             <span className="ck-fict fiktiv-badge" data-testid="universe-fiktiv-badge">
               Fiktive Demo
             </span>
           ) : null}
         </div>
 
+        {showsDemoChrome ? (
         <div className="ck-top__r flex items-center gap-2">
           <div
             className="ck-scope-switch"
@@ -802,6 +807,7 @@ export function UnifiedUniverse({
             + Abteilung
           </button>
         </div>
+        ) : null}
       </header>
 
       {/* Morning Briefing: Desktop linke Seite, Handy als einklappbare Zeile oben (überdeckt nichts) */}
@@ -895,7 +901,7 @@ export function UnifiedUniverse({
             onTask={(id, o) => { setOrigin(o); setMoonId(null); setTaskId(id); setDeptSheetOpen(false); }}
             onOpenDept={() => setDeptSheetOpen(true)}
             onEnter={() => {
-              const ctx = getDepartmentRoomContext(planet.id, stripFiktiv(planet.title) || planet.title);
+              const ctx = getDepartmentRoomContext(planet.id, stripFiktiv(planet.title) || planet.title, workScope);
               setMoonId(null); setTaskId(null); setDeptSheetOpen(false);
               setRoom({ kind: ctx.primaryRoom, place: null, fromSpace: true });
             }}
@@ -979,7 +985,7 @@ export function UnifiedUniverse({
           onSwitchPlanet={(nextId) => {
             const nextPlanet = planets.find((p) => p.id === nextId);
             if (!nextPlanet) return;
-            const ctx = getDepartmentRoomContext(nextPlanet.id, stripFiktiv(nextPlanet.title) || nextPlanet.title);
+            const ctx = getDepartmentRoomContext(nextPlanet.id, stripFiktiv(nextPlanet.title) || nextPlanet.title, workScope);
             setPlanetId(nextPlanet.id);
             setMoonId(null);
             setTaskId(null);

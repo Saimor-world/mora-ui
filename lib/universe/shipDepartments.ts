@@ -722,9 +722,14 @@ export interface DeptRoomContext {
   };
 }
 
-export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: string): DeptRoomContext {
+/**
+ * Raum einer Abteilung. scope 'customer': ein neutraler Holzraum mit dem Namen der Abteilung,
+ * ohne SAIMÔR-Räume (Atelier, Leitung, Kontor) und ohne Beispielinhalt.
+ */
+export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: string, scope: 'hq' | 'demo' | 'customer' = 'hq'): DeptRoomContext {
   const raw = `${deptIdOrName || ''} ${deptTitle || ''}`.toLowerCase();
   const label = deptTitle || deptIdOrName || 'Abteilung';
+  if (scope === 'customer') return neutralRoomContext(label);
 
   if (raw.includes('kommando') || raw.includes('strategie') || raw.includes('leitung') || raw.includes('führung') || raw.includes('brücke')) {
     return {
@@ -956,6 +961,21 @@ export function getDepartmentRoomContext(deptIdOrName: string, deptTitle?: strin
       loungeTitle: `Crew-Tisch & Übergabe · ${label}`,
       handoverPrompt: 'Übergabe-Notiz oder Aufgabe für das Team festhalten…',
     },
+  };
+}
+
+function neutralRoomContext(label: string): DeptRoomContext {
+  const room = { tag: label, name: label, shortLabel: label, subtitle: '' };
+  return {
+    primaryRoom: 'werkstatt',
+    archetype: 'werkstatt',
+    roomTag: label,
+    roomName: label,
+    roomSubtitle: '',
+    enterLabel: label,
+    werkstatt: { ...room, focusHint: '' },
+    studio: { ...room, focusTitle: label, focusItems: [] },
+    bar: { ...room, loungeTitle: label, handoverPrompt: 'Übergabe…' },
   };
 }
 

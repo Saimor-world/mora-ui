@@ -19,6 +19,7 @@ import type { DeptWork, MoonWork, WorkTask } from '@/lib/universe/deptWork';
 import { getDepartmentRoomContext } from '@/lib/universe/shipDepartments';
 import { useMoraPresence } from '@/lib/mora/moraPresence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useWorkScope } from '@/lib/hooks/useIsSaimorInternal';
 
 const ORB = 260;
 const MOON = 104;
@@ -124,9 +125,10 @@ export function StationPlanet({
     if (onEnterRoom) onEnterRoom(k);
     else if (onEnter) onEnter();
   };
+  const workScope = useWorkScope();
   const captain = crew.find((c) => c.isCaptain) ?? crew[0] ?? null;
   const members = crew.filter((c) => c !== captain);
-  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title), [planet.id, title]);
+  const roomCtx = useMemo(() => getDepartmentRoomContext(planet.id, title, workScope), [planet.id, title, workScope]);
 
   // Im Abteilungs-Deck zieht sich der große Wasser-Rumpf des Docks zurück, damit Deck, Ordner und Räume frei stehen.
   useLayoutEffect(() => {
@@ -203,7 +205,7 @@ export function StationPlanet({
             {captain ? (
               <span className="ws-crew__chip ws-crew__chip--captain" data-online={captain.status === 'online' ? '1' : undefined} data-testid="dept-captain">
                 <CrewRelicAvatar id={captain.id} name={clean(captain.name)} isCaptain status={captain.status} size={24} testId={`crew-avatar-${captain.id}`} />
-                <b>Captain {clean(captain.name)}</b>
+                <b>{clean(captain.name)}</b>
                 {captain.role ? <small>{clean(captain.role)}</small> : null}
               </span>
             ) : null}

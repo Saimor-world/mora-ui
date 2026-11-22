@@ -19,10 +19,21 @@ export type StationKind =
   | 'atelier-station'     // SAIMÔR: ORIGIN // 001 Relikt- & Material-Prüfsockel + Dossier-Schnellschreiber
   | 'bar-station'         // SAIMÔR: Crew-Logbuch, Schicht-Übergabe & Abteilungs-Funk
   | 'bridge-station'      // SAIMÔR: Kommandobrücke (Captains-Freigaben & Quartals-Kompass)
-  | 'kontor-station'      // SAIMÔR: Treasury-Kontor (Budget-Freigabe & XRPL-Testnet-Wächter)
-  | 'technik-station';    // SAIMÔR: Maschinenraum (Core v3 Schnittstellen- & System-Prüfstand)
+  | 'raum-station';       // Arbeitsplatz nur mit Einträgen und Büchern aus CORE (Kunden, Kontor, Technik)
 
-export function resolveStationKind(planetId: string, planetTitle: string, archetype: string): {
+function raumStation(label: string) {
+  return {
+    kind: 'raum-station' as const,
+    deskLabel: label,
+    deskHint: '',
+    badgeText: label,
+    fixtureLabel: '',
+    fixtureSub: '',
+    fixtureBox: { x: 118, y: 380, w: 170, h: 210 },
+  };
+}
+
+export function resolveStationKind(planetId: string, planetTitle: string, archetype: string, scope: 'hq' | 'demo' | 'customer' = 'hq'): {
   kind: StationKind;
   deskLabel: string;
   deskHint: string;
@@ -32,6 +43,8 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
   fixtureBox: { x: number; y: number; w: number; h: number };
 } {
   const raw = `${planetId} ${planetTitle}`.toLowerCase();
+  // Kundenräume: neutraler Arbeitsplatz, keine SAIMÔR- oder Café-Beispiele.
+  if (scope === 'customer') return raumStation(planetTitle);
   if (raw.includes('küche') || raw.includes('kueche') || raw.includes('backstube')) {
     return {
       kind: 'kueche-station',
@@ -110,25 +123,9 @@ export function resolveStationKind(planetId: string, planetTitle: string, archet
     };
   }
   if (archetype === 'kontor' || raw.includes('finanz') || raw.includes('recht') || raw.includes('treasury')) {
-    return {
-      kind: 'kontor-station',
-      deskLabel: 'Treasury-Kontor · Budget & XRPL-Freigaben',
-      deskHint: 'Abteilungs-Budgets prüfen · XRPL Testnet-Status · Verträge',
-      badgeText: 'Treasury & XRPL Testnet',
-      fixtureLabel: 'Präzisionswaage & XRPL-Wächter',
-      fixtureSub: 'Testnet aktiv · Budget geprüft',
-      fixtureBox: { x: 34, y: 420, w: 175, h: 200 },
-    };
+    return raumStation('Kontor');
   }
-  return {
-    kind: 'technik-station',
-    deskLabel: 'Werkbank · System-Prüfstand & Releases',
-    deskHint: 'Core v3 Schnittstellen · Lokaler Dev-Master · Release-Checkliste',
-    badgeText: 'System-Prüfstand · Bereit',
-    fixtureLabel: 'Messinglampe & System-Prüfstand',
-    fixtureSub: 'Core v3 & Local Master aktiv',
-    fixtureBox: { x: 118, y: 380, w: 170, h: 210 },
-  };
+  return raumStation(planetTitle);
 }
 
 function readLocal<T>(key: string, fallback: T): T {
@@ -268,15 +265,7 @@ export function DeskWorkstation({
   useEffect(() => writeLocal(`mora.station.verwaltung.orderSent.${planetId}`, orderSubmitted), [orderSubmitted, planetId]);
   useEffect(() => writeLocal(`mora.station.verwaltung.vacation.${planetId}`, vacationApproved), [vacationApproved, planetId]);
 
-  // 5. SAIMÔR ATELIER STATE (ORIGIN // 001 Material-Abnahme + Direkt-Folio)
-  const [originSpecs, setOriginSpecs] = useState(() =>
-    readLocal(`mora.station.atelier.specs.${planetId}`, [
-      { id: 'sp-basalt', part: 'Körper & Stein', detail: 'Dunkler Basalt mit mikro-taktilem Relief (Seed 1001)', status: 'Kanonisch' as 'Kanonisch' | 'In Prüfung' | 'Freigegeben' },
-      { id: 'sp-quarz', part: 'Optischer Kern', detail: 'Geschmolzener Quarz · Echte Brechung & ruhige Kaustik (AgX)', status: 'Freigegeben' as 'Kanonisch' | 'In Prüfung' | 'Freigegeben' },
-      { id: 'sp-metal', part: 'Präzisionsfassung', detail: 'Gebürstetes Messing (Captain) / Ruthenium-Titan (Crew)', status: 'Freigegeben' as 'Kanonisch' | 'In Prüfung' | 'Freigegeben' },
-      { id: 'sp-ma', part: 'Raumhaltung (Ma)', detail: 'Asymmetrische Ruhe · Frei von künstlichem Nebel', status: 'Kanonisch' as 'Kanonisch' | 'In Prüfung' | 'Freigegeben' },
-    ])
-  );
+  // 5. SAIMÔR ATELIER STATE (Direkt-Folio)
   const [editingFolio, setEditingFolio] = useState(false);
   const [folioDraft, setFolioDraft] = useState(activeDocContent);
   const [folioSaved, setFolioSaved] = useState(false);
@@ -285,7 +274,6 @@ export function DeskWorkstation({
   const [newDocBody, setNewDocBody] = useState('');
   const [studioTaskDraft, setStudioTaskDraft] = useState('');
   useEffect(() => setFolioDraft(activeDocContent), [activeDocContent]);
-  useEffect(() => writeLocal(`mora.station.atelier.specs.${planetId}`, originSpecs), [originSpecs, planetId]);
 
   // 6. SAIMÔR BAR / CREW-TRESEN STATE
   const [selectedCrewName, setSelectedCrewName] = useState<string | null>(null);
@@ -311,34 +299,7 @@ export function DeskWorkstation({
   const [newDirective, setNewDirective] = useState('');
   const [newDirectiveOwner, setNewDirectiveOwner] = useState('');
 
-  const [kontorBudgets, setKontorBudgets] = useState(() =>
-    readLocal(`mora.station.kontor.budgets.${planetId}`, [
-      { id: 'kb-origin', label: 'Phase 01 Produktion · ORIGIN // 001 Master', amount: 18500, owner: 'Sorel M.', approved: true },
-      { id: 'kb-core', label: 'Mora Core v3 & Infrastruktur', amount: 12400, owner: 'Kaito R.', approved: true },
-      { id: 'kb-pilot', label: 'Pilotkunden-Onboarding & Partner-Rahmen', amount: 6800, owner: 'Tarek B.', approved: false },
-      { id: 'kb-reserve', label: 'Strategische Liquiditätsreserve (Q4)', amount: 45000, owner: 'Clara D.', approved: true },
-    ])
-  );
-  const [xrplChecks, setXrplChecks] = useState(() =>
-    readLocal(`mora.station.kontor.xrpl.${planetId}`, [
-      { id: 'xrpl-1', label: 'XRPL Testnet-Only aktiv (Mainnet-Sperre ohne Human-Approval)', ok: true },
-      { id: 'xrpl-2', label: 'Keine Private Keys oder Wallet-Seeds im Repository', ok: true },
-      { id: 'xrpl-3', label: 'Deterministischer Seed-Vertrag (1001–1111) SHA-256 verifiziert', ok: true },
-    ])
-  );
-  useEffect(() => writeLocal(`mora.station.kontor.budgets.${planetId}`, kontorBudgets), [kontorBudgets, planetId]);
-  useEffect(() => writeLocal(`mora.station.kontor.xrpl.${planetId}`, xrplChecks), [xrplChecks, planetId]);
-
-  const [techSystems, setTechSystems] = useState(() =>
-    readLocal(`mora.station.technik.sys.${planetId}`, [
-      { id: 'sys-tree', name: 'Core v3 · /v3/tree & Abteilungs-Räume', detail: '1 Abteilung = 1 physischer Raum + transparente Fenster', latency: '4 ms', ok: true },
-      { id: 'sys-tasks', name: 'Core v3 · /v3/tasks & Ordner-Bindung', detail: 'Karten an der Wandtafel + Direkt-Anlage im Raum', latency: '6 ms', ok: true },
-      { id: 'sys-nodes', name: 'Core v3 · /v3/nodes & Doppelseiten-Buch', detail: 'Stehpult-Satz & Wochenmappe synchron', latency: '5 ms', ok: true },
-      { id: 'sys-seed', name: 'Generator · Seed 1001 (ORIGIN // 001)', detail: 'Blender 4.2 LTS · Cycles AgX · Deterministisch', latency: 'Verifiziert', ok: true },
-    ])
-  );
-  const [techTaskDraft, setTechTaskDraft] = useState('');
-  useEffect(() => writeLocal(`mora.station.technik.sys.${planetId}`, techSystems), [techSystems, planetId]);
+  const [raumTaskDraft, setRaumTaskDraft] = useState('');
 
   // 8. SHARED LIVE CAFÉ STATE (Verbindet Küche, Service, Theke & Verwaltung in Echtzeit!)
   const [cafeShared, setCafeShared] = useState(() =>
@@ -371,7 +332,6 @@ export function DeskWorkstation({
   const posTotal = useMemo(() => posCart.reduce((s, x) => s + x.price, 0), [posCart]);
 
   // ORIGIN // 001 Licht-Inspektor im Atelier
-  const [originLightMode, setOriginLightMode] = useState<'raking' | 'caustic' | 'frame'>('raking');
 
   // PRIORITÄT 0, 1 & 3: Strikte Scope-Isolation, Idempotente Dokumentenspur & 4-Raum-Vorgang Kanzlei Weber
   const scopeKey = useMemo(() => resolveScopeKey(undefined, planetId), [planetId]);
@@ -425,6 +385,8 @@ export function DeskWorkstation({
   return (
     <div className="wk-workstation" data-testid="wk-workstation" data-station-kind={stationKind} data-scope={scopeKey} lang="de">
       {/* PRIORITÄT 0, 1 & 3: Datenherkunft, Sicherheitsstufe & Durchgehender Kanzlei-Weber-Vorgang */}
+      {/* Herkunft und Vorgangsspur gibt es nur in der Demo-Welt; sonst zählt nur, was CORE liefert. */}
+      {scopeKey === 'demo-morgenrot' ? (
       <div className="wk-ledger-bar" data-testid="wk-ledger-bar">
         <div className="wk-ledger-bar__meta">
           <span
@@ -565,6 +527,7 @@ export function DeskWorkstation({
           </div>
         ) : null}
       </div>
+      ) : null}
       {/* =========================================================================================
           1. CAFÉ MORGENROT · KÜCHE & BACKSTUBE (Bestand zählen, Kühlprotokoll, Rezept-Umrechner)
          ========================================================================================= */}
@@ -1075,7 +1038,7 @@ export function DeskWorkstation({
             <header className="wk-ws-head">
               <div>
                 <span className="wk-ws-eyebrow">Atelier-Zeichentisch · Konzept & Dossier</span>
-                <h2>{activeDocTitle || 'ORIGIN // 001 Material-Manifest'}{folioSaved ? ' · Gespeichert ✓' : ''}</h2>
+                <h2>{activeDocTitle || planetTitle}{folioSaved ? ' · Gespeichert ✓' : ''}</h2>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -1173,72 +1136,6 @@ export function DeskWorkstation({
           </section>
 
           <section className="wk-ws-side" data-testid="wk-studio-focus">
-            <div className="wk-ws-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span className="wk-ws-eyebrow">Werkstück-Sockel · Seed 1001 · AgX Cycles</span>
-                  <h3>SAIMÔR // ORIGIN // 001 · Material-Spektrum</h3>
-                </div>
-                <div className="wk-ws-pills" role="group" aria-label="Licht-Inspektor">
-                  <button type="button" className={`wk-ws-chip${originLightMode === 'raking' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('raking')}>Streiflicht 15°</button>
-                  <button type="button" className={`wk-ws-chip${originLightMode === 'caustic' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('caustic')}>Quarz-Kaustik</button>
-                  <button type="button" className={`wk-ws-chip${originLightMode === 'frame' ? ' is-done' : ''}`} onClick={() => setOriginLightMode('frame')}>Fassung</button>
-                </div>
-              </div>
-              <div className={`wk-origin-inspector is-${originLightMode}`} data-testid="wk-origin-inspector">
-                <svg viewBox="0 0 220 90" width="220" height="84" aria-hidden>
-                  <defs>
-                    <linearGradient id="basaltGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor={originLightMode === 'raking' ? '#49453f' : '#242322'} />
-                      <stop offset="100%" stopColor="#121211" />
-                    </linearGradient>
-                    <linearGradient id="quartzGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor={originLightMode === 'caustic' ? '#f6d992' : '#9ec5b8'} stopOpacity="0.88" />
-                      <stop offset="100%" stopColor="#2a483f" stopOpacity="0.45" />
-                    </linearGradient>
-                  </defs>
-                  <polygon points="36,78 78,12 132,12 158,78" fill="url(#basaltGrad)" stroke={originLightMode === 'frame' ? '#e5b85c' : '#6e5d3b'} strokeWidth={originLightMode === 'frame' ? '2.5' : '1.2'} />
-                  <polygon points="88,22 122,22 134,66 76,66" fill="url(#quartzGrad)" />
-                  <line x1="78" y1="12" x2="96" y2="78" stroke="#e5b85c" strokeOpacity="0.6" strokeWidth="1" />
-                </svg>
-                <div className="wk-origin-inspector__meta">
-                  <b>
-                    {originLightMode === 'raking'
-                      ? 'Streiflicht 15° · Mikro-taktiles Basalt-Relief aktiv'
-                      : originLightMode === 'caustic'
-                        ? 'Kaustik-Durchlicht · Optische Quarz-Brechung (IOR 1.544)'
-                        : 'Präzisionsfassung · Gebürstetes Messing / Ruthenium-Titan'}
-                  </b>
-                  <small>SEED 1001 · SHA-256: 8f4e2a9c…d101 · Phase 01 Master</small>
-                </div>
-              </div>
-              <div className="wk-ws-list">
-                {originSpecs.map((s) => (
-                  <div key={s.id} className="wk-ws-row">
-                    <div className="wk-ws-row__main">
-                      <b>{s.part}</b>
-                      <small>{s.detail}</small>
-                    </div>
-                    <button
-                      type="button"
-                      className={`wk-ws-chip${s.status === 'Freigegeben' || s.status === 'Kanonisch' ? ' is-done' : ''}`}
-                      onClick={() =>
-                        setOriginSpecs((l) =>
-                          l.map((x) =>
-                            x.id === s.id
-                              ? { ...x, status: x.status === 'In Prüfung' ? 'Freigegeben' : x.status === 'Freigegeben' ? 'Kanonisch' : 'In Prüfung' }
-                              : x
-                          )
-                        )
-                      }
-                    >
-                      {s.status}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="wk-ws-card">
               <span className="wk-ws-eyebrow">Atelier-Einträge ({tasks.filter((t) => !t.done).length} offen)</span>
               <form
@@ -1477,17 +1374,6 @@ export function DeskWorkstation({
 
           <section className="wk-ws-side">
             <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Lage</span>
-              <h3>Abteilungen & Bereitschaft</h3>
-              <div className="wk-ws-list">
-                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Design & Studio (Atelier)</b><small>Captain Sorel M. · ORIGIN // 001 Seed 1001</small></div><span className="wk-ws-chip is-done">Kanonisch ✓</span></div>
-                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Produkt & Technik (Werkstatt)</b><small>Captain Kaito R. · Saimôr OS & Core v3</small></div><span className="wk-ws-chip is-done">Bereit ✓</span></div>
-                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Betrieb & Kunden</b><small>Captain Tarek B. · Pilot-Onboarding</small></div><span className="wk-ws-chip is-done">Aktiv ✓</span></div>
-                <div className="wk-ws-row"><div className="wk-ws-row__main"><b>Finanzen & Recht (Kontor)</b><small>Captain Clara D. · Treasury & XRPL Testnet</small></div><span className="wk-ws-chip is-done">Geschützt ✓</span></div>
-              </div>
-            </div>
-
-            <div className="wk-ws-card">
               <span className="wk-ws-eyebrow">Charta & Dossiers am Stehpult</span>
               <h3>Im gebundenen Buch öffnen</h3>
               <div className="wk-ws-list">
@@ -1503,164 +1389,62 @@ export function DeskWorkstation({
         </div>
       ) : null}
 
-      {/* =========================================================================================
-          8. SAIMÔR // TREASURY-KONTOR (Budget-Freigaben, Liquidität & XRPL-Guardrails)
-         ========================================================================================= */}
-      {stationKind === 'kontor-station' ? (
-        <div className="wk-ws-grid" data-testid="wk-station-kontor-station">
+      {stationKind === 'raum-station' ? (
+        <div className="wk-ws-grid" data-testid="wk-station-raum-station">
           <section className="wk-ws-sheet">
             <header className="wk-ws-head">
               <div>
-                <span className="wk-ws-eyebrow">Treasury & Controlling · Hauptbuch</span>
-                <h2>Abteilungs-Budgets & Rücklagen</h2>
+                <h2>{planetTitle}</h2>
               </div>
               <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
             </header>
-            <p className="wk-ws-sub">Klare Trennung von operativem Projektbudget und strategischer Reserve. Änderungen werden sofort im Kontor-Hauptbuch verbucht.</p>
-            <div className="wk-ws-list">
-              {kontorBudgets.map((b) => (
-                <div key={b.id} className="wk-ws-row" data-testid={`wk-kontor-budget-${b.id}`}>
-                  <div className="wk-ws-row__main">
-                    <b>{b.label}</b>
-                    <small>Verantwortlich: {b.owner}</small>
-                  </div>
-                  <div className="wk-ws-counter">
-                    <button type="button" onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, amount: Math.max(0, x.amount - 500) } : x)))}>−</button>
-                    <span>{b.amount.toLocaleString('de-DE')} €</span>
-                    <button type="button" onClick={() => setKontorBudgets((l) => l.map((x) => (x.id === b.id ? { ...x, amount: x.amount + 500 } : x)))}>+</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <footer className="wk-ws-footer">
-              <div>
-                <span>Gesamtvolumen (Treasury & Budgets): </span>
-                <b>{kontorBudgets.reduce((s, x) => s + x.amount, 0).toLocaleString('de-DE')},00 €</b>
-              </div>
-              <span className="wk-ws-chip is-done">Alle Rücklagen gedeckt ✓</span>
-            </footer>
-          </section>
-
-          <section className="wk-ws-side">
-            <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Sicherheits-Matrix & XRPL-Wächter</span>
-              <h3>Compliance & Ledger-Guardrails</h3>
-              <div className="wk-ws-list">
-                {xrplChecks.map((c) => (
-                  <div key={c.id} className="wk-ws-row">
-                    <div className="wk-ws-row__main"><b>{c.label}</b></div>
-                    <button
-                      type="button"
-                      className={`wk-ws-chip${c.ok ? ' is-done' : ''}`}
-                      onClick={() => setXrplChecks((l) => l.map((x) => (x.id === c.id ? { ...x, ok: !x.ok } : x)))}
-                    >
-                      {c.ok ? 'Geschützt ✓' : 'Prüfen'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Vertrags- & Richtlinien-Archiv</span>
-              <h3>Am Kontor-Stehpult aufschlagen</h3>
-              <div className="wk-ws-list">
-                {docs.map((d) => (
-                  <div key={d.id} className="wk-ws-row">
-                    <div className="wk-ws-row__main"><b>{d.name}</b></div>
-                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      {/* =========================================================================================
-          9. SAIMÔR // TECHNIK-WERKBANK (Core v3 Schnittstellen, Seed-Verifikation & Releases)
-         ========================================================================================= */}
-      {stationKind === 'technik-station' ? (
-        <div className="wk-ws-grid" data-testid="wk-station-technik-station">
-          <section className="wk-ws-sheet">
-            <header className="wk-ws-head">
-              <div>
-                <span className="wk-ws-eyebrow">Produkt & Technik</span>
-                <h2>System-Prüfstand & Mora Core v3</h2>
-              </div>
-              <button type="button" className="wk-ws-close" onClick={onClose}>Zurück in den Raum</button>
-            </header>
-            <p className="wk-ws-sub">Technischer Prüfstand für Saimôr OS, deterministische Raum-Assets und Core-v3-Schnittstellen.</p>
-            <div className="wk-ws-list">
-              {techSystems.map((s) => (
-                <div key={s.id} className="wk-ws-row" data-testid={`wk-tech-sys-${s.id}`}>
-                  <div className="wk-ws-row__main">
-                    <b>{s.name}</b>
-                    <small>{s.detail} · Antwortzeit: {s.latency}</small>
-                  </div>
-                  <button
-                    type="button"
-                    className={`wk-ws-chip${s.ok ? ' is-done' : ''}`}
-                    onClick={() => setTechSystems((l) => l.map((x) => (x.id === s.id ? { ...x, ok: !x.ok } : x)))}
-                  >
-                    {s.ok ? 'Verifiziert ✓' : 'Neu prüfen'}
+            <form
+              className="wk-ws-inline-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!raumTaskDraft.trim()) return;
+                onAddTask?.(raumTaskDraft.trim(), null);
+                setRaumTaskDraft('');
+              }}
+            >
+              <input
+                value={raumTaskDraft}
+                onChange={(e) => setRaumTaskDraft(e.target.value)}
+                placeholder="Neuer Eintrag…"
+                aria-label="Neuer Eintrag"
+                data-testid="wk-raum-new-task"
+              />
+              <button type="submit" className="wk-ws-btn">+ Eintrag</button>
+            </form>
+            <div className="wk-ws-list" data-testid="wk-raum-tasks">
+              {tasks.map((t) => (
+                <div key={t.id} className="wk-ws-row">
+                  <button type="button" className={`wk-ws-chip${t.done ? ' is-done' : ''}`} onClick={() => onToggleTask?.(t)} aria-label={t.done ? 'Wieder öffnen' : 'Erledigt'}>
+                    {t.done ? '✓' : '○'}
+                  </button>
+                  <button type="button" className="wk-ws-row__main" style={{ textAlign: 'left', background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }} onClick={() => onOpenTask?.(t.id)}>
+                    <b>{t.title}</b>
+                    {t.assignee ? <small>{t.assignee}</small> : null}
                   </button>
                 </div>
               ))}
             </div>
-
-            <form
-              className="wk-ws-inline-form"
-              style={{ marginTop: 12 }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!techTaskDraft.trim()) return;
-                onAddTask?.(techTaskDraft.trim(), 'Kaito R.');
-                setTechTaskDraft('');
-              }}
-            >
-              <input
-                value={techTaskDraft}
-                onChange={(e) => setTechTaskDraft(e.target.value)}
-                placeholder="Neues technisches Ticket / Prüfauftrag an die Pinnwand heften…"
-                data-testid="wk-tech-new-task"
-              />
-              <button type="submit" className="wk-ws-btn">+ Anheften</button>
-            </form>
           </section>
 
-          <section className="wk-ws-side">
-            <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">Offene Engineering-Einträge ({tasks.filter((t) => !t.done).length})</span>
-              <h3>Aktueller Sprint an der Werkbank</h3>
-              <div className="wk-ws-list">
-                {tasks.slice(0, 4).map((t) => (
-                  <div key={t.id} className="wk-ws-row">
-                    <button type="button" className={`wk-ws-chip${t.done ? ' is-done' : ''}`} onClick={() => onToggleTask?.(t)}>
-                      {t.done ? '✓' : '○'}
-                    </button>
-                    <button type="button" className="wk-ws-row__main" style={{ textAlign: 'left', background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }} onClick={() => onOpenTask?.(t.id)}>
-                      <b>{t.title}</b>
-                      <small>{t.assignee || 'Engineering'}</small>
-                    </button>
-                  </div>
-                ))}
+          {docs.length > 0 ? (
+            <section className="wk-ws-side">
+              <div className="wk-ws-card">
+                <div className="wk-ws-list" data-testid="wk-raum-docs">
+                  {docs.map((d) => (
+                    <div key={d.id} className="wk-ws-row">
+                      <div className="wk-ws-row__main"><b>{d.name}</b></div>
+                      <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            <div className="wk-ws-card">
-              <span className="wk-ws-eyebrow">System-Dokumentation am Lesepult</span>
-              <h3>Spezifikationen im Buch öffnen</h3>
-              <div className="wk-ws-list">
-                {docs.map((d) => (
-                  <div key={d.id} className="wk-ws-row">
-                    <div className="wk-ws-row__main"><b>{d.name}</b></div>
-                    <button type="button" className="wk-ws-chip" onClick={() => onOpenBook?.(d.id)}>Buch öffnen →</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
       ) : null}
 
