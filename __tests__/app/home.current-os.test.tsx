@@ -11,7 +11,7 @@ jest.mock('next/navigation', () => ({ useRouter: () => mockRouter, useSearchPara
 jest.mock('next/dynamic', () => () => () => <div data-testid="classic-shell" />);
 jest.mock('@/lib/universe/morgen', () => ({ isUniverseV2Enabled: () => false }));
 jest.mock('@/lib/os-prototype/flags', () => ({ isOsPrototypeEnabled: () => mockEnabled }));
-jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => mockInternal }));
+jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => mockInternal, useIsSaimorHq: () => mockInternal }));
 
 beforeEach(() => {
   jest.clearAllMocks(); mockEnabled = true; mockInternal = false; mockQuery = '';
