@@ -67,13 +67,18 @@ describe('HQ Home: echter Inhalt statt Text', () => {
     mockSnapshot = snap;
     const { container, unmount } = renderDock();
     const deck = container.querySelector('.bridge__deck')!;
+    expect(deck.querySelector('[data-testid="dock-light-post"]')).not.toBeNull();
     expect(deck.querySelector('[aria-label*="9 Mails"]')).not.toBeNull();
-    expect(deck.querySelector('[aria-label*="Heute: Nichts fällig"]')).not.toBeNull();
+    // Nichts fällig: kein Licht, der See bleibt frei
+    expect(deck.querySelector('[data-testid="dock-light-today"]')).toBeNull();
+    expect(deck.textContent).not.toMatch(/Nichts fällig/);
+    expect(deck.querySelector('[data-testid="dock-light-next"]')).not.toBeNull();
     expect(deck.querySelector('[aria-label*="2 Termine"]')).not.toBeNull();
     unmount();
     mockSnapshot = { ...snap, mail: { ...snap.mail, status: 'unavailable' } } as unknown as TodaySnapshot;
     renderDock();
-    expect(screen.getByTestId('dock-bay-post').textContent).toBe('');
+    expect(screen.queryByTestId('dock-light-post')).toBeNull();
+    expect(screen.queryByTestId('dock-bay-post')).toBeNull();
     mockSnapshot = null;
   });
 
@@ -109,13 +114,12 @@ describe('HQ Home: echter Inhalt statt Text', () => {
         <BridgeConcept items={[]} activeId="home" onNavigate={jest.fn()} onMora={jest.fn()} onMore={jest.fn()} onNotifications={jest.fn()} onSearch={jest.fn()} mood="idle" moraOpen={false} attention={0} phone={false} showLegacy={false} />
       </QueryClientProvider>
     );
-    const next = container.querySelector('[data-station="next"] button')!;
+    const next = container.querySelector('[data-testid="dock-light-next"] button')!;
     expect(next.getAttribute('aria-label')).toContain('2 Termine');
     expect(next.getAttribute('aria-label')).toContain('Do 05.11. 14:00 Kundencall');
-    // Bühne: eine Heldzahl, ein Nomen – keine Vorschauzeilen, keine Extra-Knöpfe
-    expect(next.querySelector('.bridge__stage-hero strong')!.textContent).toBe('2');
-    expect(container.querySelector('.bridge__inst-list, .bridge__inst-actions')).toBeNull();
-    expect(container.querySelector('.bridge__deck')!.textContent).not.toMatch(/Postfach|Schichtplan|Kalender|ungelesen|kein Termin/i);
+    expect(next.querySelector('strong')!.textContent).toBe('2');
+    expect(container.querySelector('.bridge__inst-list, .bridge__inst-actions, .bridge__stage')).toBeNull();
+    expect(container.querySelector('.bridge__deck')!.textContent).not.toMatch(/Postfach|Schichtplan|Kalender|ungelesen|kein Termin|Nichts fällig/i);
   });
 });
 

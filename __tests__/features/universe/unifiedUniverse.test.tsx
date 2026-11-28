@@ -154,18 +154,12 @@ describe('Ein Universe statt zwei + MÔRA-Größe im Dock', () => {
       </QueryClientProvider>
     );
 
-    // Initial geöffnet: Planet Küche mit Abteilungsansicht (Captain/Crew + eigener Abteilungsraum)
-    expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
-    expect(screen.getByTestId('dept-deck')).toBeInTheDocument();
-    expect(screen.getByTestId('dept-crew')).toBeInTheDocument();
-    expect(screen.getByTestId('dept-rooms')).toBeInTheDocument();
-    expect(screen.getByTestId('dept-room-enter')).toBeInTheDocument();
-    expect(screen.getByTestId('dept-room-enter')).toHaveAttribute('data-room', 'werkstatt');
-    expect(screen.getByTestId('dept-room-enter')).toHaveTextContent('Backstube & Werkstatt');
+    // Initial geöffnet: der Planet fliegt in den Raum, die Erklärkarte entfällt.
+    expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-werkstatt', 'flight');
+    expect(screen.queryByTestId('dept-workflow-guide')).toBeNull();
+    expect(screen.queryByTestId('dept-room-enter')).toBeNull();
     expect(screen.getByTestId('universe-unified')).toHaveAttribute('data-style', 'glas');
-
     expect(screen.queryByTestId('world-view-toggle')).not.toBeInTheDocument();
-    expect(screen.getByTestId('planet-dept-kueche')).toBeInTheDocument();
 
     // Zurück zum System per Back-Button
     const backBtn = screen.getByTestId('world-planet-close');

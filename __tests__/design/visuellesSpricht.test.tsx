@@ -69,12 +69,11 @@ describe('Visuelles spricht, Text schweigt', () => {
       </QueryClientProvider>
     );
     for (const id of ['post', 'today', 'team', 'next']) {
-      const bay = screen.getByTestId(`dock-bay-${id}`);
-      expect(bay.textContent).toBe('');
-      expect(within(bay).getByRole('button')).toHaveAttribute('aria-label');
+      expect(screen.queryByTestId(`dock-bay-${id}`)).toBeNull();
+      expect(screen.queryByTestId(`dock-light-${id}`)).toBeNull();
     }
     const deck = container.querySelector('.bridge__deck')!;
-    expect(deck.textContent).not.toMatch(/offline|angedockt|nicht verbunden/i);
+    expect(deck.textContent).not.toMatch(/offline|angedockt|nicht verbunden|Nichts fällig/i);
     expect(within(screen.getByTestId('dock-ask-open')).getByText('MÔRA')).toBeInTheDocument();
   });
 });

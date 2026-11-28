@@ -12,6 +12,7 @@ import { plainText } from '@/features/post/mailView';
 import { useMoraSend } from '@/features/mora/data/useMoraSend';
 import { useMoraConversation } from '@/features/mora/data/conversationStore';
 import { renderBold } from '@/features/mora/ui/MoraConsole';
+import { greetingFor } from '@/lib/os-prototype/scene';
 
 /**
  * Phone-Begleiter (Marius, 26.10.2026: „am Handy nur ein Companion, nicht das ganze OS“).
@@ -26,8 +27,7 @@ export function PhoneCompanion({ onOpenUniverse }: { onOpenUniverse?: () => void
   const inbox = usePostInbox();
   const [reading, setReading] = useState<OwlMail | null>(null);
   const s = owl.data?.level ? owl.data : null;
-  const h = new Date().getHours();
-  const hello = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const hello = greetingFor(new Date()).replace(/\.$/, '');
 
   if (reading) return <MailReader mail={reading} full={(inbox.data ?? []).find((m) => m.id === reading.id)} onBack={() => setReading(null)} />;
 

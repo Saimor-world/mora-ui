@@ -218,9 +218,6 @@ export function StationPlanet({
             ))}
           </div>
         ) : null}
-        <div className="ws-deck__guide" data-testid="dept-workflow-guide">
-          <span><b>So arbeitest du in {title}:</b> Oben liegen die <b>Ordner-Monde</b> · Unten betrittst du den <b>eigenen Raum dieser Abteilung</b>:</span>
-        </div>
         {(onEnter || onEnterRoom) ? (
           <nav className="ws-rooms ws-rooms--single" aria-label={`Raum in ${title}`} data-testid="dept-rooms">
             <button

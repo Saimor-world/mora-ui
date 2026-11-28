@@ -41,9 +41,13 @@ describe('OsShell navigation', () => {
   it('renders the six primary surfaces and Labs from manifests', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    for (const label of ['Home', 'Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
+    for (const label of ['Universe', 'Post', 'Heute', 'Mehr']) {
       expect(within(nav).getByRole('button', { name: label })).toBeInTheDocument();
     }
+    for (const label of ['Finance', 'Wissen', 'Einstellungen', 'Labs & System', 'Home']) {
+      expect(within(nav).queryByRole('button', { name: label })).toBeNull();
+    }
+    expect(within(nav).getByRole('button', { name: 'MÔRA' })).toBeInTheDocument();
     expect(await screen.findByTestId('feature-home')).toBeInTheDocument();
     expect(screen.getByTestId('legacy-shell-link')).toHaveAttribute('href', '/home?classic=1');
   });
@@ -59,10 +63,10 @@ describe('OsShell navigation', () => {
   it('navigates via manifests and reflects it in the hash', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    fireEvent.click(within(nav).getByRole('button', { name: 'Finance' }));
+    fireEvent.click(within(nav).getByRole('button', { name: 'Mehr' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Finance' }));
     expect(await screen.findByTestId('feature-finance')).toBeInTheDocument();
     expect(window.location.hash).toBe('#finance');
-    expect(within(nav).getByRole('button', { name: 'Finance' }).closest('[data-feature]')).toHaveAttribute('data-active', 'true');
   });
 
   it('opens MÔRA globally (toggle and ⌘J) with module context', async () => {

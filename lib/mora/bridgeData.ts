@@ -1,4 +1,5 @@
 import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
+import { greetingFor } from '@/lib/os-prototype/scene';
 
 /**
  * Alles, was die Brücke zeigt, kommt aus genau einem Snapshot (/v3/today).
@@ -138,7 +139,7 @@ export function moraLine(snapshot: TodaySnapshot | null, now: number, briefingUn
 /** Morgen-Briefing: warm, kurz, höchstens zwei Sätze, Mail-Zahl aus derselben Quelle wie das Dock. */
 export function warmBriefing(snapshot: TodaySnapshot | null, briefingUnread?: number | null, hour = 8): string | null {
   if (!snapshot) return null;
-  const greet = hour < 11 ? 'Guten Morgen.' : hour < 18 ? 'Hallo.' : 'Guten Abend.';
+  const greet = greetingFor(new Date(2000, 0, 1, hour, 0, 0));
   const mail = mailCounts(snapshot, briefingUnread);
   const parts: string[] = [];
   if (mail.unread !== null) parts.push(mail.unread ? `${mail.unread} ${mail.unread === 1 ? 'Mail wartet' : 'Mails warten'}${mail.needsYou ? `, ${mail.needsYou} ${mail.needsYou === 1 ? 'braucht' : 'brauchen'} dich` : ''}` : 'Keine ungelesenen Mails');

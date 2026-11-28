@@ -28,12 +28,15 @@ import { localISO } from '@/lib/lea/world';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import { firstName } from '@/lib/auth/displayName';
+import { greetingFor } from '@/lib/os-prototype/scene';
 
-const PHASE_GREETING = { flow: 'Guten Morgen', build: 'Guten Tag', lounge: 'Guten Abend', night: 'Guten Abend' } as const;
-function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date()) {
-  if (phase) return PHASE_GREETING[phase];
-  const h = date.getHours();
-  return h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
+function greeting(phase?: 'flow' | 'build' | 'lounge' | 'night' | null, date = new Date()) {
+  // Phase override keeps the chosen scene; otherwise the shared Berlin clock.
+  if (phase) {
+    const base = phase === 'flow' ? 'Guten Morgen' : phase === 'build' ? 'Guten Tag' : 'Guten Abend';
+    return base;
+  }
+  return greetingFor(date).replace(/\.$/, '');
 }
 
 function SourceState({ status, label }: { status: TodaySourceStatus; label: string }) {
