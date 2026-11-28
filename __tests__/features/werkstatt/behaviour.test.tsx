@@ -23,6 +23,8 @@ jest.mock('@/lib/api/http', () => ({ corePost: (...a: unknown[]) => corePost(...
 jest.mock('@/lib/os/useScopedToday', () => ({ invalidateToday: jest.fn() }));
 
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { TENANT_HQ } from '@/lib/constants/tenants';
 import { Werkstatt } from '@/features/werkstatt/ui/Werkstatt';
 import { TaskSheet } from '@/features/werkstatt/ui/TaskSheet';
 import { Book } from '@/features/werkstatt/ui/Book';
@@ -62,6 +64,8 @@ beforeEach(() => {
   // Bewegung reduziert: Kamerafahrten springen sofort an ihr Ziel (gleiche Logik, keine Wartezeit im Test).
   window.matchMedia = jest.fn().mockImplementation((q: string) => ({ matches: q.includes('reduce'), media: q, addEventListener: jest.fn(), removeEventListener: jest.fn(), addListener: jest.fn(), removeListener: jest.fn() }));
   nodes = {};
+  // Diese Suite prüft die SAIMÔR- und Demo-Räume: angemeldet als SAIMÔR intern.
+  useSessionStore.setState({ user: { id: 'u-hq', email: 'hq@saimor.world', role: 'member', tenant_id: TENANT_HQ } as never });
 });
 
 describe('Brett mit 40 Aufgaben', () => {
@@ -267,7 +271,8 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     // Klick auf den Atelier-Zeichentisch mit ORIGIN-Sockel öffnet die echte Atelier-Station
     fireEvent.click(screen.getByTestId('wk-hit-station'));
     expect(screen.getByTestId('wk-studio-lectern')).toBeInTheDocument();
-    expect(screen.getByTestId('wk-studio-focus')).toHaveTextContent('SAIMÔR // ORIGIN // 001 · Material-Spektrum');
+    // Kein erfundener Material-Status, keine Prüfsumme: nur Einträge aus CORE.
+    expect(screen.getByTestId('wk-studio-focus')).not.toHaveTextContent(/Kanonisch|SHA-256|Material-Spektrum/);
     fireEvent.click(screen.getByTestId('wk-studio-edit-toggle'));
     expect(screen.getByTestId('wk-studio-editor')).toBeInTheDocument();
     fireEvent.change(screen.getByTestId('wk-studio-editor'), { target: { value: '# ORIGIN Spezifikation\n\nBasalt & Quarzglas freigegeben.' } });
@@ -327,7 +332,10 @@ describe('Jede Abteilung hat ihren eigenen physischen Raum (Möbel, Fenster & ec
     expect(screen.getByTestId('wk-room-sign').textContent).toBe('Finanzen & Recht');
     expect(document.querySelector('.wk-root')?.getAttribute('data-archetype')).toBe('kontor');
     expect(screen.getByTestId('wk-room').querySelector('.wk-stage__img')?.getAttribute('src')).toContain('room-kontor');
-    expect(screen.getByTestId('wk-fixture-plate')).toHaveTextContent('Präzisionswaage & XRPL-Wächter');
+    // Kontor ohne erfundene Budgets und XRPL-Anzeige: der Arbeitsplatz zeigt nur Einträge und Bücher.
+    expect(screen.queryByTestId('wk-fixture-plate')).toBeNull();
+    fireEvent.click(screen.getByTestId('wk-hit-station'));
+    expect(screen.getByTestId('wk-station-raum-station')).not.toHaveTextContent(/XRPL|€|Rücklagen/);
   });
 
   it('bietet in den Café-Morgenrot-Abteilungen Service, Theke und Verwaltung echte operative Werkzeuge am Tisch', () => {

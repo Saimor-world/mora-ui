@@ -14,6 +14,7 @@ import { widgetsFromToday } from '../widgets/adapters';
 import { invalidateToday, useScopedToday } from '@/lib/os/useScopedToday';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { isDemoSessionUser, useShowsDemoChrome } from '@/lib/hooks/useIsSaimorInternal';
 import { firstName } from '@/lib/auth/displayName';
 import type { FeatureSurfaceProps } from '../../types';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
@@ -79,6 +80,7 @@ export function LiveCockpit({
   const demoId = useDemoStore((s) => s.demoCompanyId);
   const setDemoCompany = useDemoStore((s) => s.setDemoCompany);
   const isCafeScope = demoId === 'demo-morgenrot';
+  const showsDemoChrome = useShowsDemoChrome();
   const { state: opLedger, record: recordOp } = useOperationalLedger(isCafeScope ? 'demo-morgenrot' : 'saimor-hq');
   const { snapshot: liveSnapshot, loading: liveLoading, loadError } = useScopedToday();
   const snapshot = propSnapshot !== undefined ? propSnapshot : liveSnapshot;
@@ -376,6 +378,7 @@ export function LiveCockpit({
           <span>{companyName}</span>
         </div>
         <div className="ck-top__r">
+          {showsDemoChrome ? (
           <div
             className="ck-scope-switch"
             role="group"
@@ -430,9 +433,9 @@ export function LiveCockpit({
               Café-Demo
             </button>
           </div>
+          ) : null}
           <span className="ck-time">{timeHeader}</span>
-          <span>aus CORE</span>
-          {effectiveIsDemo ? (
+          {effectiveIsDemo && (showsDemoChrome || isDemoSessionUser(user as { role?: string | null; tenant_id?: string | null } | null)) ? (
             <span
               className="ck-fict fiktiv-badge"
               title="Café Morgenrot, Mitarbeitende, Schichten und Zahlen sind erfunden."
