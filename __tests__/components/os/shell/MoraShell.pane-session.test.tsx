@@ -72,7 +72,7 @@ jest.mock('@/components/visual/ForestLightCanopy', () => ({
     ForestLightCanopy: () => <div data-testid="canopy" />,
 }));
 
-jest.mock('@/components/mora/Dock', () => ({
+jest.mock('@/components/mora/LegacyDock', () => ({
     Dock: () => <div data-testid="dock" />,
 }));
 

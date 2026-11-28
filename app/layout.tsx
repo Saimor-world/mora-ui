@@ -1,22 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import nextDynamic from "next/dynamic";
 import "./globals.css";
 import "./mora-stone.css";
 import "./saimor-next.css";
-import "./universe-v2.css";
-import "./live-polish.css";
+// Die Oberflächen-Stile (Universe v2, Grid, world.css …) laden nur noch die
+// Routen mit OS-Oberfläche: siehe app/shell-styles.ts. /login, / und die
+// übrigen Einstiegsseiten brauchen sie nicht.
 import { isUniverseV2Enabled } from "@/lib/universe/morgen";
 import { UV2_FONTS_HREF } from "@/lib/universe/tokens";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-import './os-brightness.css';
-import './universe-materials.css';
-import './world.css';
 import { useNavStore } from "@/lib/store/navStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
-import { PaneManager } from "@/components/mora/PaneManager";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -24,6 +20,15 @@ import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
 import { QueryProvider } from "@/lib/queryClient";
+
+// Alte Fenster (Panes) erst nachladen: Sie erscheinen nie auf dem ersten Bild,
+// und gerendert wurden sie ohnehin erst nach dem Mount. So steckt ihr Code
+// (AppLoader, GlassPanel, Browser-/Wand-/Hub-Panes) nicht mehr im Start-JS
+// jeder Route.
+const PaneManager = nextDynamic(
+  () => import("@/components/mora/PaneManager").then((m) => m.PaneManager),
+  { ssr: false },
+);
 
 export default function RootLayout({
   children,

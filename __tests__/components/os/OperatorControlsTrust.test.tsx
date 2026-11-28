@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DockNowPlaying } from '@/components/mora/Dock';
+import { DockNowPlaying } from '@/components/mora/LegacyDock';
 import { PendingItem, QuickMemoryInputInline } from '@/components/os/MemorySidebar';
 
 jest.mock('framer-motion', () => {
