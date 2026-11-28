@@ -1,6 +1,7 @@
 import { useDemoScopeActive } from '@/lib/demo/demoSourceGuard';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet, isLocalDemoFallback, isLocalhost } from '@/lib/api/http';
+import { greetingFor } from '@/lib/os-prototype/scene';
 
 export interface DailyBriefingMetrics {
     unread_mails?: number | null;
@@ -20,7 +21,7 @@ export interface DailyBriefingData {
 /**
  * Builds warm, honest MÔRA briefing sentence dynamically from real numbers.
  * - Never invents numbers: If data is missing, says honestly "Ich komme gerade nicht an deine Daten."
- * - Personal salutation uses first name from session; falls back to "Guten Morgen." if none.
+ * - Personal salutation uses first name from session; the greeting follows the time of day (Berlin).
  * - "Brauchen dich" counts emails that need a response.
  * - "Die Nacht war ruhig" only when Nightwatch reports 0 incidents or nightwatch_quiet.
  */
@@ -33,7 +34,7 @@ export function buildMoraBriefing(
     }
 
     const name = firstName?.trim();
-    const salutation = name ? `Guten Morgen, ${name}.` : 'Guten Morgen.';
+    const salutation = greetingFor(new Date(), name);
     const parts: string[] = [];
 
     const unread = typeof data.metrics.unread_mails === 'number' ? data.metrics.unread_mails : null;

@@ -3,6 +3,7 @@ import { JOB_ROLES } from '@/lib/demo/morgenrot/jobRoles';
 import type { DemoCompany } from '@/lib/demo/morgenrot/seed';
 import { MORGENROT_STRUCTURE, orderTotal, type DemoEvents, type DemoPlanet } from '@/lib/demo/morgenrot/structure';
 import { initialDay, reviewsOpen, type DemoDay } from './demoDay';
+import { greetingFor } from '@/lib/os-prototype/scene';
 
 /** Was eine Zeile auf Home auslöst: direkt erledigen oder ein Blatt mit Details öffnen. */
 export type HomeAction = 'task' | 'reviews' | 'order' | 'swap' | 'oat' | 'close' | 'note';
@@ -32,7 +33,7 @@ function shiftOf(data: DemoCompany, date: string, personId: string): string | nu
 export function buildHomeModel(data: DemoCompany, ev: DemoEvents, date: string, viewerId: string, day: DemoDay = initialDay()): HomeModel {
   const me = data.people.find((p) => p.id === viewerId) ?? data.people[0];
   const name = (id: string) => first(data.people.find((p) => p.id === id)?.name ?? id);
-  const greeting = `Guten Morgen, ${first(me.name)}.`;
+  const greeting = greetingFor(new Date(`${date}T08:00:00+01:00`), first(me.name));
   const notes: HomeItem[] = day.notes.filter((n) => n.to === me.id && !n.read).map((n) => ({ id: n.id, owner: me.id, kind: 'note', action: 'Gelesen', title: `${name(n.from)}: „${n.text}“`, detail: 'Nachricht über MÔRA' }));
 
   if (isOwner(data, me.id)) {

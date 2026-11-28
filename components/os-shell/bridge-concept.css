@@ -756,3 +756,15 @@ html[data-os-work] .bridge__body::after {
   html:not([data-mora-stage]) .os-shell:not([data-place='home'], [data-place='universe']) .bridge__body > :not(.bridge__pill) { display: none; }
   html[data-mora-stage] .os-shell:not([data-place='home'], [data-place='universe']) .bridge__body { height: 304px; }
 }
+
+/* 2–3 Lichtpunkte auf dem Wasser statt der Glas-Kachelwand. */
+.bridge__light { display:flex; align-items:flex-end; justify-content:center; pointer-events:auto; align-self:end; margin-bottom:8px; }
+.bridge__light:first-child { justify-content:flex-start; padding-left:8px; }
+.bridge__glow { display:flex; flex-direction:column; align-items:center; gap:6px; padding:0; border:0; background:none; color:var(--br-text); cursor:pointer; min-width:56px; }
+.bridge__glow-orb { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; color:#eef6f1; background:radial-gradient(circle at 35% 30%, rgba(238,246,241,.95), rgba(120,180,170,.35) 55%, rgba(8,24,30,.15) 100%); box-shadow:0 0 18px 6px rgba(180,230,210,.28), 0 0 2px rgba(255,255,255,.7); }
+.bridge__light[data-tone='amber'] .bridge__glow-orb { background:radial-gradient(circle at 35% 30%, rgba(255,236,200,.95), rgba(242,192,106,.45) 55%, rgba(8,24,30,.15) 100%); box-shadow:0 0 18px 6px rgba(242,192,106,.35); }
+.bridge__light[data-tone='red'] .bridge__glow-orb { background:radial-gradient(circle at 35% 30%, rgba(255,220,210,.95), rgba(245,140,125,.5) 55%, rgba(8,24,30,.15) 100%); box-shadow:0 0 18px 6px rgba(245,140,125,.35); }
+.bridge__glow strong { font:700 15px/1 var(--br-font); font-variant-numeric:tabular-nums; color:#fff; letter-spacing:-.02em; }
+.bridge__glow small { font:600 10px/1 var(--br-font); letter-spacing:.12em; text-transform:uppercase; color:rgba(238,246,241,.62); }
+/* See bleibt frei: keine Kachelwand mehr im Deck. */
+.bridge__deck .bridge__inst { display:none; }

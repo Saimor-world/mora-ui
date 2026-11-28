@@ -9,6 +9,7 @@ import { OpenPlanet, PlanetSystem } from '@/features/home/cockpit/Scene';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { DepartmentSheet } from '@/features/home/cockpit/Sheets';
 import { StationPlanet, WorkSurface, type DeptMember, type Origin, type RoomKind } from '@/features/universe/ui/Workbench';
+import { dayMoonsFor } from '@/lib/universe/dayMoons';
 import { deptWork, unassignedHomeId } from '@/lib/universe/deptWork';
 import { getDepartmentRoomContext, getShipDepartmentCrew } from '@/lib/universe/shipDepartments';
 import { Werkstatt, placeFromParam, roomKindFromParam, type Place } from '@/features/werkstatt/ui/Werkstatt';
@@ -429,6 +430,14 @@ export function UnifiedUniverse({
   const { data: dailyBriefing } = useDailyBriefing();
 
   const planet = planets.find((p) => p.id === planetId) ?? null;
+  const entryMoons = useMemo(() => dayMoonsFor(snapshot), [snapshot]);
+  // Klick oder Deep-Link auf einen Planeten fliegt in den Raum, nicht auf die Erklärkarte.
+  useEffect(() => {
+    if (!planet || room || moonId || taskId) return;
+    const ctx = getDepartmentRoomContext(planet.id, stripFiktiv(planet.title) || planet.title, workScope);
+    setRoom({ kind: ctx.primaryRoom, place: null, fromSpace: true });
+  }, [planet, workScope, room, moonId, taskId]);
+
   const moon = planet?.moons?.find((m) => m.id === moonId) ?? null;
   const sceneMode = planet ? 'planet' : 'system';
 
@@ -577,10 +586,17 @@ export function UnifiedUniverse({
   }, [backFrom]);
 
   // Synchronisiere useNavPos für Dock-Instrumente und Brotkrumen
-  const handleOpenPlanet = (id: string) => {
+  const enterPlanetRoom = (id: string, fromSpace = true) => {
+    const next = planets.find((p) => p.id === id);
+    const ctx = getDepartmentRoomContext(id, stripFiktiv(next?.title) || next?.title || '', workScope);
     setPlanetId(id);
     setMoonId(null);
+    setTaskId(null);
     setDeptSheetOpen(false);
+    setRoom({ kind: ctx.primaryRoom, place: null, fromSpace });
+  };
+  const handleOpenPlanet = (id: string) => {
+    enterPlanetRoom(id, true);
   };
 
   // Die eine MÔRA begleitet in den offenen Planeten und kehrt danach in den Dock zurück.
@@ -886,8 +902,8 @@ export function UnifiedUniverse({
 
       {/* Scene canvas */}
       <div className={`ck-scene ck-scene--${sceneMode}${backFrom ? ' is-back' : ''}`}>
-        {sceneMode === 'planet' && planet ? <span className="mora-anchor mora-anchor--planet" data-mora-anchor="planet" aria-hidden="true" /> : null}
-        {sceneMode === 'planet' && planet && planetStyle !== 'pixel' ? (
+        {sceneMode === 'planet' && planet && !room ? <span className="mora-anchor mora-anchor--planet" data-mora-anchor="planet" aria-hidden="true" /> : null}
+        {sceneMode === 'planet' && planet && !room && planetStyle !== 'pixel' ? (
           <StationPlanet
             planet={planet}
             work={work}
@@ -907,7 +923,7 @@ export function UnifiedUniverse({
             }}
             onEnterRoom={(kind) => { setMoonId(null); setTaskId(null); setDeptSheetOpen(false); setRoom({ kind, place: null, fromSpace: true }); }}
           />
-        ) : sceneMode === 'planet' && planet ? (
+        ) : sceneMode === 'planet' && planet && !room ? (
           <OpenPlanet
             planet={planet}
             showMoons={true}
@@ -942,7 +958,9 @@ export function UnifiedUniverse({
             compact={false}
             scale={1.45}
             style={planetStyle}
+            moons={entryMoons}
             onOpen={handleOpenPlanet}
+            onOpenTask={(id) => { setTaskId(id); setMoonId(null); }}
           />
         )}
       </div>

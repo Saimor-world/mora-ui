@@ -25,33 +25,31 @@ const dock = () => render(
     <BridgeConcept items={[]} activeId="home" onNavigate={jest.fn()} onMora={jest.fn()} onMore={jest.fn()} onNotifications={jest.fn()} onSearch={jest.fn()} mood="idle" moraOpen={false} attention={0} phone={false} showLegacy={false} />
   </QueryClientProvider>,
 );
-const stage = (c: HTMLElement, id: string) => c.querySelector(`.bridge__stage[data-station="${id}"]`) as HTMLElement;
 
 beforeAll(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-11-04T07:00:00+01:00')); });
 afterAll(() => { jest.useRealTimers(); mockSnapshot = null; });
 
-it('Als Nächstes shows the coming appointments as lines, including the very next one', () => {
-  mockSnapshot = { ...base, calendar: { ...ok, next_event: null, events: [
+it('appointments become a point of light on the lake, not a glass tile of lines', () => {
+  mockSnapshot = { ...base, calendar: { ...ok, next_event: { id: 'e1', title: 'Roadmap Review', date: '2026-11-04', time: '15:00' }, events: [
     { id: 'e1', title: 'Roadmap Review', date: '2026-11-04', time: '15:00' },
     { id: 'e2', title: 'Team-Sync', date: '2026-11-04', time: '16:30' },
   ] } } as unknown as TodaySnapshot;
-  const { container } = dock();
-  const lines = screen.getByTestId('dock-lines-next');
-  expect(lines.textContent).toContain('15:00');
-  expect(lines.textContent).toContain('Roadmap Review');
-  expect(lines.textContent).toContain('Team-Sync');
-  expect(stage(container, 'next').dataset.bare).toBeUndefined();
+  const { container, unmount } = dock();
+  const light = screen.getByTestId('dock-light-next');
+  expect(light.textContent).toMatch(/Nächst|Termin/);
+  expect(container.querySelectorAll('.bridge__light')).toHaveLength(1);
+  expect(screen.queryByTestId('dock-lines-next')).toBeNull();
+  unmount();
 });
 
-it('a tile without real lines invents none and is marked bare so the value sits centred', () => {
+it('the lake stays empty when nothing is due — no bare tiles, no „Nichts fällig“', () => {
   mockSnapshot = { ...base, calendar: { ...ok, next_event: null, events: [] } } as unknown as TodaySnapshot;
-  const { container } = dock();
-  expect(screen.queryByTestId('dock-lines-team')).toBeNull();
-  expect(screen.queryByTestId('dock-lines-next')).toBeNull();
-  expect(stage(container, 'team').dataset.bare).toBe('true');
-  expect(stage(container, 'next').dataset.bare).toBe('true');
-  const css = fs.readFileSync(path.join(process.cwd(), 'components/os-shell/bridge-concept.css'), 'utf8');
-  expect(css).toMatch(/\.bridge__stage\[data-bare='true'\] \.bridge__stage-hero \{ margin-block:auto; \}/);
+  const { container, unmount } = dock();
+  expect(screen.queryByTestId('dock-light-today')).toBeNull();
+  expect(screen.queryByTestId('dock-light-next')).toBeNull();
+  expect(screen.queryByTestId('dock-light-post')).toBeNull();
+  expect(container.textContent).not.toMatch(/Nichts fällig/);
+  unmount();
 });
 
 it('the centre of the lake stays quiet: no rim highlight straight under MÔRA', () => {

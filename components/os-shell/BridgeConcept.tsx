@@ -92,7 +92,6 @@ const CHANNEL_ICON={post:Mail,today:ListChecks,team:Users,next:CalendarClock} as
 type Instrument={id:'post'|'today'|'team'|'next';col:'outer'|'inner';label:string;value:string;detail:string;tone:Station['tone'];frac:number;lines:InstrumentLine[];offline:boolean;open:()=>void;openLabel:string};
 type Props={items:FeatureManifest[]; activeId:string; onNavigate:(id:string)=>void; onMora:()=>void; onAsk?:(text:string)=>void; onMore:()=>void; onNotifications:()=>void; onSearch:()=>void; onControl?:()=>void; mood:SpiritMood; moraOpen:boolean; attention:number; phone:boolean; showLegacy:boolean };
 const DISMISS_KEY='mora.bridge.dismissed';
-const PHONE_APPS=4;
 export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotifications,onSearch,onControl,mood,moraOpen,attention,phone,showLegacy}:Props) {
   const { snapshot, refresh, refreshing }=useScopedToday({backgroundRefresh:true});
   const { data: briefing } = useDailyBriefing();
@@ -142,12 +141,12 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
   const openNightwatch=()=>useOsShellStore.getState().setNightwatchOpen(true);
   const openTarget=(t:'calendar'|'post'|'nightwatch')=>t==='calendar'?openLegacyApp('calendar'):t==='post'?onNavigate('post'):openNightwatch();
   const later=()=>{if(!card)return;setDismissed(card.id);setAsking(false);try{sessionStorage.setItem(DISMISS_KEY,card.id);}catch{/* privat */}};
+  // Cockpit: 4 Hauptinstrumente (Universe, Post, Heute, Mehr). MÔRA sitzt in der Mitte des Sees.
+  // Suche, Kalender, Mitteilungen und Kontrollzentrum liegen unter Mehr bzw. als ruhige Leiste.
+  const MAIN_IDS = ['universe','post','today'] as const;
+  const byId = new Map(items.map(item=>({id:item.id,name:item.title,icon:item.icon,action:()=>onNavigate(item.id)})).map(c=>[c.id,c]));
   const controls = [
-    {id:'search',name:'Suche',icon:Search,action:onSearch},
-    ...items.map(item=>({id:item.id,name:item.title,icon:item.icon,action:()=>onNavigate(item.id)})).slice(0,phone?PHONE_APPS:undefined),
-    ...(phone?[]:[{id:'calendar',name:'Kalender',icon:CalendarDays,action:()=>openLegacyApp('calendar')}]),
-    {id:'notifications',name:'Mitteilungen',icon:Bell,action:incidents>0 && attention===0 ? openNightwatch : onNotifications},
-    ...(onControl && !phone ? [{id:'control',name:'Kontrollzentrum',icon:Sparkles,action:onControl}] : []),
+    ...MAIN_IDS.map(id=>byId.get(id)).filter((c):c is NonNullable<typeof c>=>!!c),
     {id:'more',name:'Mehr',icon:Grid2X2,action:onMore},
   ];
   const renderControl = (control:typeof controls[number]) => {
@@ -172,20 +171,23 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
     {id:'team',col:'inner',label:'Team',value:team.value,detail:team.detail,tone:team.tone,frac:team.tone==='calm'?1:.5,lines:instrumentLines(snapshot,'team',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Schichtplan'},
     {id:'next',col:'outer',label:'Als Nächstes',value:!cal?'—':upcoming.length?countLabel(upcoming.length,'Termin','Termine'):'Frei',detail:!cal?'':upcoming[0]?`${upcoming[0].when} ${upcoming[0].label}${upcoming[0].id===nextMark?.id&&until?` · ${until}`:''}`:'',tone:nextMark?.problem?'amber':'calm',frac:(now-DAY_START)/(DAY_END-DAY_START),lines:instrumentLines(snapshot,'next',now),offline:!cal,open:()=>openLegacyApp('calendar'),openLabel:'Kalender'},
   ];
-  // Unverbundene Quelle: dunkle, transluzente Dock-Bucht nur mit Kanal-Symbol. Kein Text, kein „Offline“.
-  const bay=(g:Instrument)=>{const Icon=CHANNEL_ICON[g.id];return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-offline="true" data-testid={`dock-bay-${g.id}`}>
-    <button type="button" className="bridge__bay" onClick={()=>onNavigate('settings')} aria-label={`${g.label} verbinden`}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></button>
-  </article>;};
-  // Bühne: ganze Fläche ist der Klick. Eine große Zahl, ein kurzes Nomen, ein Zustand. Keine Vorschauzeilen.
-  const instrument=(g:Instrument)=>{ if(g.offline) return bay(g); const Icon=CHANNEL_ICON[g.id]; const m=/^(\d[\d.]*\+?)\s+(.+)$/.exec(g.value);
-    return <article key={g.id} className="bridge__inst" data-station={g.id} data-col={g.col} data-tone={g.tone} data-stage="true">
-    <button type="button" className="bridge__comp bridge__stage" data-station={g.id} data-bare={g.lines.length?undefined:'true'} onClick={g.open} aria-label={`${g.label}: ${g.value}${g.detail?` · ${g.detail}`:''}`} title={g.detail||undefined}>
-      <span className="bridge__stage-top"><span className="bridge__stage-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.6} /></span><small>{g.label}</small>{g.tone==='amber'||g.tone==='red'?<i className="bridge__stage-dot" aria-hidden="true" />:null}</span>
-      {g.lines.length ? <span className="bridge__stage-lines" data-testid={`dock-lines-${g.id}`}>{g.lines.slice(0,2).map(l=><span key={l.id} data-tone={l.tone}><b>{l.lead}</b>{l.text}</span>)}</span> : null}
-      <span className="bridge__stage-hero">{m?<><strong>{m[1]}</strong><span>{m[2]}</span></>:<strong>{g.value}</strong>}</span>
-      <Ring frac={g.frac} />
-    </button>
-  </article>;};
+  // 2–3 Lichtpunkte auf dem Wasser, nur wenn es etwas aus CORE gibt. Keine leeren Glas-Kacheln, kein „Nichts fällig“.
+  const lakeLights = [
+    !instruments[0].offline && (mail.unread ?? 0) > 0 ? instruments[0] : null,
+    !instruments[1].offline && (typeof today.count === 'number' ? today.count > 0 : !/^Nichts /.test(today.value) && today.value !== 'Offline') ? instruments[1] : null,
+    !instruments[3].offline && upcoming.length > 0 ? instruments[3] : null,
+  ].filter((g): g is Instrument => !!g).slice(0, 3);
+  const light = (g: Instrument) => {
+    const Icon = CHANNEL_ICON[g.id];
+    const m = /^(\d[\d.]*\+?)\s+(.+)$/.exec(g.value);
+    return <article key={g.id} className="bridge__light" data-station={g.id} data-tone={g.tone} data-testid={`dock-light-${g.id}`}>
+      <button type="button" className="bridge__glow" onClick={g.open} aria-label={`${g.label}: ${g.value}${g.detail?` · ${g.detail}`:''}`} title={g.detail||g.value}>
+        <span className="bridge__glow-orb" aria-hidden="true"><Icon size={14} strokeWidth={1.7} /></span>
+        {m ? <strong>{m[1]}</strong> : <strong>{g.value}</strong>}
+        <small>{g.label}</small>
+      </button>
+    </article>;
+  };
   const asOf=snapshot?.generated_at?new Date(snapshot.generated_at):null;
   const stand=asOf&&!isNaN(asOf.getTime())?asOf.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:snapshot?.timezone||'Europe/Berlin'}):null;
   const dateText=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Berlin'}).format(new Date());
@@ -217,7 +219,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
         {now>=DAY_START && now<=DAY_END ? <span className="bridge__now" data-center={Math.abs(nowX-50)<12?'true':undefined} style={{left:`${nowX}%`,top:`${hullY(nowX*14.4)/3}%`}} aria-label={`Jetzt ${hhmm(now)}`} title={`Jetzt ${hhmm(now)}`}><i>{hhmm(now)}</i></span> : null}
       </section>
       <section className="bridge__deck" aria-label="Lage">
-        {instrument(instruments[0])}{instrument(instruments[1])}
+        {lakeLights.slice(0,2).map(light)}
         <div className="bridge__heart" data-mood={mood} data-attention={attention>0?'true':undefined}>
           <span className="bridge__beam" aria-hidden="true" />
           <span className="bridge__aura" aria-hidden="true"><i /><i /><i /><i /></span>
@@ -230,7 +232,7 @@ export function BridgeConcept({items,activeId,onNavigate,onMora,onMore,onNotific
             
           </div>
         </div>
-        {instrument(instruments[2])}{instrument(instruments[3])}
+        {lakeLights.slice(2,3).map(light)}
       </section>
       <div className="bridge__status" data-side="left">
         <span className="bridge__clock"><b>{hhmm(now)}</b><small>{dateText}</small>{stand?<small>{`Stand ${stand}`}</small>:null}</span>
